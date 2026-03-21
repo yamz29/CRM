@@ -36,10 +36,11 @@ export default async function ConfiguracionPage({
     activeTab === 'categorias'
       ? await prisma.categoria.findMany({ orderBy: { nombre: 'asc' } })
       : []
-  const usuarios =
+  const usuariosRaw =
     activeTab === 'usuarios'
       ? await prisma.usuario.findMany({ orderBy: { nombre: 'asc' } })
       : []
+  const usuarios = usuariosRaw.map(u => ({ ...u, hasPassword: u.password !== null }))
   const unidades =
     activeTab === 'unidades'
       ? await prisma.unidadGlobal.findMany({ orderBy: [{ tipo: 'asc' }, { codigo: 'asc' }] })
