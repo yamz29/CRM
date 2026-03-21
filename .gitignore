@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+
+# Build de Next.js
+.next/
+out/
+
+# Base de datos SQLite (los datos no van en git)
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-wal
+prisma/*.db-shm
+
+# Variables de entorno (contienen contraseñas y secretos)
+.env
+.env.local
+.env.production
+.env*.local
+
+# Archivos subidos por usuarios
+public/uploads/
+
+# Backups
+backups/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

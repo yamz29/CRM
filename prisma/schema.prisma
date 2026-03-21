@@ -1,0 +1,437 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  telefono    String?
+  whatsapp    String?
+  correo      String?
+  direccion   String?
+  tipoCliente String   @default("Particular")
+  fuente      String   @default("Directo")
+  notas       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  proyectos    Proyecto[]
+  presupuestos Presupuesto[]
+  tareas       Tarea[]
+}
+
+model Proyecto {
+  id                  Int       @id @default(autoincrement())
+  nombre              String
+  clienteId           Int
+  tipoProyecto        String    @default("Remodelación")
+  ubicacion           String?
+  fechaInicio         DateTime?
+  fechaEstimada       DateTime?
+  estado              String    @default("Prospecto")
+  descripcion         String?
+  responsable         String?
+  presupuestoEstimado Float?
+  presupuestoBaseId   Int?      // ID del presupuesto usado como snapshot base
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  cliente         Cliente              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  presupuestos    Presupuesto[]
+  tareas          Tarea[]
+  modulosMelamina ModuloMelaminaV2[]
+  gastos          GastoProyecto[]
+  capitulos       ProyectoCapitulo[]
+  partidas        ProyectoPartida[]
+}
+
+// ── GASTOS DEL PROYECTO ───────────────────────────────────────────────
+
+model GastoProyecto {
+  id            Int      @id @default(autoincrement())
+  proyectoId    Int
+  fecha         DateTime
+  tipoGasto     String   @default("Gasto menor")
+  referencia    String?
+  descripcion   String
+  suplidor      String?
+  categoria     String?
+  subcategoria  String?
+  monto         Float    @default(0)
+  moneda        String   @default("RD$")
+  metodoPago    String   @default("Efectivo")
+  cuentaOrigen  String?
+  observaciones String?
+  estado        String   @default("Registrado")
+  archivoUrl    String?
+  partidaId     Int?
+  createdBy     Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  proyecto  Proyecto         @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  partida   ProyectoPartida? @relation(fields: [partidaId], references: [id], onDelete: SetNull)
+}
+
+// ── ESTRUCTURA PRESUPUESTARIA DEL PROYECTO (snapshot) ─────────────────
+
+model ProyectoCapitulo {
+  id         Int      @id @default(autoincrement())
+  proyectoId Int
+  nombre     String
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  proyecto Proyecto          @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  partidas ProyectoPartida[]
+
+  @@map("proyecto_capitulos")
+}
+
+model ProyectoPartida {
+  id                    Int      @id @default(autoincrement())
+  proyectoId            Int
+  capituloId            Int?
+  capituloNombre        String?  // desnormalizado para snapshot
+  presupuestoOrigenId   Int?     // referencia al presupuesto origen
+  codigo                String?
+  descripcion           String
+  unidad                String   @default("gl")
+  cantidad              Float    @default(1)
+  precioUnitario        Float    @default(0)
+  subtotalPresupuestado Float    @default(0)
+  orden                 Int      @default(0)
+  observaciones         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  proyecto Proyecto          @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  capitulo ProyectoCapitulo? @relation(fields: [capituloId], references: [id], onDelete: SetNull)
+  gastos   GastoProyecto[]
+
+  @@map("proyecto_partidas")
+}
+
+model Presupuesto {
+  id         Int      @id @default(autoincrement())
+  numero     String   @unique
+  proyectoId Int?
+  clienteId  Int
+  estado     String   @default("Borrador")
+  subtotal   Float    @default(0)
+  total      Float    @default(0)
+  notas      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  proyecto        Proyecto?          @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  cliente         Cliente            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  partidas        Partida[]
+  modulosMelamina ModuloMelamina[]
+  capitulos       CapituloPresupuesto[]
+  titulos         PresupuestoTitulo[]
+  indirectos      PresupuestoIndirectoLinea[]
+}
+
+// ── PRESUPUESTOS V2: Capítulos y Partidas ────────────────────────────
+
+model PresupuestoTitulo {
+  id            Int      @id @default(autoincrement())
+  presupuestoId Int
+  nombre        String
+  orden         Int      @default(0)
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  presupuesto Presupuesto           @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  capitulos   CapituloPresupuesto[]
+
+  @@map("presupuesto_titulos")
+}
+
+model PresupuestoIndirectoLinea {
+  id            Int      @id @default(autoincrement())
+  presupuestoId Int
+  nombre        String
+  porcentaje    Float    @default(0)
+  orden         Int      @default(0)
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  presupuesto Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+
+  @@map("presupuesto_indirecto_lineas")
+}
+
+model CapituloPresupuesto {
+  id            Int      @id @default(autoincrement())
+  presupuestoId Int
+  tituloId      Int?
+  codigo        String?
+  nombre        String
+  orden         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  presupuesto Presupuesto           @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  titulo      PresupuestoTitulo?    @relation(fields: [tituloId], references: [id], onDelete: SetNull)
+  partidas    PartidaPresupuesto[]
+}
+
+model PartidaPresupuesto {
+  id             Int      @id @default(autoincrement())
+  capituloId     Int
+  codigo         String?
+  descripcion    String
+  unidad         String   @default("gl")
+  cantidad       Float    @default(1)
+  precioUnitario Float    @default(0)
+  subtotal       Float    @default(0)
+  observaciones  String?
+  orden          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  capitulo CapituloPresupuesto @relation(fields: [capituloId], references: [id], onDelete: Cascade)
+  analisis AnalisisPartida?
+}
+
+model AnalisisPartida {
+  id             Int      @id @default(autoincrement())
+  partidaId      Int      @unique
+  // Totales calculados (para consultas rápidas)
+  materiales     Float    @default(0)
+  manoObra       Float    @default(0)
+  equipos        Float    @default(0)
+  subcontratos   Float    @default(0)
+  transporte     Float    @default(0)
+  desperdicio    Float    @default(0)
+  indirectos     Float    @default(0)
+  utilidad       Float    @default(0)
+  costoDirecto   Float    @default(0)
+  costoTotal     Float    @default(0)
+  precioSugerido Float    @default(0)
+  margen         Float    @default(0)
+  // Detalle de líneas por categoría (JSON)
+  detalleJson    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  partida PartidaPresupuesto @relation(fields: [partidaId], references: [id], onDelete: Cascade)
+}
+
+// ── MÓDULOS MELAMINA V2 ───────────────────────────────────────────────
+
+model ModuloMelaminaV2 {
+  id                Int      @id @default(autoincrement())
+  proyectoId        Int?
+  presupuestoId     Int?
+  codigo            String?
+  tipoModulo        String   @default("Base")
+  nombre            String
+  ancho             Float    @default(0)
+  alto              Float    @default(0)
+  profundidad       Float    @default(0)
+  material          String   @default("Melamina Egger 18mm")
+  colorAcabado      String?
+  herrajes          String?
+  cantidad          Int      @default(1)
+  costoMateriales   Float    @default(0)
+  costoManoObra     Float    @default(0)
+  costoInstalacion  Float    @default(0)
+  precioVenta       Float    @default(0)
+  estadoProduccion  String   @default("Diseño")
+  observaciones     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+}
+
+// ── TAREAS ────────────────────────────────────────────────────────────
+
+model Tarea {
+  id          Int       @id @default(autoincrement())
+  titulo      String
+  descripcion String?
+  clienteId   Int?
+  proyectoId  Int?
+  fechaLimite DateTime?
+  prioridad   String    @default("Media")
+  estado      String    @default("Pendiente")
+  responsable String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  cliente  Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+}
+
+// ── LEGACY (se mantienen para compatibilidad) ─────────────────────────
+
+model Partida {
+  id             Int      @id @default(autoincrement())
+  presupuestoId  Int
+  descripcion    String
+  unidad         String   @default("m2")
+  cantidad       Float    @default(1)
+  precioUnitario Float    @default(0)
+  subtotal       Float    @default(0)
+  orden          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  presupuesto Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+}
+
+model ModuloMelamina {
+  id             Int      @id @default(autoincrement())
+  presupuestoId  Int
+  tipoModulo     String   @default("Base")
+  descripcion    String
+  ancho          Float    @default(0)
+  alto           Float    @default(0)
+  profundidad    Float    @default(0)
+  material       String   @default("Melamina 18mm")
+  costoMaterial  Float    @default(0)
+  costoManoObra  Float    @default(0)
+  subtotal       Float    @default(0)
+  cantidad       Int      @default(1)
+  orden          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  presupuesto Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+}
+
+// ── CATÁLOGO DE RECURSOS ──────────────────────────────────────────────
+
+model Recurso {
+  id            Int      @id @default(autoincrement())
+  codigo        String?
+  nombre        String
+  tipo          String   @default("materiales") // materiales | manoObra | equipos | herramientas | subcontratos | transportes | herrajes | consumibles
+  categoria     String?
+  subcategoria  String?
+  unidad        String   @default("gl")
+  costoUnitario Float    @default(0)
+  proveedor     String?
+  marca         String?
+  activo        Boolean  @default(true)
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  apuRecursos   ApuRecurso[]
+}
+
+// ── CATÁLOGO DE APUs ──────────────────────────────────────────────────
+
+model ApuCatalogo {
+  id            Int      @id @default(autoincrement())
+  codigo        String?
+  nombre        String
+  descripcion   String?
+  capitulo      String?
+  unidad        String   @default("gl")
+  indirectos    Float    @default(10)
+  utilidad      Float    @default(20)
+  desperdicio   Float    @default(5)
+  costoDirecto  Float    @default(0)
+  costoTotal    Float    @default(0)
+  precioVenta   Float    @default(0)
+  activo        Boolean  @default(true)
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  recursos      ApuRecurso[]
+}
+
+// ── COMPOSICIÓN APU ← RECURSOS ────────────────────────────────────────
+
+model ApuRecurso {
+  id            Int      @id @default(autoincrement())
+  apuId         Int
+  recursoId     Int
+  cantidad      Float    @default(1)
+  costoSnapshot Float    @default(0) // precio al momento de guardar el APU
+  subtotal      Float    @default(0) // cantidad * costoSnapshot
+  orden         Int      @default(0)
+  observaciones String?
+  createdAt     DateTime @default(now())
+
+  apu     ApuCatalogo @relation(fields: [apuId], references: [id], onDelete: Cascade)
+  recurso Recurso     @relation(fields: [recursoId], references: [id])
+}
+
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────
+
+model Empresa {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @default("Mi Empresa")
+  rut       String?
+  direccion String?
+  telefono  String?
+  correo    String?
+  sitioWeb  String?
+  logoUrl   String?
+  slogan    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vendedor {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  telefono  String?
+  correo    String?
+  cargo     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Categoria {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  tipo        String   @default("Proyecto")
+  color       String   @default("#3b82f6")
+  descripcion String?
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  correo    String   @unique
+  password  String?
+  rol       String   @default("Admin")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Configuracion {
+  id    Int    @id @default(autoincrement())
+  clave String @unique
+  valor String
+}
+
+// ── UNIDADES GLOBALES ──────────────────────────────────────────────────
+
+model UnidadGlobal {
+  id          Int      @id @default(autoincrement())
+  codigo      String   @unique // ej: m2, ml, kg
+  nombre      String           // ej: Metro cuadrado
+  simbolo     String?          // ej: m²
+  tipo        String   @default("otro") // longitud | area | volumen | unidad | tiempo | peso | otro
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
