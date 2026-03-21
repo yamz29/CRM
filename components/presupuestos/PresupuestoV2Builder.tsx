@@ -662,6 +662,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, mode, initialData, d
               <ApuSearchModal
                 onClose={() => setApuSearchOpen(null)}
                 onInsert={(partida) => { insertPartidaFromApu(ci, partida); setApuSearchOpen(null) }}
+                currentOrden={capitulos[ci].partidas.length}
               />
             )}
           </>
