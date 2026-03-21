@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download, Trash2, HardDrive, RefreshCw, Plus, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Download, Trash2, HardDrive, RefreshCw, Plus, AlertTriangle, CheckCircle, Upload, ShieldAlert, Database } from 'lucide-react'
 
 interface Backup {
   filename: string
@@ -27,12 +27,35 @@ function formatDate(iso: string): string {
   })
 }
 
+// ── Estado para la sección de importación ──────────────────────────────────
+type ImportStep = 'idle' | 'validated' | 'importing' | 'done'
+
+interface ImportState {
+  step: ImportStep
+  file: File | null
+  tempFile: string | null
+  validatedSize: number | null
+  validating: boolean
+  mensaje: { tipo: 'ok' | 'error' | 'warn'; texto: string } | null
+}
+
 export function RespaldoPanel() {
   const [backups, setBackups] = useState<Backup[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [deletingFile, setDeletingFile] = useState<string | null>(null)
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+
+  // Estado de importación
+  const [imp, setImp] = useState<ImportState>({
+    step: 'idle',
+    file: null,
+    tempFile: null,
+    validatedSize: null,
+    validating: false,
+    mensaje: null,
+  })
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function mostrarMensaje(tipo: 'ok' | 'error', texto: string) {
     setMensaje({ tipo, texto })
@@ -94,6 +117,80 @@ export function RespaldoPanel() {
       mostrarMensaje('error', 'No se pudo eliminar el backup')
     } finally {
       setDeletingFile(null)
+    }
+  }
+
+  // ── Funciones de importación ────────────────────────────────────────────
+
+  function impMensaje(tipo: 'ok' | 'error' | 'warn', texto: string) {
+    setImp(prev => ({ ...prev, mensaje: { tipo, texto } }))
+  }
+
+  function resetImport() {
+    setImp({ step: 'idle', file: null, tempFile: null, validatedSize: null, validating: false, mensaje: null })
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function validarArchivo() {
+    if (!imp.file) return
+    setImp(prev => ({ ...prev, validating: true, mensaje: null }))
+
+    const fd = new FormData()
+    fd.append('action', 'validar')
+    fd.append('file', imp.file)
+
+    try {
+      const res = await fetch('/api/configuracion/importar-db', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok) {
+        setImp(prev => ({
+          ...prev,
+          step: 'validated',
+          tempFile: data.tempFile,
+          validatedSize: data.size,
+          validating: false,
+          mensaje: { tipo: 'ok', texto: data.mensaje },
+        }))
+      } else {
+        setImp(prev => ({ ...prev, validating: false, mensaje: { tipo: 'error', texto: data.error ?? 'Error al validar' } }))
+      }
+    } catch {
+      setImp(prev => ({ ...prev, validating: false, mensaje: { tipo: 'error', texto: 'No se pudo conectar con el servidor' } }))
+    }
+  }
+
+  async function importarBase() {
+    if (!imp.tempFile) return
+    setImp(prev => ({ ...prev, step: 'importing', mensaje: null }))
+
+    const fd = new FormData()
+    fd.append('action', 'importar')
+    fd.append('tempFile', imp.tempFile)
+
+    try {
+      const res = await fetch('/api/configuracion/importar-db', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok) {
+        setImp(prev => ({
+          ...prev,
+          step: 'done',
+          mensaje: { tipo: 'ok', texto: `${data.mensaje} Backup de seguridad: ${data.backupCreado}` },
+        }))
+        // Recargar lista de backups para mostrar el nuevo pre-import
+        await cargarBackups()
+      } else {
+        setImp(prev => ({
+          ...prev,
+          step: 'validated', // permitir reintentar
+          mensaje: { tipo: 'error', texto: data.error ?? 'Error al importar la base de datos' },
+        }))
+      }
+    } catch {
+      setImp(prev => ({
+        ...prev,
+        step: 'validated',
+        mensaje: { tipo: 'error', texto: 'No se pudo conectar con el servidor' },
+      }))
     }
   }
 
@@ -262,17 +359,130 @@ export function RespaldoPanel() {
         )}
       </div>
 
-      {/* Nota de restauración */}
-      <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700">
-        <p className="font-semibold flex items-center gap-1.5">
-          <AlertTriangle className="w-4 h-4" />
-          Para restaurar un backup
-        </p>
-        <p className="mt-1 text-amber-600 text-xs leading-relaxed">
-          Descarga el archivo <code className="bg-amber-100 px-1 rounded">.zip</code>, extráelo y reemplaza manualmente
-          el archivo <code className="bg-amber-100 px-1 rounded">prisma/dev.db</code> y la carpeta <code className="bg-amber-100 px-1 rounded">public/uploads/</code> en el servidor.
-          Reinicia el sistema después de restaurar.
-        </p>
+      {/* ── Sección: Importar base de datos ── */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <Database className="w-4 h-4 text-slate-400" />
+            Importar base de datos
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Reemplaza la base de datos actual con un archivo <code className="bg-slate-100 px-1 rounded">.db</code> o <code className="bg-slate-100 px-1 rounded">.sqlite</code> externo.
+            Se crea un backup automático antes de cualquier cambio.
+          </p>
+        </div>
+
+        <div className="px-5 py-5 space-y-4">
+
+          {/* Paso 1 — Seleccionar y validar */}
+          {imp.step !== 'done' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".db,.sqlite"
+                  disabled={imp.step === 'importing'}
+                  onChange={e => {
+                    const f = e.target.files?.[0] ?? null
+                    setImp({ step: 'idle', file: f, tempFile: null, validatedSize: null, validating: false, mensaje: null })
+                  }}
+                  className="text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={!imp.file || imp.step === 'validated' || imp.validating || imp.step === 'importing'}
+                  onClick={validarArchivo}
+                >
+                  {imp.validating
+                    ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Validando...</>
+                    : <><CheckCircle className="w-3.5 h-3.5" /> Validar archivo</>}
+                </Button>
+                {imp.step !== 'idle' && (
+                  <button onClick={resetImport} className="text-xs text-slate-400 hover:text-slate-600 underline">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+
+              {/* Mensaje de validación */}
+              {imp.mensaje && (
+                <div className={`flex items-start gap-2 px-3 py-2.5 rounded-lg text-sm ${
+                  imp.mensaje.tipo === 'ok'
+                    ? 'bg-green-50 border border-green-200 text-green-700'
+                    : imp.mensaje.tipo === 'warn'
+                    ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                    : 'bg-red-50 border border-red-200 text-red-700'
+                }`}>
+                  {imp.mensaje.tipo === 'ok'
+                    ? <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    : <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />}
+                  <span>{imp.mensaje.texto}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Paso 2 — Confirmación antes de importar */}
+          {imp.step === 'validated' && imp.tempFile && (
+            <div className="border border-amber-200 rounded-xl overflow-hidden">
+              <div className="bg-amber-50 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" />
+                  Confirmar importación
+                </p>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  Esta acción <strong>reemplazará la base de datos actual</strong> con el archivo que subiste
+                  ({imp.validatedSize !== null ? formatBytes(imp.validatedSize) : ''}).
+                  Antes de continuar se creará un <strong>backup automático</strong> de la base actual.
+                </p>
+              </div>
+              <div className="px-4 py-3 bg-white flex items-center gap-3">
+                <Button
+                  size="sm"
+                  onClick={importarBase}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Sí, importar base de datos
+                </Button>
+                <button onClick={resetImport} className="text-xs text-slate-400 hover:text-slate-600 underline">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Paso 3 — Importando */}
+          {imp.step === 'importing' && (
+            <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+              Creando backup y reemplazando base de datos...
+            </div>
+          )}
+
+          {/* Paso 4 — Éxito */}
+          {imp.step === 'done' && imp.mensaje && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{imp.mensaje.texto}</span>
+              </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-700">
+                <p className="font-semibold">Recomendación</p>
+                <p className="text-xs mt-0.5">
+                  Reinicia la aplicación con <code className="bg-blue-100 px-1 rounded">pm2 restart crm</code> en el servidor
+                  para asegurar que Prisma se reconecte correctamente con la nueva base de datos.
+                </p>
+              </div>
+              <button onClick={resetImport} className="text-xs text-slate-400 hover:text-slate-600 underline">
+                Importar otro archivo
+              </button>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   )
