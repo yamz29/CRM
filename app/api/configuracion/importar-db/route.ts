@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import path from 'path'
 import fs from 'fs'
+import { execSync } from 'child_process'
 import { prisma } from '@/lib/prisma'
 import {
   TEMP_DIR,
+  DB_PATH,
   isSQLiteFile,
   isSafeTempName,
   saveTempFile,
@@ -78,14 +80,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Error al guardar el archivo temporalmente' }, { status: 500 })
     }
 
-    const validation = isSQLiteFile(path.join(TEMP_DIR, tempName))
+    const tempFilePath = path.join(TEMP_DIR, tempName)
+
+    const validation = isSQLiteFile(tempFilePath)
     if (!validation.valid) {
-      // Borrar el temp si no es válido
-      try { fs.unlinkSync(path.join(TEMP_DIR, tempName)) } catch { /* ignorar */ }
+      try { fs.unlinkSync(tempFilePath) } catch { /* ignorar */ }
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    const stat = fs.statSync(path.join(TEMP_DIR, tempName))
+    // Forzar checkpoint WAL en el archivo subido usando sqlite3 CLI si está disponible.
+    // Esto garantiza que todos los datos estén en el archivo .db principal
+    // antes de copiarlo al servidor (evita pérdida de datos por WAL no checkpointed).
+    try {
+      execSync(`sqlite3 "${tempFilePath}" "PRAGMA wal_checkpoint(TRUNCATE);"`, { timeout: 10000 })
+    } catch {
+      // sqlite3 CLI no está instalado — continuar igual, no es crítico para el proceso
+    }
+
+    const stat = fs.statSync(tempFilePath)
 
     return NextResponse.json({
       ok: true,
@@ -155,7 +167,7 @@ export async function POST(req: Request) {
       ok: true,
       backupCreado: backupName,
       mensaje: 'Base de datos importada correctamente.',
-      aviso: 'Puede ser necesario reiniciar la aplicación para asegurar que el sistema conecte con la nueva base de datos.',
+      aviso: 'Ejecuta "pm2 restart crm" en el servidor para que el sistema conecte con la nueva base de datos.',
     })
   }
 
