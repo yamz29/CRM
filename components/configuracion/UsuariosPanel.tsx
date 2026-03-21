@@ -222,8 +222,8 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {u.hasPassword
-                        ? <ShieldCheck className="w-4 h-4 text-green-500 mx-auto" title="Puede iniciar sesión" />
-                        : <ShieldOff className="w-4 h-4 text-slate-300 mx-auto" title="Sin contraseña configurada" />}
+                        ? <span title="Puede iniciar sesión"><ShieldCheck className="w-4 h-4 text-green-500 mx-auto" /></span>
+                        : <span title="Sin contraseña configurada"><ShieldOff className="w-4 h-4 text-slate-300 mx-auto" /></span>}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${u.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
