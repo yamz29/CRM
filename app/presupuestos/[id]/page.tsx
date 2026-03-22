@@ -85,7 +85,7 @@ export default async function PresupuestoDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/presupuestos/${presupuesto.id}/imprimir`}>
+          <Link href={`/presupuestos/${presupuesto.id}/imprimir`} target="_blank">
             <Button variant="secondary">
               <Printer className="w-4 h-4" />
               Imprimir
