@@ -37,13 +37,33 @@ export async function PUT(req: Request, { params }: Params) {
   }
 
   const { descripcion, fecha, tipoGasto, referencia, suplidor, categoria, subcategoria,
-    monto, moneda, metodoPago, cuentaOrigen, observaciones, estado, partidaId: partidaIdRaw } = body
+    monto, moneda, metodoPago, cuentaOrigen, observaciones, estado,
+    partidaId: partidaIdRaw, recursoId: recursoIdRaw,
+    cantidadRecurso: cantidadRecursoRaw, movimientoStock } = body
 
   const partidaId = partidaIdRaw !== undefined
     ? (partidaIdRaw === '' || partidaIdRaw === 'null' ? null : parseInt(String(partidaIdRaw)) || null)
     : undefined
 
+  const recursoId = recursoIdRaw !== undefined
+    ? (recursoIdRaw === '' || recursoIdRaw === 'null' ? null : parseInt(String(recursoIdRaw)) || null)
+    : undefined
+
+  const cantidadRecurso = cantidadRecursoRaw !== undefined
+    ? (cantidadRecursoRaw === '' ? null : parseFloat(String(cantidadRecursoRaw)) || null)
+    : undefined
+
+  const movimiento = movimientoStock !== undefined
+    ? ((movimientoStock === 'entrada' || movimientoStock === 'salida') ? movimientoStock : null)
+    : undefined
+
   try {
+    // Obtener el gasto anterior para revertir su movimiento de stock
+    const anterior = await prisma.gastoProyecto.findUnique({
+      where: { id },
+      select: { recursoId: true, cantidadRecurso: true, movimientoStock: true, monto: true },
+    })
+
     const gasto = await prisma.gastoProyecto.update({
       where: { id },
       data: {
@@ -62,8 +82,33 @@ export async function PUT(req: Request, { params }: Params) {
         ...(estado && { estado }),
         ...(archivoUrl !== undefined && { archivoUrl }),
         ...(partidaId !== undefined && { partidaId }),
+        ...(recursoId !== undefined && { recursoId }),
+        ...(cantidadRecurso !== undefined && { cantidadRecurso }),
+        ...(movimiento !== undefined && { movimientoStock: movimiento }),
       },
     })
+
+    // Revertir movimiento anterior de stock
+    if (anterior?.recursoId && anterior.cantidadRecurso && anterior.movimientoStock) {
+      const reverseDelta = anterior.movimientoStock === 'entrada' ? -anterior.cantidadRecurso : anterior.cantidadRecurso
+      await prisma.recurso.update({ where: { id: anterior.recursoId }, data: { stock: { increment: reverseDelta } } })
+    }
+
+    // Aplicar nuevo movimiento de stock
+    const newRecursoId = recursoId !== undefined ? recursoId : anterior?.recursoId
+    const newCantidad = cantidadRecurso !== undefined ? cantidadRecurso : anterior?.cantidadRecurso
+    const newMovimiento = movimiento !== undefined ? movimiento : anterior?.movimientoStock
+    const newMonto = monto ? parseFloat(monto) : (anterior?.monto ?? 0)
+
+    if (newRecursoId && newCantidad && newMovimiento) {
+      const delta = newMovimiento === 'entrada' ? newCantidad : -newCantidad
+      const updateData: Record<string, unknown> = { stock: { increment: delta } }
+      if (newMovimiento === 'entrada' && newCantidad > 0) {
+        updateData.ultimoCosto = newMonto / newCantidad
+      }
+      await prisma.recurso.update({ where: { id: newRecursoId }, data: updateData })
+    }
+
     return NextResponse.json(gasto)
   } catch {
     return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 })
@@ -76,7 +121,11 @@ export async function DELETE(_req: Request, { params }: Params) {
   const id = parseInt(gastoId)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const gasto = await prisma.gastoProyecto.findUnique({ where: { id }, select: { archivoUrl: true } })
+  const gasto = await prisma.gastoProyecto.findUnique({
+    where: { id },
+    select: { archivoUrl: true, recursoId: true, cantidadRecurso: true, movimientoStock: true },
+  })
+
   if (gasto?.archivoUrl) {
     try {
       await unlink(path.join(process.cwd(), 'public', gasto.archivoUrl))
@@ -84,6 +133,15 @@ export async function DELETE(_req: Request, { params }: Params) {
   }
 
   await prisma.gastoProyecto.delete({ where: { id } })
+
+  // Revertir movimiento de stock al eliminar el gasto
+  if (gasto?.recursoId && gasto.cantidadRecurso && gasto.movimientoStock) {
+    const reverseDelta = gasto.movimientoStock === 'entrada' ? -gasto.cantidadRecurso : gasto.cantidadRecurso
+    try {
+      await prisma.recurso.update({ where: { id: gasto.recursoId }, data: { stock: { increment: reverseDelta } } })
+    } catch { /* recurso puede haber sido eliminado */ }
+  }
+
   return NextResponse.json({ ok: true })
 }
 

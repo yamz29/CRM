@@ -57,13 +57,19 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const { descripcion, fecha, tipoGasto, referencia, suplidor, categoria, subcategoria,
-    monto, moneda, metodoPago, cuentaOrigen, observaciones, estado, partidaId: partidaIdRaw } = body as Record<string, string>
+    monto, moneda, metodoPago, cuentaOrigen, observaciones, estado,
+    partidaId: partidaIdRaw, recursoId: recursoIdRaw,
+    cantidadRecurso: cantidadRecursoRaw, movimientoStock } = body as Record<string, string>
 
   if (!descripcion || !fecha || !monto) {
     return NextResponse.json({ error: 'descripcion, fecha y monto son requeridos' }, { status: 400 })
   }
 
   const partidaId = partidaIdRaw ? parseInt(String(partidaIdRaw)) || null : null
+  const recursoId = recursoIdRaw ? parseInt(String(recursoIdRaw)) || null : null
+  const cantidadRecurso = cantidadRecursoRaw ? parseFloat(String(cantidadRecursoRaw)) || null : null
+  const movimiento = (movimientoStock === 'entrada' || movimientoStock === 'salida') ? movimientoStock : null
+  const montoNum = parseFloat(String(monto))
 
   try {
     const gasto = await prisma.gastoProyecto.create({
@@ -76,7 +82,7 @@ export async function POST(req: Request, { params }: Params) {
         suplidor: suplidor || null,
         categoria: categoria || null,
         subcategoria: subcategoria || null,
-        monto: parseFloat(String(monto)),
+        monto: montoNum,
         moneda: moneda || 'RD$',
         metodoPago: metodoPago || 'Efectivo',
         cuentaOrigen: cuentaOrigen || null,
@@ -84,8 +90,22 @@ export async function POST(req: Request, { params }: Params) {
         estado: estado || 'Registrado',
         archivoUrl: archivoUrl ?? null,
         partidaId,
+        recursoId,
+        cantidadRecurso,
+        movimientoStock: movimiento,
       },
     })
+
+    // Actualizar stock del recurso si aplica
+    if (recursoId && cantidadRecurso && movimiento) {
+      const delta = movimiento === 'entrada' ? cantidadRecurso : -cantidadRecurso
+      const updateData: Record<string, unknown> = { stock: { increment: delta } }
+      if (movimiento === 'entrada' && cantidadRecurso > 0) {
+        updateData.ultimoCosto = montoNum / cantidadRecurso
+      }
+      await prisma.recurso.update({ where: { id: recursoId }, data: updateData })
+    }
+
     return NextResponse.json(gasto, { status: 201 })
   } catch (err) {
     console.error('[POST /gastos]', err)

@@ -219,11 +219,29 @@ Detalle del proyecto con **4 pestañas**:
 - Composición: recursos del catálogo con cantidad y snapshot de costo
 - Porcentajes configurables: indirectos, utilidad, desperdicio
 - Precio de venta calculado = costo directo × (1 + indirectos + utilidad + desperdicio)
+- **Líneas de catálogo y texto libre**: cada sección del APU permite agregar:
+  - **Del catálogo**: selecciona recurso existente (autocompletado de unidad y costo)
+  - **Texto libre**: descripción manual, unidad editable, costo manual
+  - Toggle por línea (ícono 📖/✏️) para cambiar de modo después de agregar
+  - **Nuevo recurso**: crea el recurso en el catálogo directamente desde el editor
+- Unidad `PA` (Precio Alzado) disponible en todos los selectores
 
 ### 5.6 Recursos (`/recursos`)
 - Catálogo de insumos y servicios
 - Tipos: materiales, mano de obra, equipos, herramientas, subcontratos, transportes, herrajes, consumibles
 - Campos: código, nombre, tipo, categoría, unidad, costo unitario, proveedor, marca
+- **Importación masiva desde Excel**: botón "Importar Excel" en la página principal
+  - Descarga de plantilla `.xlsx` con ejemplos e instrucciones (`/api/recursos/plantilla`)
+  - Upload + preview de filas antes de confirmar
+  - Validación: fila sin nombre → error; tipo inválido → error; código duplicado → omitido sin crear doble
+  - Inserción en lote en la BD con resumen final (creados / omitidos)
+- **Control de inventario ligero** (opcional por recurso):
+  - `controlarStock`: activa el control de stock
+  - `stock`: cantidad disponible actual
+  - `stockMinimo`: umbral de alerta
+  - `ultimoCosto`: último precio de compra (actualizado automáticamente con gastos tipo "entrada")
+  - Panel de inventario en `/recursos` con semáforo: verde (OK), ámbar (bajo mínimo), rojo (agotado)
+  - Los gastos del proyecto pueden registrar movimientos de stock (entrada/salida) vinculados a un recurso
 
 ### 5.7 Tareas (`/tareas`)
 - Gestión simple de tareas

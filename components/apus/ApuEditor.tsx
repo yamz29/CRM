@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Trash2, Save, AlertCircle, X, PackagePlus } from 'lucide-react'
+import { Plus, Save, AlertCircle, X, PackagePlus, PenLine, BookOpen } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,6 +19,9 @@ interface RecursoRef {
 
 interface RecursoLine {
   recursoId: number | null
+  isLibre?: boolean         // true = línea de texto libre, false/undefined = catálogo
+  descripcionLibre?: string // texto cuando isLibre = true
+  unidadLibre?: string      // unidad cuando isLibre = true
   cantidad: number
   costoSnapshot: number
   subtotal: number
@@ -43,12 +46,15 @@ interface Props {
     activo?: boolean
     observaciones?: string
     recursos?: Array<{
-      recursoId: number
+      recursoId: number | null
+      descripcionLibre?: string | null
+      unidadLibre?: string | null
+      tipoLinea?: string | null
       cantidad: number
       costoSnapshot: number
       subtotal: number
       observaciones?: string | null
-      recurso: RecursoRef
+      recurso?: RecursoRef | null
     }>
   }
 }
@@ -63,7 +69,7 @@ const SECCIONES: Array<{ key: TipoSeccion; label: string; tipos: string[]; color
   { key: 'transportes',  label: 'Transporte',    tipos: ['transportes'],  color: 'bg-teal-50 border-teal-200', headerColor: 'bg-teal-100 text-teal-800' },
 ]
 
-const UNIDADES = ['gl', 'ud', 'm2', 'ml', 'm3', 'm', 'kg', 'ton', 'lt', 'saco', 'pl', 'par', 'hr', 'día', 'sem', 'mes', 'viaje', 'jg']
+const UNIDADES = ['gl', 'ud', 'PA', 'm2', 'ml', 'm3', 'm', 'kg', 'ton', 'lt', 'saco', 'pl', 'par', 'hr', 'día', 'sem', 'mes', 'viaje', 'jg']
 
 const CAPITULOS = ['Preliminares', 'Demoliciones', 'Albañilería', 'Hormigón', 'Eléctricas', 'Sanitarias', 'Terminaciones', 'Pintura', 'Melamina', 'Limpieza', 'General']
 
@@ -79,10 +85,27 @@ function buildInitialSections(
   if (!apuRecursos) return result
 
   for (const ar of apuRecursos) {
-    const sec = secciones.find((s) => s.tipos.includes(ar.recurso.tipo))
-    if (sec) {
+    if (ar.recursoId && ar.recurso) {
+      // Línea catálogo
+      const sec = secciones.find((s) => s.tipos.includes(ar.recurso!.tipo))
+      if (sec) {
+        result[sec.key].push({
+          recursoId: ar.recursoId,
+          isLibre: false,
+          cantidad: ar.cantidad,
+          costoSnapshot: ar.costoSnapshot,
+          subtotal: ar.subtotal,
+          observaciones: ar.observaciones || '',
+        })
+      }
+    } else if (ar.descripcionLibre) {
+      // Línea libre
+      const sec = secciones.find((s) => s.key === ar.tipoLinea) ?? secciones[0]
       result[sec.key].push({
-        recursoId: ar.recursoId,
+        recursoId: null,
+        isLibre: true,
+        descripcionLibre: ar.descripcionLibre,
+        unidadLibre: ar.unidadLibre || 'ud',
         cantidad: ar.cantidad,
         costoSnapshot: ar.costoSnapshot,
         subtotal: ar.subtotal,
@@ -225,7 +248,10 @@ function SeccionRecursos({
   const recursos = recursosDisponibles.filter((r) => seccion.tipos.includes(r.tipo))
 
   const addLine = () =>
-    onChange([...lines, { recursoId: null, cantidad: 1, costoSnapshot: 0, subtotal: 0, observaciones: '' }])
+    onChange([...lines, { recursoId: null, isLibre: false, cantidad: 1, costoSnapshot: 0, subtotal: 0, observaciones: '' }])
+
+  const addLineLibre = () =>
+    onChange([...lines, { recursoId: null, isLibre: true, descripcionLibre: '', unidadLibre: 'ud', cantidad: 1, costoSnapshot: 0, subtotal: 0, observaciones: '' }])
 
   const updateLine = (i: number, updates: Partial<RecursoLine>) => {
     onChange(
@@ -242,6 +268,17 @@ function SeccionRecursos({
     const r = recursosDisponibles.find((x) => x.id === recursoId)
     if (!r) return
     updateLine(i, { recursoId, costoSnapshot: r.costoUnitario })
+  }
+
+  const toggleLibre = (i: number) => {
+    const line = lines[i]
+    if (line.isLibre) {
+      // switch to catálogo
+      updateLine(i, { isLibre: false, recursoId: null, descripcionLibre: '', unidadLibre: '', costoSnapshot: 0 })
+    } else {
+      // switch to libre
+      updateLine(i, { isLibre: true, recursoId: null, descripcionLibre: '', unidadLibre: 'ud', costoSnapshot: 0 })
+    }
   }
 
   const removeLine = (i: number) => onChange(lines.filter((_, idx) => idx !== i))
@@ -262,9 +299,10 @@ function SeccionRecursos({
         <table className="w-full border-t border-white/50">
           <thead>
             <tr className="bg-white/40 text-xs text-slate-500">
-              <th className="px-3 py-1.5 text-left font-semibold w-6">#</th>
-              <th className="px-3 py-1.5 text-left font-semibold">Recurso</th>
-              <th className="px-3 py-1.5 text-center font-semibold w-14">Unidad</th>
+              <th className="px-2 py-1.5 text-left font-semibold w-6">#</th>
+              <th className="px-2 py-1.5 w-7" title="Alternar entre catálogo y texto libre" />
+              <th className="px-3 py-1.5 text-left font-semibold">Recurso / Descripción</th>
+              <th className="px-3 py-1.5 text-center font-semibold w-16">Unidad</th>
               <th className="px-3 py-1.5 text-right font-semibold w-24">Cantidad</th>
               <th className="px-3 py-1.5 text-right font-semibold w-32">Costo Unit.</th>
               <th className="px-3 py-1.5 text-right font-semibold w-32 bg-white/40">Subtotal</th>
@@ -273,28 +311,61 @@ function SeccionRecursos({
           </thead>
           <tbody>
             {lines.map((line, i) => {
-              const selectedRecurso = line.recursoId
+              const selectedRecurso = !line.isLibre && line.recursoId
                 ? recursosDisponibles.find((r) => r.id === line.recursoId)
                 : null
               return (
                 <tr key={i} className="border-t border-white/40 hover:bg-white/60 group transition-colors">
-                  <td className="px-3 py-1.5 text-xs text-slate-400 select-none">{i + 1}</td>
-                  <td className="px-2 py-1">
-                    <select
-                      value={line.recursoId ?? ''}
-                      onChange={(e) => selectRecurso(i, parseInt(e.target.value))}
-                      className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  <td className="px-2 py-1.5 text-xs text-slate-400 select-none">{i + 1}</td>
+                  {/* Toggle catálogo / libre */}
+                  <td className="px-1 py-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleLibre(i)}
+                      title={line.isLibre ? 'Usar recurso del catálogo' : 'Escribir texto libre'}
+                      className={`p-1 rounded transition-colors ${line.isLibre ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:text-blue-500 hover:bg-blue-50'}`}
                     >
-                      <option value="">— Seleccionar recurso —</option>
-                      {recursos.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.codigo ? `[${r.codigo}] ` : ''}{r.nombre}
-                        </option>
-                      ))}
-                    </select>
+                      {line.isLibre ? <PenLine className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
+                    </button>
                   </td>
-                  <td className="px-2 py-1 text-sm text-center text-slate-500">
-                    {selectedRecurso?.unidad || '—'}
+                  <td className="px-2 py-1">
+                    {line.isLibre ? (
+                      <input
+                        type="text"
+                        value={line.descripcionLibre ?? ''}
+                        onChange={(e) => updateLine(i, { descripcionLibre: e.target.value })}
+                        placeholder="Descripción libre..."
+                        className="w-full px-2 py-1.5 text-sm border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
+                      />
+                    ) : (
+                      <select
+                        value={line.recursoId ?? ''}
+                        onChange={(e) => selectRecurso(i, parseInt(e.target.value))}
+                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="">— Seleccionar recurso —</option>
+                        {recursos.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.codigo ? `[${r.codigo}] ` : ''}{r.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-2 py-1">
+                    {line.isLibre ? (
+                      <select
+                        value={line.unidadLibre ?? 'ud'}
+                        onChange={(e) => updateLine(i, { unidadLibre: e.target.value })}
+                        className="w-full px-1 py-1.5 text-xs border border-amber-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-400 bg-amber-50"
+                      >
+                        {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    ) : (
+                      <span className="text-sm text-center block text-slate-500">
+                        {selectedRecurso?.unidad || '—'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-2 py-1">
                     <NumericInput
@@ -326,15 +397,20 @@ function SeccionRecursos({
       )}
 
       {/* Add buttons */}
-      <div className="px-4 py-2 border-t border-white/30 flex items-center gap-4">
+      <div className="px-4 py-2 border-t border-white/30 flex items-center gap-4 flex-wrap">
         <button onClick={addLine}
           className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors">
           <Plus className="w-3.5 h-3.5" />
-          Agregar {seccion.label.toLowerCase()}
+          Del catálogo
+        </button>
+        <button onClick={addLineLibre}
+          className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-amber-600 transition-colors">
+          <PenLine className="w-3.5 h-3.5" />
+          Texto libre
         </button>
         <button
           onClick={() => onNuevoRecurso(seccion.tipos[0], (r) => {
-            onChange([...lines, { recursoId: r.id, cantidad: 1, costoSnapshot: r.costoUnitario, subtotal: r.costoUnitario, observaciones: '' }])
+            onChange([...lines, { recursoId: r.id, isLibre: false, cantidad: 1, costoSnapshot: r.costoUnitario, subtotal: r.costoUnitario, observaciones: '' }])
           })}
           className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-green-600 transition-colors">
           <PackagePlus className="w-3.5 h-3.5" />
@@ -412,8 +488,8 @@ export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) 
         ...header,
         recursos: SECCIONES.flatMap((s, si) =>
           sections[s.key]
-            .filter((l) => l.recursoId !== null)
-            .map((l, li) => ({ ...l, orden: si * 100 + li }))
+            .filter((l) => l.recursoId !== null || (l.isLibre && l.descripcionLibre?.trim()))
+            .map((l, li) => ({ ...l, tipoLinea: s.key, orden: si * 100 + li }))
         ),
       }
       const res = await fetch(

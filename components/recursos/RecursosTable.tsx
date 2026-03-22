@@ -41,6 +41,9 @@ interface Recurso {
   costoUnitario: number
   proveedor: string | null
   activo: boolean
+  controlarStock: boolean
+  stock: number
+  stockMinimo: number
 }
 
 export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
@@ -151,6 +154,7 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
                   <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-28">Categoría</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-16">Unidad</th>
                   <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase w-32">Costo Unit.</th>
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-slate-500 uppercase w-28">Stock</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-28">Proveedor</th>
                   <th className="px-4 py-2 w-20" />
                 </tr>
@@ -166,6 +170,21 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
                     <td className="px-4 py-2 text-sm text-slate-500">{r.categoria || '—'}</td>
                     <td className="px-4 py-2 text-sm text-slate-600 text-center">{r.unidad}</td>
                     <td className="px-4 py-2 text-sm font-semibold text-slate-800 text-right">{formatCurrency(r.costoUnitario)}</td>
+                    <td className="px-4 py-2 text-center">
+                      {r.controlarStock ? (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          r.stock <= 0
+                            ? 'bg-red-100 text-red-700'
+                            : r.stockMinimo > 0 && r.stock <= r.stockMinimo
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {r.stock} {r.unidad}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-sm text-slate-500">{r.proveedor || '—'}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-1 justify-end">

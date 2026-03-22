@@ -54,29 +54,34 @@ model Proyecto {
 // ── GASTOS DEL PROYECTO ───────────────────────────────────────────────
 
 model GastoProyecto {
-  id            Int      @id @default(autoincrement())
-  proyectoId    Int
-  fecha         DateTime
-  tipoGasto     String   @default("Gasto menor")
-  referencia    String?
-  descripcion   String
-  suplidor      String?
-  categoria     String?
-  subcategoria  String?
-  monto         Float    @default(0)
-  moneda        String   @default("RD$")
-  metodoPago    String   @default("Efectivo")
-  cuentaOrigen  String?
-  observaciones String?
-  estado        String   @default("Registrado")
-  archivoUrl    String?
-  partidaId     Int?
-  createdBy     Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  proyectoId       Int
+  fecha            DateTime
+  tipoGasto        String   @default("Gasto menor")
+  referencia       String?
+  descripcion      String
+  suplidor         String?
+  categoria        String?
+  subcategoria     String?
+  monto            Float    @default(0)
+  moneda           String   @default("RD$")
+  metodoPago       String   @default("Efectivo")
+  cuentaOrigen     String?
+  observaciones    String?
+  estado           String   @default("Registrado")
+  archivoUrl       String?
+  partidaId        Int?
+  createdBy        Int?
+  // Inventario
+  recursoId        Int?
+  cantidadRecurso  Float?
+  movimientoStock  String?  // 'entrada' | 'salida' | null
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   proyecto  Proyecto         @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
   partida   ProyectoPartida? @relation(fields: [partidaId], references: [id], onDelete: SetNull)
+  recurso   Recurso?         @relation(fields: [recursoId], references: [id], onDelete: SetNull)
 }
 
 // ── ESTRUCTURA PRESUPUESTARIA DEL PROYECTO (snapshot) ─────────────────
@@ -311,22 +316,28 @@ model ModuloMelamina {
 // ── CATÁLOGO DE RECURSOS ──────────────────────────────────────────────
 
 model Recurso {
-  id            Int      @id @default(autoincrement())
-  codigo        String?
-  nombre        String
-  tipo          String   @default("materiales") // materiales | manoObra | equipos | herramientas | subcontratos | transportes | herrajes | consumibles
-  categoria     String?
-  subcategoria  String?
-  unidad        String   @default("gl")
-  costoUnitario Float    @default(0)
-  proveedor     String?
-  marca         String?
-  activo        Boolean  @default(true)
-  observaciones String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  codigo         String?
+  nombre         String
+  tipo           String   @default("materiales") // materiales | manoObra | equipos | herramientas | subcontratos | transportes | herrajes | consumibles
+  categoria      String?
+  subcategoria   String?
+  unidad         String   @default("gl")
+  costoUnitario  Float    @default(0)
+  proveedor      String?
+  marca          String?
+  activo         Boolean  @default(true)
+  observaciones  String?
+  // Inventario
+  controlarStock Boolean  @default(false)
+  stock          Float    @default(0)
+  stockMinimo    Float    @default(0)
+  ultimoCosto    Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   apuRecursos   ApuRecurso[]
+  gastos        GastoProyecto[]
 }
 
 // ── CATÁLOGO DE APUs ──────────────────────────────────────────────────
@@ -355,18 +366,21 @@ model ApuCatalogo {
 // ── COMPOSICIÓN APU ← RECURSOS ────────────────────────────────────────
 
 model ApuRecurso {
-  id            Int      @id @default(autoincrement())
-  apuId         Int
-  recursoId     Int
-  cantidad      Float    @default(1)
-  costoSnapshot Float    @default(0) // precio al momento de guardar el APU
-  subtotal      Float    @default(0) // cantidad * costoSnapshot
-  orden         Int      @default(0)
-  observaciones String?
-  createdAt     DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  apuId            Int
+  recursoId        Int?     // null si es línea libre
+  descripcionLibre String?  // texto libre cuando no hay recurso del catálogo
+  unidadLibre      String?  // unidad para línea libre
+  tipoLinea        String?  // sección a la que pertenece: materiales|manoObra|equipos|etc
+  cantidad         Float    @default(1)
+  costoSnapshot    Float    @default(0) // precio al momento de guardar el APU
+  subtotal         Float    @default(0) // cantidad * costoSnapshot
+  orden            Int      @default(0)
+  observaciones    String?
+  createdAt        DateTime @default(now())
 
   apu     ApuCatalogo @relation(fields: [apuId], references: [id], onDelete: Cascade)
-  recurso Recurso     @relation(fields: [recursoId], references: [id])
+  recurso Recurso?    @relation(fields: [recursoId], references: [id])
 }
 
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────

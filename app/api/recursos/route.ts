@@ -5,12 +5,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const tipo = searchParams.get('tipo')
   const activo = searchParams.get('activo')
+  const controlarStock = searchParams.get('controlarStock')
 
   try {
     const recursos = await prisma.recurso.findMany({
       where: {
         ...(tipo ? { tipo } : {}),
         ...(activo !== null ? { activo: activo !== 'false' } : {}),
+        ...(controlarStock === 'true' ? { controlarStock: true } : {}),
       },
       orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
     })
@@ -37,6 +39,10 @@ export async function POST(request: NextRequest) {
         marca: body.marca || null,
         activo: body.activo !== false,
         observaciones: body.observaciones || null,
+        controlarStock: body.controlarStock === true || body.controlarStock === 'true',
+        stock: parseFloat(body.stock) || 0,
+        stockMinimo: parseFloat(body.stockMinimo) || 0,
+        ultimoCosto: parseFloat(body.ultimoCosto) || 0,
       },
     })
     return NextResponse.json(recurso, { status: 201 })

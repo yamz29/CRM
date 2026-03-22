@@ -105,7 +105,7 @@ const DEFAULT_INDIRECTO_LINEAS: IndirectoLinea[] = [
   { nombre: 'Imprevistos', porcentaje: 2, activo: true, orden: 3 },
 ]
 
-const UNIDADES = ['m2', 'ml', 'm3', 'gl', 'ud', 'kg', 'hr', 'm', 'ton', 'pl', 'jg', 'día', 'sem', 'mes', 'saco', 'lt', 'lts']
+const UNIDADES = ['m2', 'ml', 'm3', 'gl', 'ud', 'kg', 'hr', 'm', 'ton', 'pl', 'jg', 'día', 'sem', 'mes', 'saco', 'lt', 'lts', 'PA']
 const ESTADOS = ['Borrador', 'Enviado', 'Aprobado', 'Rechazado']
 const TAB_FIELDS = ['codigo', 'descripcion', 'unidad', 'cantidad', 'precioUnitario'] as const
 type TabField = (typeof TAB_FIELDS)[number]

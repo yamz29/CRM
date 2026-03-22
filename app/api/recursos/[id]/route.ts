@@ -41,6 +41,10 @@ export async function PUT(
         marca: body.marca || null,
         activo: body.activo !== false,
         observaciones: body.observaciones || null,
+        controlarStock: body.controlarStock === true || body.controlarStock === 'true',
+        stock: parseFloat(body.stock) || 0,
+        stockMinimo: parseFloat(body.stockMinimo) || 0,
+        ultimoCosto: parseFloat(body.ultimoCosto) || 0,
       },
     })
     return NextResponse.json(recurso)

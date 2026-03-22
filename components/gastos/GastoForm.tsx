@@ -23,6 +23,9 @@ export interface GastoData {
   estado: string
   archivoUrl?: string | null
   partidaId?: number | null
+  recursoId?: number | null
+  cantidadRecurso?: string
+  movimientoStock?: string | null
 }
 
 interface PartidaOption {
@@ -51,6 +54,7 @@ const emptyForm: GastoData = {
   categoria: '', subcategoria: '', monto: '',
   moneda: 'RD$', metodoPago: 'Efectivo', cuentaOrigen: '',
   observaciones: '', estado: 'Registrado', partidaId: null,
+  recursoId: null, cantidadRecurso: '', movimientoStock: null,
 }
 
 export function GastoForm({
@@ -69,6 +73,7 @@ export function GastoForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [partidas, setPartidas] = useState<PartidaOption[]>([])
+  const [recursosStock, setRecursosStock] = useState<{ id: number; nombre: string; unidad: string; stock: number; tipo: string }[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
 
   const isEdit = Boolean(initial?.id)
@@ -77,6 +82,10 @@ export function GastoForm({
     fetch(`/api/proyectos/${proyectoId}/partidas`)
       .then(r => r.ok ? r.json() : [])
       .then(d => setPartidas(Array.isArray(d) ? d : []))
+      .catch(() => {})
+    fetch('/api/recursos?controlarStock=true&activo=true')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setRecursosStock(Array.isArray(d) ? d : []))
       .catch(() => {})
   }, [proyectoId])
 
@@ -247,6 +256,52 @@ export function GastoForm({
                 className="h-8 text-xs" placeholder="Cuenta Principal" />
             </div>
           </div>
+
+          {/* Row 5b: recurso de inventario (opcional) */}
+          {recursosStock.length > 0 && (
+            <div className="space-y-2 border border-slate-200 rounded-lg px-3 py-2.5 bg-slate-50/50">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Movimiento de inventario <span className="font-normal text-slate-400">(opcional)</span></p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1 col-span-1">
+                  <Label className="text-xs">Recurso</Label>
+                  <select
+                    value={form.recursoId ?? ''}
+                    onChange={e => setForm(p => ({
+                      ...p,
+                      recursoId: e.target.value ? parseInt(e.target.value) : null,
+                      movimientoStock: e.target.value ? (p.movimientoStock || 'salida') : null,
+                    }))}
+                    className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white"
+                  >
+                    <option value="">— Sin recurso —</option>
+                    {recursosStock.map(r => (
+                      <option key={r.id} value={r.id}>{r.nombre} (stock: {r.stock} {r.unidad})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cantidad</Label>
+                  <Input type="number" step="0.01" min="0"
+                    value={form.cantidadRecurso ?? ''}
+                    onChange={e => set('cantidadRecurso', e.target.value)}
+                    disabled={!form.recursoId}
+                    className="h-8 text-xs" placeholder="0" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Movimiento</Label>
+                  <select
+                    value={form.movimientoStock ?? 'salida'}
+                    onChange={e => setForm(p => ({ ...p, movimientoStock: e.target.value || null }))}
+                    disabled={!form.recursoId}
+                    className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white disabled:opacity-50"
+                  >
+                    <option value="salida">Salida (consumo)</option>
+                    <option value="entrada">Entrada (compra)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Row 6: estado */}
           <div className="space-y-1">

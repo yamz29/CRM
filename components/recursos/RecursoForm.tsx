@@ -16,7 +16,7 @@ const TIPOS = [
   { value: 'consumibles',  label: 'Consumibles' },
 ]
 
-const UNIDADES = ['gl', 'ud', 'm2', 'ml', 'm3', 'm', 'kg', 'ton', 'lt', 'lts', 'saco', 'pl', 'par', 'hr', 'día', 'sem', 'mes', 'viaje', 'jg']
+const UNIDADES = ['gl', 'ud', 'PA', 'm2', 'ml', 'm3', 'm', 'kg', 'ton', 'lt', 'lts', 'saco', 'pl', 'par', 'hr', 'día', 'sem', 'mes', 'viaje', 'jg']
 
 interface Props {
   mode: 'create' | 'edit'
@@ -33,6 +33,10 @@ interface Props {
     marca?: string
     activo?: boolean
     observaciones?: string
+    controlarStock?: boolean
+    stock?: number
+    stockMinimo?: number
+    ultimoCosto?: number
   }
 }
 
@@ -53,6 +57,10 @@ export function RecursoForm({ mode, initialData }: Props) {
     marca: initialData?.marca || '',
     activo: initialData?.activo !== false,
     observaciones: initialData?.observaciones || '',
+    controlarStock: initialData?.controlarStock || false,
+    stock: String(initialData?.stock ?? 0),
+    stockMinimo: String(initialData?.stockMinimo ?? 0),
+    ultimoCosto: String(initialData?.ultimoCosto ?? 0),
   })
 
   const set = (field: string, value: string | boolean) =>
@@ -69,7 +77,13 @@ export function RecursoForm({ mode, initialData }: Props) {
         {
           method: mode === 'create' ? 'POST' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...form, costoUnitario: parseFloat(form.costoUnitario) || 0 }),
+          body: JSON.stringify({
+            ...form,
+            costoUnitario: parseFloat(form.costoUnitario) || 0,
+            stock: parseFloat(form.stock) || 0,
+            stockMinimo: parseFloat(form.stockMinimo) || 0,
+            ultimoCosto: parseFloat(form.ultimoCosto) || 0,
+          }),
         }
       )
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Error') }
@@ -177,6 +191,43 @@ export function RecursoForm({ mode, initialData }: Props) {
             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
           <label htmlFor="activo" className="text-sm font-medium text-slate-700">Recurso activo</label>
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Inventario</h2>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" checked={form.controlarStock}
+              onChange={(e) => set('controlarStock', e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+            <span className="text-sm font-medium text-slate-700">Controlar stock</span>
+          </label>
+        </div>
+        {form.controlarStock && (
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Stock actual</label>
+              <input type="number" value={form.stock} onChange={(e) => set('stock', e.target.value)}
+                min="0" step="0.01" placeholder="0"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Stock mínimo</label>
+              <input type="number" value={form.stockMinimo} onChange={(e) => set('stockMinimo', e.target.value)}
+                min="0" step="0.01" placeholder="0"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Último costo unit.</label>
+              <input type="number" value={form.ultimoCosto} onChange={(e) => set('ultimoCosto', e.target.value)}
+                min="0" step="0.01" placeholder="0"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right" />
+            </div>
+          </div>
+        )}
+        {!form.controlarStock && (
+          <p className="text-xs text-slate-400">Activa el control de stock para registrar entradas y salidas desde los gastos del proyecto.</p>
+        )}
       </div>
 
       <div className="flex justify-end gap-3">

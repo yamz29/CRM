@@ -53,7 +53,10 @@ export async function POST(request: NextRequest) {
         observaciones: apuData.observaciones || null,
         recursos: {
           create: recursos.map((r: any, i: number) => ({
-            recursoId: parseInt(r.recursoId),
+            recursoId: r.recursoId ? parseInt(r.recursoId) : null,
+            descripcionLibre: r.descripcionLibre || null,
+            unidadLibre: r.unidadLibre || null,
+            tipoLinea: r.tipoLinea || null,
             cantidad: parseFloat(r.cantidad) || 0,
             costoSnapshot: parseFloat(r.costoSnapshot) || 0,
             subtotal: parseFloat(r.subtotal) || 0,
