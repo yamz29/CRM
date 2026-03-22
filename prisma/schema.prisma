@@ -238,11 +238,13 @@ model ModuloMelaminaV2 {
   proyectoId        Int?
   presupuestoId     Int?
   codigo            String?
-  tipoModulo        String   @default("Base")
+  tipoModulo        String   @default("Base con puertas")
   nombre            String
   ancho             Float    @default(0)
   alto              Float    @default(0)
   profundidad       Float    @default(0)
+  cantidadPuertas   Int      @default(0)
+  cantidadCajones   Int      @default(0)
   material          String   @default("Melamina Egger 18mm")
   colorAcabado      String?
   herrajes          String?
@@ -253,10 +255,55 @@ model ModuloMelaminaV2 {
   precioVenta       Float    @default(0)
   estadoProduccion  String   @default("Diseño")
   observaciones     String?
+  recursoTableroId  Int?
+  anchoPlanchaCm    Float    @default(244)
+  largoPlanchaCm    Float    @default(183)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  proyecto       Proyecto?       @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  piezas         PiezaModulo[]
+  recursosModulo RecursoModulo[]
+}
+
+model PiezaModulo {
+  id            Int      @id @default(autoincrement())
+  moduloId      Int
+  etiqueta      String   @default("Otro")
+  nombre        String
+  tipoPieza     String   @default("otro")
+  largo         Float    @default(0)
+  ancho         Float    @default(0)
+  cantidad      Int      @default(1)
+  espesor       Float    @default(18)
+  material      String?
+  tapacanto     String   @default("[]")
+  observaciones String?
+  orden         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  modulo ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+
+  @@map("piezas_modulo")
+}
+
+model RecursoModulo {
+  id            Int      @id @default(autoincrement())
+  moduloId      Int
+  recursoId     Int?
+  descripcion   String?
+  unidad        String   @default("und")
+  cantidad      Float    @default(1)
+  costoSnapshot Float    @default(0)
+  subtotal      Float    @default(0)
+  observaciones String?
+  orden         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  modulo  ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  recurso Recurso?         @relation(fields: [recursoId], references: [id])
+
+  @@map("recursos_modulo")
 }
 
 // ── TAREAS ────────────────────────────────────────────────────────────
@@ -336,8 +383,9 @@ model Recurso {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  apuRecursos   ApuRecurso[]
-  gastos        GastoProyecto[]
+  apuRecursos    ApuRecurso[]
+  gastos         GastoProyecto[]
+  recursosModulo RecursoModulo[]
 }
 
 // ── CATÁLOGO DE APUs ──────────────────────────────────────────────────
