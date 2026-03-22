@@ -36,410 +36,255 @@ export default async function ImprimirPresupuestoPage({
     getPresupuesto(id),
     prisma.empresa.findFirst(),
   ])
-
   if (!presupuesto) notFound()
 
-  const subtotalObra = presupuesto.partidas.reduce((acc, p) => acc + p.subtotal, 0)
-  const subtotalMelamina = presupuesto.modulosMelamina.reduce((acc, m) => acc + m.subtotal * m.cantidad, 0)
+  const nombreEmpresa = empresa?.nombre || 'Gonzalva Group'
+
   const subtotalBase = presupuesto.capitulos.reduce(
-    (acc, cap) => acc + cap.partidas.reduce((s, p) => s + p.subtotal, 0),
-    0
+    (acc, cap) => acc + cap.partidas.reduce((s, p) => s + p.subtotal, 0), 0
   )
-  const indirectoLineas = presupuesto.indirectos.filter((l) => l.activo)
-  const subtotalIndirecto = indirectoLineas.reduce(
+  const indirectosActivos = presupuesto.indirectos.filter(l => l.activo)
+  const subtotalIndirecto = indirectosActivos.reduce(
     (s, l) => s + subtotalBase * l.porcentaje / 100, 0
   )
+  const subtotalObra = presupuesto.partidas.reduce((acc, p) => acc + p.subtotal, 0)
+  const subtotalMelamina = presupuesto.modulosMelamina.reduce((acc, m) => acc + m.subtotal * m.cantidad, 0)
+
+  // Build titulo → capitulos map
+  const tituloMap: Record<number, typeof presupuesto.capitulos> = {}
+  const floating: typeof presupuesto.capitulos = []
+  for (const cap of presupuesto.capitulos) {
+    if (cap.tituloId != null) {
+      if (!tituloMap[cap.tituloId]) tituloMap[cap.tituloId] = []
+      tituloMap[cap.tituloId].push(cap)
+    } else {
+      floating.push(cap)
+    }
+  }
+
+  const estadoColor: Record<string, string> = {
+    Aprobado: '#16a34a', Enviado: '#2563eb', Rechazado: '#dc2626', Borrador: '#64748b',
+  }
+  const estadoBg: Record<string, string> = {
+    Aprobado: '#dcfce7', Enviado: '#dbeafe', Rechazado: '#fee2e2', Borrador: '#f1f5f9',
+  }
 
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; }
+        @page { size: A4 portrait; margin: 1.5cm; }
 
-        /* ── Screen preview ── */
-        .preview-shell {
-          background: #94a3b8;
-          min-height: 100vh;
-          padding: 72px 24px 40px;
-        }
-        .print-page {
-          font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-          font-size: 10.5px;
-          line-height: 1.45;
-          color: #1e293b;
-          background: white;
-          max-width: 210mm;
-          margin: 0 auto;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.18);
-        }
-
-        /* ── Print overrides ── */
         @media print {
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          .no-print { display: none !important; }
-          .preview-shell { background: white !important; padding: 0 !important; }
-          .print-page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
-          @page { margin: 1.8cm 1.4cm 1.6cm; size: A4 portrait; }
-          .page-break-before { page-break-before: always; }
-          .avoid-break { page-break-inside: avoid; }
+          .no-print  { display: none !important; }
+          .print-accent { display: block !important; }
+          .report-shell { background: white !important; padding: 0 !important; }
+          .report-wrap  { box-shadow: none !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; }
+          .cap-block { page-break-inside: avoid; break-inside: avoid; }
+          tr { page-break-inside: avoid; break-inside: avoid; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
         }
 
-        /* ── Typography scale ── */
-        .doc-h1   { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
-        .doc-h2   { font-size: 11px; font-weight: 700; }
-        .doc-label{ font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; }
-        .doc-body { font-size: 10px; }
-        .doc-small{ font-size: 9px; }
-        .doc-num  { font-variant-numeric: tabular-nums; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 11px; line-height: 1.5; color: #0f172a; background: #f8fafc; margin: 0; }
+        table { border-collapse: collapse; width: 100%; }
+        .print-accent { display: none; }
 
-        /* ── Table base ── */
-        .doc-table { width: 100%; border-collapse: collapse; }
-        .doc-table th {
-          font-size: 8.5px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 0.5px; padding: 5px 8px; border-bottom: 1px solid #cbd5e1;
-          background: #f8fafc; color: #64748b;
+        .report-shell {
+          background: #94a3b8;
+          min-height: 100vh;
+          padding: 60px 24px 40px;
         }
-        .doc-table td { font-size: 10px; padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
-        .doc-table tr:last-child td { border-bottom: none; }
-        .doc-table tfoot td {
-          font-size: 10px; font-weight: 700; padding: 6px 8px;
-          border-top: 1.5px solid #cbd5e1; background: #f1f5f9;
+        .report-wrap {
+          background: white;
+          max-width: 860px;
+          margin: 0 auto;
+          padding: 32px 40px;
+          box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+          border-radius: 4px;
         }
-
-        /* ── Chapter header ── */
-        .cap-header {
-          display: flex; justify-content: space-between; align-items: center;
-          background: #1e293b; color: white;
-          padding: 6px 10px;
-        }
-        .cap-header-name { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .cap-header-total { font-size: 10px; font-weight: 600; color: #94a3b8; }
-
-        /* ── Accent stripe ── */
-        .accent-top { height: 4px; background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 60%, #60a5fa 100%); }
-
-        /* ── Totals box ── */
-        .totals-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #e2e8f0; }
-        .totals-final {
-          display: flex; justify-content: space-between; align-items: center;
-          background: #1e293b; color: white;
-          padding: 9px 14px; margin-top: 8px;
-        }
-        .totals-final-label { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
-        .totals-final-value { font-size: 14px; font-weight: 900; }
       `}</style>
 
       {/* Top bar — screen only */}
-      <div className="no-print fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm">
-        <Link href={`/presupuestos/${presupuesto.id}`}
-          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
+      <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: 'white', borderBottom: '1px solid #e2e8f0', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <Link href={`/presupuestos/${presupuesto.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569', textDecoration: 'none' }}>
+          <ArrowLeft style={{ width: 16, height: 16 }} />
           Volver al presupuesto
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Vista previa de impresión</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 11, color: '#94a3b8', background: '#f1f5f9', padding: '3px 10px', borderRadius: 20 }}>Vista previa de impresión</span>
           <PrintButton />
         </div>
       </div>
 
-      {/* Preview wrapper */}
-      <div className="no-print preview-shell">
-        <DocumentBody presupuesto={presupuesto} empresa={empresa}
-          subtotalObra={subtotalObra} subtotalMelamina={subtotalMelamina}
-          subtotalBase={subtotalBase} subtotalIndirecto={subtotalIndirecto} />
-      </div>
+      {/* Accent stripe — print only */}
+      <div className="print-accent" style={{ height: 5, background: 'linear-gradient(90deg, #1e3a5f 0%, #2563eb 55%, #60a5fa 100%)' }} />
 
-      {/* Print-only output */}
-      <div className="hidden print:block">
-        <DocumentBody presupuesto={presupuesto} empresa={empresa}
-          subtotalObra={subtotalObra} subtotalMelamina={subtotalMelamina}
-          subtotalBase={subtotalBase} subtotalIndirecto={subtotalIndirecto} />
-      </div>
-    </>
-  )
-}
+      <div className="report-shell">
+      <div className="report-wrap">
 
-type PresupuestoWithRelations = NonNullable<Awaited<ReturnType<typeof getPresupuesto>>>
-
-function DocumentBody({
-  presupuesto, empresa, subtotalObra, subtotalMelamina, subtotalBase, subtotalIndirecto,
-}: {
-  presupuesto: PresupuestoWithRelations
-  empresa: { nombre: string; rut: string | null; direccion: string | null; telefono: string | null; correo: string | null; sitioWeb: string | null; logoUrl: string | null; slogan: string | null } | null
-  subtotalObra: number
-  subtotalMelamina: number
-  subtotalBase: number
-  subtotalIndirecto: number
-}) {
-  const nombreEmpresa = empresa?.nombre || 'Gonzalva Group'
-
-  const estadoStyle: Record<string, { bg: string; color: string }> = {
-    Aprobado:  { bg: '#dcfce7', color: '#166534' },
-    Enviado:   { bg: '#dbeafe', color: '#1d4ed8' },
-    Rechazado: { bg: '#fee2e2', color: '#991b1b' },
-  }
-  const estadoColors = estadoStyle[presupuesto.estado] ?? { bg: '#f1f5f9', color: '#475569' }
-
-  return (
-    <div className="print-page">
-
-      {/* ══ Accent top stripe ══ */}
-      <div className="accent-top" />
-
-      {/* ══ HEADER ══ */}
-      <div style={{ padding: '24px 36px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
-
-        {/* Left — logo + company */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-          {empresa?.logoUrl
-            ? (
+        {/* ══ HEADER ══ */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '2px solid #1e293b', marginBottom: 20 }}>
+          {/* Left — logo + company */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {empresa?.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={empresa.logoUrl} alt="Logo" style={{ height: '52px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+              <img src={empresa.logoUrl} alt="Logo" style={{ height: 48, width: 'auto', objectFit: 'contain' }} />
             ) : (
-              <div style={{ width: '52px', height: '52px', background: '#1e3a5f', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: 'white', fontWeight: 900, fontSize: '18px', letterSpacing: '-1px' }}>GG</span>
+              <div style={{ width: 48, height: 48, background: '#1e293b', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 16 }}>GG</div>
+            )}
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#1e293b' }}>{nombreEmpresa}</div>
+              {empresa?.slogan && <div style={{ fontSize: 10, color: '#64748b', fontStyle: 'italic' }}>{empresa.slogan}</div>}
+              <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {empresa?.rut      && <span style={{ fontSize: 9, color: '#94a3b8' }}>RNC: {empresa.rut}</span>}
+                {empresa?.direccion && <span style={{ fontSize: 9, color: '#94a3b8' }}>{empresa.direccion}</span>}
+                {empresa?.telefono  && <span style={{ fontSize: 9, color: '#94a3b8' }}>{empresa.telefono}</span>}
+                {empresa?.correo    && <span style={{ fontSize: 9, color: '#94a3b8' }}>{empresa.correo}</span>}
               </div>
-            )
-          }
-          <div>
-            <div className="doc-h1" style={{ color: '#0f172a' }}>{nombreEmpresa}</div>
-            {empresa?.slogan && (
-              <div style={{ fontSize: '9.5px', color: '#64748b', fontStyle: 'italic', marginTop: '2px' }}>{empresa.slogan}</div>
-            )}
-            <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {empresa?.rut && (
-                <span className="doc-small" style={{ color: '#475569' }}>
-                  <span style={{ fontWeight: 700 }}>RNC:</span> {empresa.rut}
-                </span>
-              )}
-              {empresa?.direccion && <span className="doc-small" style={{ color: '#475569' }}>{empresa.direccion}</span>}
-              {empresa?.telefono && <span className="doc-small" style={{ color: '#475569' }}>{empresa.telefono}</span>}
-              {empresa?.correo && <span className="doc-small" style={{ color: '#475569' }}>{empresa.correo}</span>}
+            </div>
+          </div>
+          {/* Right — document badge */}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Cotización</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b', lineHeight: 1 }}>{presupuesto.numero}</div>
+            <div style={{ fontSize: 9, color: '#64748b', marginTop: 6 }}>
+              Fecha de emisión: <strong style={{ color: '#334155' }}>{formatDate(presupuesto.createdAt)}</strong>
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <span style={{
+                display: 'inline-block', fontSize: 8, fontWeight: 700,
+                background: estadoBg[presupuesto.estado] ?? '#f1f5f9',
+                color: estadoColor[presupuesto.estado] ?? '#64748b',
+                padding: '2px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 1,
+              }}>
+                {presupuesto.estado}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Right — document badge */}
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ display: 'inline-block', background: '#1e3a5f', color: 'white', fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', padding: '3px 10px', borderRadius: '3px', marginBottom: '8px' }}>
-            Cotización
+        {/* ══ CLIENTE + PROYECTO ══ */}
+        <div style={{ display: 'grid', gridTemplateColumns: presupuesto.proyecto ? '1fr 1fr' : '1fr', gap: 12, marginBottom: 24 }}>
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px' }}>
+            <div style={{ fontSize: 8, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Facturar a</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#1e293b' }}>{presupuesto.cliente.nombre}</div>
+            {presupuesto.cliente.telefono  && <div style={{ fontSize: 9, color: '#475569', marginTop: 2 }}>Tel: {presupuesto.cliente.telefono}</div>}
+            {presupuesto.cliente.correo    && <div style={{ fontSize: 9, color: '#475569' }}>Email: {presupuesto.cliente.correo}</div>}
+            {presupuesto.cliente.direccion && <div style={{ fontSize: 9, color: '#475569' }}>{presupuesto.cliente.direccion}</div>}
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{presupuesto.numero}</div>
-          <div className="doc-small" style={{ color: '#64748b', marginTop: '5px' }}>
-            Fecha de emisión: <span style={{ fontWeight: 600, color: '#334155' }}>{formatDate(presupuesto.createdAt)}</span>
-          </div>
-          <div style={{ marginTop: '6px' }}>
-            <span style={{
-              display: 'inline-block', fontSize: '8.5px', fontWeight: 700,
-              background: estadoColors.bg, color: estadoColors.color,
-              padding: '2px 8px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px',
-            }}>
-              {presupuesto.estado}
-            </span>
-          </div>
+          {presupuesto.proyecto && (
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px' }}>
+              <div style={{ fontSize: 8, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Proyecto</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#1e293b' }}>{presupuesto.proyecto.nombre}</div>
+              {presupuesto.proyecto.tipoProyecto && <div style={{ fontSize: 9, color: '#475569', marginTop: 2 }}>{presupuesto.proyecto.tipoProyecto}</div>}
+              {presupuesto.proyecto.ubicacion   && <div style={{ fontSize: 9, color: '#475569' }}>{presupuesto.proyecto.ubicacion}</div>}
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* ══ CLIENT + PROJECT BAND ══ */}
-      <div style={{ padding: '14px 36px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: presupuesto.proyecto ? '1fr 1fr' : '1fr', gap: '24px' }}>
-        <div>
-          <div className="doc-label" style={{ marginBottom: '5px' }}>Facturar a</div>
-          <div className="doc-h2" style={{ color: '#0f172a', marginBottom: '3px' }}>{presupuesto.cliente.nombre}</div>
-          {presupuesto.cliente.telefono && (
-            <div className="doc-small" style={{ color: '#475569' }}>
-              <span style={{ fontWeight: 600 }}>Tel:</span> {presupuesto.cliente.telefono}
+        {/* ══ CAPÍTULOS ══ */}
+        {presupuesto.capitulos.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+              Detalle del Presupuesto
             </div>
-          )}
-          {presupuesto.cliente.correo && (
-            <div className="doc-small" style={{ color: '#475569' }}>
-              <span style={{ fontWeight: 600 }}>Email:</span> {presupuesto.cliente.correo}
-            </div>
-          )}
-          {presupuesto.cliente.direccion && (
-            <div className="doc-small" style={{ color: '#475569' }}>{presupuesto.cliente.direccion}</div>
-          )}
-        </div>
-        {presupuesto.proyecto && (
-          <div style={{ borderLeft: '2px solid #e2e8f0', paddingLeft: '20px' }}>
-            <div className="doc-label" style={{ marginBottom: '5px' }}>Proyecto</div>
-            <div className="doc-h2" style={{ color: '#0f172a', marginBottom: '3px' }}>{presupuesto.proyecto.nombre}</div>
-            {presupuesto.proyecto.tipoProyecto && (
-              <div className="doc-small" style={{ color: '#64748b' }}>{presupuesto.proyecto.tipoProyecto}</div>
-            )}
-            {presupuesto.proyecto.ubicacion && (
-              <div className="doc-small" style={{ color: '#475569', marginTop: '2px' }}>{presupuesto.proyecto.ubicacion}</div>
+
+            {/* Titled groups */}
+            {presupuesto.titulos.map(titulo => {
+              const caps = tituloMap[titulo.id] || []
+              const tituloTotal = caps.reduce((s, c) => s + c.partidas.reduce((ss, p) => ss + p.subtotal, 0), 0)
+              return (
+                <div key={titulo.id} style={{ marginBottom: 20 }}>
+                  {/* Título row */}
+                  <div style={{ background: '#0f172a', color: '#fff', padding: '8px 12px', borderRadius: '6px 6px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>{titulo.nombre}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(tituloTotal)}</span>
+                  </div>
+                  <div style={{ paddingLeft: 6, borderLeft: '3px solid #0f172a', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {caps.map(cap => <CapBlock key={cap.id} cap={cap} />)}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Floating chapters (no titulo) */}
+            {floating.map(cap => (
+              <div key={cap.id} style={{ marginBottom: 12 }}>
+                <CapBlock cap={cap} />
+              </div>
+            ))}
+
+            {/* Gastos Indirectos */}
+            {indirectosActivos.length > 0 && (
+              <div className="cap-block" style={{ marginBottom: 12 }}>
+                <div style={{ background: '#475569', color: '#fff', padding: '7px 10px', borderRadius: '6px 6px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Gastos Indirectos</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(subtotalIndirecto)}</span>
+                </div>
+                <table>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ textAlign: 'left', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Concepto</th>
+                      <th style={{ textAlign: 'right', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 100 }}>% sobre base</th>
+                      <th style={{ textAlign: 'right', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 120 }}>Importe</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {indirectosActivos.map((l, li) => (
+                      <tr key={l.id} style={{ background: li % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '4px 8px', fontSize: 9, color: '#1e293b' }}>{l.nombre}</td>
+                        <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>{l.porcentaje}%</td>
+                        <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(subtotalBase * l.porcentaje / 100)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#e2e8f0', borderTop: '1px solid #cbd5e1' }}>
+                      <td colSpan={2} style={{ padding: '5px 8px', fontSize: 9, fontWeight: 700, textAlign: 'right', color: '#334155' }}>Total Gastos Indirectos</td>
+                      <td style={{ padding: '5px 8px', fontSize: 9, fontWeight: 800, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(subtotalIndirecto)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             )}
           </div>
         )}
-      </div>
 
-      {/* ══ BODY ══ */}
-      <div style={{ padding: '20px 36px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-        {/* V2 CHAPTERS — grouped by Título */}
-        {presupuesto.capitulos.length > 0 && (() => {
-          // Build titulo → capitulos map
-          const tituloMap: Record<number, typeof presupuesto.capitulos> = {}
-          const floating: typeof presupuesto.capitulos = []
-          for (const cap of presupuesto.capitulos) {
-            if (cap.tituloId != null) {
-              if (!tituloMap[cap.tituloId]) tituloMap[cap.tituloId] = []
-              tituloMap[cap.tituloId].push(cap)
-            } else {
-              floating.push(cap)
-            }
-          }
-
-          const renderCap = (cap: (typeof presupuesto.capitulos)[number], ci: number) => {
-            const capTotal = cap.partidas.reduce((s, p) => s + p.subtotal, 0)
-            return (
-              <div key={cap.id} className="avoid-break" style={{ border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                <div className="cap-header">
-                  <span className="cap-header-name">
-                    {cap.codigo ? `${cap.codigo} – ` : `${ci + 1}. `}{cap.nombre}
-                  </span>
-                  <span className="cap-header-total doc-num">{formatCurrency(capTotal)}</span>
-                </div>
-                {cap.partidas.length > 0 ? (
-                  <table className="doc-table">
-                    <thead>
-                      <tr>
-                        <th style={{ width: '28px', textAlign: 'left' }}>#</th>
-                        <th style={{ textAlign: 'left' }}>Descripción</th>
-                        <th style={{ width: '48px', textAlign: 'center' }}>Ud.</th>
-                        <th style={{ width: '52px', textAlign: 'right' }}>Cant.</th>
-                        <th style={{ width: '100px', textAlign: 'right' }}>P. Unitario</th>
-                        <th style={{ width: '100px', textAlign: 'right' }}>Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cap.partidas.map((p, pi) => (
-                        <tr key={p.id} style={{ background: pi % 2 === 0 ? 'white' : '#fafafa' }}>
-                          <td style={{ color: '#94a3b8', fontSize: '9px' }}>{pi + 1}</td>
-                          <td style={{ color: '#334155' }}>
-                            {p.codigo && (
-                              <span style={{ fontFamily: 'monospace', fontSize: '9px', color: '#94a3b8', marginRight: '6px' }}>{p.codigo}</span>
-                            )}
-                            {p.descripcion}
-                          </td>
-                          <td style={{ textAlign: 'center', color: '#64748b' }}>{p.unidad}</td>
-                          <td className="doc-num" style={{ textAlign: 'right', color: '#475569' }}>{p.cantidad.toLocaleString('en-US')}</td>
-                          <td className="doc-num" style={{ textAlign: 'right', color: '#475569' }}>{formatCurrency(p.precioUnitario)}</td>
-                          <td className="doc-num" style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(p.subtotal)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: 'right', color: '#475569' }}>Subtotal {cap.nombre}</td>
-                        <td className="doc-num" style={{ textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{formatCurrency(capTotal)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                ) : (
-                  <div style={{ padding: '10px', textAlign: 'center', fontSize: '9.5px', color: '#94a3b8' }}>
-                    Sin partidas registradas
-                  </div>
-                )}
-              </div>
-            )
-          }
-
-          let globalCapIdx = 0
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Titled sections */}
-              {presupuesto.titulos.map((titulo) => {
-                const caps = tituloMap[titulo.id] || []
-                const tituloTotal = caps.reduce((s, c) => s + c.partidas.reduce((ss, p) => ss + p.subtotal, 0), 0)
-                return (
-                  <div key={titulo.id}>
-                    {/* Título header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '7px 12px', borderRadius: '4px 4px 0 0', marginBottom: '2px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px' }}>{titulo.nombre}</span>
-                      <span className="doc-num" style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{formatCurrency(tituloTotal)}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '6px', borderLeft: '3px solid #0f172a' }}>
-                      {caps.map((cap) => renderCap(cap, globalCapIdx++))}
-                    </div>
-                  </div>
-                )
-              })}
-              {/* Floating chapters (no titulo) */}
-              {floating.map((cap) => renderCap(cap, globalCapIdx++))}
-
-              {/* Gastos Indirectos section */}
-              {presupuesto.indirectos.filter(l => l.activo).length > 0 && (
-                <div className="avoid-break" style={{ border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#475569', color: 'white', padding: '6px 10px' }}>
-                    <span style={{ fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Gastos Indirectos</span>
-                    <span className="doc-num" style={{ fontSize: '10px', fontWeight: 600, color: '#cbd5e1' }}>{formatCurrency(subtotalIndirecto)}</span>
-                  </div>
-                  <table className="doc-table">
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left' }}>Concepto</th>
-                        <th style={{ width: '80px', textAlign: 'right' }}>% sobre base</th>
-                        <th style={{ width: '120px', textAlign: 'right' }}>Importe</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {presupuesto.indirectos.filter(l => l.activo).map((l, li) => (
-                        <tr key={l.id} style={{ background: li % 2 === 0 ? 'white' : '#fafafa' }}>
-                          <td style={{ color: '#334155' }}>{l.nombre}</td>
-                          <td className="doc-num" style={{ textAlign: 'right', color: '#64748b' }}>{l.porcentaje}%</td>
-                          <td className="doc-num" style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(subtotalBase * l.porcentaje / 100)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={2} style={{ textAlign: 'right', color: '#475569' }}>Total Gastos Indirectos</td>
-                        <td className="doc-num" style={{ textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{formatCurrency(subtotalIndirecto)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </div>
-          )
-        })()}
-
-        {/* LEGACY PARTIDAS */}
+        {/* ══ LEGACY PARTIDAS ══ */}
         {presupuesto.partidas.length > 0 && (
-          <div className="avoid-break">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span style={{ width: '14px', height: '3px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} />
-              <span className="doc-label">Partidas de Obra</span>
-            </div>
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-              <table className="doc-table">
+          <div className="cap-block" style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Partidas de Obra</div>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
+              <table>
                 <thead>
-                  <tr>
-                    <th style={{ width: '28px', textAlign: 'left' }}>#</th>
-                    <th style={{ textAlign: 'left' }}>Descripción</th>
-                    <th style={{ width: '48px', textAlign: 'center' }}>Ud.</th>
-                    <th style={{ width: '52px', textAlign: 'right' }}>Cant.</th>
-                    <th style={{ width: '100px', textAlign: 'right' }}>P. Unitario</th>
-                    <th style={{ width: '100px', textAlign: 'right' }}>Subtotal</th>
+                  <tr style={{ background: '#1e293b', color: '#fff' }}>
+                    <th style={{ textAlign: 'left', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 28 }}>#</th>
+                    <th style={{ textAlign: 'left', padding: '7px 10px', fontSize: 9, fontWeight: 700 }}>Descripción</th>
+                    <th style={{ textAlign: 'center', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 50 }}>Und.</th>
+                    <th style={{ textAlign: 'right', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 60 }}>Cant.</th>
+                    <th style={{ textAlign: 'right', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 110 }}>P. Unitario</th>
+                    <th style={{ textAlign: 'right', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 110 }}>Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
                   {presupuesto.partidas.map((p, i) => (
-                    <tr key={p.id} style={{ background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                      <td style={{ color: '#94a3b8', fontSize: '9px' }}>{i + 1}</td>
-                      <td style={{ color: '#334155' }}>{p.descripcion}</td>
-                      <td style={{ textAlign: 'center', color: '#64748b' }}>{p.unidad}</td>
-                      <td className="doc-num" style={{ textAlign: 'right', color: '#475569' }}>{p.cantidad}</td>
-                      <td className="doc-num" style={{ textAlign: 'right', color: '#475569' }}>{formatCurrency(p.precioUnitario)}</td>
-                      <td className="doc-num" style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(p.subtotal)}</td>
+                    <tr key={p.id} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#94a3b8' }}>{i + 1}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#1e293b', fontWeight: 500 }}>{p.descripcion}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'center', color: '#64748b' }}>{p.unidad}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>{p.cantidad.toLocaleString('en-US')}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>{formatCurrency(p.precioUnitario)}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.subtotal)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'right', color: '#475569' }}>Subtotal Obra</td>
-                    <td className="doc-num" style={{ textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{formatCurrency(subtotalObra)}</td>
+                  <tr style={{ background: '#334155', color: '#fff', borderTop: '2px solid #1e293b' }}>
+                    <td colSpan={5} style={{ padding: '7px 10px', fontSize: 10, fontWeight: 800, textAlign: 'right' }}>Subtotal Partidas</td>
+                    <td style={{ padding: '7px 10px', fontSize: 10, fontWeight: 900, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(subtotalObra)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -447,43 +292,38 @@ function DocumentBody({
           </div>
         )}
 
-        {/* MELAMINA */}
+        {/* ══ MELAMINA ══ */}
         {presupuesto.modulosMelamina.length > 0 && (
-          <div className="avoid-break">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span style={{ width: '14px', height: '3px', background: '#f59e0b', borderRadius: '2px', display: 'inline-block' }} />
-              <span className="doc-label">Módulos de Melamina</span>
-            </div>
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-              <table className="doc-table">
+          <div className="cap-block" style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Módulos de Melamina</div>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
+              <table>
                 <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left' }}>Tipo</th>
-                    <th style={{ textAlign: 'left' }}>Descripción</th>
-                    <th style={{ width: '80px', textAlign: 'left' }}>Dimensiones</th>
-                    <th style={{ width: '40px', textAlign: 'right' }}>Cant.</th>
-                    <th style={{ width: '100px', textAlign: 'right' }}>Subtotal</th>
+                  <tr style={{ background: '#1e293b', color: '#fff' }}>
+                    <th style={{ textAlign: 'left', padding: '7px 10px', fontSize: 9, fontWeight: 700 }}>Tipo</th>
+                    <th style={{ textAlign: 'left', padding: '7px 10px', fontSize: 9, fontWeight: 700 }}>Descripción</th>
+                    <th style={{ textAlign: 'left', padding: '7px 10px', fontSize: 9, fontWeight: 700 }}>Dimensiones</th>
+                    <th style={{ textAlign: 'right', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 50 }}>Cant.</th>
+                    <th style={{ textAlign: 'right', padding: '7px 10px', fontSize: 9, fontWeight: 700, width: 110 }}>Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
                   {presupuesto.modulosMelamina.map((m, i) => (
-                    <tr key={m.id} style={{ background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                      <td>
-                        <span style={{ fontSize: '9px', fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '1px 6px', borderRadius: '3px' }}>
-                          {m.tipoModulo}
-                        </span>
+                    <tr key={m.id} style={{ background: i % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '4px 8px', fontSize: 9 }}>
+                        <span style={{ fontSize: 8, fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '1px 6px', borderRadius: 3 }}>{m.tipoModulo}</span>
                       </td>
-                      <td style={{ color: '#334155' }}>{m.descripcion}</td>
-                      <td style={{ color: '#64748b', fontSize: '9px' }}>{m.ancho}×{m.alto}×{m.profundidad} cm</td>
-                      <td className="doc-num" style={{ textAlign: 'right', color: '#475569' }}>{m.cantidad}</td>
-                      <td className="doc-num" style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(m.subtotal * m.cantidad)}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#1e293b', fontWeight: 500 }}>{m.descripcion}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#64748b' }}>{m.ancho}×{m.alto}×{m.profundidad} cm</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>{m.cantidad}</td>
+                      <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(m.subtotal * m.cantidad)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: 'right', color: '#475569' }}>Subtotal Melamina</td>
-                    <td className="doc-num" style={{ textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{formatCurrency(subtotalMelamina)}</td>
+                  <tr style={{ background: '#334155', color: '#fff', borderTop: '2px solid #1e293b' }}>
+                    <td colSpan={4} style={{ padding: '7px 10px', fontSize: 10, fontWeight: 800, textAlign: 'right' }}>Subtotal Melamina</td>
+                    <td style={{ padding: '7px 10px', fontSize: 10, fontWeight: 900, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(subtotalMelamina)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -491,77 +331,149 @@ function DocumentBody({
           </div>
         )}
 
-        {/* ══ TOTALS ══ */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
-          <div style={{ width: '280px' }}>
+        {/* ══ TOTALES ══ */}
+        <div style={{ background: '#1e293b', color: '#fff', borderRadius: 8, padding: '16px 20px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 360, marginLeft: 'auto' }}>
             {subtotalBase > 0 && (
-              <div className="totals-row">
-                <span style={{ fontSize: '10px', color: '#475569' }}>Subtotal directo</span>
-                <span className="doc-num" style={{ fontSize: '10px', fontWeight: 600, color: '#334155' }}>{formatCurrency(subtotalBase)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8' }}>
+                <span>Subtotal directo</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#e2e8f0' }}>{formatCurrency(subtotalBase)}</span>
               </div>
             )}
             {subtotalIndirecto > 0 && (
-              <div className="totals-row">
-                <span style={{ fontSize: '10px', color: '#475569' }}>Gastos indirectos</span>
-                <span className="doc-num" style={{ fontSize: '10px', fontWeight: 600, color: '#334155' }}>{formatCurrency(subtotalIndirecto)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8' }}>
+                <span>Gastos indirectos</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#e2e8f0' }}>{formatCurrency(subtotalIndirecto)}</span>
               </div>
             )}
             {subtotalObra > 0 && (
-              <div className="totals-row">
-                <span style={{ fontSize: '10px', color: '#475569' }}>Subtotal partidas</span>
-                <span className="doc-num" style={{ fontSize: '10px', fontWeight: 600, color: '#334155' }}>{formatCurrency(subtotalObra)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8' }}>
+                <span>Subtotal partidas</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#e2e8f0' }}>{formatCurrency(subtotalObra)}</span>
               </div>
             )}
             {subtotalMelamina > 0 && (
-              <div className="totals-row">
-                <span style={{ fontSize: '10px', color: '#475569' }}>Subtotal melamina</span>
-                <span className="doc-num" style={{ fontSize: '10px', fontWeight: 600, color: '#334155' }}>{formatCurrency(subtotalMelamina)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8' }}>
+                <span>Subtotal melamina</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#e2e8f0' }}>{formatCurrency(subtotalMelamina)}</span>
               </div>
             )}
-            <div className="totals-final">
-              <span className="totals-final-label">TOTAL GENERAL</span>
-              <span className="doc-num totals-final-value">{formatCurrency(presupuesto.total)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #334155', paddingTop: 10, marginTop: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>TOTAL GENERAL</span>
+              <span style={{ fontSize: 18, fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(presupuesto.total)}</span>
             </div>
           </div>
         </div>
 
         {/* ══ NOTAS ══ */}
         {presupuesto.notas && (
-          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
-            <div className="doc-label" style={{ marginBottom: '5px' }}>Notas y condiciones</div>
-            <p style={{ fontSize: '10px', color: '#475569', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{presupuesto.notas}</p>
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', marginBottom: 20 }}>
+            <div style={{ fontSize: 8, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Notas y condiciones</div>
+            <p style={{ fontSize: 9, color: '#475569', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-line' }}>{presupuesto.notas}</p>
           </div>
         )}
 
-        {/* Validity */}
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '10px 14px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563eb', flexShrink: 0, marginTop: '3px' }} />
-          <p style={{ fontSize: '9.5px', color: '#64748b', lineHeight: '1.55', margin: 0 }}>
-            Esta cotización tiene una validez de{' '}
-            <span style={{ fontWeight: 700, color: '#334155' }}>30 días</span>{' '}
-            a partir de la fecha de emisión. Los precios están sujetos a cambios según disponibilidad de materiales.
+        {/* ══ VALIDEZ ══ */}
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 14px', marginBottom: 24 }}>
+          <p style={{ fontSize: 9, color: '#3b82f6', margin: 0, lineHeight: 1.55 }}>
+            Esta cotización tiene una validez de <strong>30 días</strong> a partir de la fecha de emisión.
+            Los precios están sujetos a cambios según disponibilidad de materiales.
           </p>
         </div>
 
-        {/* Signatures */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', paddingTop: '8px' }}>
-          {['Firma y sello – Gonzalva Group', 'Aceptación del cliente'].map((label) => (
+        {/* ══ FIRMAS ══ */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, paddingTop: 8, marginBottom: 24 }}>
+          {[`Firma y sello — ${nombreEmpresa}`, 'Aceptación del cliente'].map(label => (
             <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ marginTop: '48px', borderTop: '1.5px solid #94a3b8', paddingTop: '6px' }}>
-                <span style={{ fontSize: '9px', color: '#64748b' }}>{label}</span>
+              <div style={{ marginTop: 48, borderTop: '1.5px solid #94a3b8', paddingTop: 6 }}>
+                <span style={{ fontSize: 9, color: '#64748b' }}>{label}</span>
               </div>
             </div>
           ))}
         </div>
+
+        {/* ══ FOOTER ══ */}
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 12, textAlign: 'center' }}>
+          <p style={{ fontSize: 8, color: '#94a3b8', margin: 0 }}>
+            {nombreEmpresa} · {[empresa?.sitioWeb, empresa?.correo, empresa?.telefono].filter(Boolean).join(' · ')}
+          </p>
+          <p style={{ fontSize: 8, color: '#cbd5e1', margin: '2px 0 0' }}>Documento generado el {new Date().toLocaleString('es-DO')} · Confidencial</p>
+        </div>
+
+      </div>{/* /report-wrap */}
+      </div>{/* /report-shell */}
+    </>
+  )
+}
+
+// ── Cap block component ──────────────────────────────────────────────────────
+
+type Cap = {
+  id: number
+  codigo: string | null
+  nombre: string
+  partidas: {
+    id: number
+    codigo: string | null
+    descripcion: string
+    unidad: string
+    cantidad: number
+    precioUnitario: number
+    subtotal: number
+  }[]
+}
+
+function CapBlock({ cap }: { cap: Cap }) {
+  const capTotal = cap.partidas.reduce((s, p) => s + p.subtotal, 0)
+  return (
+    <div className="cap-block" style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
+      {/* Chapter header */}
+      <div style={{ background: '#1e293b', color: '#fff', padding: '7px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {cap.codigo ? `${cap.codigo} – ` : ''}{cap.nombre}
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(capTotal)}</span>
       </div>
 
-      {/* ══ FOOTER ══ */}
-      <div style={{ padding: '10px 36px', borderTop: '2px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.5px' }}>{nombreEmpresa}</span>
-        <span style={{ fontSize: '9px', color: '#cbd5e1' }}>
-          {[empresa?.sitioWeb, empresa?.correo, empresa?.telefono].filter(Boolean).join('  ·  ')}
-        </span>
-      </div>
+      {cap.partidas.length > 0 ? (
+        <table>
+          <thead>
+            <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+              <th style={{ textAlign: 'left', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 28 }}>#</th>
+              <th style={{ textAlign: 'left', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Descripción</th>
+              <th style={{ textAlign: 'center', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 48 }}>Und.</th>
+              <th style={{ textAlign: 'right', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 60 }}>Cant.</th>
+              <th style={{ textAlign: 'right', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 110 }}>P. Unitario</th>
+              <th style={{ textAlign: 'right', padding: '5px 8px', fontSize: 8, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 110 }}>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cap.partidas.map((p, pi) => (
+              <tr key={p.id} style={{ background: pi % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '4px 8px', fontSize: 9, color: '#94a3b8' }}>{pi + 1}</td>
+                <td style={{ padding: '4px 8px', fontSize: 9, color: '#1e293b', fontWeight: 500 }}>
+                  {p.codigo && <span style={{ fontFamily: 'monospace', fontSize: 8, color: '#94a3b8', marginRight: 6 }}>{p.codigo}</span>}
+                  {p.descripcion}
+                </td>
+                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'center', color: '#64748b' }}>{p.unidad}</td>
+                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                  {p.cantidad.toLocaleString('en-US', { maximumFractionDigits: 4 })}
+                </td>
+                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>{formatCurrency(p.precioUnitario)}</td>
+                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.subtotal)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr style={{ background: '#e2e8f0', borderTop: '1px solid #cbd5e1' }}>
+              <td colSpan={5} style={{ padding: '5px 8px', fontSize: 9, fontWeight: 700, textAlign: 'right', color: '#334155' }}>Subtotal {cap.nombre}</td>
+              <td style={{ padding: '5px 8px', fontSize: 9, fontWeight: 800, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(capTotal)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      ) : (
+        <div style={{ padding: '10px', textAlign: 'center', fontSize: 9, color: '#94a3b8' }}>Sin partidas registradas</div>
+      )}
     </div>
   )
 }
