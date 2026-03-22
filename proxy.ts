@@ -2,66 +2,60 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const COOKIE_NAME = 'crm_session'
-
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout']
-const STATIC_PREFIXES = ['/_next', '/favicon.ico', '/uploads']
+const PUBLIC_PATHS = ['/login', '/api/auth/login']
 
 function getSecret(): Uint8Array {
-  return new TextEncoder().encode(process.env.JWT_SECRET || 'gonzalva-group-crm-jwt-secret-2025-xK9mP2qL')
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET no definido en .env')
+  return new TextEncoder().encode(secret)
 }
 
-export default async function proxy(request: NextRequest) {
+async function verifyToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, getSecret())
+    return {
+      nombre: payload.nombre as string,
+      correo: payload.correo as string,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip static and public paths
-  if (STATIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+  // Allow public paths and static assets
+  if (
+    PUBLIC_PATHS.includes(pathname) ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon')
+  ) {
     return NextResponse.next()
   }
 
-  // Inject x-pathname for server components
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-pathname', pathname)
-
-  // Skip auth check for public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next({ request: { headers: requestHeaders } })
-  }
-
-  // API routes - skip heavy auth, let the route handle it if needed
-  if (pathname.startsWith('/api/')) {
-    const token = request.cookies.get(COOKIE_NAME)?.value
-    if (token) {
-      try {
-        const { payload } = await jwtVerify(token, getSecret())
-        requestHeaders.set('x-user-id', String(payload.id ?? ''))
-        requestHeaders.set('x-user-nombre', String(payload.nombre ?? ''))
-        requestHeaders.set('x-user-correo', String(payload.correo ?? ''))
-      } catch { /* invalid token, but still allow API (optional protection) */ }
-    }
-    return NextResponse.next({ request: { headers: requestHeaders } })
-  }
-
-  // Protected page routes — require valid session
+  // Verify session
   const token = request.cookies.get(COOKIE_NAME)?.value
+  const user = token ? await verifyToken(token) : null
 
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Redirect unauthenticated users
+  if (!user) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  try {
-    const { payload } = await jwtVerify(token, getSecret())
-    requestHeaders.set('x-user-id', String(payload.id ?? ''))
-    requestHeaders.set('x-user-nombre', String(payload.nombre ?? ''))
-    requestHeaders.set('x-user-correo', String(payload.correo ?? ''))
-    return NextResponse.next({ request: { headers: requestHeaders } })
-  } catch {
-    // Invalid/expired session → send to login and clear cookie
-    const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.set(COOKIE_NAME, '', { maxAge: 0, path: '/' })
-    return response
-  }
+  // Forward pathname and user info to server components via headers
+  const response = NextResponse.next()
+  response.headers.set('x-pathname', pathname)
+  response.headers.set('x-user-nombre', user.nombre)
+  response.headers.set('x-user-correo', user.correo)
+  return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|uploads/).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
