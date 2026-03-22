@@ -48,12 +48,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Forward pathname and user info to server components via headers
-  const response = NextResponse.next()
-  response.headers.set('x-pathname', pathname)
-  response.headers.set('x-user-nombre', user.nombre)
-  response.headers.set('x-user-correo', user.correo)
-  return response
+  // Forward pathname and user info to server components via request headers
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', pathname)
+  requestHeaders.set('x-user-nombre', user.nombre)
+  requestHeaders.set('x-user-correo', user.correo)
+
+  return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 export const config = {
