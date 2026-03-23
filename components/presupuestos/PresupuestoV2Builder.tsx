@@ -197,7 +197,7 @@ function NumericCellSimple({ value, onChange, step = '0.0001' }: { value: number
 
 // ── APU helpers (unchanged) ───────────────────────────────────────────────────
 
-function SeccionLineas({ seccion, lineas, onChange }: { seccion: { key: SeccionAPU; label: string; color: string }; lineas: LineaAPU[]; onChange: (lines: LineaAPU[]) => void }) {
+function SeccionLineas({ seccion, lineas, onChange, unidades }: { seccion: { key: SeccionAPU; label: string; color: string }; lineas: LineaAPU[]; onChange: (lines: LineaAPU[]) => void; unidades: string[] }) {
   const total = lineas.reduce((s, l) => s + lineaSubtotal(l), 0)
   const addLinea = () => onChange([...lineas, emptyLinea()])
   const updateLinea = (i: number, field: keyof LineaAPU, val: string | number) => onChange(lineas.map((l, idx) => idx === i ? { ...l, [field]: val } : l))
@@ -224,7 +224,7 @@ function SeccionLineas({ seccion, lineas, onChange }: { seccion: { key: SeccionA
               <tr key={i} className="border-t border-slate-200/40 hover:bg-white/70 group">
                 <td className="px-2 py-1 text-xs text-slate-400 text-center select-none">{i + 1}</td>
                 <td className="px-1 py-0.5"><input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="w-full px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent transition-colors" /></td>
-                <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">{UNIDADES_LIST.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
+                <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">{unidades.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.cantidad} onChange={(v) => updateLinea(i, 'cantidad', v)} step="0.0001" /></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.precioUnitario} onChange={(v) => updateLinea(i, 'precioUnitario', v)} /></td>
                 <td className="px-2 py-1 text-right text-sm font-semibold text-slate-700 whitespace-nowrap">{lineaSubtotal(linea) > 0 ? formatCurrency(lineaSubtotal(linea)) : <span className="text-slate-300 font-normal">—</span>}</td>
@@ -241,7 +241,7 @@ function SeccionLineas({ seccion, lineas, onChange }: { seccion: { key: SeccionA
   )
 }
 
-function ApuPanel({ partida, onClose, onUpdate, onApply }: { partida: Partida; onClose: () => void; onUpdate: (a: Analisis) => void; onApply: () => void }) {
+function ApuPanel({ partida, onClose, onUpdate, onApply, unidades }: { partida: Partida; onClose: () => void; onUpdate: (a: Analisis) => void; onApply: () => void; unidades: string[] }) {
   const analisis = partida.analisis
   const detalle: DetalleAPU = analisis?.detalle ?? emptyDetalle()
   const indirectos = analisis?.indirectos ?? 0
@@ -256,7 +256,7 @@ function ApuPanel({ partida, onClose, onUpdate, onApply }: { partida: Partida; o
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X className="w-4 h-4" /></button>
       </div>
       <div className="px-6 py-4 space-y-3">
-        {SECCIONES_APU.map((sec) => <SeccionLineas key={sec.key} seccion={sec} lineas={detalle[sec.key]} onChange={(lines) => updateDetalle(sec.key, lines)} />)}
+        {SECCIONES_APU.map((sec) => <SeccionLineas key={sec.key} seccion={sec} lineas={detalle[sec.key]} onChange={(lines) => updateDetalle(sec.key, lines)} unidades={unidades} />)}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
           <div className="bg-white rounded-lg border border-slate-200 p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">Porcentajes</p>
@@ -633,7 +633,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                         </tr>
                         {apuOpen === apuKey && (
                           <tr><td colSpan={8} className="p-0">
-                            <ApuPanel partida={p} onClose={() => setApuOpen(null)} onUpdate={(a) => updateAnalisis(ci, pi, a)} onApply={() => applyPrecioSugerido(ci, pi)} />
+                            <ApuPanel partida={p} onClose={() => setApuOpen(null)} onUpdate={(a) => updateAnalisis(ci, pi, a)} onApply={() => applyPrecioSugerido(ci, pi)} unidades={UNIDADES_LIST} />
                           </td></tr>
                         )}
                       </Fragment>
