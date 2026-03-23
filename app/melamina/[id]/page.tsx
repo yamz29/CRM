@@ -20,7 +20,7 @@ export default async function ModuloDetallePage({
         recursosModulo: {
           orderBy: { orden: 'asc' },
           include: {
-            recurso: { select: { id: true, nombre: true, unidad: true, costoUnitario: true, tipo: true } },
+            recurso: { select: { id: true, nombre: true, unidad: true, costoUnitario: true, tipo: true, codigo: true } },
           },
         },
       },
