@@ -43,6 +43,11 @@ export default async function ModuloDetallePage({
       material: p.material ?? '',
       tapacanto: (() => { try { return JSON.parse(p.tapacanto) } catch { return [] } })(),
     })),
+    recursosModulo: modulo.recursosModulo.map((r) => ({
+      ...r,
+      descripcion: r.descripcion ?? '',
+      observaciones: r.observaciones ?? '',
+    })),
   }
 
   return (
