@@ -39,6 +39,8 @@ export default async function ModuloDetallePage({
     ...modulo,
     piezas: modulo.piezas.map((p) => ({
       ...p,
+      observaciones: p.observaciones ?? '',
+      material: p.material ?? '',
       tapacanto: (() => { try { return JSON.parse(p.tapacanto) } catch { return [] } })(),
     })),
   }
