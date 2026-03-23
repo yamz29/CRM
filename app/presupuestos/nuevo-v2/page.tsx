@@ -12,7 +12,7 @@ export default async function NuevoPresupuestoV2Page({
   const defaultClienteId = sp.clienteId ? parseInt(sp.clienteId) : undefined
   const defaultProyectoId = sp.proyectoId ? parseInt(sp.proyectoId) : undefined
 
-  const [clientes, proyectos] = await Promise.all([
+  const [clientes, proyectos, unidades] = await Promise.all([
     prisma.cliente.findMany({
       select: { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
@@ -21,7 +21,12 @@ export default async function NuevoPresupuestoV2Page({
       select: { id: true, nombre: true, clienteId: true },
       orderBy: { nombre: 'asc' },
     }),
+    prisma.unidadGlobal.findMany({
+      select: { codigo: true },
+      orderBy: { codigo: 'asc' },
+    }),
   ])
+  const unidadesList = unidades.map((u) => u.codigo)
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -44,6 +49,7 @@ export default async function NuevoPresupuestoV2Page({
       <PresupuestoV2Builder
         clientes={clientes}
         proyectos={proyectos}
+        unidadesGlobales={unidadesList}
         mode="create"
         defaultClienteId={defaultClienteId}
         defaultProyectoId={defaultProyectoId}

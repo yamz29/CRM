@@ -65,6 +65,7 @@ export interface IndirectoLinea {
 interface Props {
   clientes: { id: number; nombre: string }[]
   proyectos: { id: number; nombre: string; clienteId: number }[]
+  unidadesGlobales?: string[]
   mode: 'create' | 'edit'
   initialData?: {
     id?: number
@@ -223,7 +224,7 @@ function SeccionLineas({ seccion, lineas, onChange }: { seccion: { key: SeccionA
               <tr key={i} className="border-t border-slate-200/40 hover:bg-white/70 group">
                 <td className="px-2 py-1 text-xs text-slate-400 text-center select-none">{i + 1}</td>
                 <td className="px-1 py-0.5"><input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="w-full px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent transition-colors" /></td>
-                <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">{UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
+                <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">{UNIDADES_LIST.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.cantidad} onChange={(v) => updateLinea(i, 'cantidad', v)} step="0.0001" /></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.precioUnitario} onChange={(v) => updateLinea(i, 'precioUnitario', v)} /></td>
                 <td className="px-2 py-1 text-right text-sm font-semibold text-slate-700 whitespace-nowrap">{lineaSubtotal(linea) > 0 ? formatCurrency(lineaSubtotal(linea)) : <span className="text-slate-300 font-normal">—</span>}</td>
@@ -292,7 +293,8 @@ function ApuPanel({ partida, onClose, onUpdate, onApply }: { partida: Partida; o
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export function PresupuestoV2Builder({ clientes, proyectos, mode, initialData, defaultClienteId, defaultProyectoId }: Props) {
+export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mode, initialData, defaultClienteId, defaultProyectoId }: Props) {
+  const UNIDADES_LIST = unidadesGlobales?.length ? unidadesGlobales : UNIDADES
   const router = useRouter()
 
   const [clienteId, setClienteId] = useState<string>(String(initialData?.clienteId || defaultClienteId || ''))
@@ -607,7 +609,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, mode, initialData, d
                             <select value={p.unidad} onChange={(e) => updatePartida(ci, pi, 'unidad', e.target.value)}
                               data-cellkey={cellKey(ci, pi, 'unidad')}
                               className="w-full px-1 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">
-                              {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                              {UNIDADES_LIST.map((u) => <option key={u} value={u}>{u}</option>)}
                             </select>
                           </td>
                           <td className="px-1 py-0.5">
@@ -698,7 +700,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, mode, initialData, d
       {/* Header card */}
       <Card>
         <CardContent className="pt-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Cliente <span className="text-red-500">*</span></label>
               <select value={clienteId} onChange={(e) => { setClienteId(e.target.value); setProyectoId('') }} className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
@@ -719,10 +721,16 @@ export function PresupuestoV2Builder({ clientes, proyectos, mode, initialData, d
                 {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Notas</label>
-              <input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Observaciones generales..." className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Notas / Observaciones</label>
+            <textarea
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+              placeholder="Condiciones del presupuesto, alcances, notas para el cliente..."
+              rows={3}
+              className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
           </div>
         </CardContent>
       </Card>

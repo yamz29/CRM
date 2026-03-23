@@ -117,7 +117,7 @@ const TAPACANTO_LADOS = [
   { key: 'derecho', label: 'R', title: 'Derecho' },
 ]
 
-const ESPESOR = 1.8 // cm (18mm)
+const ESPESOR = 18 // mm
 
 let keyCounter = 0
 const newKey = () => `k${++keyCounter}`
@@ -125,7 +125,7 @@ const newKey = () => `k${++keyCounter}`
 // ── Cálculos ─────────────────────────────────────────────────────────────────
 
 function calcAreaM2(p: PiezaLine) {
-  return (p.largo * p.ancho * p.cantidad) / 10000
+  return (p.largo * p.ancho * p.cantidad) / 1_000_000 // mm² → m²
 }
 
 function calcTapacantoMl(p: PiezaLine) {
@@ -134,7 +134,7 @@ function calcTapacantoMl(p: PiezaLine) {
   if (p.tapacanto.includes('inferior')) ml += p.ancho
   if (p.tapacanto.includes('izquierdo')) ml += p.largo
   if (p.tapacanto.includes('derecho')) ml += p.largo
-  return (ml * p.cantidad) / 100
+  return (ml * p.cantidad) / 1000 // mm → m
 }
 
 // ── Auto-generación ──────────────────────────────────────────────────────────
@@ -147,6 +147,8 @@ function generarDespiece(
   const piezas: PiezaLine[] = []
 
   // Casco base (siempre)
+  // Todas las medidas en mm
+  const anchoInt = ancho - 2 * ESPESOR
   piezas.push(
     {
       _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
@@ -156,22 +158,22 @@ function generarDespiece(
     },
     {
       _key: newKey(), etiqueta: 'Piso', nombre: 'Piso', tipoPieza: 'piso',
-      largo: Math.round((ancho - 2 * ESPESOR) * 10) / 10,
+      largo: anchoInt,
       ancho: prof,
       cantidad: 1, espesor: 18, material: '',
       tapacanto: ['izquierdo'], observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Fondo', nombre: 'Fondo', tipoPieza: 'fondo',
-      largo: Math.round((alto - ESPESOR) * 10) / 10,
-      ancho: Math.round((ancho - 2 * ESPESOR) * 10) / 10,
+      largo: alto - ESPESOR,
+      ancho: anchoInt,
       cantidad: 1, espesor: 6, material: 'HDF 6mm',
       tapacanto: [], observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Sop', nombre: 'Soporte', tipoPieza: 'soporte',
-      largo: Math.round((ancho - 2 * ESPESOR) * 10) / 10,
-      ancho: 10,
+      largo: anchoInt,
+      ancho: 100, // 100mm
       cantidad: 2, espesor: 18, material: '',
       tapacanto: ['superior'], observaciones: '',
     },
@@ -179,8 +181,8 @@ function generarDespiece(
 
   // Puertas
   if ((tipo === 'Base con puertas' || tipo === 'Aéreo con puertas') && cantPuertas > 0) {
-    const anchoPuerta = Math.round(((ancho - 0.3) / cantPuertas) * 10) / 10
-    const altoPuerta = Math.round((alto - ESPESOR - 0.2) * 10) / 10
+    const anchoPuerta = Math.round((ancho - 3) / cantPuertas) // 3mm gap total
+    const altoPuerta = alto - ESPESOR - 2               // 2mm gap inferior
     piezas.push({
       _key: newKey(), etiqueta: 'Puerta', nombre: 'Puerta', tipoPieza: 'puerta',
       largo: altoPuerta, ancho: anchoPuerta,
@@ -192,11 +194,11 @@ function generarDespiece(
 
   // Cajones
   if ((tipo === 'Base con cajones' || tipo === 'Base mixto') && cantCajones > 0) {
-    const altoCajonFrente = Math.round(((alto - ESPESOR - cantCajones * 0.3) / cantCajones) * 10) / 10
-    const anchoCajon = Math.round((ancho - 2 * ESPESOR - 0.3) * 10) / 10
-    const anchoCajonInt = Math.round((ancho - 2 * ESPESOR - 3.4) * 10) / 10
-    const altoCajonInt = Math.round((altoCajonFrente - 2) * 10) / 10
-    const profFondo = Math.round((prof - 2) * 10) / 10
+    const altoCajonFrente = Math.round((alto - ESPESOR - cantCajones * 3) / cantCajones) // 3mm gap/cajón
+    const anchoCajon     = anchoInt - 3                  // 3mm gap frente
+    const anchoCajonInt  = anchoInt - 34                 // 34mm para laterales Tandembox
+    const altoCajonInt   = altoCajonFrente - 20          // 20mm diferencia trasero
+    const profFondo      = prof - 20                     // 20mm retranqueo fondo
 
     piezas.push(
       {
@@ -250,8 +252,8 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
   const [estadoProduccion, setEstadoProduccion] = useState(modulo.estadoProduccion)
   const [observaciones, setObservaciones] = useState(modulo.observaciones || '')
   const [recursoTableroId, setRecursoTableroId] = useState(String(modulo.recursoTableroId || ''))
-  const [anchoPlanchaCm, setAnchoPlanchaCm] = useState(String(modulo.anchoPlanchaCm || 244))
-  const [largoPlanchaCm, setLargoPlanchaCm] = useState(String(modulo.largoPlanchaCm || 183))
+  const [anchoPlanchaCm, setAnchoPlanchaCm] = useState(String(modulo.anchoPlanchaCm || 2440))
+  const [largoPlanchaCm, setLargoPlanchaCm] = useState(String(modulo.largoPlanchaCm || 1830))
 
   // Despiece
   const [piezas, setPiezas] = useState<PiezaLine[]>(
@@ -267,7 +269,7 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
 
   const totalAreaM2 = piezas.reduce((acc, p) => acc + calcAreaM2(p), 0)
   const totalTapacantoMl = piezas.reduce((acc, p) => acc + calcTapacantoMl(p), 0)
-  const areaPlanchaM2 = (parseFloat(anchoPlanchaCm) * parseFloat(largoPlanchaCm)) / 10000 || 4.4652
+  const areaPlanchaM2 = (parseFloat(anchoPlanchaCm) * parseFloat(largoPlanchaCm)) / 1_000_000 || 4.4652
   const numPlanchas = totalAreaM2 > 0 ? Math.ceil(totalAreaM2 / areaPlanchaM2) : 0
   const pctUsoPlancha = numPlanchas > 0 ? (totalAreaM2 / (numPlanchas * areaPlanchaM2)) * 100 : 0
 
@@ -519,16 +521,16 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
 
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Ancho (cm)</label>
-              <input type="number" className={inputCls} value={ancho} onChange={(e) => setAncho(e.target.value)} min="0" step="0.1" />
+              <label className="block text-xs font-medium text-slate-600 mb-1">Ancho (mm)</label>
+              <input type="number" className={inputCls} value={ancho} onChange={(e) => setAncho(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Alto (cm)</label>
-              <input type="number" className={inputCls} value={alto} onChange={(e) => setAlto(e.target.value)} min="0" step="0.1" />
+              <label className="block text-xs font-medium text-slate-600 mb-1">Alto (mm)</label>
+              <input type="number" className={inputCls} value={alto} onChange={(e) => setAlto(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Prof. (cm)</label>
-              <input type="number" className={inputCls} value={prof} onChange={(e) => setProf(e.target.value)} min="0" step="0.1" />
+              <label className="block text-xs font-medium text-slate-600 mb-1">Prof. (mm)</label>
+              <input type="number" className={inputCls} value={prof} onChange={(e) => setProf(e.target.value)} min="0" step="1" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Puertas</label>
@@ -593,11 +595,11 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Ancho plancha (cm)</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Ancho plancha (mm)</label>
                 <input type="number" className={inputCls} value={anchoPlanchaCm} onChange={(e) => setAnchoPlanchaCm(e.target.value)} min="0" step="1" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Largo plancha (cm)</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Largo plancha (mm)</label>
                 <input type="number" className={inputCls} value={largoPlanchaCm} onChange={(e) => setLargoPlanchaCm(e.target.value)} min="0" step="1" />
               </div>
               <div className="flex items-end">
@@ -618,7 +620,7 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
             <div>
               <p className="text-sm font-semibold text-blue-800">Generación automática de despiece</p>
               <p className="text-xs text-blue-600 mt-0.5">
-                Basado en: {ancho || '?'}×{alto || '?'}×{prof || '?'} cm — {cantPuertas} puerta(s) — {cantCajones} cajón(es)
+                Basado en: {ancho || '?'}×{alto || '?'}×{prof || '?'} mm — {cantPuertas} puerta(s) — {cantCajones} cajón(es)
               </p>
             </div>
             <Button variant="secondary" onClick={handleGenerar}>
@@ -635,8 +637,8 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
                   <tr className="border-b border-slate-200">
                     <th className={thCls} style={{ width: 110 }}>Etiqueta</th>
                     <th className={thCls}>Nombre</th>
-                    <th className={thCls} style={{ width: 80 }}>Largo (cm)</th>
-                    <th className={thCls} style={{ width: 80 }}>Ancho (cm)</th>
+                    <th className={thCls} style={{ width: 80 }}>Largo (mm)</th>
+                    <th className={thCls} style={{ width: 80 }}>Ancho (mm)</th>
                     <th className={thCls} style={{ width: 60 }}>Cant.</th>
                     <th className={thCls} style={{ width: 70 }}>Esp. (mm)</th>
                     <th className={thCls} style={{ width: 80 }}>Material</th>
@@ -916,7 +918,7 @@ export function ModuloEditor({ modulo, proyectos, recursosDisponibles }: Props) 
                 <p className="text-2xl font-bold text-slate-800">{totalAreaM2.toFixed(3)} m²</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Planchas ({parseFloat(anchoPlanchaCm)/100}×{parseFloat(largoPlanchaCm)/100}m)</p>
+                <p className="text-xs text-slate-500">Planchas ({parseFloat(anchoPlanchaCm)/1000}×{parseFloat(largoPlanchaCm)/1000}m)</p>
                 <p className="text-2xl font-bold text-blue-700">{numPlanchas}</p>
               </div>
               <div>

@@ -8,6 +8,7 @@ import { AlertCircle, X, Save } from 'lucide-react'
 interface Props {
   clientes: { id: number; nombre: string }[]
   proyectos: { id: number; nombre: string; clienteId: number }[]
+  usuarios: { id: number; nombre: string }[]
   mode?: 'create' | 'edit'
   initialData?: {
     id?: number
@@ -15,6 +16,7 @@ interface Props {
     descripcion?: string
     clienteId?: number | null
     proyectoId?: number | null
+    asignadoId?: number | null
     fechaLimite?: Date | string | null
     prioridad?: string
     estado?: string
@@ -31,7 +33,7 @@ function formatDateInput(date: Date | string | null | undefined): string {
   return d.toISOString().split('T')[0]
 }
 
-export function TareaForm({ clientes, proyectos, mode = 'create', initialData }: Props) {
+export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', initialData }: Props) {
   const router = useRouter()
 
   const [titulo, setTitulo] = useState(initialData?.titulo || '')
@@ -42,6 +44,7 @@ export function TareaForm({ clientes, proyectos, mode = 'create', initialData }:
   const [prioridad, setPrioridad] = useState(initialData?.prioridad || 'Media')
   const [estado, setEstado] = useState(initialData?.estado || 'Pendiente')
   const [responsable, setResponsable] = useState(initialData?.responsable || '')
+  const [asignadoId, setAsignadoId] = useState(String(initialData?.asignadoId || ''))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,6 +68,7 @@ export function TareaForm({ clientes, proyectos, mode = 'create', initialData }:
         descripcion: descripcion || null,
         clienteId: clienteId ? parseInt(clienteId) : null,
         proyectoId: proyectoId ? parseInt(proyectoId) : null,
+        asignadoId: asignadoId ? parseInt(asignadoId) : null,
         fechaLimite: fechaLimite || null,
         prioridad,
         estado,
@@ -221,16 +225,19 @@ export function TareaForm({ clientes, proyectos, mode = 'create', initialData }:
         </div>
       </div>
 
-      {/* Responsable */}
+      {/* Asignado a */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Responsable</label>
-        <input
-          type="text"
-          value={responsable}
-          onChange={(e) => setResponsable(e.target.value)}
-          placeholder="Nombre del responsable..."
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <label className="block text-sm font-medium text-slate-700 mb-1">Asignado a</label>
+        <select
+          value={asignadoId}
+          onChange={(e) => setAsignadoId(e.target.value)}
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        >
+          <option value="">Sin asignar</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>{u.nombre}</option>
+          ))}
+        </select>
       </div>
 
       {/* Actions */}

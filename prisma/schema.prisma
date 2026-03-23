@@ -256,8 +256,8 @@ model ModuloMelaminaV2 {
   estadoProduccion  String   @default("Diseño")
   observaciones     String?
   recursoTableroId  Int?
-  anchoPlanchaCm    Float    @default(244)
-  largoPlanchaCm    Float    @default(183)
+  anchoPlanchaCm    Float    @default(2440)
+  largoPlanchaCm    Float    @default(1830)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -314,6 +314,7 @@ model Tarea {
   descripcion String?
   clienteId   Int?
   proyectoId  Int?
+  asignadoId  Int?
   fechaLimite DateTime?
   prioridad   String    @default("Media")
   estado      String    @default("Pendiente")
@@ -321,8 +322,9 @@ model Tarea {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  cliente  Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  cliente   Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  proyecto  Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  asignado  Usuario?  @relation(fields: [asignadoId], references: [id], onDelete: SetNull)
 }
 
 // ── LEGACY (se mantienen para compatibilidad) ─────────────────────────
@@ -477,6 +479,8 @@ model Usuario {
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  tareas    Tarea[]
 }
 
 model Configuracion {

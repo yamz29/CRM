@@ -15,6 +15,7 @@ export async function GET(
       include: {
         cliente: { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        asignado: { select: { id: true, nombre: true } },
       },
     })
     if (!tarea) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
@@ -35,7 +36,21 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const { titulo, descripcion, clienteId, proyectoId, fechaLimite, prioridad, estado, responsable } = body
+    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, responsable, _patch } = body
+
+    // Patch mode: only update estado (used by Kanban drag & drop)
+    if (_patch) {
+      const tarea = await prisma.tarea.update({
+        where: { id },
+        data: { estado },
+        include: {
+          cliente: { select: { id: true, nombre: true } },
+          proyecto: { select: { id: true, nombre: true } },
+          asignado: { select: { id: true, nombre: true } },
+        },
+      })
+      return NextResponse.json(tarea)
+    }
 
     if (!titulo?.trim()) {
       return NextResponse.json({ error: 'El título es requerido' }, { status: 400 })
@@ -48,6 +63,7 @@ export async function PUT(
         descripcion: descripcion || null,
         clienteId: clienteId ? parseInt(String(clienteId)) : null,
         proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+        asignadoId: asignadoId ? parseInt(String(asignadoId)) : null,
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         prioridad: prioridad || 'Media',
         estado: estado || 'Pendiente',
@@ -56,6 +72,7 @@ export async function PUT(
       include: {
         cliente: { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        asignado: { select: { id: true, nombre: true } },
       },
     })
 

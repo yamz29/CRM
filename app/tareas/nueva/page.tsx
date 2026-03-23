@@ -5,13 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TareaForm } from '@/components/tareas/TareaForm'
 
 export default async function NuevaTareaPage() {
-  const [clientes, proyectos] = await Promise.all([
+  const [clientes, proyectos, usuarios] = await Promise.all([
     prisma.cliente.findMany({
       select: { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
     }),
     prisma.proyecto.findMany({
       select: { id: true, nombre: true, clienteId: true },
+      orderBy: { nombre: 'asc' },
+    }),
+    prisma.usuario.findMany({
+      where: { activo: true },
+      select: { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
     }),
   ])
@@ -36,7 +41,7 @@ export default async function NuevaTareaPage() {
           <CardTitle>Información de la Tarea</CardTitle>
         </CardHeader>
         <CardContent>
-          <TareaForm clientes={clientes} proyectos={proyectos} mode="create" />
+          <TareaForm clientes={clientes} proyectos={proyectos} usuarios={usuarios} mode="create" />
         </CardContent>
       </Card>
     </div>

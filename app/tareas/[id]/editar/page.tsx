@@ -14,7 +14,7 @@ export default async function EditarTareaPage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [tarea, clientes, proyectos] = await Promise.all([
+  const [tarea, clientes, proyectos, usuarios] = await Promise.all([
     prisma.tarea.findUnique({ where: { id } }),
     prisma.cliente.findMany({
       select: { id: true, nombre: true },
@@ -22,6 +22,11 @@ export default async function EditarTareaPage({
     }),
     prisma.proyecto.findMany({
       select: { id: true, nombre: true, clienteId: true },
+      orderBy: { nombre: 'asc' },
+    }),
+    prisma.usuario.findMany({
+      where: { activo: true },
+      select: { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
     }),
   ])
@@ -51,6 +56,7 @@ export default async function EditarTareaPage({
           <TareaForm
             clientes={clientes}
             proyectos={proyectos}
+            usuarios={usuarios}
             mode="edit"
             initialData={{
               id: tarea.id,
@@ -58,6 +64,7 @@ export default async function EditarTareaPage({
               descripcion: tarea.descripcion || '',
               clienteId: tarea.clienteId,
               proyectoId: tarea.proyectoId,
+              asignadoId: tarea.asignadoId,
               fechaLimite: tarea.fechaLimite,
               prioridad: tarea.prioridad,
               estado: tarea.estado,

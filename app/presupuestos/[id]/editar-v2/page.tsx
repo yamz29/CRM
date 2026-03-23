@@ -13,7 +13,7 @@ export default async function EditarPresupuestoV2Page({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [presupuesto, clientes, proyectos] = await Promise.all([
+  const [presupuesto, clientes, proyectos, unidades] = await Promise.all([
     prisma.presupuesto.findUnique({
       where: { id },
       include: {
@@ -37,7 +37,12 @@ export default async function EditarPresupuestoV2Page({
       select: { id: true, nombre: true, clienteId: true },
       orderBy: { nombre: 'asc' },
     }),
+    prisma.unidadGlobal.findMany({
+      select: { codigo: true },
+      orderBy: { codigo: 'asc' },
+    }),
   ])
+  const unidadesList = unidades.map((u) => u.codigo)
 
   if (!presupuesto) notFound()
 
@@ -123,6 +128,7 @@ export default async function EditarPresupuestoV2Page({
       <PresupuestoV2Builder
         clientes={clientes}
         proyectos={proyectos}
+        unidadesGlobales={unidadesList}
         mode="edit"
         initialData={initialData}
       />

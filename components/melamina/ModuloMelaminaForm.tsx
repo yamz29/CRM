@@ -187,32 +187,32 @@ export function ModuloMelaminaForm({ proyectos, mode = 'create', initialData }: 
       {/* Row 2: Dimensiones, Material, Color */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Ancho (cm)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Ancho (mm)</label>
           <input
             type="number"
             value={ancho}
             onChange={(e) => setAncho(e.target.value)}
-            min="0" step="0.1"
+            min="0" step="1"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Alto (cm)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Alto (mm)</label>
           <input
             type="number"
             value={alto}
             onChange={(e) => setAlto(e.target.value)}
-            min="0" step="0.1"
+            min="0" step="1"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Profundidad (cm)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Profundidad (mm)</label>
           <input
             type="number"
             value={profundidad}
             onChange={(e) => setProfundidad(e.target.value)}
-            min="0" step="0.1"
+            min="0" step="1"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

@@ -7,6 +7,7 @@ export async function GET() {
       include: {
         cliente: { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        asignado: { select: { id: true, nombre: true } },
       },
       orderBy: [{ prioridad: 'asc' }, { fechaLimite: 'asc' }],
     })
@@ -20,7 +21,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { titulo, descripcion, clienteId, proyectoId, fechaLimite, prioridad, estado, responsable } = body
+    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, responsable } = body
 
     if (!titulo?.trim()) {
       return NextResponse.json({ error: 'El título es requerido' }, { status: 400 })
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
         descripcion: descripcion || null,
         clienteId: clienteId ? parseInt(String(clienteId)) : null,
         proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+        asignadoId: asignadoId ? parseInt(String(asignadoId)) : null,
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         prioridad: prioridad || 'Media',
         estado: estado || 'Pendiente',
@@ -40,6 +42,7 @@ export async function POST(request: NextRequest) {
       include: {
         cliente: { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        asignado: { select: { id: true, nombre: true } },
       },
     })
 
