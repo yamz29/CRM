@@ -11,25 +11,22 @@ export default async function ModuloDetallePage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [modulo, proyectos, recursosDisponibles] = await Promise.all([
+  const [modulo, materialesDisponibles] = await Promise.all([
     prisma.moduloMelaminaV2.findUnique({
       where: { id },
       include: {
         proyecto: { select: { id: true, nombre: true } },
+        materialTablero: true,
         piezas: { orderBy: { orden: 'asc' } },
-        recursosModulo: {
+        materialesModulo: {
           orderBy: { orden: 'asc' },
-          include: {
-            recurso: { select: { id: true, nombre: true, unidad: true, costoUnitario: true, tipo: true, codigo: true } },
-          },
+          include: { material: true },
         },
       },
     }),
-    prisma.proyecto.findMany({ select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } }),
-    prisma.recurso.findMany({
+    prisma.materialMelamina.findMany({
       where: { activo: true },
-      select: { id: true, nombre: true, unidad: true, costoUnitario: true, tipo: true, codigo: true },
-      orderBy: { nombre: 'asc' },
+      orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
     }),
   ])
 
@@ -43,9 +40,8 @@ export default async function ModuloDetallePage({
       material: p.material ?? '',
       tapacanto: (() => { try { return JSON.parse(p.tapacanto) } catch { return [] } })(),
     })),
-    recursosModulo: modulo.recursosModulo.map((r) => ({
+    materialesModulo: modulo.materialesModulo.map((r) => ({
       ...r,
-      descripcion: r.descripcion ?? '',
       observaciones: r.observaciones ?? '',
     })),
   }
@@ -53,8 +49,7 @@ export default async function ModuloDetallePage({
   return (
     <ModuloEditor
       modulo={moduloData}
-      proyectos={proyectos}
-      recursosDisponibles={recursosDisponibles}
+      materialesDisponibles={materialesDisponibles}
     />
   )
 }

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { RecursoForm } from '@/components/recursos/RecursoForm'
+import { PriceHistoryPanel } from '@/components/recursos/PriceHistoryPanel'
 
 export default async function EditarRecursoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: idStr } = await params
@@ -25,14 +26,15 @@ export default async function EditarRecursoPage({ params }: { params: Promise<{ 
         </div>
       </div>
       <RecursoForm mode="edit" initialData={{
-    ...recurso,
-    codigo: recurso.codigo ?? undefined,
-    categoria: recurso.categoria ?? undefined,
-    subcategoria: recurso.subcategoria ?? undefined,
-    proveedor: recurso.proveedor ?? undefined,
-    marca: recurso.marca ?? undefined,
-    observaciones: recurso.observaciones ?? undefined,
-  }} />
+        ...recurso,
+        codigo: recurso.codigo ?? undefined,
+        categoria: recurso.categoria ?? undefined,
+        subcategoria: recurso.subcategoria ?? undefined,
+        proveedor: recurso.proveedor ?? undefined,
+        marca: recurso.marca ?? undefined,
+        observaciones: recurso.observaciones ?? undefined,
+      }} />
+      <PriceHistoryPanel recursoId={id} />
     </div>
   )
 }

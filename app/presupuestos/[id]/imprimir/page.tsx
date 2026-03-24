@@ -194,7 +194,8 @@ export default async function ImprimirPresupuestoPage({
 
             {/* Titled groups */}
             {presupuesto.titulos.map(titulo => {
-              const caps = tituloMap[titulo.id] || []
+              const caps = (tituloMap[titulo.id] || []).filter(c => c.partidas.reduce((s, p) => s + p.subtotal, 0) > 0)
+              if (caps.length === 0) return null
               const tituloTotal = caps.reduce((s, c) => s + c.partidas.reduce((ss, p) => ss + p.subtotal, 0), 0)
               return (
                 <div key={titulo.id} style={{ marginBottom: 20 }}>
@@ -211,7 +212,7 @@ export default async function ImprimirPresupuestoPage({
             })}
 
             {/* Floating chapters (no titulo) */}
-            {floating.map(cap => (
+            {floating.filter(cap => cap.partidas.reduce((s, p) => s + p.subtotal, 0) > 0).map(cap => (
               <div key={cap.id} style={{ marginBottom: 12 }}>
                 <CapBlock cap={cap} />
               </div>

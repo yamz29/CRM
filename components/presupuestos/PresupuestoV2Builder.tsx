@@ -8,9 +8,10 @@ import { formatCurrency } from '@/lib/utils'
 import {
   Plus, Trash2, Copy, BarChart2, ChevronUp, ChevronDown,
   ChevronRight, Save, AlertCircle, CheckCircle, X,
-  FileSpreadsheet, Layers, Percent, Tag,
+  FileSpreadsheet, Layers, Percent, Tag, Search,
 } from 'lucide-react'
 import { ApuSearchModal } from './ApuSearchModal'
+import { RecursoPickerModal } from './RecursoPickerModal'
 import ImportarExcelModal, { ImportResult } from './ImportarExcelModal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -198,12 +199,23 @@ function NumericCellSimple({ value, onChange, step = '0.0001' }: { value: number
 // ── APU helpers (unchanged) ───────────────────────────────────────────────────
 
 function SeccionLineas({ seccion, lineas, onChange, unidades }: { seccion: { key: SeccionAPU; label: string; color: string }; lineas: LineaAPU[]; onChange: (lines: LineaAPU[]) => void; unidades: string[] }) {
+  const [pickerRow, setPickerRow] = useState<number | null>(null)
   const total = lineas.reduce((s, l) => s + lineaSubtotal(l), 0)
   const addLinea = () => onChange([...lineas, emptyLinea()])
   const updateLinea = (i: number, field: keyof LineaAPU, val: string | number) => onChange(lineas.map((l, idx) => idx === i ? { ...l, [field]: val } : l))
   const removeLinea = (i: number) => onChange(lineas.filter((_, idx) => idx !== i))
   return (
     <div className={`rounded-lg border ${seccion.color} overflow-hidden`}>
+      {pickerRow !== null && (
+        <RecursoPickerModal
+          onSelect={(r) => {
+            updateLinea(pickerRow, 'descripcion', r.nombre)
+            updateLinea(pickerRow, 'unidad', r.unidad)
+            updateLinea(pickerRow, 'precioUnitario', r.costoUnitario)
+          }}
+          onClose={() => setPickerRow(null)}
+        />
+      )}
       <div className="flex items-center justify-between px-3 py-1.5">
         <span className="text-xs font-bold uppercase tracking-wide text-slate-600">{seccion.label}</span>
         {total > 0 && <span className="text-xs font-semibold text-slate-700">{formatCurrency(total)}</span>}
@@ -223,7 +235,12 @@ function SeccionLineas({ seccion, lineas, onChange, unidades }: { seccion: { key
             {lineas.map((linea, i) => (
               <tr key={i} className="border-t border-slate-200/40 hover:bg-white/70 group">
                 <td className="px-2 py-1 text-xs text-slate-400 text-center select-none">{i + 1}</td>
-                <td className="px-1 py-0.5"><input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="w-full px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent transition-colors" /></td>
+                <td className="px-1 py-0.5">
+                  <div className="flex items-center gap-0.5">
+                    <input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="flex-1 min-w-0 px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent transition-colors" />
+                    <button onClick={() => setPickerRow(i)} title="Buscar en catálogo" className="p-1 rounded text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Search className="w-3 h-3" /></button>
+                  </div>
+                </td>
                 <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">{unidades.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.cantidad} onChange={(v) => updateLinea(i, 'cantidad', v)} step="0.0001" /></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.precioUnitario} onChange={(v) => updateLinea(i, 'precioUnitario', v)} /></td>

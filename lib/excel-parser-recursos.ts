@@ -8,9 +8,11 @@ export interface ParsedRecurso {
   subcategoria: string
   unidad: string
   costoUnitario: number
+  moneda: string
   proveedor: string
   marca: string
   observaciones: string
+  activo: boolean
 }
 
 export interface RecursoRowError {
@@ -133,6 +135,16 @@ export function parseRecursosRows(rawRows: Record<string, unknown>[]): ParseRecu
       continue
     }
 
+    // Optional: moneda (default DOP)
+    const monedaRaw = pick(row, 'moneda', 'currency', 'divisa')
+    const moneda = monedaRaw ? monedaRaw.toUpperCase() : 'DOP'
+
+    // Optional: activo (default true)
+    const activoRaw = pick(row, 'activo', 'active', 'habilitado')
+    const activo = activoRaw === ''
+      ? true
+      : ['1', 'si', 'sí', 'yes', 'true', 'activo', 'x'].includes(activoRaw.toLowerCase())
+
     recursos.push({
       codigo:       pick(row, 'codigo', 'code', 'cod', 'clave'),
       nombre,
@@ -141,9 +153,11 @@ export function parseRecursosRows(rawRows: Record<string, unknown>[]): ParseRecu
       subcategoria: pick(row, 'subcategoria', 'subcategory', 'subcat'),
       unidad:       pick(row, 'unidad', 'unit', 'ud', 'und') || 'ud',
       costoUnitario,
+      moneda,
       proveedor:    pick(row, 'proveedor', 'provider', 'supplier'),
       marca:        pick(row, 'marca', 'brand'),
       observaciones: pick(row, 'observaciones', 'obs', 'notes', 'notas'),
+      activo,
     })
     validRows++
   }

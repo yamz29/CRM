@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ModuloMelaminaForm } from '@/components/melamina/ModuloMelaminaForm'
 
 export default async function NuevoModuloPage() {
-  const proyectos = await prisma.proyecto.findMany({
-    select: { id: true, nombre: true },
+  const tableros = await prisma.materialMelamina.findMany({
+    where: { activo: true, tipo: 'tablero' },
+    select: { id: true, nombre: true, codigo: true },
     orderBy: { nombre: 'asc' },
   })
 
@@ -30,7 +31,7 @@ export default async function NuevoModuloPage() {
           <CardTitle>Información del Módulo</CardTitle>
         </CardHeader>
         <CardContent>
-          <ModuloMelaminaForm proyectos={proyectos} mode="create" />
+          <ModuloMelaminaForm tableros={tableros} mode="create" />
         </CardContent>
       </Card>
     </div>

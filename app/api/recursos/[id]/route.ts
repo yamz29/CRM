@@ -27,6 +27,14 @@ export async function PUT(
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
   try {
     const body = await request.json()
+    const costoNuevo = parseFloat(body.costoUnitario) || 0
+
+    // Get current price before updating
+    const anterior = await prisma.recurso.findUnique({
+      where: { id },
+      select: { costoUnitario: true, codigo: true, nombre: true, unidad: true },
+    })
+
     const recurso = await prisma.recurso.update({
       where: { id },
       data: {
@@ -36,7 +44,7 @@ export async function PUT(
         categoria: body.categoria || null,
         subcategoria: body.subcategoria || null,
         unidad: body.unidad || 'gl',
-        costoUnitario: parseFloat(body.costoUnitario) || 0,
+        costoUnitario: costoNuevo,
         proveedor: body.proveedor || null,
         marca: body.marca || null,
         activo: body.activo !== false,
@@ -47,6 +55,23 @@ export async function PUT(
         ultimoCosto: parseFloat(body.ultimoCosto) || 0,
       },
     })
+
+    // Record price history only if price actually changed
+    if (anterior && costoNuevo !== anterior.costoUnitario) {
+      await prisma.recursoPriceHistory.create({
+        data: {
+          recursoId:      id,
+          codigoSnapshot: anterior.codigo,
+          nombreSnapshot: anterior.nombre,
+          precioAnterior: anterior.costoUnitario,
+          precioNuevo:    costoNuevo,
+          moneda:         'DOP',
+          unidadSnapshot: anterior.unidad,
+          origenCambio:   'manual',
+        },
+      })
+    }
+
     return NextResponse.json(recurso)
   } catch (error) {
     console.error(error)

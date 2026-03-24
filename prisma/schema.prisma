@@ -231,39 +231,87 @@ model AnalisisPartida {
   partida PartidaPresupuesto @relation(fields: [partidaId], references: [id], onDelete: Cascade)
 }
 
+// ── MATERIALES MELAMINA ───────────────────────────────────────────────
+
+model MaterialMelamina {
+  id            Int      @id @default(autoincrement())
+  tipo          String   // 'tablero' | 'canto' | 'herraje'
+  nombre        String
+  codigo        String?
+  marca         String?
+  proveedor     String?
+  precio        Float    @default(0)
+  moneda        String   @default("DOP")
+  unidad        String   @default("ud")
+  anchoMm       Float?   // tablero: 2440, canto: 22
+  largoMm       Float?   // tablero: 1830
+  espesorMm     Float?   // tablero: 18, canto: 0.4
+  activo        Boolean  @default(true)
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  materialesModulo MaterialModuloMelamina[]
+  modulosTablero   ModuloMelaminaV2[]       @relation("ModuloTableroMaterial")
+
+  @@map("material_melamina")
+}
+
+model MaterialModuloMelamina {
+  id            Int      @id @default(autoincrement())
+  moduloId      Int
+  materialId    Int
+  tipo          String   @default("herraje") // 'canto' | 'herraje'
+  unidad        String   @default("ud")
+  cantidad      Float    @default(1)
+  costoSnapshot Float    @default(0)
+  subtotal      Float    @default(0)
+  observaciones String?
+  orden         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  modulo   ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  material MaterialMelamina @relation(fields: [materialId], references: [id])
+
+  @@map("material_modulo_melamina")
+}
+
 // ── MÓDULOS MELAMINA V2 ───────────────────────────────────────────────
 
 model ModuloMelaminaV2 {
-  id                Int      @id @default(autoincrement())
-  proyectoId        Int?
-  presupuestoId     Int?
-  codigo            String?
-  tipoModulo        String   @default("Base con puertas")
-  nombre            String
-  ancho             Float    @default(0)
-  alto              Float    @default(0)
-  profundidad       Float    @default(0)
-  cantidadPuertas   Int      @default(0)
-  cantidadCajones   Int      @default(0)
-  material          String   @default("Melamina Egger 18mm")
-  colorAcabado      String?
-  herrajes          String?
-  cantidad          Int      @default(1)
-  costoMateriales   Float    @default(0)
-  costoManoObra     Float    @default(0)
-  costoInstalacion  Float    @default(0)
-  precioVenta       Float    @default(0)
-  estadoProduccion  String   @default("Diseño")
-  observaciones     String?
-  recursoTableroId  Int?
-  anchoPlanchaCm    Float    @default(2440)
-  largoPlanchaCm    Float    @default(1830)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  proyectoId         Int?
+  presupuestoId      Int?
+  codigo             String?
+  tipoModulo         String   @default("Base con puertas")
+  nombre             String
+  ancho              Float    @default(0)
+  alto               Float    @default(0)
+  profundidad        Float    @default(0)
+  cantidadPuertas    Int      @default(0)
+  cantidadCajones    Int      @default(0)
+  material           String   @default("Melamina Egger 18mm")
+  colorAcabado       String?
+  herrajes           String?
+  cantidad           Int      @default(1)
+  costoMateriales    Float    @default(0)
+  costoManoObra      Float    @default(0)
+  costoInstalacion   Float    @default(0)
+  precioVenta        Float    @default(0)
+  estadoProduccion   String   @default("Diseño")
+  observaciones      String?
+  recursoTableroId   Int?
+  anchoPlanchaCm     Float    @default(2440)
+  largoPlanchaCm     Float    @default(1830)
+  materialTableroId  Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  proyecto       Proyecto?       @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
-  piezas         PiezaModulo[]
-  recursosModulo RecursoModulo[]
+  proyecto          Proyecto?                @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  materialTablero   MaterialMelamina?        @relation("ModuloTableroMaterial", fields: [materialTableroId], references: [id])
+  piezas            PiezaModulo[]
+  recursosModulo    RecursoModulo[]
+  materialesModulo  MaterialModuloMelamina[]
 }
 
 model PiezaModulo {
@@ -385,9 +433,50 @@ model Recurso {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  apuRecursos    ApuRecurso[]
-  gastos         GastoProyecto[]
-  recursosModulo RecursoModulo[]
+  apuRecursos      ApuRecurso[]
+  gastos           GastoProyecto[]
+  recursosModulo   RecursoModulo[]
+  historialPrecios RecursoPriceHistory[]
+}
+
+// ── HISTÓRICO DE PRECIOS DE RECURSOS ──────────────────────────────────
+
+model RecursoPriceHistory {
+  id                Int      @id @default(autoincrement())
+  recursoId         Int
+  codigoSnapshot    String?
+  nombreSnapshot    String
+  precioAnterior    Float
+  precioNuevo       Float
+  moneda            String   @default("DOP")
+  unidadSnapshot    String
+  origenCambio      String   @default("manual") // manual | importacion
+  loteImportacionId Int?
+  observacion       String?
+  createdAt         DateTime @default(now())
+
+  recurso           Recurso             @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  loteImportacion   RecursoImportBatch? @relation(fields: [loteImportacionId], references: [id])
+
+  @@map("recurso_price_history")
+}
+
+// ── LOTES DE IMPORTACIÓN DE RECURSOS ──────────────────────────────────
+
+model RecursoImportBatch {
+  id                Int      @id @default(autoincrement())
+  nombreArchivo     String
+  totalFilas        Int      @default(0)
+  filasCreadas      Int      @default(0)
+  filasActualizadas Int      @default(0)
+  filasConError     Int      @default(0)
+  preciosCambiados  Int      @default(0)
+  observaciones     String?
+  createdAt         DateTime @default(now())
+
+  historialPrecios  RecursoPriceHistory[]
+
+  @@map("recurso_import_batches")
 }
 
 // ── CATÁLOGO DE APUs ──────────────────────────────────────────────────

@@ -25,6 +25,14 @@ export async function PATCH(
       data: { estado },
     })
 
+    // Auto-activate project when budget is approved
+    if (estado === 'Aprobado' && presupuesto.proyectoId) {
+      await prisma.proyecto.update({
+        where: { id: presupuesto.proyectoId },
+        data: { estado: 'Activo' },
+      })
+    }
+
     return NextResponse.json(presupuesto)
   } catch (error) {
     console.error('Error updating presupuesto estado:', error)

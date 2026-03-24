@@ -14,10 +14,11 @@ export async function GET(
       where: { id },
       include: {
         proyecto: { select: { id: true, nombre: true } },
+        materialTablero: true,
         piezas: { orderBy: { orden: 'asc' } },
-        recursosModulo: {
+        materialesModulo: {
           orderBy: { orden: 'asc' },
-          include: { recurso: { select: { id: true, nombre: true, unidad: true, costoUnitario: true, tipo: true } } },
+          include: { material: true },
         },
       },
     })
@@ -41,10 +42,11 @@ export async function PUT(
     const body = await request.json()
     const {
       proyectoId, codigo, tipoModulo, nombre, ancho, alto, profundidad,
-      cantidadPuertas, cantidadCajones, material, colorAcabado, herrajes,
+      cantidadPuertas, cantidadCajones, material, colorAcabado,
       cantidad, costoMateriales, costoManoObra, costoInstalacion, precioVenta,
-      estadoProduccion, observaciones, recursoTableroId, anchoPlanchaCm, largoPlanchaCm,
-      piezas, recursosModulo,
+      estadoProduccion, observaciones,
+      materialTableroId, anchoPlanchaCm, largoPlanchaCm,
+      piezas, materialesModulo,
     } = body
 
     if (!nombre?.trim()) {
@@ -64,9 +66,8 @@ export async function PUT(
           profundidad: parseFloat(String(profundidad)) || 0,
           cantidadPuertas: parseInt(String(cantidadPuertas)) || 0,
           cantidadCajones: parseInt(String(cantidadCajones)) || 0,
-          material: material || 'Melamina Egger 18mm',
+          material: material || '',
           colorAcabado: colorAcabado || null,
-          herrajes: herrajes || null,
           cantidad: parseInt(String(cantidad)) || 1,
           costoMateriales: parseFloat(String(costoMateriales)) || 0,
           costoManoObra: parseFloat(String(costoManoObra)) || 0,
@@ -74,9 +75,9 @@ export async function PUT(
           precioVenta: parseFloat(String(precioVenta)) || 0,
           estadoProduccion: estadoProduccion || 'Diseño',
           observaciones: observaciones || null,
-          recursoTableroId: recursoTableroId ? parseInt(String(recursoTableroId)) : null,
-          anchoPlanchaCm: parseFloat(String(anchoPlanchaCm)) || 244,
-          largoPlanchaCm: parseFloat(String(largoPlanchaCm)) || 183,
+          materialTableroId: materialTableroId ? parseInt(String(materialTableroId)) : null,
+          anchoPlanchaCm: parseFloat(String(anchoPlanchaCm)) || 2440,
+          largoPlanchaCm: parseFloat(String(largoPlanchaCm)) || 1830,
         },
       })
 
@@ -102,15 +103,15 @@ export async function PUT(
         }
       }
 
-      if (Array.isArray(recursosModulo)) {
-        await tx.recursoModulo.deleteMany({ where: { moduloId: id } })
-        if (recursosModulo.length > 0) {
-          await tx.recursoModulo.createMany({
-            data: recursosModulo.map((r: any, i: number) => ({
+      if (Array.isArray(materialesModulo)) {
+        await tx.materialModuloMelamina.deleteMany({ where: { moduloId: id } })
+        if (materialesModulo.length > 0) {
+          await tx.materialModuloMelamina.createMany({
+            data: materialesModulo.map((r: any, i: number) => ({
               moduloId: id,
-              recursoId: r.recursoId ? parseInt(String(r.recursoId)) : null,
-              descripcion: r.descripcion || null,
-              unidad: r.unidad || 'und',
+              materialId: r.materialId ? parseInt(String(r.materialId)) : null,
+              tipo: r.tipo || 'herraje',
+              unidad: r.unidad || 'ud',
               cantidad: parseFloat(String(r.cantidad)) || 1,
               costoSnapshot: parseFloat(String(r.costoSnapshot)) || 0,
               subtotal: parseFloat(String(r.subtotal)) || 0,

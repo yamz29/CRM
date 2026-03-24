@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Box, Pencil, Layers } from 'lucide-react'
+import { Plus, Box, Pencil, Layers, Package2 } from 'lucide-react'
 import { DeleteModuloButton } from './DeleteModuloButton'
 
 interface SearchParams {
@@ -62,12 +62,20 @@ export default async function MelaminaPage({
           <h1 className="text-2xl font-bold text-slate-800">Módulos Melamina</h1>
           <p className="text-slate-500 mt-1">{modulos.length} módulos registrados</p>
         </div>
-        <Link href="/melamina/nuevo">
-          <Button>
-            <Plus className="w-4 h-4" />
-            Nuevo Módulo
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/melamina/materiales">
+            <Button variant="secondary">
+              <Package2 className="w-4 h-4" />
+              Materiales
+            </Button>
+          </Link>
+          <Link href="/melamina/nuevo">
+            <Button>
+              <Plus className="w-4 h-4" />
+              Nuevo Módulo
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

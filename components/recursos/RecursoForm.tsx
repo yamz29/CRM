@@ -158,7 +158,7 @@ export function RecursoForm({ mode, initialData }: Props) {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Costo Unitario ($)</label>
             <input type="number" value={form.costoUnitario} onChange={(e) => set('costoUnitario', e.target.value)}
-              min="0" step="1" placeholder="0"
+              min="0" step="0.01" placeholder="0"
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right" />
           </div>
         </div>

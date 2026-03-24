@@ -17,6 +17,7 @@ import {
   Box,
 } from 'lucide-react'
 import { CambiarEstadoButton } from './CambiarEstadoButton'
+import { DuplicarButton } from './DuplicarButton'
 
 async function getPresupuesto(id: number) {
   return prisma.presupuesto.findUnique({
@@ -91,6 +92,7 @@ export default async function PresupuestoDetailPage({
               Imprimir
             </Button>
           </Link>
+          <DuplicarButton presupuestoId={presupuesto.id} />
           <Link href={
             presupuesto.capitulos.length > 0
               ? `/presupuestos/${presupuesto.id}/editar-v2`
