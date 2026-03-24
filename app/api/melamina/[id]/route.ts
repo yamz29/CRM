@@ -105,11 +105,12 @@ export async function PUT(
 
       if (Array.isArray(materialesModulo)) {
         await tx.materialModuloMelamina.deleteMany({ where: { moduloId: id } })
-        if (materialesModulo.length > 0) {
+        const validMateriales = materialesModulo.filter((r: any) => r.materialId)
+        if (validMateriales.length > 0) {
           await tx.materialModuloMelamina.createMany({
-            data: materialesModulo.map((r: any, i: number) => ({
+            data: validMateriales.map((r: any, i: number) => ({
               moduloId: id,
-              materialId: r.materialId ? parseInt(String(r.materialId)) : null,
+              materialId: parseInt(String(r.materialId)),
               tipo: r.tipo || 'herraje',
               unidad: r.unidad || 'ud',
               cantidad: parseFloat(String(r.cantidad)) || 1,
