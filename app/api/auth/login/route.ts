@@ -5,13 +5,16 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { correo, password } = await request.json()
+    const { correo: correoRaw, password } = await request.json()
+    const correo = correoRaw?.toLowerCase().trim()
 
     if (!correo || !password) {
       return NextResponse.json({ error: 'Correo y contraseña son requeridos' }, { status: 400 })
     }
 
-    const usuario = await prisma.usuario.findUnique({ where: { correo } })
+    const usuario = await prisma.usuario.findFirst({
+      where: { correo },
+    })
 
     if (!usuario || !usuario.password || !usuario.activo) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
@@ -36,6 +39,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 7 days
