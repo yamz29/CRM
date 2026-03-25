@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+const INCLUDE_RECURSOS = {
+  recursos: {
+    include: { recurso: true, apuHijo: { select: { id: true, codigo: true, nombre: true, unidad: true, precioVenta: true } } },
+    orderBy: { orden: 'asc' as const },
+  },
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')
@@ -14,9 +21,7 @@ export async function GET(request: NextRequest) {
         ...(q ? { OR: [{ nombre: { contains: q } }, { codigo: { contains: q } }, { capitulo: { contains: q } }] } : {}),
         ...(capitulo ? { capitulo } : {}),
       },
-      include: withRecursos
-        ? { recursos: { include: { recurso: true }, orderBy: { orden: 'asc' } } }
-        : undefined,
+      include: withRecursos ? INCLUDE_RECURSOS : undefined,
       orderBy: [{ capitulo: 'asc' }, { nombre: 'asc' }],
     })
     return NextResponse.json(apus)
@@ -31,7 +36,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { recursos = [], ...apuData } = body
 
-    // Calculate totals from recursos
     const costoDirecto = recursos.reduce((s: number, r: any) => s + (parseFloat(r.subtotal) || 0), 0)
     const costoTotal = costoDirecto * (1 + (parseFloat(apuData.indirectos) || 0) / 100)
     const precioVenta = costoTotal * (1 + (parseFloat(apuData.utilidad) || 0) / 100)
@@ -53,7 +57,11 @@ export async function POST(request: NextRequest) {
         observaciones: apuData.observaciones || null,
         recursos: {
           create: recursos.map((r: any, i: number) => ({
-            recursoId: r.recursoId ? parseInt(r.recursoId) : null,
+            tipoComponente: r.tipoComponente || 'recurso',
+            recursoId: r.recursoId ? parseInt(String(r.recursoId)) : null,
+            apuHijoId: r.apuHijoId ? parseInt(String(r.apuHijoId)) : null,
+            nombreSnapshot: r.nombreSnapshot || null,
+            unidadSnapshot: r.unidadSnapshot || null,
             descripcionLibre: r.descripcionLibre || null,
             unidadLibre: r.unidadLibre || null,
             tipoLinea: r.tipoLinea || null,
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest) {
           })),
         },
       },
-      include: { recursos: { include: { recurso: true }, orderBy: { orden: 'asc' } } },
+      include: INCLUDE_RECURSOS,
     })
 
     return NextResponse.json(apu, { status: 201 })

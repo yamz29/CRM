@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Save, AlertCircle, X, PackagePlus, PenLine, BookOpen } from 'lucide-react'
+import { Plus, Save, AlertCircle, X, PackagePlus, PenLine, BookOpen, Search } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,11 +17,30 @@ interface RecursoRef {
   costoUnitario: number
 }
 
+interface ApuRef {
+  id: number
+  codigo?: string | null
+  nombre: string
+  unidad: string
+  precioVenta: number
+  capitulo?: string | null
+}
+
 interface RecursoLine {
   recursoId: number | null
-  isLibre?: boolean         // true = línea de texto libre, false/undefined = catálogo
-  descripcionLibre?: string // texto cuando isLibre = true
-  unidadLibre?: string      // unidad cuando isLibre = true
+  isLibre?: boolean
+  descripcionLibre?: string
+  unidadLibre?: string
+  cantidad: number
+  costoSnapshot: number
+  subtotal: number
+  observaciones: string
+}
+
+interface ApuLine {
+  apuHijoId: number
+  nombreSnapshot: string
+  unidadSnapshot: string
   cantidad: number
   costoSnapshot: number
   subtotal: number
@@ -32,6 +51,7 @@ type TipoSeccion = 'materiales' | 'manoObra' | 'equipos' | 'subcontratos' | 'tra
 
 interface Props {
   recursos: RecursoRef[]
+  apusDisponibles: ApuRef[]
   mode: 'create' | 'edit'
   initialData?: {
     id?: number
@@ -46,7 +66,11 @@ interface Props {
     activo?: boolean
     observaciones?: string
     recursos?: Array<{
-      recursoId: number | null
+      tipoComponente?: string | null
+      recursoId?: number | null
+      apuHijoId?: number | null
+      nombreSnapshot?: string | null
+      unidadSnapshot?: string | null
       descripcionLibre?: string | null
       unidadLibre?: string | null
       tipoLinea?: string | null
@@ -55,6 +79,7 @@ interface Props {
       subtotal: number
       observaciones?: string | null
       recurso?: RecursoRef | null
+      apuHijo?: ApuRef | null
     }>
   }
 }
@@ -85,8 +110,8 @@ function buildInitialSections(
   if (!apuRecursos) return result
 
   for (const ar of apuRecursos) {
+    if (ar.tipoComponente === 'apu') continue  // handled separately
     if (ar.recursoId && ar.recurso) {
-      // Línea catálogo
       const sec = secciones.find((s) => s.tipos.includes(ar.recurso!.tipo))
       if (sec) {
         result[sec.key].push({
@@ -99,7 +124,6 @@ function buildInitialSections(
         })
       }
     } else if (ar.descripcionLibre) {
-      // Línea libre
       const sec = secciones.find((s) => s.key === ar.tipoLinea) ?? secciones[0]
       result[sec.key].push({
         recursoId: null,
@@ -116,24 +140,88 @@ function buildInitialSections(
   return result
 }
 
-// ── NumericInput ──────────────────────────────────────────────────────────────
+function buildInitialApuLines(
+  apuRecursos: NonNullable<Props['initialData']>['recursos']
+): ApuLine[] {
+  if (!apuRecursos) return []
+  return apuRecursos
+    .filter((ar) => ar.tipoComponente === 'apu' && ar.apuHijoId)
+    .map((ar) => ({
+      apuHijoId: ar.apuHijoId!,
+      nombreSnapshot: ar.nombreSnapshot || ar.apuHijo?.nombre || '',
+      unidadSnapshot: ar.unidadSnapshot || ar.apuHijo?.unidad || 'gl',
+      cantidad: ar.cantidad,
+      costoSnapshot: ar.costoSnapshot,
+      subtotal: ar.subtotal,
+      observaciones: ar.observaciones || '',
+    }))
+}
+
+// ── FormulaInput ──────────────────────────────────────────────────────────────
+
+function evalFormula(expr: string): number | null {
+  const clean = expr.trim()
+  if (!clean) return null
+  // Only allow digits, decimal points, operators, parentheses and spaces
+  if (!/^[\d\s+\-*/.()]+$/.test(clean)) return null
+  try {
+    // eslint-disable-next-line no-new-func
+    const result = new Function('return ' + clean)() as unknown
+    if (typeof result !== 'number' || !isFinite(result)) return null
+    return Math.round(result * 1_000_000) / 1_000_000
+  } catch {
+    return null
+  }
+}
 
 function NumericInput({ value, onChange, step = '1', placeholder = '0', className = '' }: {
   value: number; onChange: (v: number) => void; step?: string; placeholder?: string; className?: string
 }) {
+  const [raw, setRaw] = useState('')
   const [focused, setFocused] = useState(false)
-  const display = focused ? (value === 0 ? '' : String(value)) : value === 0 ? '' : value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 })
+  const [formulaErr, setFormulaErr] = useState(false)
+
+  const display = focused
+    ? raw
+    : value === 0 ? '' : value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 })
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setFocused(true)
+    setFormulaErr(false)
+    setRaw(value === 0 ? '' : String(value))
+    setTimeout(() => e.target.select(), 0)
+  }
+
+  const handleBlur = () => {
+    setFocused(false)
+    if (!raw.trim()) { onChange(0); setFormulaErr(false); return }
+    // Try formula first, then plain number
+    const formulaResult = evalFormula(raw)
+    if (formulaResult !== null) {
+      onChange(formulaResult)
+      setFormulaErr(false)
+    } else {
+      const plain = parseFloat(raw)
+      if (!isNaN(plain)) { onChange(plain); setFormulaErr(false) }
+      else setFormulaErr(true)
+    }
+  }
+
+  const borderClass = formulaErr
+    ? 'border-red-400 bg-red-50 focus:ring-red-400'
+    : 'border-slate-300 bg-white focus:ring-blue-500'
+
   return (
     <input
-      type={focused ? 'number' : 'text'}
+      type="text"
+      inputMode="decimal"
       value={display}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      onFocus={(e) => { setFocused(true); setTimeout(() => e.target.select(), 0) }}
-      onBlur={() => setFocused(false)}
-      step={step}
-      min="0"
-      placeholder={placeholder}
-      className={`w-full px-2 py-1.5 text-sm text-right border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${className}`}
+      onChange={(e) => { setRaw(e.target.value); setFormulaErr(false) }}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      placeholder={focused ? 'ej: 4*2.5' : placeholder}
+      title={formulaErr ? 'Fórmula inválida. Ej: 4*2.5, 100/4, 3+1.5' : 'Soporta fórmulas: +  −  *  /  ( )'}
+      className={`w-full px-2 py-1.5 text-sm text-right border rounded focus:outline-none focus:ring-2 ${borderClass} ${className}`}
     />
   )
 }
@@ -224,6 +312,204 @@ function NuevoRecursoModal({ tipoDefault, onCreated, onClose }: {
             {saving ? 'Creando...' : <><Plus className="w-3.5 h-3.5" />Crear y agregar</>}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── RecursoSearch ─────────────────────────────────────────────────────────────
+
+function RecursoSearch({ recursos, selectedId, onSelect }: {
+  recursos: RecursoRef[]
+  selectedId: number | null
+  onSelect: (id: number) => void
+}) {
+  const selected = selectedId ? recursos.find((r) => r.id === selectedId) : null
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtered = query.length < 1
+    ? recursos.slice(0, 40)
+    : recursos.filter((r) => {
+        const q = query.toLowerCase()
+        return (
+          r.nombre.toLowerCase().includes(q) ||
+          (r.codigo?.toLowerCase().includes(q) ?? false) ||
+          r.tipo.toLowerCase().includes(q) ||
+          r.unidad.toLowerCase().includes(q)
+        )
+      }).slice(0, 40)
+
+  const handleSelect = (r: RecursoRef) => {
+    onSelect(r.id)
+    setOpen(false)
+    setQuery('')
+  }
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      {open ? (
+        <div className="flex flex-col gap-1">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nombre, código, tipo..."
+              className="w-full pl-7 pr-2 py-1.5 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            />
+          </div>
+          <div className="absolute top-9 left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-slate-400 italic">Sin resultados para &quot;{query}&quot;</p>
+            ) : (
+              filtered.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onMouseDown={() => handleSelect(r)}
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-slate-100 last:border-0 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-slate-700 truncate block">
+                        {r.codigo && <span className="font-mono text-slate-400 mr-1">[{r.codigo}]</span>}
+                        {r.nombre}
+                      </span>
+                      <span className="text-xs text-slate-400">{r.tipo} · {r.unidad}</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 whitespace-nowrap flex-shrink-0">
+                      {formatCurrency(r.costoUnitario)}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full text-left px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none hover:border-blue-400 bg-white transition-colors flex items-center justify-between gap-2"
+        >
+          {selected ? (
+            <span className="truncate text-slate-700">
+              {selected.codigo && <span className="font-mono text-slate-400 mr-1 text-xs">[{selected.codigo}]</span>}
+              {selected.nombre}
+            </span>
+          ) : (
+            <span className="text-slate-400">— Buscar recurso —</span>
+          )}
+          <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── ApuSearch ─────────────────────────────────────────────────────────────────
+
+function ApuSearch({ apus, onSelect }: {
+  apus: ApuRef[]
+  onSelect: (apu: ApuRef) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtered = apus.filter((a) => {
+    if (!query) return true
+    const q = query.toLowerCase()
+    return (
+      a.nombre.toLowerCase().includes(q) ||
+      (a.codigo?.toLowerCase().includes(q) ?? false) ||
+      (a.capitulo?.toLowerCase().includes(q) ?? false)
+    )
+  }).slice(0, 50)
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors"
+      >
+        <Search className="w-3.5 h-3.5" />
+        Agregar APU existente
+      </button>
+    )
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <input
+          autoFocus
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar APU por nombre, código o capítulo..."
+          className="w-full pl-9 pr-3 py-2 text-sm border border-indigo-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+        />
+      </div>
+      <div className="absolute top-10 left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="px-3 py-3 text-xs text-slate-400 italic">Sin resultados para &quot;{query}&quot;</p>
+        ) : (
+          filtered.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onMouseDown={() => { onSelect(a); setOpen(false); setQuery('') }}
+              className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b border-slate-100 last:border-0 transition-colors"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-700 truncate">
+                    {a.codigo && <span className="font-mono text-slate-400 mr-1">[{a.codigo}]</span>}
+                    {a.nombre}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {a.capitulo && <span className="mr-2">{a.capitulo}</span>}
+                    <span>{a.unidad}</span>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-xs font-bold text-indigo-700">{formatCurrency(a.precioVenta)}</div>
+                  <div className="text-xs text-slate-400">/{a.unidad}</div>
+                </div>
+              </div>
+            </button>
+          ))
+        )}
       </div>
     </div>
   )
@@ -338,18 +624,11 @@ function SeccionRecursos({
                         className="w-full px-2 py-1.5 text-sm border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
                       />
                     ) : (
-                      <select
-                        value={line.recursoId ?? ''}
-                        onChange={(e) => selectRecurso(i, parseInt(e.target.value))}
-                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      >
-                        <option value="">— Seleccionar recurso —</option>
-                        {recursos.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.codigo ? `[${r.codigo}] ` : ''}{r.nombre}
-                          </option>
-                        ))}
-                      </select>
+                      <RecursoSearch
+                        recursos={recursos}
+                        selectedId={line.recursoId}
+                        onSelect={(id) => selectRecurso(i, id)}
+                      />
                     )}
                   </td>
                   <td className="px-2 py-1">
@@ -423,7 +702,7 @@ function SeccionRecursos({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) {
+export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initialData }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -457,6 +736,10 @@ export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) 
     buildInitialSections(initialData?.recursos ?? [], SECCIONES)
   )
 
+  const [apuLines, setApuLines] = useState<ApuLine[]>(
+    buildInitialApuLines(initialData?.recursos ?? [])
+  )
+
   const setH = (field: string, value: string | number | boolean) =>
     setHeader((prev) => ({ ...prev, [field]: value }))
 
@@ -464,10 +747,35 @@ export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) 
     setSections((prev) => ({ ...prev, [key]: lines }))
   }, [])
 
+  const addApuLine = (apu: ApuRef) => {
+    setApuLines((prev) => [...prev, {
+      apuHijoId: apu.id,
+      nombreSnapshot: apu.nombre,
+      unidadSnapshot: apu.unidad,
+      cantidad: 1,
+      costoSnapshot: apu.precioVenta,
+      subtotal: apu.precioVenta,
+      observaciones: '',
+    }])
+  }
+
+  const updateApuLine = (i: number, updates: Partial<ApuLine>) => {
+    setApuLines((prev) => prev.map((l, idx) => {
+      if (idx !== i) return l
+      const updated = { ...l, ...updates }
+      updated.subtotal = updated.cantidad * updated.costoSnapshot
+      return updated
+    }))
+  }
+
+  const removeApuLine = (i: number) => setApuLines((prev) => prev.filter((_, idx) => idx !== i))
+
   // ── Calculations ──────────────────────────────────────────────────────────
 
-  const allLines = SECCIONES.flatMap((s) => sections[s.key])
-  const costoDirecto = allLines.reduce((s, l) => s + l.subtotal, 0)
+  const recursoLines = SECCIONES.flatMap((s) => sections[s.key])
+  const costoRecursos = recursoLines.reduce((s, l) => s + l.subtotal, 0)
+  const costoApus = apuLines.reduce((s, l) => s + l.subtotal, 0)
+  const costoDirecto = costoRecursos + costoApus
   const costoConInd  = costoDirecto * (1 + header.indirectos / 100)
   const precioVenta  = costoConInd  * (1 + header.utilidad / 100)
   const margen       = precioVenta > 0 ? ((precioVenta - costoDirecto) / precioVenta) * 100 : 0
@@ -484,14 +792,26 @@ export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) 
     setLoading(true)
     setError(null)
     try {
-      const payload = {
-        ...header,
-        recursos: SECCIONES.flatMap((s, si) =>
-          sections[s.key]
-            .filter((l) => l.recursoId !== null || (l.isLibre && l.descripcionLibre?.trim()))
-            .map((l, li) => ({ ...l, tipoLinea: s.key, orden: si * 100 + li }))
-        ),
-      }
+      // Resource lines (normal + libre)
+      const recursoPayload = SECCIONES.flatMap((s, si) =>
+        sections[s.key]
+          .filter((l) => l.recursoId !== null || (l.isLibre && l.descripcionLibre?.trim()))
+          .map((l, li) => ({ ...l, tipoComponente: l.isLibre ? 'libre' : 'recurso', tipoLinea: s.key, orden: si * 100 + li }))
+      )
+      // APU child lines
+      const apuPayload = apuLines.map((l, i) => ({
+        tipoComponente: 'apu',
+        apuHijoId: l.apuHijoId,
+        nombreSnapshot: l.nombreSnapshot,
+        unidadSnapshot: l.unidadSnapshot,
+        cantidad: l.cantidad,
+        costoSnapshot: l.costoSnapshot,
+        subtotal: l.subtotal,
+        observaciones: l.observaciones,
+        orden: 9000 + i,
+      }))
+
+      const payload = { ...header, recursos: [...recursoPayload, ...apuPayload] }
       const res = await fetch(
         mode === 'create' ? '/api/apus' : `/api/apus/${initialData?.id}`,
         { method: mode === 'create' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
@@ -587,6 +907,76 @@ export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) 
         ))}
       </div>
 
+      {/* Sub-APUs section */}
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2 bg-indigo-100 text-indigo-800">
+          <span className="text-xs font-bold uppercase tracking-wide">Sub-APUs (Componentes)</span>
+          <div className="flex items-center gap-3">
+            {costoApus > 0 && <span className="text-xs font-semibold">{formatCurrency(costoApus)}</span>}
+            <span className="text-xs opacity-60">{apuLines.length} componente{apuLines.length !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+
+        {/* APU Lines table */}
+        {apuLines.length > 0 && (
+          <table className="w-full border-t border-white/50">
+            <thead>
+              <tr className="bg-white/40 text-xs text-slate-500">
+                <th className="px-2 py-1.5 text-left font-semibold w-6">#</th>
+                <th className="px-3 py-1.5 text-left font-semibold">APU</th>
+                <th className="px-3 py-1.5 text-center font-semibold w-16">Unidad</th>
+                <th className="px-3 py-1.5 text-right font-semibold w-24">Cantidad</th>
+                <th className="px-3 py-1.5 text-right font-semibold w-32">Costo Unit.</th>
+                <th className="px-3 py-1.5 text-right font-semibold w-32 bg-white/40">Subtotal</th>
+                <th className="w-8" />
+              </tr>
+            </thead>
+            <tbody>
+              {apuLines.map((line, i) => (
+                <tr key={i} className="border-t border-white/40 hover:bg-white/60 group transition-colors">
+                  <td className="px-2 py-1.5 text-xs text-slate-400 select-none">{i + 1}</td>
+                  <td className="px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-200 text-indigo-800">APU</span>
+                      <span className="text-sm text-slate-700 font-medium">{line.nombreSnapshot}</span>
+                    </div>
+                  </td>
+                  <td className="px-2 py-1.5 text-sm text-center text-slate-500">{line.unidadSnapshot}</td>
+                  <td className="px-2 py-1">
+                    <NumericInput
+                      value={line.cantidad}
+                      onChange={(v) => updateApuLine(i, { cantidad: v })}
+                      step="0.001"
+                    />
+                  </td>
+                  <td className="px-2 py-1">
+                    <NumericInput
+                      value={line.costoSnapshot}
+                      onChange={(v) => updateApuLine(i, { costoSnapshot: v })}
+                    />
+                  </td>
+                  <td className="px-3 py-1.5 text-sm font-bold text-slate-700 text-right bg-white/30">
+                    {line.subtotal > 0 ? formatCurrency(line.subtotal) : <span className="text-slate-300 font-normal">—</span>}
+                  </td>
+                  <td className="px-1 py-1">
+                    <button onClick={() => removeApuLine(i)}
+                      className="p-1.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* Add APU button */}
+        <div className="px-4 py-2 border-t border-white/30">
+          <ApuSearch apus={apusDisponibles} onSelect={addApuLine} />
+        </div>
+      </div>
+
       {/* NuevoRecursoModal */}
       {modalConfig && (
         <NuevoRecursoModal
@@ -609,6 +999,15 @@ export function ApuEditor({ recursos: recursosProp, mode, initialData }: Props) 
                   <td className="py-1.5 text-right font-medium text-slate-700">{formatCurrency(s.total)}</td>
                 </tr>
               ))}
+              {costoApus > 0 && (
+                <tr>
+                  <td className="py-1.5 text-indigo-600 flex items-center gap-1">
+                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-700">APU</span>
+                    Sub-APUs
+                  </td>
+                  <td className="py-1.5 text-right font-medium text-indigo-700">{formatCurrency(costoApus)}</td>
+                </tr>
+              )}
               <tr className="border-t-2 border-slate-300">
                 <td className="py-2 font-bold text-slate-700">Costo Directo</td>
                 <td className="py-2 text-right font-bold text-slate-800">{formatCurrency(costoDirecto)}</td>

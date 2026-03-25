@@ -22,11 +22,21 @@ export interface GastoData {
   observaciones: string
   estado: string
   archivoUrl?: string | null
+  destinoTipo?: string           // proyecto | oficina | taller | general | sin_asignar
+  proyectoIdSeleccionado?: number | null  // usado en modo general
   partidaId?: number | null
   recursoId?: number | null
   cantidadRecurso?: string
   movimientoStock?: string | null
 }
+
+const DESTINOS = [
+  { value: 'proyecto',    label: 'Proyecto',           color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { value: 'oficina',     label: 'Oficina',             color: 'bg-green-100 text-green-700 border-green-300' },
+  { value: 'taller',      label: 'Taller',              color: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { value: 'general',     label: 'General / Admin',     color: 'bg-slate-100 text-slate-600 border-slate-300' },
+  { value: 'sin_asignar', label: 'Sin asignar',         color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+]
 
 interface PartidaOption {
   id: number
@@ -53,22 +63,30 @@ const emptyForm: GastoData = {
   referencia: '', descripcion: '', suplidor: '',
   categoria: '', subcategoria: '', monto: '',
   moneda: 'RD$', metodoPago: 'Efectivo', cuentaOrigen: '',
-  observaciones: '', estado: 'Registrado', partidaId: null,
-  recursoId: null, cantidadRecurso: '', movimientoStock: null,
+  observaciones: '', estado: 'Registrado',
+  destinoTipo: 'sin_asignar', proyectoIdSeleccionado: null,
+  partidaId: null, recursoId: null, cantidadRecurso: '', movimientoStock: null,
 }
 
 export function GastoForm({
   proyectoId,
+  proyectos,
   initial,
   onClose,
   onSaved,
 }: {
-  proyectoId: number
+  proyectoId?: number | null
+  proyectos?: { id: number; nombre: string }[]
   initial?: GastoData | null
   onClose: () => void
   onSaved: () => void
 }) {
-  const [form, setForm] = useState<GastoData>(initial ?? emptyForm)
+  // In project context: destinoTipo defaults to 'proyecto'
+  const defaultForm: GastoData = proyectoId
+    ? { ...emptyForm, destinoTipo: 'proyecto' }
+    : emptyForm
+  const [form, setForm] = useState<GastoData>(initial ?? defaultForm)
+  const modoGeneral = !proyectoId  // true = sin proyecto fijo
   const [archivo, setArchivo] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -79,15 +97,22 @@ export function GastoForm({
   const isEdit = Boolean(initial?.id)
 
   useEffect(() => {
-    fetch(`/api/proyectos/${proyectoId}/partidas`)
-      .then(r => r.ok ? r.json() : [])
-      .then(d => setPartidas(Array.isArray(d) ? d : []))
-      .catch(() => {})
+    // Fetch partidas only in project context
+    const pid = proyectoId ?? (form.destinoTipo === 'proyecto' ? form.proyectoIdSeleccionado : null)
+    if (pid) {
+      fetch(`/api/proyectos/${pid}/partidas`)
+        .then(r => r.ok ? r.json() : [])
+        .then(d => setPartidas(Array.isArray(d) ? d : []))
+        .catch(() => {})
+    } else {
+      setPartidas([])
+    }
     fetch('/api/recursos?controlarStock=true&activo=true')
       .then(r => r.ok ? r.json() : [])
       .then(d => setRecursosStock(Array.isArray(d) ? d : []))
       .catch(() => {})
-  }, [proyectoId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proyectoId, form.proyectoIdSeleccionado, form.destinoTipo])
 
   function set(key: keyof GastoData, value: string) {
     setForm(p => ({ ...p, [key]: value }))
@@ -103,23 +128,30 @@ export function GastoForm({
 
     setLoading(true)
     try {
+      // Determine endpoint: project context uses project API, general uses /api/gastos
+      const baseUrl = proyectoId
+        ? (isEdit ? `/api/proyectos/${proyectoId}/gastos/${initial!.id}` : `/api/proyectos/${proyectoId}/gastos`)
+        : (isEdit ? `/api/gastos/${initial!.id}` : `/api/gastos`)
+      const method = isEdit ? 'PUT' : 'POST'
+
+      // Build payload — include destinoTipo and proyectoId for general mode
+      const payload = {
+        ...form,
+        ...(modoGeneral && {
+          destinoTipo: form.destinoTipo || 'sin_asignar',
+          proyectoId: form.destinoTipo === 'proyecto' ? form.proyectoIdSeleccionado : null,
+        }),
+      }
+
       let res: Response
       if (archivo) {
         const fd = new FormData()
-        Object.entries(form).forEach(([k, v]) => {
-          if (v != null) fd.append(k, String(v))
-        })
-        if (form.partidaId != null) fd.set('partidaId', String(form.partidaId))
+        Object.entries(payload).forEach(([k, v]) => { if (v != null) fd.append(k, String(v)) })
+        if (payload.partidaId != null) fd.set('partidaId', String(payload.partidaId))
         fd.append('archivo', archivo)
-        res = await fetch(
-          isEdit ? `/api/proyectos/${proyectoId}/gastos/${initial!.id}` : `/api/proyectos/${proyectoId}/gastos`,
-          { method: isEdit ? 'PUT' : 'POST', body: fd }
-        )
+        res = await fetch(baseUrl, { method, body: fd })
       } else {
-        res = await fetch(
-          isEdit ? `/api/proyectos/${proyectoId}/gastos/${initial!.id}` : `/api/proyectos/${proyectoId}/gastos`,
-          { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }
-        )
+        res = await fetch(baseUrl, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       }
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Error al guardar'); return }
@@ -156,6 +188,40 @@ export function GastoForm({
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3 overflow-y-auto flex-1">
           {error && (
             <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>
+          )}
+
+          {/* Destino / Centro de costo — solo en modo general */}
+          {modoGeneral && (
+            <div className="space-y-2">
+              <Label className="text-xs">Destino / Centro de costo *</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {DESTINOS.map(d => (
+                  <button key={d.value} type="button"
+                    onClick={() => setForm(p => ({ ...p, destinoTipo: d.value, proyectoIdSeleccionado: d.value === 'proyecto' ? p.proyectoIdSeleccionado : null }))}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                      form.destinoTipo === d.value ? d.color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+              {form.destinoTipo === 'proyecto' && proyectos && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Proyecto *</Label>
+                  <select
+                    value={form.proyectoIdSeleccionado ?? ''}
+                    onChange={e => setForm(p => ({ ...p, proyectoIdSeleccionado: e.target.value ? parseInt(e.target.value) : null }))}
+                    className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white"
+                  >
+                    <option value="">— Seleccionar proyecto —</option>
+                    {proyectos.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Row 1: fecha | tipo | método pago */}

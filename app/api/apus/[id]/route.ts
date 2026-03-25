@@ -1,6 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// ── Cycle detection ────────────────────────────────────────────────────────────
+// Returns true if `targetId` appears anywhere in the composition tree of `rootId`
+async function wouldCreateCycle(rootId: number, targetId: number): Promise<boolean> {
+  if (rootId === targetId) return true
+  const visited = new Set<number>()
+  const queue = [rootId]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    if (visited.has(current)) continue
+    visited.add(current)
+    const children = await prisma.apuRecurso.findMany({
+      where: { apuId: current, tipoComponente: 'apu', apuHijoId: { not: null } },
+      select: { apuHijoId: true },
+    })
+    for (const c of children) {
+      if (c.apuHijoId === targetId) return true
+      if (c.apuHijoId) queue.push(c.apuHijoId)
+    }
+  }
+  return false
+}
+
+const INCLUDE_RECURSOS = {
+  recursos: {
+    include: { recurso: true, apuHijo: { select: { id: true, codigo: true, nombre: true, unidad: true, precioVenta: true } } },
+    orderBy: { orden: 'asc' as const },
+  },
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -9,10 +38,7 @@ export async function GET(
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
   try {
-    const apu = await prisma.apuCatalogo.findUnique({
-      where: { id },
-      include: { recursos: { include: { recurso: true }, orderBy: { orden: 'asc' } } },
-    })
+    const apu = await prisma.apuCatalogo.findUnique({ where: { id }, include: INCLUDE_RECURSOS })
     if (!apu) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
     return NextResponse.json(apu)
   } catch (error) {
@@ -33,11 +59,28 @@ export async function PUT(
     const body = await request.json()
     const { recursos = [], ...apuData } = body
 
+    // Validate APU components — detect cycles
+    for (const r of recursos) {
+      if (r.tipoComponente === 'apu' && r.apuHijoId) {
+        const hijoId = parseInt(String(r.apuHijoId))
+        if (hijoId === id) {
+          return NextResponse.json({ error: 'Un APU no puede contenerse a sí mismo.' }, { status: 400 })
+        }
+        // Check if adding hijoId would create a cycle (hijoId already contains id in its tree)
+        const cycle = await wouldCreateCycle(hijoId, id)
+        if (cycle) {
+          return NextResponse.json(
+            { error: `Ciclo detectado: el APU seleccionado ya contiene este APU en su composición.` },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
     const costoDirecto = recursos.reduce((s: number, r: any) => s + (parseFloat(r.subtotal) || 0), 0)
     const costoTotal = costoDirecto * (1 + (parseFloat(apuData.indirectos) || 0) / 100)
     const precioVenta = costoTotal * (1 + (parseFloat(apuData.utilidad) || 0) / 100)
 
-    // Delete existing recursos and recreate
     await prisma.apuRecurso.deleteMany({ where: { apuId: id } })
 
     const apu = await prisma.apuCatalogo.update({
@@ -58,7 +101,11 @@ export async function PUT(
         observaciones: apuData.observaciones || null,
         recursos: {
           create: recursos.map((r: any, i: number) => ({
-            recursoId: r.recursoId ? parseInt(r.recursoId) : null,
+            tipoComponente: r.tipoComponente || 'recurso',
+            recursoId: r.recursoId ? parseInt(String(r.recursoId)) : null,
+            apuHijoId: r.apuHijoId ? parseInt(String(r.apuHijoId)) : null,
+            nombreSnapshot: r.nombreSnapshot || null,
+            unidadSnapshot: r.unidadSnapshot || null,
             descripcionLibre: r.descripcionLibre || null,
             unidadLibre: r.unidadLibre || null,
             tipoLinea: r.tipoLinea || null,
@@ -70,7 +117,7 @@ export async function PUT(
           })),
         },
       },
-      include: { recursos: { include: { recurso: true }, orderBy: { orden: 'asc' } } },
+      include: INCLUDE_RECURSOS,
     })
 
     return NextResponse.json(apu)

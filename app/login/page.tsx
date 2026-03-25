@@ -31,7 +31,9 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/')
+      const params = new URLSearchParams(window.location.search)
+      const redirect = params.get('redirect') || '/'
+      router.push(redirect)
       router.refresh()
     } catch {
       setError('Error de conexión. Intenta de nuevo.')

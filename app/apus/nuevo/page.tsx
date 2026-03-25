@@ -4,11 +4,18 @@ import { ArrowLeft } from 'lucide-react'
 import { ApuEditor } from '@/components/apus/ApuEditor'
 
 export default async function NuevoApuPage() {
-  const recursos = await prisma.recurso.findMany({
-    where: { activo: true },
-    orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
-    select: { id: true, codigo: true, nombre: true, tipo: true, unidad: true, costoUnitario: true },
-  })
+  const [recursos, apusDisponibles] = await Promise.all([
+    prisma.recurso.findMany({
+      where: { activo: true },
+      orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
+      select: { id: true, codigo: true, nombre: true, tipo: true, unidad: true, costoUnitario: true },
+    }),
+    prisma.apuCatalogo.findMany({
+      where: { activo: true },
+      orderBy: [{ capitulo: 'asc' }, { nombre: 'asc' }],
+      select: { id: true, codigo: true, nombre: true, unidad: true, precioVenta: true, capitulo: true },
+    }),
+  ])
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -22,7 +29,7 @@ export default async function NuevoApuPage() {
           <p className="text-slate-500 text-sm mt-0.5">Análisis de Precio Unitario</p>
         </div>
       </div>
-      <ApuEditor recursos={recursos} mode="create" />
+      <ApuEditor recursos={recursos} apusDisponibles={apusDisponibles} mode="create" />
     </div>
   )
 }

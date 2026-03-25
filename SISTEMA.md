@@ -15,6 +15,8 @@ Cliente → Proyecto → Presupuesto → Control de Gastos → Reporte
 Empresa objetivo: constructoras pequeñas/medianas que manejan proyectos residenciales y comerciales,
 fabricación de muebles en melamina, y necesitan control de costos por partida presupuestaria.
 
+**Versión actual: v1.2**
+
 ---
 
 ## 2. Stack tecnológico
@@ -38,75 +40,85 @@ fabricación de muebles en melamina, y necesitan control de costos por partida p
 ```
 CRM/
 ├── app/
-│   ├── layout.tsx                        ← Root layout (html/body + AppLayout)
+│   ├── layout.tsx
 │   ├── page.tsx                          ← Dashboard
-│   ├── login/page.tsx
 │   ├── clientes/
-│   │   ├── page.tsx                      ← Lista de clientes
-│   │   ├── nuevo/page.tsx
-│   │   └── [id]/page.tsx + editar/
 │   ├── proyectos/
-│   │   ├── page.tsx
-│   │   ├── nuevo/page.tsx
 │   │   └── [id]/
 │   │       ├── page.tsx                  ← Detalle con tabs
-│   │       ├── editar/page.tsx
-│   │       └── reporte/
-│   │           ├── page.tsx              ← Reporte de control presupuestario (impresión)
-│   │           └── ReporteButtons.tsx
+│   │       └── reporte/page.tsx          ← Reporte de control presupuestario
 │   ├── presupuestos/
-│   │   ├── page.tsx
-│   │   ├── nuevo-v2/page.tsx             ← Constructor V2 (capítulos/partidas)
+│   │   ├── nuevo-v2/page.tsx
 │   │   └── [id]/
-│   │       ├── page.tsx
-│   │       ├── editar-v2/page.tsx
-│   │       └── imprimir/
-│   │           ├── page.tsx              ← Vista de impresión (sin sidebar)
-│   │           └── PrintButton.tsx
-│   ├── apus/                             ← Catálogo de APUs
-│   ├── recursos/                         ← Catálogo de recursos
+│   │       ├── page.tsx                  ← Detalle + botón Duplicar
+│   │       ├── DuplicarButton.tsx        ← Client component que llama /duplicar
+│   │       └── imprimir/page.tsx         ← Vista de impresión (filtra capítulos $0)
+│   ├── apus/
+│   ├── recursos/
+│   │   └── [id]/editar/page.tsx         ← Incluye PriceHistoryPanel
 │   ├── tareas/
-│   ├── melamina/                         ← Módulos de melamina (producción)
+│   ├── melamina/
+│   │   ├── page.tsx                      ← Lista + botón "Materiales"
+│   │   ├── nuevo/page.tsx                ← Form simplificado (sin costos)
+│   │   ├── materiales/
+│   │   │   ├── page.tsx                  ← Catálogo de tableros/cantos/herrajes
+│   │   │   └── MaterialesManager.tsx     ← Client component con CRUD inline
+│   │   └── [id]/
+│   │       ├── page.tsx                  ← ModuloEditor con 4 tabs
+│   │       └── editar/page.tsx           ← Redirect a /melamina/[id]
 │   ├── configuracion/
 │   └── api/
 │       ├── auth/login + logout
 │       ├── clientes/[id]
-│       ├── proyectos/[id]
-│       │   ├── gastos/                   ← CRUD gastos + importar Excel + plantilla
-│       │   ├── gastos/[gastoId]          ← PUT individual (asignación partida inline)
-│       │   ├── partidas/                 ← Lista partidas del snapshot
+│       ├── proyectos/[id]/
+│       │   ├── gastos/                   ← CRUD + importar Excel + plantilla
+│       │   ├── partidas/
 │       │   ├── control-presupuestario/
-│       │   └── poblar-presupuesto/       ← POST (importar) + DELETE (limpiar)
-│       ├── presupuestos/[id]
+│       │   └── poblar-presupuesto/
+│       ├── presupuestos/[id]/
+│       │   └── estado/route.ts           ← Auto-activa proyecto al aprobar
 │       ├── presupuestos-v2/
-│       │   ├── route.ts                  ← GET lista + POST crear
-│       │   ├── [id]/route.ts             ← GET + PUT + DELETE
-│       │   └── plantilla/route.ts        ← GET descarga template Excel
+│       │   ├── route.ts
+│       │   ├── [id]/route.ts
+│       │   ├── [id]/duplicar/route.ts    ← POST copia completa del presupuesto
+│       │   └── plantilla/route.ts
 │       ├── apus/[id]
-│       ├── recursos/[id]
-│       ├── unidades/[id]
-│       └── configuracion/empresa + usuarios + vendedores + categorias + logo
+│       ├── recursos/
+│       │   ├── route.ts
+│       │   ├── [id]/route.ts             ← PUT graba historial si cambia precio
+│       │   ├── [id]/historial/route.ts   ← GET historial de precios
+│       │   ├── importar/route.ts         ← POST importación masiva Excel (3 modos)
+│       │   └── plantilla/route.ts        ← GET template .xlsx con instrucciones
+│       ├── melamina/
+│       │   ├── route.ts                  ← GET lista + POST crear módulo
+│       │   ├── [id]/route.ts             ← GET + PUT + DELETE (usa MaterialModuloMelamina)
+│       │   └── materiales/
+│       │       ├── route.ts              ← GET lista + POST crear material
+│       │       └── [id]/route.ts         ← PUT + DELETE (soft)
+│       └── configuracion/
 ├── components/
 │   ├── layout/
-│   │   ├── AppLayout.tsx                 ← Detecta rutas shell-free (/reporte, /imprimir, /login)
-│   │   └── Sidebar.tsx                  ← <aside> fijo, 256px, oculto en rutas print
 │   ├── gastos/
-│   │   ├── GastosTab.tsx                ← Tabla completa con filtros, columnas, bulk assign
-│   │   ├── GastoForm.tsx                ← Modal de registro/edición de gasto
-│   │   └── ImportarGastosModal.tsx      ← Importación masiva por Excel
 │   ├── proyectos/
-│   │   ├── ControlPresupuestarioTab.tsx ← Vista presupuesto vs real por partida
-│   │   └── PoblarPresupuestoModal.tsx   ← Importar estructura desde presupuesto
-│   └── presupuestos/
-│       ├── PresupuestoV2Builder.tsx      ← Builder drag-less de capítulos/partidas
-│       ├── ImportarExcelModal.tsx        ← Upload + preview + confirm Excel
-│       └── ApuSearchModal.tsx           ← Búsqueda y aplicación de APUs al builder
-├── proxy.ts                              ← Middleware Next.js 16 (auth JWT + x-pathname)
+│   ├── presupuestos/
+│   │   ├── PresupuestoV2Builder.tsx      ← Incluye RecursoPickerModal por fila APU
+│   │   ├── RecursoPickerModal.tsx        ← Modal búsqueda recursos para APU
+│   │   ├── ImportarExcelModal.tsx
+│   │   └── ApuSearchModal.tsx
+│   ├── melamina/
+│   │   ├── ModuloEditor.tsx              ← 4 tabs: Datos, Despiece, Materiales, Resumen
+│   │   └── ModuloMelaminaForm.tsx        ← Form nuevo módulo (simplificado)
+│   └── recursos/
+│       ├── RecursosTable.tsx             ← Con filtros avanzados (cat/proveedor/estado/precio)
+│       ├── RecursoForm.tsx               ← step="0.01" en costo unitario
+│       ├── ImportarRecursosModal.tsx     ← 3 modos de importación + lote info
+│       └── PriceHistoryPanel.tsx         ← Panel historial precios en editar recurso
+├── proxy.ts
 ├── prisma/schema.prisma
 └── lib/
     ├── prisma.ts
-    ├── utils.ts                          ← formatCurrency, formatDate, cn()
-    └── excel-parser.ts                  ← Parser SheetJS para importación
+    ├── utils.ts
+    └── excel-parser-recursos.ts          ← Parser específico para importación de recursos
 ```
 
 ---
@@ -117,257 +129,214 @@ CRM/
 
 ```
 Cliente ──< Proyecto ──< GastoProyecto >── ProyectoPartida >── ProyectoCapitulo
-                 │
-                 └──< Presupuesto ──< CapituloPresupuesto ──< PartidaPresupuesto
-                                  ──< PresupuestoTitulo
-                                  ──< PresupuestoIndirectoLinea
-                                  ──< ModuloMelamina (legacy)
-                                  ──< Partida (legacy)
+                │
+                └──< Presupuesto (V2) ──< CapituloPresupuesto ──< PartidaPresupuesto
+                                       ──< PresupuestoTitulo
+                                       ──< PresupuestoIndirectoLinea
+
+Recurso ──< RecursoPriceHistory
+        ──< RecursoImportBatch (lotes de importación)
+
+MaterialMelamina ──< MaterialModuloMelamina >── ModuloMelaminaV2
+ModuloMelaminaV2 ──< PiezaModulo
+                 ──< MaterialModuloMelamina
+                 ── materialTableroId → MaterialMelamina
 ```
 
 ### Descripción de modelos
 
 | Modelo | Propósito |
 |---|---|
-| `Cliente` | Contacto: nombre, teléfono, WhatsApp, correo, tipo (Particular/Empresa), fuente |
-| `Proyecto` | Obra o trabajo. Tiene `presupuestoEstimado` y `presupuestoBaseId` (snapshot) |
-| `Presupuesto` | Cotización formal con número único `COT-YYYY-NNN`. Estado: Borrador/Enviado/Aprobado/Rechazado |
-| `PresupuestoTitulo` | Agrupación de capítulos (nivel 0). Ej: "Obra Civil" |
-| `CapituloPresupuesto` | Capítulo dentro del presupuesto V2. Puede tener `tituloId` o flotar sin título |
-| `PartidaPresupuesto` | Partida de trabajo: descripción, unidad, cantidad, precio unitario, subtotal |
-| `AnalisisPartida` | APU embebido en la partida: materiales, mano de obra, equipos, etc. (JSON + totales) |
-| `PresupuestoIndirectoLinea` | Líneas de costos indirectos en % sobre base. Ej: "Administración 12%" |
-| `ProyectoCapitulo` | Snapshot de capítulo importado al proyecto para control |
-| `ProyectoPartida` | Snapshot de partida. Tiene `subtotalPresupuestado`. Linked con gastos |
-| `GastoProyecto` | Gasto real del proyecto. Tipos: Factura, Gasto menor, Mano de obra, etc. |
-| `ModuloMelaminaV2` | Módulo de mueble: tipo, dimensiones, materiales, precio venta, estado de producción |
-| `Recurso` | Catálogo de insumos: materiales, mano de obra, equipos, herrajes, etc. |
-| `ApuCatalogo` | Análisis de Precio Unitario reutilizable. Composición de recursos |
-| `ApuRecurso` | Línea de recurso dentro de un APU con snapshot de costo |
-| `Empresa` | Configuración de la empresa: nombre, RNC, logo, correo, slogan |
-| `Usuario` | Usuarios del sistema con rol y password hasheado |
-| `UnidadGlobal` | Catálogo de unidades de medida (m2, ml, kg, etc.) |
+| `Cliente` | Contacto: nombre, teléfono, WhatsApp, correo, tipo, fuente |
+| `Proyecto` | Obra. Tiene `presupuestoEstimado` y `presupuestoBaseId` |
+| `Presupuesto` | Cotización formal `COT-YYYY-NNN`. Estado: Borrador/Enviado/Aprobado/Rechazado |
+| `PresupuestoTitulo` | Agrupación de capítulos (nivel 0) |
+| `CapituloPresupuesto` | Capítulo V2. Puede tener `tituloId` o flotar |
+| `PartidaPresupuesto` | Partida: descripción, unidad, cantidad, precio unitario, subtotal |
+| `AnalisisPartida` | APU embebido en partida (JSON + totales) |
+| `PresupuestoIndirectoLinea` | Costos indirectos en % sobre base |
+| `ProyectoCapitulo` / `ProyectoPartida` | Snapshot del presupuesto para control |
+| `GastoProyecto` | Gasto real del proyecto |
+| `Recurso` | Catálogo de insumos: materiales, MO, equipos, herrajes, etc. |
+| `RecursoPriceHistory` | Historial de cambios de precio de un recurso (origen: manual / importacion) |
+| `RecursoImportBatch` | Registro de cada lote de importación Excel de recursos |
+| `ApuCatalogo` / `ApuRecurso` | APUs reutilizables del catálogo |
+| `MaterialMelamina` | Catálogo propio de materiales de melamina: tipo (tablero/canto/herraje), nombre, código, marca, proveedor, precio, unidad, dimensiones (anchoMm, largoMm, espesorMm) |
+| `MaterialModuloMelamina` | Cantos y herrajes usados en un módulo específico (cantidad, costoSnapshot, subtotal) |
+| `ModuloMelaminaV2` | Módulo de mueble con dimensiones, despiece, `materialTableroId` (FK a MaterialMelamina) |
+| `PiezaModulo` | Pieza del despiece: etiqueta, largo, ancho, cantidad, espesor, tapacanto (JSON) |
+| `Empresa` / `Usuario` / `UnidadGlobal` | Configuración del sistema |
 
 ---
 
 ## 5. Módulos del sistema
 
 ### 5.1 Dashboard (`/`)
-- Estadísticas en tiempo real: proyectos activos, presupuestos pendientes, tareas vencidas, valor total cotizado
+- Estadísticas: proyectos activos, presupuestos pendientes, tareas vencidas, valor total cotizado
 - Actividad reciente: últimos presupuestos y tareas urgentes
 
 ### 5.2 Clientes (`/clientes`)
 - CRUD completo
-- Campos: nombre, teléfono, WhatsApp, correo, dirección, tipo (Particular/Empresa/Constructor), fuente (Directo/Referido/Web/Redes)
 - Vista detalle con proyectos y presupuestos relacionados
 
 ### 5.3 Proyectos (`/proyectos`)
-Detalle del proyecto con **4 pestañas**:
+Detalle con **4 pestañas**: Resumen / Gastos / Control Presupuestario / Melamina
 
-**Tab: Resumen**
-- Info del proyecto: tipo, estado, ubicación, responsable, fechas
-- Cards de resumen financiero: presupuestado vs gastado vs disponible + barra de progreso
-- **Rentabilidad Real**: panel con 4 indicadores calculados en el servidor:
-  - **Ingresos** = total del primer presupuesto con estado `Aprobado` (fallback: `presupuestoEstimado`)
-  - **Costos reales** = suma de gastos activos (`estado ≠ Anulado`)
-  - **Utilidad** = Ingresos − Costos
-  - **Margen %** = Utilidad / Ingresos × 100 (con barra visual: verde ≥15%, ámbar ≥0%, rojo <0%)
-  - El número del presupuesto aprobado se muestra como referencia en el título del panel
-- Lista de presupuestos vinculados
-- Acceso rápido a reporte
+**Tab Resumen**: Info del proyecto, cards financieros (presupuestado/gastado/disponible), rentabilidad real (ingresos - costos reales, margen %)
 
-**Tab: Gastos** (`GastosTab`)
-- Tabla con 11 columnas configurables (visibilidad persistida en localStorage)
-- Filtros: búsqueda libre, tipo, método pago, estado, categoría, partida presupuestaria, fecha desde/hasta
-- **Asignación inline de partida**: popover con búsqueda, guarda con PUT automático
-- **Bulk selection**: checkboxes + barra de acción masiva para asignar partida a varios gastos a la vez
-- **Barra de clasificación**: % de gastos asignados a partida presupuestaria
-- Acciones por fila: editar, anular, eliminar
-- **Importación por Excel**: template descargable + upload + preview + confirm
-- Estados: Registrado / Revisado / Anulado
+**Tab Gastos** (`GastosTab`): Tabla configurable, filtros avanzados, asignación inline de partida, bulk assign, importación Excel
 
-**Tab: Control Presupuestario** (`ControlPresupuestarioTab`)
-- Poblar estructura desde un presupuesto (`PoblarPresupuestoModal`)
-- Vista presupuesto vs gasto real por capítulo y partida
-- % de ejecución, diferencias, alertas de sobregiro
-- **Semáforo visual por partida**: dot de color al inicio de cada fila
-  - 🟢 Verde (`bg-green-500`) = `normal` — ejecutado < 80%
-  - 🟡 Ámbar (`bg-amber-400`) = `alerta` — ejecutado 80–100%
-  - 🔴 Rojo (`bg-red-500`) = `excedido` — ejecutado > 100%
-  - ⚪ Gris (`bg-slate-300`) = `sin_gasto` — sin gastos asignados
-  - Presente en ambas vistas: "Por capítulo" y "Todas las partidas"
-  - Tooltip con nombre del estado al hacer hover (`title`)
-
-**Tab: Melamina**
-- Módulos de muebles asignados al proyecto
+**Tab Control Presupuestario**: Poblar desde presupuesto, vista presupuesto vs real por capítulo/partida, semáforo visual (verde/ámbar/rojo/gris)
 
 ### 5.4 Presupuestos (`/presupuestos`)
 
 **Constructor V2** (`PresupuestoV2Builder`):
 - Jerarquía: Título → Capítulo → Partida
-- Partidas con: código, descripción, unidad, cantidad, precio unitario, subtotal calculado
-- APU integrado por partida: buscar del catálogo o componer inline (materiales/mano de obra/equipos/subcontratos/transporte/desperdicio/indirectos/utilidad)
-- **Modal APU** (`ApuSearchModal`): búsqueda por nombre/código, aplica precio al campo
-- **Gastos indirectos**: líneas en % aplicadas sobre el subtotal de partidas directas (Administración, Utilidad, IVA, etc.)
-- **Importar desde Excel**: template descargable (`.xlsx` con instrucciones), upload, preview tabla, confirmar → carga capítulos y partidas
-- Numeración automática: `COT-YYYY-NNN` (busca el máximo existente para ese año)
+- APU integrado por partida con `RecursoPickerModal` (botón 🔍 por fila para buscar recurso del catálogo y auto-completar descripción/unidad/precio)
+- Gastos indirectos en %
+- Importar desde Excel (template con instrucciones)
+- Numeración automática `COT-YYYY-NNN`
+- **Botón Duplicar**: copia completa del presupuesto (todos los títulos, capítulos, partidas, APUs, indirectos) con nuevo número y estado Borrador
 - Estados: Borrador → Enviado → Aprobado / Rechazado
-- **Vista de impresión** (`/imprimir`): layout completamente independiente (sin sidebar), shell gris de preview en pantalla, A4 en print
+  - Al pasar a **Aprobado** con proyecto vinculado → proyecto cambia a estado "Activo" automáticamente
+- **Vista de impresión** (`/imprimir`): layout A4 sin sidebar, **filtra capítulos con total $0.00**
 
 ### 5.5 APUs — Análisis de Precios Unitarios (`/apus`)
-- Catálogo reutilizable de análisis
-- Composición: recursos del catálogo con cantidad y snapshot de costo
-- Porcentajes configurables: indirectos, utilidad, desperdicio
-- Precio de venta calculado = costo directo × (1 + indirectos + utilidad + desperdicio)
-- **Líneas de catálogo y texto libre**: cada sección del APU permite agregar:
-  - **Del catálogo**: selecciona recurso existente (autocompletado de unidad y costo)
-  - **Texto libre**: descripción manual, unidad editable, costo manual
-  - Toggle por línea (ícono 📖/✏️) para cambiar de modo después de agregar
-  - **Nuevo recurso**: crea el recurso en el catálogo directamente desde el editor
-- Unidad `PA` (Precio Alzado) disponible en todos los selectores
+- Catálogo reutilizable
+- Líneas de catálogo (recurso existente) o texto libre
+- Porcentajes: indirectos, utilidad, desperdicio
 
 ### 5.6 Recursos (`/recursos`)
-- Catálogo de insumos y servicios
-- Tipos: materiales, mano de obra, equipos, herramientas, subcontratos, transportes, herrajes, consumibles
-- Campos: código, nombre, tipo, categoría, unidad, costo unitario, proveedor, marca
-- **Importación masiva desde Excel**: botón "Importar Excel" en la página principal
-  - Descarga de plantilla `.xlsx` con ejemplos e instrucciones (`/api/recursos/plantilla`)
-  - Upload + preview de filas antes de confirmar
-  - Validación: fila sin nombre → error; tipo inválido → error; código duplicado → omitido sin crear doble
-  - Inserción en lote en la BD con resumen final (creados / omitidos)
-- **Control de inventario ligero** (opcional por recurso):
-  - `controlarStock`: activa el control de stock
-  - `stock`: cantidad disponible actual
-  - `stockMinimo`: umbral de alerta
-  - `ultimoCosto`: último precio de compra (actualizado automáticamente con gastos tipo "entrada")
-  - Panel de inventario en `/recursos` con semáforo: verde (OK), ámbar (bajo mínimo), rojo (agotado)
-  - Los gastos del proyecto pueden registrar movimientos de stock (entrada/salida) vinculados a un recurso
+
+**Catálogo** con tipos: materiales, mano de obra, equipos, herramientas, subcontratos, transportes, herrajes, consumibles
+
+**Filtros avanzados** en la tabla:
+- Búsqueda libre (nombre/código/proveedor)
+- Filtro por categoría, proveedor, estado activo/inactivo (3 estados)
+- Rango de precio mínimo/máximo
+- Chips activos con X individual + "Limpiar todo"
+- Contador de resultados filtrados/total
+
+**Importación masiva desde Excel**:
+- Template descargable con ejemplos e instrucciones
+- 3 modos de importación:
+  - **Crear + Actualizar**: si el código existe → actualiza; si no → crea
+  - **Solo crear**: omite filas con código ya existente
+  - **Solo actualizar**: omite filas sin código registrado
+- Preview de filas antes de confirmar
+- Resumen post-importación: creados / actualizados / precios cambiados / omitidos / errores
+- Registro de lote (`RecursoImportBatch`) con conteos
+
+**Historial de precios** (`PriceHistoryPanel` en editar recurso):
+- Se registra automáticamente cada vez que cambia `costoUnitario` (vía edición manual o importación)
+- Muestra: fecha, precio anterior, precio nuevo, variación %, origen (Manual / Excel #loteId)
 
 ### 5.7 Tareas (`/tareas`)
-- Gestión simple de tareas
 - Vinculadas a cliente y/o proyecto
 - Prioridad: Alta/Media/Baja | Estado: Pendiente/En progreso/Completada
-- Alertas de vencimiento en dashboard
 
 ### 5.8 Módulos Melamina (`/melamina`)
-- Catálogo de módulos de muebles
-- Dimensiones (ancho × alto × profundidad), material, color, herrajes
-- Costos: materiales, mano de obra, instalación → precio de venta
-- Estado de producción: Diseño / En producción / Listo / Entregado
+
+**Catálogo de Materiales** (`/melamina/materiales`):
+- Sección independiente con 3 tabs: **Tableros / Cantos / Herrajes**
+- **Tableros**: nombre, código, marca, proveedor, precio/plancha, ancho × largo × espesor (mm)
+- **Cantos**: nombre, código, marca, proveedor, precio, ancho (mm), espesor (mm)
+- **Herrajes**: nombre, código, marca, proveedor, precio, unidad
+- CRUD inline — agregar fila, editar en la misma fila, eliminar (soft delete)
+
+**Editor de Módulos** (`/melamina/[id]`) — 4 tabs:
+
+**Tab Datos**:
+- Código, tipo, nombre, dimensiones (ancho/alto/prof mm), puertas, cajones, cantidad
+- Tablero principal → selector del catálogo de MaterialMelamina (tipo=tablero), muestra dimensiones y precio
+- Color/acabado, estado producción, precio de venta, observaciones
+
+**Tab Despiece**:
+- Generación automática según tipo de módulo y dimensiones
+- Tabla de piezas: etiqueta, nombre, largo, ancho, cantidad, espesor, tapacanto (botones S/I/L/R)
+- Columna "Tablero" por pieza → selector del catálogo con opción "Heredar (tablero principal)"
+- **Celdas largo/ancho en rojo** si la pieza supera las dimensiones del tablero seleccionado
+- Banner de advertencia si hay piezas que no caben
+- Panel de consumo: área total, número de planchas con dimensiones reales del tablero, % uso plancha, tapacanto total ml
+
+**Tab Materiales**:
+- Cantos y herrajes del catálogo propio (no del catálogo general de recursos)
+- Input + datalist nativo para búsqueda por nombre/código
+- Badge de tipo (canto/herraje)
+- Auto-fill de unidad y costo al seleccionar
+
+**Tab Resumen**:
+- Consumo de tablero: piezas, área, planchas, tapacanto
+- Barra de % tablero vs cantos+herrajes del costo total
+- Lista de cantos y herrajes con subtotales
+- Costo total estimado, precio de venta editable, margen %
+- Total × cantidad de módulos
+
+**Nuevo módulo** (form simplificado): código, tipo, nombre, dimensiones, tablero del catálogo, color, observaciones
 
 ### 5.9 Configuración (`/configuracion`)
-- **Empresa**: nombre, RNC, dirección, teléfono, correo, sitio web, slogan, logo (upload de imagen)
-- **Usuarios**: CRUD con roles (Admin), password hasheado
-- **Vendedores**: equipo comercial
-- **Categorías**: para proyectos y otros módulos
-- **Unidades**: catálogo global de unidades de medida
+- Empresa, Usuarios, Vendedores, Categorías, Unidades
 
 ### 5.10 Reporte de Control Presupuestario (`/proyectos/[id]/reporte`)
-- Server component — sin sidebar (layout independiente)
-- Encabezado: logo empresa, nombre, "Reporte de Control Presupuestario", fecha de emisión
-- Bloque proyecto/cliente en 2 columnas
-- 4 tarjetas de totales: Presupuestado / Gastado / Disponible o Sobregiro / % Ejecutado
-- **Nivel 1**: Tabla resumen por capítulo (presupuestado / real / diferencia / %)
-- **Nivel 2**: Detalle por partida dentro de cada capítulo
-- Barra de progreso de ejecución
-- Alerta de gastos sin clasificar
-- Total de cierre en bloque destacado
-- Footer con nombre empresa y marca de tiempo
-- Impresión: A4 portrait, márgenes 1.5cm, `@page`, colores forzados
+- Server component sin sidebar, layout A4
+- Encabezado con logo empresa, tablas por capítulo y partida, totales, footer
 
 ---
 
 ## 6. Sistema de autenticación
 
-- JWT almacenado en cookie `crm_session` (httpOnly implícito por Next.js)
-- `proxy.ts` (middleware Next.js 16) intercepta todas las rutas:
-  - Rutas estáticas: pasan sin verificación
-  - `/login`, `/api/auth/*`: pasan sin verificación pero reciben `x-pathname`
-  - APIs: verifican token si existe (opcional, no bloquean)
-  - Páginas protegidas: redirigen a `/login` si no hay token válido
-- El middleware inyecta headers en cada request:
-  - `x-pathname` → para que `AppLayout` sepa en qué ruta está
-  - `x-user-id`, `x-user-nombre`, `x-user-correo` → para el sidebar y auditoría
+- JWT en cookie `crm_session`
+- `proxy.ts` intercepta rutas: protege páginas, inyecta `x-pathname`, `x-user-id`, `x-user-nombre`
 
 ---
 
 ## 7. Layout y navegación
 
-### AppLayout
-```tsx
-// Rutas que NO usan el shell del dashboard (sin sidebar):
-const SHELL_FREE = ['/login', '/reporte', '/imprimir']
-// Cualquier pathname que termine en alguno de estos valores
-// recibe solo {children} — sin Sidebar, sin main ml-64, sin p-8
-```
-
-### Sidebar
-- Ancho fijo: 256px (`w-64`)
-- Fondo: `bg-slate-900`
-- Secciones: Dashboard, Clientes, Proyectos, Presupuestos, Tareas, Módulos Melamina / Catálogos (Recursos, APU) / Sistema (Configuración)
-- Logo de empresa configurable en el header del sidebar
-- Usuario activo + botón logout en el footer
+- `AppLayout` detecta rutas shell-free (`/login`, `/reporte`, `/imprimir`) → renderiza sin sidebar
+- Sidebar `bg-slate-900`, 256px, secciones: Dashboard / Clientes / Proyectos / Presupuestos / Tareas / Módulos Melamina / Catálogos / Sistema
 
 ---
 
-## 8. APIs REST
-
-### Patrón general
-- Todas en `app/api/` con Next.js App Router Route Handlers
-- Responden JSON
-- Sin validación de schema formal (Zod no está en uso)
-- Errores devuelven `{ error: string }` con status HTTP apropiado
-- Params de Next.js 15/16 son `Promise<{ id: string }>` (se hace `await params`)
-
-### Endpoints principales
+## 8. APIs REST principales
 
 ```
-GET    /api/clientes
-POST   /api/clientes
-GET    /api/clientes/[id]
-PUT    /api/clientes/[id]
-DELETE /api/clientes/[id]
+GET/POST  /api/clientes
+GET/PUT/DELETE /api/clientes/[id]
 
-GET    /api/proyectos
-POST   /api/proyectos
-GET    /api/proyectos/[id]
-PUT    /api/proyectos/[id]
-DELETE /api/proyectos/[id]
+GET/POST  /api/proyectos
+GET/PUT/DELETE /api/proyectos/[id]
+GET/POST  /api/proyectos/[id]/gastos
+PUT/DELETE /api/proyectos/[id]/gastos/[gastoId]
+POST      /api/proyectos/[id]/gastos/importar
+GET       /api/proyectos/[id]/gastos/plantilla
+GET       /api/proyectos/[id]/partidas
+POST/DELETE /api/proyectos/[id]/poblar-presupuesto
 
-GET    /api/proyectos/[id]/gastos          ← lista con partida incluida
-POST   /api/proyectos/[id]/gastos          ← soporta multipart/form-data (adjunto)
-PUT    /api/proyectos/[id]/gastos/[gastoId] ← edición + asignación partida inline
-DELETE /api/proyectos/[id]/gastos/[gastoId]
-POST   /api/proyectos/[id]/gastos/importar ← Excel bulk import
-GET    /api/proyectos/[id]/gastos/plantilla ← Descarga template .xlsx
-GET    /api/proyectos/[id]/partidas        ← Snapshot de partidas del proyecto
+GET/POST  /api/presupuestos-v2
+GET/PUT/DELETE /api/presupuestos-v2/[id]
+POST      /api/presupuestos-v2/[id]/duplicar   ← Copia completa con nuevo COT
+GET       /api/presupuestos-v2/plantilla
 
-POST   /api/proyectos/[id]/poblar-presupuesto  ← Importa estructura desde presupuesto
-DELETE /api/proyectos/[id]/poblar-presupuesto  ← Limpia estructura + desvincula gastos
+PUT       /api/presupuestos/[id]/estado        ← Auto-activa proyecto si estado=Aprobado
 
-GET    /api/presupuestos-v2                ← Lista con filtros ?proyectoId= ?clienteId=
-POST   /api/presupuestos-v2               ← Crea presupuesto V2 completo (transacción)
-GET    /api/presupuestos-v2/[id]
-PUT    /api/presupuestos-v2/[id]
-DELETE /api/presupuestos-v2/[id]
-GET    /api/presupuestos-v2/plantilla      ← Template Excel (.xlsx)
+GET/POST  /api/apus
+GET/PUT/DELETE /api/apus/[id]
 
-GET    /api/apus
-POST   /api/apus
-GET    /api/apus/[id]
-PUT    /api/apus/[id]
-DELETE /api/apus/[id]
+GET/POST  /api/recursos
+GET/PUT/DELETE /api/recursos/[id]              ← PUT graba historial si cambia precio
+GET       /api/recursos/[id]/historial         ← Historial de cambios de precio
+POST      /api/recursos/importar               ← Excel bulk (3 modos) + lote
+GET       /api/recursos/plantilla
 
-GET    /api/recursos
-POST   /api/recursos
-...
+GET/POST  /api/melamina                        ← Lista + crear módulo
+GET/PUT/DELETE /api/melamina/[id]              ← Incluye piezas + materialesModulo
+GET/POST  /api/melamina/materiales             ← CRUD catálogo de materiales
+GET/PUT/DELETE /api/melamina/materiales/[id]
 
-POST   /api/auth/login                     ← Genera JWT, setea cookie
-POST   /api/auth/logout                    ← Elimina cookie
-
-GET/PUT /api/configuracion/empresa
-POST    /api/configuracion/logo            ← Upload imagen a /public/uploads/
-GET/POST/DELETE /api/configuracion/usuarios/[id]
+POST      /api/auth/login
+POST      /api/auth/logout
+GET/PUT   /api/configuracion/empresa
+POST      /api/configuracion/logo
 ```
 
 ---
@@ -376,33 +345,35 @@ GET/POST/DELETE /api/configuracion/usuarios/[id]
 
 ```
 1. Login → JWT cookie
-2. Crear Cliente
-3. Crear Proyecto para ese cliente
-4. Crear Presupuesto V2 (capítulos + partidas + indirectos)
-   → Opcionalmente importar desde Excel
-   → Opcionalmente aplicar APUs por partida
-5. Vincular presupuesto al proyecto ("Poblar desde presupuesto")
-   → Crea snapshot de ProyectoCapitulo + ProyectoPartida
-   → Setea presupuestoBaseId y presupuestoEstimado en el proyecto
-6. Registrar gastos del proyecto
-   → Manual (GastoForm) o masivo (Excel)
-   → Asignar cada gasto a una partida (inline o bulk)
-7. Ver control presupuestario: presupuestado vs real por partida
-8. Generar reporte PDF (imprimir desde /reporte)
+2. Crear Cliente → Proyecto
+3. Crear Presupuesto V2 → vincular al proyecto → "Poblar" estructura
+4. Registrar gastos → asignar a partidas (inline o bulk)
+5. Ver control presupuestario (semáforo por partida)
+6. Cambiar presupuesto a "Aprobado" → proyecto pasa a "Activo" automáticamente
+7. Generar reporte PDF
+```
+
+```
+Melamina:
+1. Ir a /melamina/materiales → agregar tableros con dimensiones reales, cantos, herrajes
+2. Crear módulo → seleccionar tablero principal
+3. Tab Despiece → generar cortes automáticos; verificar piezas vs dimensiones tablero
+4. Tab Materiales → agregar cantos y herrajes usados con cantidades
+5. Tab Resumen → revisar costo total y margen; confirmar precio de venta
 ```
 
 ---
 
 ## 10. Características de la interfaz
 
-- **Tablas con columnas configurables**: visibilidad guardada en `localStorage` (clave `gastos_cols_v1`)
-- **Filtros persistentes**: search, tipo, método, estado, categoría, partida, fecha desde/hasta
-- **Selección masiva**: checkboxes con indeterminate en header, barra de acción bulk
-- **Popovers inline**: asignación de partida sin abrir modal (click-outside para cerrar)
-- **Preview de impresión**: páginas de print con shell gris en pantalla (similar a Google Docs Print Preview)
-- **Flash de confirmación**: "✓ Guardado" 1.5s después de guardar inline
-- Moneda formateada con `Intl.NumberFormat` (formato dominicano)
-- Fechas con `toLocaleDateString('es-DO')`
+- Tablas con columnas configurables (`localStorage`)
+- Filtros persistentes con chips activos y "limpiar todo"
+- Selección masiva con barra de acción bulk
+- Popovers inline para asignación sin modal
+- Preview de impresión A4 (shell gris en pantalla)
+- Flash de confirmación "✓ Guardado" 1.5s
+- Datalist nativo para búsquedas en selectores (APU, materiales melamina)
+- Barras de progreso visuales (% costos, % uso plancha, semáforo de ejecución)
 
 ---
 
@@ -410,18 +381,17 @@ GET/POST/DELETE /api/configuracion/usuarios/[id]
 
 | Área | Situación |
 |---|---|
-| Validación de inputs | No usa Zod ni schema validation. Solo validaciones manuales básicas en el frontend |
-| Tests | No hay tests automatizados (ni unitarios ni e2e) |
-| Roles y permisos | Solo existe el rol "Admin". No hay permisos granulares |
-| Multi-moneda | Los gastos soportan RD$, USD, EUR pero no hay conversión automática. Los totales mezclan monedas |
-| Archivos adjuntos | Se guardan en `/public/uploads/` — no hay cloud storage. No escala bien |
-| Paginación | Las listas no tienen paginación server-side. Con muchos registros puede ser lento |
-| Presupuesto V1 | Existe un sistema legacy (`/api/presupuestos` y `Partida` model). Coexiste con V2 |
-| APU en partidas | El APU embebido en `AnalisisPartida` no se recalcula automáticamente si cambia el recurso origen |
-| Módulos Melamina | Hay dos modelos: `ModuloMelamina` (legacy, en presupuesto) y `ModuloMelaminaV2` (standalone) |
-| Snapshot presupuestario | Al re-poblar, el sistema ahora intenta re-asignar gastos a las nuevas partidas por `codigo` (exacto) o `descripcion` (inclusión de texto). Los que no tienen coincidencia quedan con `partidaId = null` |
-| Error handling | Los errores de API no tienen logging estructurado. Solo `console.error` |
-| Sin transacciones optimistas | La UI no tiene rollback si una operación falla a mitad |
+| Validación de inputs | No usa Zod. Solo validaciones manuales básicas |
+| Tests | Sin tests automatizados |
+| Roles y permisos | Solo rol "Admin". Sin permisos granulares |
+| Multi-moneda | Gastos soportan RD$/USD/EUR pero sin conversión automática |
+| Archivos adjuntos | `/public/uploads/` — sin cloud storage |
+| Paginación | Sin paginación server-side |
+| Presupuesto V1 | Modelo legacy `Partida` coexiste con V2 |
+| APU en partidas | No se recalcula si cambia el recurso origen |
+| Melamina V1 legacy | `ModuloMelamina` (ligado a presupuesto) coexiste con `ModuloMelaminaV2` |
+| RecursoModulo legacy | Tabla `recursos_modulo` coexiste con nueva `material_modulo_melamina` |
+| Error handling | Solo `console.error`. Sin logging estructurado |
 
 ---
 
@@ -436,20 +406,22 @@ JWT_SECRET="gonzalva-group-crm-jwt-secret-2025-xK9mP2qL"
 
 ## 13. Decisiones de diseño destacadas
 
-1. **SQLite en producción**: elección deliberada para simplicidad de despliegue (sin servidor de base de datos externo). Adecuado para una sola empresa con uso concurrente bajo.
+1. **SQLite en producción**: sin servidor de BD externo, adecuado para uso concurrente bajo en una sola empresa.
 
-2. **Snapshot presupuestario**: al "poblar" un proyecto, se copian los capítulos y partidas del presupuesto como un snapshot independiente. Esto permite que el presupuesto original sea modificado sin afectar el control de ejecución.
+2. **Snapshot presupuestario**: al "poblar" un proyecto se copia la estructura del presupuesto como snapshot independiente. Cambios posteriores al presupuesto no afectan el control de ejecución.
 
-3. **Presupuesto V2 vs Legacy**: el sistema migró de un modelo plano (`Partida`) a una jerarquía (Título → Capítulo → Partida). El V1 se mantiene por compatibilidad pero los nuevos presupuestos se crean con V2.
+3. **Historial de precios de recursos**: solo se crea registro cuando el precio realmente cambia. Guarda precio anterior/nuevo, fecha y origen (manual o lote de importación con ID).
 
-4. **`proxy.ts` como middleware**: Next.js 16 renombró `middleware.ts` a `proxy.ts`. Este archivo maneja auth JWT y también inyecta `x-pathname` para que `AppLayout` pueda decidir si mostrar o no el sidebar.
+4. **Catálogo de materiales melamina independiente**: tableros, cantos y herrajes viven en `MaterialMelamina` separados del catálogo general de `Recurso`. Permite control específico con dimensiones físicas (mm) para calcular consumo real de planchas.
 
-5. **Layout independiente para impresión**: en lugar de media queries para ocultar el sidebar, `AppLayout` detecta las rutas `/reporte` e `/imprimir` y renderiza sin el shell del dashboard. Así el HTML de print está limpio desde el servidor.
+5. **Comparación pieza vs tablero en despiece**: el editor verifica en tiempo real si cada pieza (largo/ancho) cabe dentro del tablero seleccionado, marcando las celdas en rojo y mostrando banner de advertencia.
 
-6. **Numeración de presupuestos**: en lugar de `count()` (colisiona con gaps), usa `MAX` del sufijo numérico del año actual para generar el siguiente número.
+6. **Duplicar presupuesto**: endpoint `POST /api/presupuestos-v2/[id]/duplicar` copia la estructura completa (títulos, capítulos, partidas, APUs, indirectos) con nuevo número `COT-YYYY-NNN` y estado `Borrador`. Los IDs de títulos se remapean para mantener las relaciones capítulo→título.
 
-7. **Bulk assign de gastos**: llama `PUT /api/gastos/[id]` en paralelo con `Promise.all` en lugar de un endpoint batch — simple de implementar y suficiente para el volumen esperado.
+7. **Auto-activación de proyecto**: al cambiar estado del presupuesto a `Aprobado` vía `PUT /api/presupuestos/[id]/estado`, si el presupuesto tiene `proyectoId`, el proyecto se actualiza a `estado = "Activo"` en la misma transacción.
 
-8. **Rentabilidad real como cálculo puro del servidor**: no requiere nuevo endpoint. Se calcula en el Server Component con los datos ya disponibles (`proyecto.presupuestos` + `getGastosResumen`). Sin estado del cliente, sin fetch extra.
+8. **`proxy.ts` como middleware**: Next.js 16 renombró `middleware.ts`. Maneja auth JWT e inyecta `x-pathname` para que `AppLayout` decida si mostrar sidebar.
 
-9. **Re-poblar con preservación de asignaciones**: al reimportar la estructura presupuestaria, se guarda en memoria el mapa `gastoId → { codigo, descripcion }` de la partida anterior antes de limpiar. Después de crear las nuevas partidas, se reintenta la asignación por coincidencia de `codigo` (exacto) o `descripcion` (substring bidireccional). Todo ocurre dentro de la misma transacción Prisma.
+9. **Layout independiente para impresión**: `AppLayout` detecta rutas `/reporte` e `/imprimir` y renderiza sin shell — HTML de print limpio desde el servidor.
+
+10. **Numeración de presupuestos**: usa `MAX` del sufijo numérico del año actual en lugar de `count()` para evitar colisiones con gaps.

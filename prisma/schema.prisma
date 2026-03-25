@@ -55,7 +55,8 @@ model Proyecto {
 
 model GastoProyecto {
   id               Int      @id @default(autoincrement())
-  proyectoId       Int
+  proyectoId       Int?     // nullable: gasto puede existir sin proyecto
+  destinoTipo      String   @default("proyecto")  // proyecto|oficina|taller|general|sin_asignar
   fecha            DateTime
   tipoGasto        String   @default("Gasto menor")
   referencia       String?
@@ -79,7 +80,7 @@ model GastoProyecto {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  proyecto  Proyecto         @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  proyecto  Proyecto?        @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   partida   ProyectoPartida? @relation(fields: [partidaId], references: [id], onDelete: SetNull)
   recurso   Recurso?         @relation(fields: [recursoId], references: [id], onDelete: SetNull)
 }
@@ -499,27 +500,33 @@ model ApuCatalogo {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  recursos      ApuRecurso[]
+  recursos      ApuRecurso[] @relation("ApuComposicion")
+  comoHijo      ApuRecurso[] @relation("ApuHijo")
 }
 
-// ── COMPOSICIÓN APU ← RECURSOS ────────────────────────────────────────
+// ── COMPOSICIÓN APU ← RECURSOS / SUB-APUs ────────────────────────────
 
 model ApuRecurso {
   id               Int      @id @default(autoincrement())
   apuId            Int
-  recursoId        Int?     // null si es línea libre
+  tipoComponente   String   @default("recurso")  // 'recurso' | 'apu' | 'libre'
+  recursoId        Int?     // null si es línea libre o APU hijo
+  apuHijoId        Int?     // referencia al APU hijo cuando tipoComponente = 'apu'
+  nombreSnapshot   String?  // snapshot de nombre del APU hijo
+  unidadSnapshot   String?  // snapshot de unidad del APU hijo
   descripcionLibre String?  // texto libre cuando no hay recurso del catálogo
   unidadLibre      String?  // unidad para línea libre
-  tipoLinea        String?  // sección a la que pertenece: materiales|manoObra|equipos|etc
+  tipoLinea        String?  // sección: materiales|manoObra|equipos|etc
   cantidad         Float    @default(1)
-  costoSnapshot    Float    @default(0) // precio al momento de guardar el APU
-  subtotal         Float    @default(0) // cantidad * costoSnapshot
+  costoSnapshot    Float    @default(0)
+  subtotal         Float    @default(0)
   orden            Int      @default(0)
   observaciones    String?
   createdAt        DateTime @default(now())
 
-  apu     ApuCatalogo @relation(fields: [apuId], references: [id], onDelete: Cascade)
-  recurso Recurso?    @relation(fields: [recursoId], references: [id])
+  apu     ApuCatalogo  @relation("ApuComposicion", fields: [apuId], references: [id], onDelete: Cascade)
+  recurso Recurso?     @relation(fields: [recursoId], references: [id])
+  apuHijo ApuCatalogo? @relation("ApuHijo", fields: [apuHijoId], references: [id])
 }
 
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────

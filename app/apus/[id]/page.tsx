@@ -9,12 +9,15 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [apu, recursos] = await Promise.all([
+  const [apu, recursos, apusDisponibles] = await Promise.all([
     prisma.apuCatalogo.findUnique({
       where: { id },
       include: {
         recursos: {
-          include: { recurso: true },
+          include: {
+            recurso: true,
+            apuHijo: { select: { id: true, codigo: true, nombre: true, unidad: true, precioVenta: true } },
+          },
           orderBy: { orden: 'asc' },
         },
       },
@@ -23,6 +26,11 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
       where: { activo: true },
       orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
       select: { id: true, codigo: true, nombre: true, tipo: true, unidad: true, costoUnitario: true },
+    }),
+    prisma.apuCatalogo.findMany({
+      where: { activo: true, NOT: { id } },  // exclude self
+      orderBy: [{ capitulo: 'asc' }, { nombre: 'asc' }],
+      select: { id: true, codigo: true, nombre: true, unidad: true, precioVenta: true, capitulo: true },
     }),
   ])
 
@@ -45,6 +53,7 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
       </div>
       <ApuEditor
         recursos={recursos}
+        apusDisponibles={apusDisponibles}
         mode="edit"
         initialData={{
           id: apu.id,
@@ -59,12 +68,20 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
           activo: apu.activo,
           observaciones: apu.observaciones || '',
           recursos: apu.recursos.map((ar) => ({
+            tipoComponente: ar.tipoComponente,
             recursoId: ar.recursoId,
+            apuHijoId: ar.apuHijoId,
+            nombreSnapshot: ar.nombreSnapshot,
+            unidadSnapshot: ar.unidadSnapshot,
+            descripcionLibre: ar.descripcionLibre,
+            unidadLibre: ar.unidadLibre,
+            tipoLinea: ar.tipoLinea,
             cantidad: ar.cantidad,
             costoSnapshot: ar.costoSnapshot,
             subtotal: ar.subtotal,
             observaciones: ar.observaciones,
             recurso: ar.recurso,
+            apuHijo: ar.apuHijo,
           })),
         }}
       />
