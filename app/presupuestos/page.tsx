@@ -45,11 +45,12 @@ export default async function PresupuestosPage({
     <div className="space-y-6">
       {msg === 'creado' && <SuccessBanner mensaje="Presupuesto creado exitosamente" />}
       {msg === 'actualizado' && <SuccessBanner mensaje="Presupuesto actualizado exitosamente" />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Presupuestos</h1>
-          <p className="text-slate-500 mt-1">{presupuestos.length} presupuestos encontrados</p>
+          <h1 className="text-2xl font-bold text-foreground">Presupuestos</h1>
+          <p className="text-muted-foreground mt-1">{presupuestos.length} presupuestos encontrados</p>
         </div>
         <Link href="/presupuestos/nuevo-v2">
           <Button>
@@ -69,8 +70,8 @@ export default async function PresupuestosPage({
                 href={opt.value ? `/presupuestos?estado=${encodeURIComponent(opt.value)}` : '/presupuestos'}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   estado === opt.value || (!estado && opt.value === '')
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                 }`}
               >
                 {opt.label}
@@ -85,8 +86,8 @@ export default async function PresupuestosPage({
         <CardContent className="p-0">
           {presupuestos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <FileText className="w-12 h-12 text-slate-300 mb-3" />
-              <p className="text-slate-500 font-medium">No hay presupuestos en este estado</p>
+              <FileText className="w-12 h-12 text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground font-medium">No hay presupuestos en este estado</p>
               <Link href="/presupuestos/nuevo" className="mt-4">
                 <Button size="sm">
                   <Plus className="w-4 h-4" /> Crear presupuesto
@@ -97,27 +98,27 @@ export default async function PresupuestosPage({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">N° Cotización</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Cliente</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Proyecto</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+                  <tr className="bg-muted/40 border-b border-border">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">N° Cotización</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyecto</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {presupuestos.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
                         <Link
                           href={`/presupuestos/${p.id}`}
-                          className="text-sm font-semibold text-slate-800 hover:text-blue-600"
+                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                         >
                           {p.numero}
                         </Link>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {p._count.capitulos > 0
                             ? `${p._count.capitulos} capítulos (V2)`
                             : `${p._count.partidas} partidas · ${p._count.modulosMelamina} módulos`}
@@ -126,29 +127,29 @@ export default async function PresupuestosPage({
                       <td className="px-4 py-3">
                         <Link
                           href={`/clientes/${p.cliente.id}`}
-                          className="text-sm text-slate-600 hover:text-blue-600"
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
                         >
                           {p.cliente.nombre.split(' ').slice(0, 2).join(' ')}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
                         {p.proyecto ? (
-                          <Link href={`/proyectos/${p.proyecto.id}`} className="hover:text-blue-600">
+                          <Link href={`/proyectos/${p.proyecto.id}`} className="hover:text-primary transition-colors">
                             {p.proyecto.nombre.length > 30
                               ? p.proyecto.nombre.substring(0, 30) + '...'
                               : p.proyecto.nombre}
                           </Link>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-muted-foreground/50">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <EstadoPresupuestoBadge estado={p.estado} />
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold text-slate-800">
+                      <td className="px-4 py-3 text-sm font-bold text-foreground tabular-nums">
                         {formatCurrency(p.total)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
                         {formatDate(p.createdAt)}
                       </td>
                       <td className="px-4 py-3">

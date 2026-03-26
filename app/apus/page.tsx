@@ -23,8 +23,8 @@ export default async function ApusPage({ searchParams }: { searchParams: Promise
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Catálogo de APUs</h1>
-          <p className="text-slate-500 mt-1">{apus.length} análisis de precios unitarios</p>
+          <h1 className="text-2xl font-bold text-foreground">Catálogo de APUs</h1>
+          <p className="text-muted-foreground mt-1">{apus.length} análisis de precios unitarios</p>
         </div>
         <Link href="/apus/nuevo">
           <Button><Plus className="w-4 h-4" /> Nuevo APU</Button>

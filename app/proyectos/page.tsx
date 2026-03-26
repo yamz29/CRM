@@ -60,11 +60,12 @@ export default async function ProyectosPage({
     <div className="space-y-6">
       {msg === 'creado' && <SuccessBanner mensaje="Proyecto creado exitosamente" />}
       {msg === 'actualizado' && <SuccessBanner mensaje="Proyecto actualizado exitosamente" />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Proyectos</h1>
-          <p className="text-slate-500 mt-1">{proyectos.length} proyectos encontrados</p>
+          <h1 className="text-2xl font-bold text-foreground">Proyectos</h1>
+          <p className="text-muted-foreground mt-1">{proyectos.length} proyectos encontrados</p>
         </div>
         <Link href="/proyectos/nuevo">
           <Button>
@@ -80,25 +81,25 @@ export default async function ProyectosPage({
           title="Total Proyectos"
           value={stats.total}
           icon={<FolderOpen className="w-5 h-5" />}
-          colorClass="bg-slate-100 text-slate-600"
+          colorClass="bg-muted text-muted-foreground"
         />
         <StatsCard
           title="En Ejecución"
           value={stats.enEjecucion}
           icon={<TrendingUp className="w-5 h-5" />}
-          colorClass="bg-green-50 text-green-600"
+          colorClass="bg-green-500/10 text-green-500"
         />
         <StatsCard
           title="Adjudicados"
           value={stats.adjudicados}
           icon={<Clock className="w-5 h-5" />}
-          colorClass="bg-yellow-50 text-yellow-600"
+          colorClass="bg-yellow-500/10 text-yellow-500"
         />
         <StatsCard
           title="Terminados"
           value={stats.terminados}
           icon={<CheckCircle className="w-5 h-5" />}
-          colorClass="bg-blue-50 text-blue-600"
+          colorClass="bg-blue-500/10 text-blue-500"
         />
       </div>
 
@@ -112,8 +113,8 @@ export default async function ProyectosPage({
                 href={opt.value ? `/proyectos?estado=${encodeURIComponent(opt.value)}` : '/proyectos'}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   estado === opt.value || (!estado && opt.value === '')
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                 }`}
               >
                 {opt.label}
@@ -128,8 +129,8 @@ export default async function ProyectosPage({
         <CardContent className="p-0">
           {proyectos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <FolderOpen className="w-12 h-12 text-slate-300 mb-3" />
-              <p className="text-slate-500 font-medium">No hay proyectos en este estado</p>
+              <FolderOpen className="w-12 h-12 text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground font-medium">No hay proyectos en este estado</p>
               <Link href="/proyectos/nuevo" className="mt-4">
                 <Button size="sm">
                   <Plus className="w-4 h-4" /> Crear proyecto
@@ -140,46 +141,46 @@ export default async function ProyectosPage({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Proyecto</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Cliente</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Inicio</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Presupuesto</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+                  <tr className="bg-muted/40 border-b border-border">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyecto</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inicio</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Presupuesto</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {proyectos.map((proyecto) => (
-                    <tr key={proyecto.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={proyecto.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
                         <Link
                           href={`/proyectos/${proyecto.id}`}
-                          className="text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors"
+                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                         >
                           {proyecto.nombre}
                         </Link>
                         {proyecto.ubicacion && (
-                          <p className="text-xs text-slate-500 mt-0.5">{proyecto.ubicacion}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{proyecto.ubicacion}</p>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <Link
                           href={`/clientes/${proyecto.cliente.id}`}
-                          className="text-sm text-slate-600 hover:text-blue-600"
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
                         >
                           {proyecto.cliente.nombre.split(' ').slice(0, 2).join(' ')}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{proyecto.tipoProyecto}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{proyecto.tipoProyecto}</td>
                       <td className="px-4 py-3">
                         <EstadoProyectoBadge estado={proyecto.estado} />
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
                         {proyecto.fechaInicio ? formatDate(proyecto.fechaInicio) : '-'}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                      <td className="px-4 py-3 text-sm font-medium text-foreground tabular-nums">
                         {proyecto.presupuestoEstimado
                           ? formatCurrency(proyecto.presupuestoEstimado)
                           : '-'}

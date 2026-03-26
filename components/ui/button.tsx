@@ -8,14 +8,20 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+    const baseStyles =
+      'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed'
 
     const variants = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm',
-      secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-slate-400 border border-slate-200',
-      ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 focus:ring-slate-400',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm',
-      outline: 'bg-transparent border border-slate-300 text-slate-700 hover:bg-slate-50 focus:ring-slate-400',
+      primary:
+        'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20',
+      secondary:
+        'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border',
+      ghost:
+        'bg-transparent text-foreground hover:bg-muted focus:ring-muted-foreground',
+      danger:
+        'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm',
+      outline:
+        'bg-transparent border border-border text-foreground hover:bg-muted focus:ring-muted-foreground',
     }
 
     const sizes = {
