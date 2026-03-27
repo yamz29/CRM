@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer,
+  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer, Grid3x3,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -138,6 +138,147 @@ function calcTapacantoMl(p: PiezaLine) {
   return (ml * p.cantidad) / 1000
 }
 
+// ── Nesting (Shelf Packing) ───────────────────────────────────────────────────
+
+const NEST_COLORS = [
+  '#bfdbfe','#bbf7d0','#fef08a','#fed7aa','#e9d5ff',
+  '#fbcfe8','#bae6fd','#a7f3d0','#fde68a','#ddd6fe',
+  '#99f6e4','#fecaca','#d9f99d','#e0e7ff','#fef3c7',
+]
+
+interface NestPieceIn { key: string; etiqueta: string; nombre: string; w: number; h: number }
+interface PlacedPiece extends NestPieceIn { x: number; y: number; rotada: boolean; colorIdx: number }
+interface NestSheet { id: number; piezas: PlacedPiece[] }
+
+interface NestGroup {
+  tablero: string
+  boardW: number
+  boardH: number
+  sheets: NestSheet[]
+  totalPiezaAreaMm2: number
+  totalSheetAreaMm2: number
+  aprovechamiento: number
+}
+
+function runNesting(
+  piezas: PiezaLine[],
+  materialTablero: MaterialRef | null,
+  tableros: MaterialRef[],
+  kerf: number,
+  allowRotation: boolean,
+): NestGroup[] {
+  // 1. Group pieces by tablero name, expanding by quantity
+  const groups: Record<string, { mat: MaterialRef | null; pieces: NestPieceIn[] }> = {}
+  piezas.forEach((p) => {
+    const key = p.material || materialTablero?.nombre || 'Sin tablero'
+    if (!groups[key]) {
+      const mat = tableros.find((t) => t.nombre === key) ?? materialTablero
+      groups[key] = { mat: mat ?? null, pieces: [] }
+    }
+    for (let i = 0; i < p.cantidad; i++) {
+      groups[key].pieces.push({ key: `${p._key}-${i}`, etiqueta: p.etiqueta, nombre: p.nombre, w: p.largo, h: p.ancho })
+    }
+  })
+
+  return Object.entries(groups).map(([tablero, g]) => {
+    const boardW = g.mat?.largoMm ?? 2800
+    const boardH = g.mat?.anchoMm ?? 2080
+
+    // 2. Orient pieces (landscape when rotation allowed) and sort by height desc
+    const oriented = g.pieces.map((p) => {
+      if (allowRotation && p.h > p.w) return { ...p, w: p.h, h: p.w, rotada: true }
+      return { ...p, rotada: false }
+    }).sort((a, b) => b.h - a.h || b.w - a.w)
+
+    // 3. Shelf packing
+    const sheets: NestSheet[] = []
+    let sheetPiezas: PlacedPiece[] = []
+    let shelfY = 0, shelfH = 0, shelfX = 0
+    let colorIdx = 0
+
+    const newSheet = () => {
+      if (sheetPiezas.length > 0) sheets.push({ id: sheets.length + 1, piezas: sheetPiezas })
+      sheetPiezas = []
+      shelfY = 0; shelfH = 0; shelfX = 0
+    }
+
+    for (const p of oriented) {
+      let pw = p.w, ph = p.h, rotada = p.rotada
+      // Skip pieces too large for any sheet
+      if (pw > boardW || ph > boardH) {
+        // Try swapping if rotation allowed
+        if (allowRotation && p.h <= boardW && p.w <= boardH) { pw = p.h; ph = p.w; rotada = !rotada }
+        else continue
+      }
+
+      const place = () => {
+        sheetPiezas.push({ ...p, w: pw, h: ph, x: shelfX, y: shelfY, rotada, colorIdx: colorIdx++ % NEST_COLORS.length })
+        shelfX += pw + kerf
+        if (ph > shelfH) shelfH = ph
+      }
+
+      if (shelfX + pw > boardW) {
+        // New shelf
+        shelfY += shelfH + kerf
+        shelfX = 0; shelfH = 0
+        if (shelfY + ph > boardH) newSheet()
+      }
+      if (shelfX + pw > boardW) {
+        // Still doesn't fit (piece wider than board) → skip
+        continue
+      }
+      place()
+    }
+    if (sheetPiezas.length > 0) sheets.push({ id: sheets.length + 1, piezas: sheetPiezas })
+
+    const totalPiezaAreaMm2 = g.pieces.reduce((acc, p) => acc + p.w * p.h, 0)
+    const totalSheetAreaMm2 = sheets.length * boardW * boardH
+    return {
+      tablero,
+      boardW,
+      boardH,
+      sheets,
+      totalPiezaAreaMm2,
+      totalSheetAreaMm2,
+      aprovechamiento: totalSheetAreaMm2 > 0 ? (totalPiezaAreaMm2 / totalSheetAreaMm2) * 100 : 0,
+    }
+  })
+}
+
+// ── SVG de plancha ─────────────────────────────────────────────────────────────
+
+function NestingSVG({ sheet, boardW, boardH }: { sheet: NestSheet; boardW: number; boardH: number }) {
+  const displayW = 460
+  const scale = displayW / boardW
+  const displayH = Math.round(boardH * scale)
+  return (
+    <svg width={displayW} height={displayH} className="border border-slate-200 rounded-lg bg-slate-50" style={{ maxWidth: '100%' }}>
+      <rect x={0} y={0} width={displayW} height={displayH} fill="#f8fafc" />
+      {sheet.piezas.map((p) => {
+        const x = Math.round(p.x * scale)
+        const y = Math.round(p.y * scale)
+        const w = Math.max(1, Math.round(p.w * scale))
+        const h = Math.max(1, Math.round(p.h * scale))
+        const fill = NEST_COLORS[p.colorIdx]
+        return (
+          <g key={p.key}>
+            <rect x={x} y={y} width={w} height={h} fill={fill} stroke="#94a3b8" strokeWidth={0.5} />
+            {w > 18 && h > 10 && (
+              <text x={x + w / 2} y={y + h / 2} textAnchor="middle" dominantBaseline="middle"
+                fontSize={Math.min(9, w / (p.etiqueta.length * 0.7), h * 0.55)} fill="#1e293b" fontFamily="monospace" fontWeight="600">
+                {p.etiqueta}
+              </text>
+            )}
+            {p.rotada && w > 14 && h > 14 && (
+              <text x={x + 2} y={y + 9} fontSize={7} fill="#64748b">↻</text>
+            )}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
 // ── Auto-generación de despiece ───────────────────────────────────────────────
 
 function generarDespiece(
@@ -215,7 +356,7 @@ function generarDespiece(
 
 export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   const router = useRouter()
-  const [tab, setTab] = useState<'datos' | 'despiece' | 'materiales' | 'resumen'>('despiece')
+  const [tab, setTab] = useState<'datos' | 'despiece' | 'materiales' | 'resumen' | 'nesting'>('despiece')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -237,6 +378,10 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   const [observaciones, setObservaciones] = useState(modulo.observaciones || '')
   const [materialTableroId, setMaterialTableroId] = useState(String(modulo.materialTableroId || ''))
 
+  // Nesting settings
+  const [nestKerf, setNestKerf] = useState(3)
+  const [nestRotation, setNestRotation] = useState(true)
+
   // Despiece
   const [piezas, setPiezas] = useState<PiezaLine[]>(
     modulo.piezas.map((p) => ({ ...p, _key: newKey(), tapacanto: Array.isArray(p.tapacanto) ? p.tapacanto : [] }))
@@ -257,14 +402,55 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
   const materialTablero = tableros.find((m) => m.id === parseInt(materialTableroId))
 
-  // ── Cálculos de plancha ──────────────────────────────────────────────────
+  // ── Cálculos globales ────────────────────────────────────────────────────
   const totalAreaM2 = piezas.reduce((acc, p) => acc + calcAreaM2(p), 0)
   const totalTapacantoMl = piezas.reduce((acc, p) => acc + calcTapacantoMl(p), 0)
+
+  // ── Consumo agrupado por tablero ─────────────────────────────────────────
+  const tableroGroups = useMemo(() => {
+    const groups: Record<string, { mat: MaterialRef | null; areaM2: number; tapacantoMl: number }> = {}
+    piezas.forEach((p) => {
+      const key = p.material || materialTablero?.nombre || 'Sin tablero'
+      if (!groups[key]) {
+        const mat = tableros.find((t) => t.nombre === key) ?? materialTablero
+        groups[key] = { mat: mat ?? null, areaM2: 0, tapacantoMl: 0 }
+      }
+      groups[key].areaM2 += calcAreaM2(p)
+      groups[key].tapacantoMl += calcTapacantoMl(p)
+    })
+    return Object.entries(groups).map(([nombre, g]) => {
+      const boardW = g.mat?.largoMm ?? 2800
+      const boardH = g.mat?.anchoMm ?? 2080
+      const boardAreaM2 = (boardW * boardH) / 1_000_000
+      const planchas = g.areaM2 > 0 ? Math.ceil((g.areaM2 * 1.15) / boardAreaM2) : 0
+      return {
+        nombre,
+        mat: g.mat,
+        areaM2: g.areaM2,
+        tapacantoMl: g.tapacantoMl,
+        boardW, boardH,
+        boardAreaM2,
+        planchas,
+        pctUso: planchas > 0 ? (g.areaM2 / (planchas * boardAreaM2)) * 100 : 0,
+      }
+    })
+  }, [piezas, materialTablero, tableros])
+
+  // Total planchas del tablero principal (para barra inferior y costos)
   const areaPlanchaM2 = materialTablero
-    ? ((materialTablero.anchoMm ?? 2440) * (materialTablero.largoMm ?? 1830)) / 1_000_000
-    : 4.4652
+    ? ((materialTablero.anchoMm ?? 2080) * (materialTablero.largoMm ?? 2800)) / 1_000_000
+    : (2080 * 2800) / 1_000_000
   const numPlanchas = totalAreaM2 > 0 ? Math.ceil((totalAreaM2 * 1.15) / areaPlanchaM2) : 0
   const pctUsoPlancha = numPlanchas > 0 ? (totalAreaM2 / (numPlanchas * areaPlanchaM2)) * 100 : 0
+
+  // ── Nesting ──────────────────────────────────────────────────────────────
+  const nestingGroups = useMemo(
+    () => (tab === 'nesting' && piezas.length > 0
+      ? runNesting(piezas, materialTablero ?? null, tableros, nestKerf, nestRotation)
+      : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tab, piezas, materialTablero, tableros, nestKerf, nestRotation],
+  )
 
   // ── Cálculos de costo ────────────────────────────────────────────────────
   const costoTablero = numPlanchas * (materialTablero?.precio || 0)
@@ -453,6 +639,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
         {([
           { key: 'datos', label: 'Datos', icon: <Settings2 className="w-3.5 h-3.5" /> },
           { key: 'despiece', label: 'Despiece', icon: <Layers className="w-3.5 h-3.5" /> },
+          { key: 'nesting', label: 'Nesting', icon: <Grid3x3 className="w-3.5 h-3.5" /> },
           { key: 'materiales', label: 'Materiales', icon: <Package className="w-3.5 h-3.5" /> },
           { key: 'resumen', label: 'Resumen', icon: <BarChart3 className="w-3.5 h-3.5" /> },
         ] as const).map((t) => (
@@ -734,43 +921,172 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
             </div>
           </div>
 
-          {/* Consumo de plancha */}
+          {/* Consumo de tablero — agrupado por tipo */}
           {piezas.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Consumo de tablero</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-xs text-slate-500">Área total piezas</p>
-                  <p className="text-lg font-bold text-slate-800">{totalAreaM2.toFixed(3)} m²</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">
-                    Planchas{materialTablero ? ` de ${materialTablero.anchoMm}×${materialTablero.largoMm}mm` : ''}
-                  </p>
-                  <p className="text-lg font-bold text-blue-700">{numPlanchas}</p>
-                  <p className="text-xs text-slate-400">({areaPlanchaM2.toFixed(3)} m² c/u · +15% merma)</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">% uso de plancha</p>
-                  <p className={`text-lg font-bold ${pctUsoPlancha >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
-                    {pctUsoPlancha.toFixed(1)}%
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Tapacanto total</p>
-                  <p className="text-lg font-bold text-amber-700">{totalTapacantoMl.toFixed(2)} ml</p>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Consumo de tablero</p>
+                <span className="text-xs text-slate-400">{totalAreaM2.toFixed(3)} m² total · {totalTapacantoMl.toFixed(2)} ml tapacanto</span>
+              </div>
+              <div className="space-y-2">
+                {tableroGroups.map((g) => (
+                  <div key={g.nombre} className="border border-slate-100 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-slate-700">{g.nombre}</span>
+                      <span className="text-xs text-slate-400">{g.boardW}×{g.boardH} mm</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      <div>
+                        <p className="text-xs text-slate-500">Área piezas</p>
+                        <p className="text-sm font-bold text-slate-800">{g.areaM2.toFixed(3)} m²</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">Planchas (+15%)</p>
+                        <p className="text-sm font-bold text-blue-700">{g.planchas}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">% uso plancha</p>
+                        <p className={`text-sm font-bold ${g.pctUso >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+                          {g.pctUso.toFixed(1)}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">Tapacanto</p>
+                        <p className="text-sm font-bold text-amber-700">{g.tapacantoMl.toFixed(2)} ml</p>
+                      </div>
+                    </div>
+                    {/* Barra de uso */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 bg-slate-100 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${g.pctUso >= 70 ? 'bg-green-500' : 'bg-amber-400'}`}
+                          style={{ width: `${Math.min(100, g.pctUso)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setTab('nesting')}
+                className="w-full text-xs text-blue-600 hover:text-blue-800 py-1.5 border border-dashed border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Ver optimización de corte (Nesting) →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB: NESTING ────────────────────────────────────────────────────── */}
+      {tab === 'nesting' && (
+        <div className="space-y-4 print:hidden">
+          {/* Configuración */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Configuración de optimización</p>
+            <div className="flex flex-wrap items-center gap-5">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Kerf (espesor de corte)</label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number" min="0" max="10" step="0.5"
+                    value={nestKerf}
+                    onChange={(e) => setNestKerf(parseFloat(e.target.value) || 0)}
+                    className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-slate-400">mm</span>
                 </div>
               </div>
-              {piezas.some((p) => {
-                if (!materialTablero) return false
-                return (materialTablero.anchoMm && p.ancho > materialTablero.anchoMm) ||
-                       (materialTablero.largoMm && p.largo > materialTablero.largoMm)
-              }) && (
-                <div className="mt-3 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-xs text-red-700">
-                  Algunas piezas superan las dimensiones del tablero seleccionado. Revisa los campos marcados en rojo.
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Rotación de piezas</label>
+                <button
+                  onClick={() => setNestRotation((v) => !v)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                    nestRotation
+                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      : 'bg-slate-50 border-slate-200 text-slate-500'
+                  }`}
+                >
+                  <span>{nestRotation ? '✓ Permitida' : 'Desactivada'}</span>
+                </button>
+              </div>
+              <div className="text-xs text-slate-400 max-w-xs">
+                Algoritmo Shelf — ordena piezas de mayor a menor, empaqueta en filas dentro de cada plancha.
+              </div>
             </div>
+          </div>
+
+          {piezas.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
+              Agrega piezas en el tab Despiece para ver la optimización de corte.
+            </div>
+          ) : nestingGroups.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
+              Calculando…
+            </div>
+          ) : (
+            nestingGroups.map((ng) => (
+              <div key={ng.tablero} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Tablero header */}
+                <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{ng.tablero}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Plancha {ng.boardW}×{ng.boardH} mm ·
+                      <span className="text-blue-700 font-semibold ml-1">{ng.sheets.length} plancha{ng.sheets.length !== 1 ? 's' : ''}</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-lg font-bold ${ng.aprovechamiento >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+                      {ng.aprovechamiento.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-slate-400">aprovechamiento</p>
+                  </div>
+                </div>
+
+                {/* Resumen */}
+                <div className="grid grid-cols-3 gap-4 px-5 py-3 border-b border-slate-100">
+                  <div>
+                    <p className="text-xs text-slate-500">Área total piezas</p>
+                    <p className="text-sm font-bold text-slate-800">{(ng.totalPiezaAreaMm2 / 1_000_000).toFixed(3)} m²</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Área total planchas</p>
+                    <p className="text-sm font-bold text-slate-800">{(ng.totalSheetAreaMm2 / 1_000_000).toFixed(3)} m²</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Desperdicio</p>
+                    <p className="text-sm font-bold text-red-600">
+                      {((ng.totalSheetAreaMm2 - ng.totalPiezaAreaMm2) / 1_000_000).toFixed(3)} m²
+                    </p>
+                  </div>
+                </div>
+
+                {/* SVG por plancha */}
+                <div className="p-4 space-y-4">
+                  {ng.sheets.map((sheet) => (
+                    <div key={sheet.id}>
+                      <p className="text-xs text-slate-500 mb-1.5 font-medium">
+                        Plancha {sheet.id} — {sheet.piezas.length} pieza{sheet.piezas.length !== 1 ? 's' : ''}
+                      </p>
+                      <NestingSVG sheet={sheet} boardW={ng.boardW} boardH={ng.boardH} />
+                      {/* Leyenda */}
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {Array.from(new Set(sheet.piezas.map((p) => p.etiqueta))).map((et) => {
+                          const p = sheet.piezas.find((x) => x.etiqueta === et)!
+                          return (
+                            <span key={et} className="flex items-center gap-1 text-xs text-slate-600 px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">
+                              <span className="w-3 h-3 rounded-sm inline-block" style={{ background: NEST_COLORS[p.colorIdx] }} />
+                              {et} — {p.nombre}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
