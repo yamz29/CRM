@@ -453,7 +453,9 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   )
 
   // ── Cálculos de costo ────────────────────────────────────────────────────
-  const costoTablero = numPlanchas * (materialTablero?.precio || 0)
+  // Proporcional: área usada / área plancha × precio (no multiplica planchas enteras)
+  const costoTablero = areaPlanchaM2 > 0 ? (totalAreaM2 / areaPlanchaM2) * (materialTablero?.precio || 0) : 0
+  const pctProporcionalTablero = areaPlanchaM2 > 0 ? (totalAreaM2 / areaPlanchaM2) * 100 : 0
   const totalMateriales = materialesModulo.reduce((acc, r) => acc + r.subtotal, 0)
   const costoTotal = costoTablero + totalMateriales
   const pv = parseFloat(precioVenta) || 0
@@ -1171,6 +1173,16 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         value={r.cantidad}
                         onChange={(e) => updateMaterial(r._key, 'cantidad', parseFloat(e.target.value) || 0)}
                       />
+                      {r.tipo === 'canto' && totalTapacantoMl > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => updateMaterial(r._key, 'cantidad', parseFloat(totalTapacantoMl.toFixed(2)))}
+                          className="text-xs text-amber-600 hover:text-amber-800 underline mt-0.5 block w-full text-right"
+                          title="Usar el total de tapacanto calculado de las piezas"
+                        >
+                          ↺ {totalTapacantoMl.toFixed(2)} ml
+                        </button>
+                      )}
                     </td>
                     <td className="px-2 py-1.5">
                       <input
@@ -1258,10 +1270,14 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-600">
                     <strong>{materialTablero.nombre}</strong>
-                    {materialTablero.anchoMm && materialTablero.largoMm
-                      ? ` — ${materialTablero.anchoMm}×${materialTablero.largoMm}${materialTablero.espesorMm ? `×${materialTablero.espesorMm}mm` : 'mm'}`
-                      : ''}
-                    {' — '}{numPlanchas} plancha{numPlanchas !== 1 ? 's' : ''} × {formatCurrency(materialTablero.precio)}
+                    {' — '}
+                    <span className="text-xs">
+                      {totalAreaM2.toFixed(3)} m² / {areaPlanchaM2.toFixed(3)} m²
+                      {' '}(<span className={pctProporcionalTablero >= 70 ? 'text-green-600 font-semibold' : 'text-amber-600 font-semibold'}>
+                        {pctProporcionalTablero.toFixed(1)}%
+                      </span>)
+                      {' × '}{formatCurrency(materialTablero.precio)}
+                    </span>
                   </span>
                   <span className="font-bold text-slate-800">{formatCurrency(costoTablero)}</span>
                 </div>
@@ -1292,7 +1308,11 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                   return (
                     <div key={r._key} className="flex items-center justify-between text-sm">
                       <span className="text-slate-600">
-                        {mat?.nombre || r.search || 'Material'} — {r.cantidad} {r.unidad}
+                        {mat?.nombre || r.search || 'Material'}
+                        {r.tipo === 'canto'
+                          ? <span className="text-xs text-slate-500 ml-1">— {r.cantidad} {r.unidad} × {formatCurrency(r.costoSnapshot)}/{r.unidad}</span>
+                          : <span className="text-xs text-slate-500 ml-1">— {r.cantidad} {r.unidad}</span>
+                        }
                         {r.tipo && (
                           <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${r.tipo === 'canto' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
                             {r.tipo}
@@ -1325,7 +1345,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Resumen de costos</p>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Tablero ({numPlanchas} planchas)</span>
+                <span className="text-slate-600">Tablero ({pctProporcionalTablero.toFixed(1)}% de plancha)</span>
                 <span className="font-medium">{formatCurrency(costoTablero)}</span>
               </div>
               <div className="flex justify-between text-sm">

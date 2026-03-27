@@ -150,6 +150,22 @@ function focusCell(ci: number, pi: number, field: string) {
   el?.focus()
 }
 
+// ── Arithmetic evaluator ──────────────────────────────────────────────────────
+// Accepts expressions like "2.5*4", "100+50", "(3+1)/2"
+function evalExpr(raw: string): number {
+  const cleaned = raw.trim()
+  if (!cleaned) return 0
+  if (!/^[\d\s+\-*/.()\t]+$/.test(cleaned)) return parseFloat(cleaned) || 0
+  try {
+    // eslint-disable-next-line no-new-func
+    const result = Function(`'use strict'; return (${cleaned})`)() as unknown
+    return typeof result === 'number' && isFinite(result) && result >= 0 ? result : 0
+  } catch {
+    return parseFloat(cleaned) || 0
+  }
+}
+const HAS_OP = /[+\-*/()]/
+
 // ── NumericCell ───────────────────────────────────────────────────────────────
 
 function NumericCell({
@@ -159,39 +175,73 @@ function NumericCell({
   cellkey: string; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   step?: string; className?: string
 }) {
-  const [focused, setFocused] = useState(false)
+  const [raw, setRaw] = useState<string | null>(null)
+  const focused = raw !== null
+  const isExpr = raw !== null && HAS_OP.test(raw)
+
+  const commit = (rawVal: string) => {
+    setRaw(null)
+    onChange(evalExpr(rawVal))
+  }
+
   const displayValue = focused
-    ? String(value === 0 ? '' : value)
+    ? raw!
     : value === 0 ? '' : value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 8 })
+
+  const focusCls = isExpr
+    ? 'focus:border-violet-400 focus:ring-violet-300 bg-violet-50'
+    : 'focus:border-blue-400 focus:ring-blue-300 focus:bg-white'
+
   return (
     <input
       data-cellkey={cellkey}
-      type={focused ? 'number' : 'text'}
+      type="text"
+      inputMode="decimal"
       value={displayValue}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      onFocus={(e) => { setFocused(true); setTimeout(() => e.target.select(), 0) }}
-      onBlur={() => setFocused(false)}
-      onKeyDown={onKeyDown}
-      step={step} min="0" placeholder="0"
-      className={`w-full px-2 py-1.5 text-right text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-1 focus:ring-blue-300 hover:border-slate-300 bg-transparent transition-colors ${className}`}
+      onChange={(e) => setRaw(e.target.value)}
+      onFocus={(e) => { setRaw(String(value === 0 ? '' : value)); setTimeout(() => e.target.select(), 0) }}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === 'Tab') commit((e.target as HTMLInputElement).value)
+        onKeyDown(e)
+      }}
+      placeholder="0"
+      title={isExpr ? `= ${evalExpr(raw!)}` : undefined}
+      className={`w-full px-2 py-1.5 text-right text-sm border border-transparent rounded focus:outline-none focus:ring-1 hover:border-slate-300 bg-transparent transition-colors ${focusCls} ${className}`}
     />
   )
 }
 
-function NumericCellSimple({ value, onChange, step = '0.0001' }: { value: number; onChange: (v: number) => void; step?: string }) {
-  const [focused, setFocused] = useState(false)
+function NumericCellSimple({ value, onChange, step: _step = '0.0001' }: { value: number; onChange: (v: number) => void; step?: string }) {
+  const [raw, setRaw] = useState<string | null>(null)
+  const focused = raw !== null
+  const isExpr = raw !== null && HAS_OP.test(raw)
+
+  const commit = (rawVal: string) => {
+    setRaw(null)
+    onChange(evalExpr(rawVal))
+  }
+
   const displayValue = focused
-    ? String(value === 0 ? '' : value)
+    ? raw!
     : value === 0 ? '' : value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 8 })
+
+  const focusCls = isExpr
+    ? 'focus:border-violet-400 bg-violet-50'
+    : 'focus:border-blue-400 focus:bg-white'
+
   return (
     <input
-      type={focused ? 'number' : 'text'}
+      type="text"
+      inputMode="decimal"
       value={displayValue}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      onFocus={(e) => { setFocused(true); setTimeout(() => e.target.select(), 0) }}
-      onBlur={() => setFocused(false)}
-      step={step} min="0" placeholder="0"
-      className="w-full px-2 py-1 text-right text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent transition-colors"
+      onChange={(e) => setRaw(e.target.value)}
+      onFocus={(e) => { setRaw(String(value === 0 ? '' : value)); setTimeout(() => e.target.select(), 0) }}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') commit((e.target as HTMLInputElement).value) }}
+      placeholder="0"
+      title={isExpr ? `= ${evalExpr(raw!)}` : undefined}
+      className={`w-full px-2 py-1 text-right text-sm border border-transparent rounded focus:outline-none hover:border-slate-300 bg-transparent transition-colors ${focusCls}`}
     />
   )
 }
