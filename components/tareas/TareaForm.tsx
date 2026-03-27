@@ -20,6 +20,7 @@ interface Props {
     fechaLimite?: Date | string | null
     prioridad?: string
     estado?: string
+    avance?: number
     responsable?: string | null
   }
 }
@@ -43,6 +44,7 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
   const [fechaLimite, setFechaLimite] = useState(formatDateInput(initialData?.fechaLimite))
   const [prioridad, setPrioridad] = useState(initialData?.prioridad || 'Media')
   const [estado, setEstado] = useState(initialData?.estado || 'Pendiente')
+  const [avance, setAvance] = useState(initialData?.avance ?? 0)
   const [responsable, setResponsable] = useState(initialData?.responsable || '')
   const [asignadoId, setAsignadoId] = useState(String(initialData?.asignadoId || ''))
   const [loading, setLoading] = useState(false)
@@ -72,6 +74,7 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
         fechaLimite: fechaLimite || null,
         prioridad,
         estado,
+        avance,
         responsable: responsable || null,
       }
 
@@ -190,6 +193,7 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
             type="date"
             value={fechaLimite}
             onChange={(e) => setFechaLimite(e.target.value)}
+            min={mode === 'create' ? new Date().toISOString().split('T')[0] : undefined}
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -222,6 +226,25 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      {/* Avance */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Avance <span className="text-slate-400 font-normal ml-1">{avance}%</span>
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={avance}
+          onChange={(e) => setAvance(parseInt(e.target.value))}
+          className="w-full accent-blue-600"
+        />
+        <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+          <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
         </div>
       </div>
 

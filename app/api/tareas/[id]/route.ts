@@ -36,7 +36,7 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, responsable, _patch } = body
+    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, avance, responsable, _patch } = body
 
     // Patch mode: only update estado (used by Kanban drag & drop)
     if (_patch) {
@@ -67,6 +67,7 @@ export async function PUT(
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         prioridad: prioridad || 'Media',
         estado: estado || 'Pendiente',
+        avance: Math.min(100, Math.max(0, parseInt(String(avance ?? 0)) || 0)),
         responsable: responsable || null,
       },
       include: {

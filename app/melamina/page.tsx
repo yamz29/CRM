@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Box, Pencil, Layers, Package2 } from 'lucide-react'
+import { Plus, Box, Pencil, Layers, Package2, Scissors } from 'lucide-react'
 import { DeleteModuloButton } from './DeleteModuloButton'
 
 interface SearchParams {
@@ -180,6 +180,13 @@ export default async function MelaminaPage({
                               <Layers className="w-4 h-4" />
                             </Button>
                           </Link>
+                          {m.proyecto && (
+                            <Link href={`/melamina/corte?proyecto=${m.proyecto.id}`}>
+                              <Button variant="ghost" size="sm" title="Lista de corte del proyecto">
+                                <Scissors className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                          )}
                           <Link href={`/melamina/${m.id}/editar`}>
                             <Button variant="ghost" size="sm" title="Editar">
                               <Pencil className="w-4 h-4" />

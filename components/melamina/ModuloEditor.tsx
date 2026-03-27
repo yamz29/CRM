@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2,
+  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -120,8 +120,6 @@ const TAPACANTO_LADOS = [
   { key: 'derecho', label: 'R', title: 'Derecho' },
 ]
 
-const ESPESOR = 18
-
 let keyCounter = 0
 const newKey = () => `k${++keyCounter}`
 
@@ -146,45 +144,46 @@ function generarDespiece(
   tipo: string,
   ancho: number, alto: number, prof: number,
   cantPuertas: number, cantCajones: number,
+  esp: number = 18,
 ): PiezaLine[] {
   const piezas: PiezaLine[] = []
-  const anchoInt = ancho - 2 * ESPESOR
+  const anchoInt = ancho - 2 * esp
 
   piezas.push(
     {
       _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
-      largo: alto, ancho: prof, cantidad: 2, espesor: 18, material: '',
+      largo: alto, ancho: prof, cantidad: 2, espesor: esp, material: '',
       tapacanto: ['izquierdo'], observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Piso', nombre: 'Piso', tipoPieza: 'piso',
-      largo: anchoInt, ancho: prof, cantidad: 1, espesor: 18, material: '',
+      largo: anchoInt, ancho: prof, cantidad: 1, espesor: esp, material: '',
       tapacanto: ['izquierdo'], observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Fondo', nombre: 'Fondo', tipoPieza: 'fondo',
-      largo: alto - ESPESOR, ancho: anchoInt, cantidad: 1, espesor: 6, material: 'HDF 6mm',
+      largo: alto - esp, ancho: anchoInt, cantidad: 1, espesor: 6, material: 'HDF 6mm',
       tapacanto: [], observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Sop', nombre: 'Soporte', tipoPieza: 'soporte',
-      largo: anchoInt, ancho: 100, cantidad: 2, espesor: 18, material: '',
+      largo: anchoInt, ancho: 100, cantidad: 2, espesor: esp, material: '',
       tapacanto: ['superior'], observaciones: '',
     },
   )
 
   if ((tipo === 'Base con puertas' || tipo === 'Aéreo con puertas') && cantPuertas > 0) {
     const anchoPuerta = Math.round((ancho - 3) / cantPuertas)
-    const altoPuerta = alto - ESPESOR - 2
+    const altoPuerta = alto - esp - 2
     piezas.push({
       _key: newKey(), etiqueta: 'Puerta', nombre: 'Puerta', tipoPieza: 'puerta',
-      largo: altoPuerta, ancho: anchoPuerta, cantidad: cantPuertas, espesor: 18, material: '',
+      largo: altoPuerta, ancho: anchoPuerta, cantidad: cantPuertas, espesor: esp, material: '',
       tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], observaciones: '',
     })
   }
 
   if ((tipo === 'Base con cajones' || tipo === 'Base mixto') && cantCajones > 0) {
-    const altoCajonFrente = Math.round((alto - ESPESOR - cantCajones * 3) / cantCajones)
+    const altoCajonFrente = Math.round((alto - esp - cantCajones * 3) / cantCajones)
     const anchoCajon = anchoInt - 3
     const anchoCajonInt = anchoInt - 34
     const altoCajonInt = altoCajonFrente - 20
@@ -193,12 +192,12 @@ function generarDespiece(
     piezas.push(
       {
         _key: newKey(), etiqueta: 'F-Caj', nombre: 'Frente de Cajón', tipoPieza: 'frente_cajon',
-        largo: altoCajonFrente, ancho: anchoCajon, cantidad: cantCajones, espesor: 18, material: '',
+        largo: altoCajonFrente, ancho: anchoCajon, cantidad: cantCajones, espesor: esp, material: '',
         tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], observaciones: '',
       },
       {
         _key: newKey(), etiqueta: 'T-Caj', nombre: 'Trasero de Cajón', tipoPieza: 'trasero_cajon',
-        largo: altoCajonInt, ancho: anchoCajonInt, cantidad: cantCajones, espesor: 18, material: '',
+        largo: altoCajonInt, ancho: anchoCajonInt, cantidad: cantCajones, espesor: esp, material: '',
         tapacanto: [], observaciones: '',
       },
       {
@@ -264,7 +263,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   const areaPlanchaM2 = materialTablero
     ? ((materialTablero.anchoMm ?? 2440) * (materialTablero.largoMm ?? 1830)) / 1_000_000
     : 4.4652
-  const numPlanchas = totalAreaM2 > 0 ? Math.ceil(totalAreaM2 / areaPlanchaM2) : 0
+  const numPlanchas = totalAreaM2 > 0 ? Math.ceil((totalAreaM2 * 1.15) / areaPlanchaM2) : 0
   const pctUsoPlancha = numPlanchas > 0 ? (totalAreaM2 / (numPlanchas * areaPlanchaM2)) * 100 : 0
 
   // ── Cálculos de costo ────────────────────────────────────────────────────
@@ -281,7 +280,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       ...prev,
       {
         _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
-        largo: 0, ancho: 0, cantidad: 1, espesor: 18, material: '', tapacanto: [], observaciones: '',
+        largo: 0, ancho: 0, cantidad: 1, espesor: materialTablero?.espesorMm ?? 18, material: '', tapacanto: [], observaciones: '',
       },
     ])
   }
@@ -322,7 +321,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       setError('Ingresa ancho, alto y profundidad antes de generar el despiece.')
       return
     }
-    setPiezas(generarDespiece(tipoModulo, a, h, p, cp, cc))
+    const esp = materialTablero?.espesorMm ?? 18
+    setPiezas(generarDespiece(tipoModulo, a, h, p, cp, cc, esp))
     setTab('despiece')
     setError(null)
   }
@@ -420,9 +420,9 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   const thCls = 'px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide bg-slate-50'
 
   return (
-    <div className="space-y-4 pb-32">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 pb-32 print:pb-0">
+      {/* Header (oculto al imprimir) */}
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-3">
           <Link
             href="/melamina"
@@ -449,7 +449,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-1 border-b border-slate-200 print:hidden">
         {([
           { key: 'datos', label: 'Datos', icon: <Settings2 className="w-3.5 h-3.5" /> },
           { key: 'despiece', label: 'Despiece', icon: <Layers className="w-3.5 h-3.5" /> },
@@ -472,7 +472,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
       {/* ── TAB: DATOS ──────────────────────────────────────────────────────── */}
       {tab === 'datos' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 print:hidden">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Código</label>
@@ -573,18 +573,26 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
       {/* ── TAB: DESPIECE ───────────────────────────────────────────────────── */}
       {tab === 'despiece' && (
-        <div className="space-y-3">
+        <div className="space-y-3 print:hidden">
           {/* Generar */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-blue-800">Generación automática de despiece</p>
               <p className="text-xs text-blue-600 mt-0.5">
                 Basado en: {ancho || '?'}×{alto || '?'}×{prof || '?'} mm — {cantPuertas} puerta(s) — {cantCajones} cajón(es)
+                {materialTablero?.espesorMm && <span> — Espesor: {materialTablero.espesorMm}mm</span>}
               </p>
             </div>
-            <Button variant="secondary" onClick={handleGenerar}>
-              <Wand2 className="w-4 h-4" /> Generar despiece
-            </Button>
+            <div className="flex gap-2">
+              {piezas.length > 0 && (
+                <Button variant="secondary" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4" /> Imprimir
+                </Button>
+              )}
+              <Button variant="secondary" onClick={handleGenerar}>
+                <Wand2 className="w-4 h-4" /> Generar despiece
+              </Button>
+            </div>
           </div>
 
           {/* Tabla de piezas */}
@@ -740,7 +748,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     Planchas{materialTablero ? ` de ${materialTablero.anchoMm}×${materialTablero.largoMm}mm` : ''}
                   </p>
                   <p className="text-lg font-bold text-blue-700">{numPlanchas}</p>
-                  <p className="text-xs text-slate-400">({areaPlanchaM2.toFixed(3)} m² c/u)</p>
+                  <p className="text-xs text-slate-400">({areaPlanchaM2.toFixed(3)} m² c/u · +15% merma)</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">% uso de plancha</p>
@@ -769,7 +777,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
       {/* ── TAB: MATERIALES ─────────────────────────────────────────────────── */}
       {tab === 'materiales' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden print:hidden">
           {cantosYHerrajes.length === 0 && (
             <div className="px-5 pt-4 pb-0">
               <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
@@ -905,7 +913,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
       {/* ── TAB: RESUMEN ────────────────────────────────────────────────────── */}
       {tab === 'resumen' && (
-        <div className="space-y-4">
+        <div className="space-y-4 print:hidden">
           {/* Tablero */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Consumo de tablero</p>
@@ -1038,8 +1046,57 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
         </div>
       )}
 
+      {/* ── VISTA DE IMPRESIÓN (solo visible al imprimir) ──────────────────── */}
+      <div className="hidden print:block text-black text-sm">
+        <div className="mb-4">
+          <h1 className="text-lg font-bold">{nombre || 'Módulo'} — Lista de Corte</h1>
+          <p className="text-xs text-gray-600">
+            {tipoModulo} · {ancho}×{alto}×{prof} mm
+            {materialTablero && ` · Tablero: ${materialTablero.nombre} (${materialTablero.espesorMm ?? 18}mm)`}
+            {` · ${numPlanchas} plancha${numPlanchas !== 1 ? 's' : ''} necesaria${numPlanchas !== 1 ? 's' : ''} (incl. 15% merma)`}
+          </p>
+        </div>
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="border-b-2 border-black">
+              <th className="text-left py-1 pr-2">Etiq.</th>
+              <th className="text-left py-1 pr-2">Nombre</th>
+              <th className="text-right py-1 pr-2">Largo mm</th>
+              <th className="text-right py-1 pr-2">Ancho mm</th>
+              <th className="text-right py-1 pr-2">Cant.</th>
+              <th className="text-right py-1 pr-2">Esp. mm</th>
+              <th className="text-left py-1 pr-2">Tablero</th>
+              <th className="text-left py-1 pr-2">Tapacanto</th>
+              <th className="text-right py-1">Área m²</th>
+            </tr>
+          </thead>
+          <tbody>
+            {piezas.map((p) => (
+              <tr key={p._key} className="border-b border-gray-300">
+                <td className="py-0.5 pr-2 font-mono">{p.etiqueta}</td>
+                <td className="py-0.5 pr-2">{p.nombre}</td>
+                <td className="py-0.5 pr-2 text-right">{p.largo}</td>
+                <td className="py-0.5 pr-2 text-right">{p.ancho}</td>
+                <td className="py-0.5 pr-2 text-right">{p.cantidad}</td>
+                <td className="py-0.5 pr-2 text-right">{p.espesor}</td>
+                <td className="py-0.5 pr-2">{p.material || (materialTablero?.nombre ?? '—')}</td>
+                <td className="py-0.5 pr-2">{p.tapacanto.map((l) => l[0].toUpperCase()).join(' ')}</td>
+                <td className="py-0.5 text-right">{calcAreaM2(p).toFixed(4)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-black font-bold">
+              <td colSpan={8} className="py-1">TOTAL</td>
+              <td className="py-1 text-right">{totalAreaM2.toFixed(4)} m²</td>
+            </tr>
+          </tfoot>
+        </table>
+        <p className="mt-3 text-xs text-gray-500">Tapacanto total: {totalTapacantoMl.toFixed(2)} ml</p>
+      </div>
+
       {/* Barra fija inferior */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between z-20 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between z-20 shadow-lg print:hidden">
         <div className="flex items-center gap-6 text-sm">
           <div>
             <span className="text-slate-500 text-xs">Área</span>

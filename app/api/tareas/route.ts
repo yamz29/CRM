@@ -21,7 +21,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, responsable } = body
+    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, avance, responsable } = body
 
     if (!titulo?.trim()) {
       return NextResponse.json({ error: 'El título es requerido' }, { status: 400 })
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         prioridad: prioridad || 'Media',
         estado: estado || 'Pendiente',
+        avance: Math.min(100, Math.max(0, parseInt(String(avance ?? 0)) || 0)),
         responsable: responsable || null,
       },
       include: {

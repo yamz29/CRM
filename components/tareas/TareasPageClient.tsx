@@ -16,6 +16,7 @@ interface Tarea {
   descripcion: string | null
   estado: string
   prioridad: string
+  avance: number
   fechaLimite: string | Date | null
   responsable: string | null
   cliente: { id: number; nombre: string } | null
@@ -31,7 +32,7 @@ interface Props {
 const ESTADOS = ['Pendiente', 'En proceso', 'Completada', 'Cancelada']
 const KANBAN_COLS = [
   { estado: 'Pendiente',   label: 'Por hacer',   color: 'border-slate-300 bg-slate-50',  badge: 'bg-slate-200 text-slate-700' },
-  { estado: 'En proceso',  label: 'En progreso', color: 'border-blue-300 bg-blue-50',    badge: 'bg-blue-200 text-blue-700' },
+  { estado: 'En proceso',  label: 'En proceso',  color: 'border-blue-300 bg-blue-50',    badge: 'bg-blue-200 text-blue-700' },
   { estado: 'Completada',  label: 'Completado',  color: 'border-green-300 bg-green-50',  badge: 'bg-green-200 text-green-700' },
   { estado: 'Cancelada',   label: 'Cancelada',   color: 'border-red-200 bg-red-50',      badge: 'bg-red-200 text-red-700' },
 ]
@@ -52,6 +53,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
   const router = useRouter()
   const today = new Date()
   const [view, setView] = useState<'lista' | 'kanban'>('lista')
+  const [filtroTexto, setFiltroTexto] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroAsignado, setFiltroAsignado] = useState('')
   const [filtroPrioridad, setFiltroPrioridad] = useState('')
@@ -61,6 +63,14 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
   const [dragOver, setDragOver] = useState<string | null>(null)
 
   const filtered = tareas.filter((t) => {
+    if (filtroTexto) {
+      const q = filtroTexto.toLowerCase()
+      const match = t.titulo.toLowerCase().includes(q) ||
+        t.descripcion?.toLowerCase().includes(q) ||
+        t.cliente?.nombre.toLowerCase().includes(q) ||
+        t.proyecto?.nombre.toLowerCase().includes(q)
+      if (!match) return false
+    }
     if (filtroEstado && t.estado !== filtroEstado) return false
     if (filtroAsignado && String(t.asignado?.id ?? '') !== filtroAsignado) return false
     if (filtroPrioridad && t.prioridad !== filtroPrioridad) return false
@@ -72,7 +82,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
     new Date(t.fechaLimite) < today &&
     !['Completada', 'Cancelada'].includes(t.estado)
 
-  const hasFilters = filtroEstado || filtroAsignado || filtroPrioridad
+  const hasFilters = filtroTexto || filtroEstado || filtroAsignado || filtroPrioridad
 
   // ── Drag & Drop ──────────────────────────────────────────────────────
   async function handleDrop(nuevoEstado: string) {
@@ -103,7 +113,15 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
           {vencida && <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />}
         </div>
         {tarea.descripcion && (
-          <p className="text-xs text-slate-500 line-clamp-2 mb-2">{tarea.descripcion}</p>
+          <p className="text-xs text-slate-500 line-clamp-2 mb-1.5">{tarea.descripcion}</p>
+        )}
+        {tarea.avance > 0 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="flex-1 bg-slate-100 rounded-full h-1.5">
+              <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${tarea.avance}%` }} />
+            </div>
+            <span className="text-xs text-slate-400 shrink-0">{tarea.avance}%</span>
+          </div>
         )}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {getPrioridadBadge(tarea.prioridad)}
@@ -136,6 +154,17 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
       <Card>
         <CardContent className="py-3">
           <div className="flex flex-wrap items-center gap-3">
+            {/* Búsqueda textual */}
+            <input
+              type="text"
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+              placeholder="Buscar por título, cliente, proyecto..."
+              className="border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[220px]"
+            />
+
+            <div className="w-px h-6 bg-slate-200" />
+
             {/* Toggle vista */}
             <div className="flex rounded-lg border border-slate-200 overflow-hidden">
               <button
@@ -188,7 +217,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
 
             {hasFilters && (
               <button
-                onClick={() => { setFiltroEstado(''); setFiltroAsignado(''); setFiltroPrioridad('') }}
+                onClick={() => { setFiltroTexto(''); setFiltroEstado(''); setFiltroAsignado(''); setFiltroPrioridad('') }}
                 className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> Limpiar
@@ -230,10 +259,18 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                           <td className="px-4 py-3">
                             <div className="flex items-start gap-2">
                               {vencida && <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />}
-                              <div>
+                              <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-slate-800">{tarea.titulo}</p>
                                 {tarea.descripcion && (
                                   <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{tarea.descripcion}</p>
+                                )}
+                                {tarea.avance > 0 && (
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <div className="w-20 bg-slate-100 rounded-full h-1.5">
+                                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${tarea.avance}%` }} />
+                                    </div>
+                                    <span className="text-xs text-slate-400">{tarea.avance}%</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
