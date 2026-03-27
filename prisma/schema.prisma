@@ -600,6 +600,7 @@ model RegistroHoras {
   horas         Float    @default(1)
   tipoActividad String   // 'Proyecto' | 'Limpieza' | 'Organización' | 'Transporte' | 'Reunión' | 'Taller'
   nota          String?
+  horaInicio    Float?   // 8.0 = 8am, 14.5 = 2:30pm; null = sin horario específico
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

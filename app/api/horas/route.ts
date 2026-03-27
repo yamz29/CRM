@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         usuario:  { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
       },
-      orderBy: [{ fecha: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ fecha: 'desc' }, { horaInicio: 'asc' }],
     })
 
     return NextResponse.json(registros)
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { usuarioId, fecha, horas, tipoActividad, proyectoId, nota } = body
+    const { usuarioId, fecha, horas, tipoActividad, proyectoId, nota, horaInicio } = body
 
     if (!tipoActividad) {
       return NextResponse.json({ error: 'El tipo de actividad es requerido' }, { status: 400 })
@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
         horas:         Math.max(0.25, horasVal),
         tipoActividad,
         nota:          nota?.trim() || null,
+        horaInicio:    horaInicio != null ? parseFloat(String(horaInicio)) : null,
       },
       include: {
         usuario:  { select: { id: true, nombre: true } },

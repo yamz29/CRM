@@ -3,9 +3,8 @@
 import { useState, useMemo } from 'react'
 import {
   ChevronLeft, ChevronRight, Clock, FolderOpen, Sparkles, Archive,
-  Truck, Users, Wrench, Trash2, Pencil, Check, X, Copy, BarChart3,
+  Truck, Users, Wrench, Trash2, Pencil, X, BarChart3, Plus,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -18,6 +17,7 @@ interface RegistroHoras {
   horas: number
   tipoActividad: string
   nota: string | null
+  horaInicio: number | null
   createdAt: string
   usuario: { id: number; nombre: string } | null
   proyecto: { id: number; nombre: string } | null
@@ -31,74 +31,368 @@ interface Props {
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-const TIPOS = [
-  { label: 'Proyecto',     Icon: FolderOpen, bg: 'bg-blue-100',   border: 'border-blue-400',   text: 'text-blue-700',   bar: 'bg-blue-400'   },
-  { label: 'Limpieza',     Icon: Sparkles,   bg: 'bg-green-100',  border: 'border-green-400',  text: 'text-green-700',  bar: 'bg-green-400'  },
-  { label: 'Organización', Icon: Archive,    bg: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-yellow-700', bar: 'bg-yellow-400' },
-  { label: 'Transporte',   Icon: Truck,      bg: 'bg-purple-100', border: 'border-purple-400', text: 'text-purple-700', bar: 'bg-purple-400' },
-  { label: 'Reunión',      Icon: Users,      bg: 'bg-orange-100', border: 'border-orange-400', text: 'text-orange-700', bar: 'bg-orange-400' },
-  { label: 'Taller',       Icon: Wrench,     bg: 'bg-red-100',    border: 'border-red-400',    text: 'text-red-700',    bar: 'bg-red-400'    },
-]
+const HOUR_START = 7
+const HOUR_END   = 19  // exclusive → 7am … 6pm
+const HOURS      = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i)
+const TOTAL_H    = HOUR_END - HOUR_START
 
-const HORAS_RAPIDAS = [0.5, 1, 2, 4, 8]
+const TIPOS = [
+  { label: 'Proyecto',     Icon: FolderOpen, bg: 'bg-blue-500',   text: 'text-white', light: 'bg-blue-100 text-blue-700',   bar: 'bg-blue-400'   },
+  { label: 'Limpieza',     Icon: Sparkles,   bg: 'bg-green-500',  text: 'text-white', light: 'bg-green-100 text-green-700', bar: 'bg-green-400'  },
+  { label: 'Organización', Icon: Archive,    bg: 'bg-yellow-400', text: 'text-white', light: 'bg-yellow-100 text-yellow-700', bar: 'bg-yellow-400'},
+  { label: 'Transporte',   Icon: Truck,      bg: 'bg-purple-500', text: 'text-white', light: 'bg-purple-100 text-purple-700', bar: 'bg-purple-400'},
+  { label: 'Reunión',      Icon: Users,      bg: 'bg-orange-500', text: 'text-white', light: 'bg-orange-100 text-orange-700', bar: 'bg-orange-400'},
+  { label: 'Taller',       Icon: Wrench,     bg: 'bg-red-500',    text: 'text-white', light: 'bg-red-100 text-red-700',     bar: 'bg-red-400'    },
+]
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0]
-}
+function todayStr() { return new Date().toISOString().split('T')[0] }
 
-function fmtDate(dateStr: string) {
-  // parse as local date to avoid off-by-one from UTC
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  return date.toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-}
-
-function shiftDate(dateStr: string, days: number) {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d + days)
+function shiftDate(d: string, days: number) {
+  const [y, m, dd] = d.split('-').map(Number)
+  const date = new Date(y, m - 1, dd + days)
   return date.toISOString().split('T')[0]
 }
 
-function tipoConf(label: string) {
-  return TIPOS.find((t) => t.label === label) ?? TIPOS[0]
+function getMondayOf(dateStr: string) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day  = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  return shiftDate(dateStr, diff)
 }
 
-// ── Component ──────────────────────────────────────────────────────────
+function getWeekDates(mondayStr: string) {
+  return Array.from({ length: 7 }, (_, i) => shiftDate(mondayStr, i))
+}
+
+function fmtDayShort(dateStr: string) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  return {
+    weekday: date.toLocaleDateString('es-DO', { weekday: 'short' }),
+    day:     date.getDate(),
+    month:   date.toLocaleDateString('es-DO', { month: 'short' }),
+  }
+}
+
+function fmtWeekRange(mondayStr: string) {
+  const sunday = shiftDate(mondayStr, 6)
+  const [y1, m1, d1] = mondayStr.split('-').map(Number)
+  const [, m2, d2]   = sunday.split('-').map(Number)
+  const mo1 = new Date(y1, m1 - 1, d1).toLocaleDateString('es-DO', { month: 'short' })
+  const mo2 = new Date(y1, m2 - 1, d2).toLocaleDateString('es-DO', { month: 'short' })
+  return m1 === m2
+    ? `${d1} – ${d2} ${mo1} ${y1}`
+    : `${d1} ${mo1} – ${d2} ${mo2} ${y1}`
+}
+
+function tc(label: string) { return TIPOS.find((t) => t.label === label) ?? TIPOS[0] }
+
+function fmtH(h: number) {
+  const hh = Math.floor(h)
+  const mm = Math.round((h - hh) * 60)
+  return mm ? `${hh}:${String(mm).padStart(2, '0')}` : `${hh}:00`
+}
+
+// ── Sub-component: Block popup (create / edit) ─────────────────────────
+
+interface PopupState {
+  mode: 'create' | 'edit'
+  registro?: RegistroHoras
+  usuarioId: number | null
+  date: string
+  horaInicio: number
+  horas: number
+  tipo: string
+  proyectoId: string
+  nota: string
+}
+
+function BlockPopup({
+  state,
+  proyectos,
+  onSave,
+  onDelete,
+  onClose,
+}: {
+  state: PopupState
+  proyectos: { id: number; nombre: string }[]
+  onSave: (data: Omit<PopupState, 'mode' | 'registro'>) => Promise<void>
+  onDelete?: () => Promise<void>
+  onClose: () => void
+}) {
+  const [tipo,       setTipo]       = useState(state.tipo)
+  const [proyectoId, setProyectoId] = useState(state.proyectoId)
+  const [horas,      setHoras]      = useState(state.horas)
+  const [nota,       setNota]       = useState(state.nota)
+  const [horaInicio, setHoraInicio] = useState(state.horaInicio)
+  const [saving,     setSaving]     = useState(false)
+
+  const horaFin = Math.min(horaInicio + horas, HOUR_END)
+
+  async function handleSave() {
+    if (!tipo) return
+    if (tipo === 'Proyecto' && !proyectoId) return
+    setSaving(true)
+    try {
+      await onSave({ usuarioId: state.usuarioId, date: state.date, horaInicio, horas, tipo, proyectoId, nota })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const durOptions = [1, 2, 3, 4, 6, 8]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+              {state.mode === 'create' ? 'Agregar bloque' : 'Editar bloque'}
+            </p>
+            <p className="text-xs text-slate-400">
+              {fmtDayShort(state.date).weekday} {fmtDayShort(state.date).day}{' '}
+              {fmtDayShort(state.date).month} · {fmtH(horaInicio)}–{fmtH(horaFin)}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Hora inicio */}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Hora inicio</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {HOURS.map((h) => (
+              <button
+                key={h}
+                onClick={() => setHoraInicio(h)}
+                className={cn(
+                  'px-2 py-1 rounded-lg text-xs font-medium border transition-all',
+                  horaInicio === h
+                    ? 'bg-slate-800 border-slate-800 text-white'
+                    : 'border-slate-200 text-slate-500 hover:border-slate-400'
+                )}
+              >
+                {h}h
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Duración */}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Duración</p>
+          <div className="flex gap-1.5">
+            {durOptions.map((h) => (
+              <button
+                key={h}
+                onClick={() => setHoras(h)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-sm font-bold border transition-all',
+                  horas === h
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+                )}
+              >
+                {h}h
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tipo */}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Actividad</p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {TIPOS.map(({ label, Icon, bg, text }) => (
+              <button
+                key={label}
+                onClick={() => { setTipo(label); if (label !== 'Proyecto') setProyectoId('') }}
+                className={cn(
+                  'flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg text-xs font-medium border-2 transition-all',
+                  tipo === label
+                    ? `${bg} ${text} border-transparent`
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300 bg-white dark:bg-slate-800'
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Proyecto */}
+        {tipo === 'Proyecto' && (
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Proyecto</p>
+            <select
+              value={proyectoId}
+              onChange={(e) => setProyectoId(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">— Seleccionar —</option>
+              {proyectos.map((p) => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Nota */}
+        <div>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Nota (opcional)</p>
+          <input
+            type="text"
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+            placeholder="Descripción breve..."
+            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          {state.mode === 'edit' && onDelete && (
+            <button
+              onClick={onDelete}
+              className="flex items-center gap-1 px-3 py-2 text-sm rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Eliminar
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !tipo || (tipo === 'Proyecto' && !proyectoId)}
+            className="flex-1 px-3 py-2 text-sm rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────
 
 export function HorasPageClient({ registros: init, proyectos, usuarios }: Props) {
   const [registros, setRegistros] = useState<RegistroHoras[]>(init)
-  const [tab, setTab] = useState<'registros' | 'reportes'>('registros')
-  const [selectedDate, setSelectedDate] = useState(todayStr())
+  const [tab, setTab]             = useState<'grid' | 'reportes'>('grid')
+  const [monday, setMonday]       = useState(getMondayOf(todayStr()))
+  const [filterUsr, setFilterUsr] = useState('')
 
-  // Quick-add form
-  const [tipo, setTipo]             = useState('')
-  const [proyId, setProyId]         = useState('')
-  const [horas, setHoras]           = useState(1)
-  const [horasCustom, setHorasCustom] = useState('')
-  const [nota, setNota]             = useState('')
-  const [usrId, setUsrId]           = useState(usuarios[0]?.id?.toString() ?? '')
-  const [saving, setSaving]         = useState(false)
-  const [duplicating, setDuplicating] = useState(false)
+  const [popup,     setPopup]     = useState<PopupState | null>(null)
 
-  // Inline edit
-  const [editId, setEditId]   = useState<number | null>(null)
-  const [editData, setEditData] = useState<Partial<RegistroHoras> & { horasStr?: string }>({})
+  // ── Derived ────────────────────────────────────────────────────────
 
-  // Report period
+  const weekDates = useMemo(() => getWeekDates(monday), [monday])
+
+  // Build employee groups for the grid
+  const groups = useMemo(() => {
+    const targetUsers = filterUsr
+      ? usuarios.filter((u) => String(u.id) === filterUsr)
+      : usuarios.length > 0
+        ? usuarios
+        : [{ id: -1, nombre: 'Equipo' }]
+
+    return targetUsers.map((u) => ({
+      usuarioId: u.id === -1 ? null : u.id,
+      nombre:    u.nombre,
+      registros: registros.filter(
+        (r) => (u.id === -1 ? true : r.usuarioId === u.id)
+      ),
+    }))
+  }, [registros, usuarios, filterUsr])
+
+  // ── Handlers ──────────────────────────────────────────────────────
+
+  function openCreate(usuarioId: number | null, date: string, horaInicio: number) {
+    setPopup({
+      mode: 'create',
+      usuarioId,
+      date,
+      horaInicio,
+      horas: 2,
+      tipo: '',
+      proyectoId: '',
+      nota: '',
+    })
+  }
+
+  function openEdit(r: RegistroHoras) {
+    setPopup({
+      mode: 'edit',
+      registro: r,
+      usuarioId: r.usuarioId,
+      date: r.fecha.slice(0, 10),
+      horaInicio: r.horaInicio ?? HOUR_START,
+      horas: r.horas,
+      tipo: r.tipoActividad,
+      proyectoId: r.proyectoId ? String(r.proyectoId) : '',
+      nota: r.nota ?? '',
+    })
+  }
+
+  async function handleSave(data: Omit<PopupState, 'mode' | 'registro'>) {
+    const isEdit = popup?.mode === 'edit'
+    const url    = isEdit ? `/api/horas/${popup!.registro!.id}` : '/api/horas'
+    const method = isEdit ? 'PUT' : 'POST'
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        usuarioId:     data.usuarioId,
+        fecha:         data.date,
+        horas:         data.horas,
+        tipoActividad: data.tipo,
+        proyectoId:    data.tipo === 'Proyecto' ? (data.proyectoId ? parseInt(data.proyectoId) : null) : null,
+        nota:          data.nota || null,
+        horaInicio:    data.horaInicio,
+      }),
+    })
+    if (!res.ok) { alert('Error al guardar'); return }
+    const saved: RegistroHoras = await res.json()
+
+    if (isEdit) {
+      setRegistros((prev) =>
+        prev.map((r) => (r.id === saved.id ? { ...saved, createdAt: r.createdAt } : r))
+      )
+    } else {
+      setRegistros((prev) => [saved, ...prev])
+    }
+    setPopup(null)
+  }
+
+  async function handleDelete() {
+    if (!popup?.registro) return
+    if (!confirm('¿Eliminar este bloque?')) return
+    const res = await fetch(`/api/horas/${popup.registro.id}`, { method: 'DELETE' })
+    if (!res.ok) { alert('Error al eliminar'); return }
+    setRegistros((prev) => prev.filter((r) => r.id !== popup.registro!.id))
+    setPopup(null)
+  }
+
+  // ── Report data ────────────────────────────────────────────────────
+
   const [periodo, setPeriodo] = useState(30)
-
-  // ── Derived ──────────────────────────────────────────────────────────
-
-  const registrosDia = useMemo(
-    () =>
-      registros
-        .filter((r) => r.fecha.slice(0, 10) === selectedDate)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [registros, selectedDate]
-  )
-  const totalDia = registrosDia.reduce((s, r) => s + r.horas, 0)
 
   const registrosPeriodo = useMemo(() => {
     const cutoff = new Date()
@@ -112,18 +406,13 @@ export function HorasPageClient({ registros: init, proyectos, usuarios }: Props)
     const acc: Record<string, number> = {}
     registrosPeriodo
       .filter((r) => r.tipoActividad === 'Proyecto' && r.proyecto)
-      .forEach((r) => {
-        const k = r.proyecto!.nombre
-        acc[k] = (acc[k] || 0) + r.horas
-      })
+      .forEach((r) => { const k = r.proyecto!.nombre; acc[k] = (acc[k] || 0) + r.horas })
     return Object.entries(acc).sort((a, b) => b[1] - a[1])
   }, [registrosPeriodo])
 
   const horasPorActividad = useMemo(() => {
     const acc: Record<string, number> = {}
-    registrosPeriodo.forEach((r) => {
-      acc[r.tipoActividad] = (acc[r.tipoActividad] || 0) + r.horas
-    })
+    registrosPeriodo.forEach((r) => { acc[r.tipoActividad] = (acc[r.tipoActividad] || 0) + r.horas })
     return Object.entries(acc).sort((a, b) => b[1] - a[1])
   }, [registrosPeriodo])
 
@@ -136,104 +425,13 @@ export function HorasPageClient({ registros: init, proyectos, usuarios }: Props)
     return Object.entries(acc).sort((a, b) => b[1] - a[1])
   }, [registrosPeriodo])
 
-  // ── Handlers ─────────────────────────────────────────────────────────
-
-  async function handleGuardar() {
-    if (!tipo) { alert('Selecciona un tipo de actividad'); return }
-    if (tipo === 'Proyecto' && !proyId) { alert('Selecciona un proyecto'); return }
-    const horasVal = horasCustom ? parseFloat(horasCustom) : horas
-    if (!horasVal || horasVal <= 0) { alert('Ingresa las horas'); return }
-
-    setSaving(true)
-    try {
-      const res = await fetch('/api/horas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          usuarioId:     usrId ? parseInt(usrId) : null,
-          fecha:         selectedDate,
-          horas:         horasVal,
-          tipoActividad: tipo,
-          proyectoId:    tipo === 'Proyecto' ? parseInt(proyId) : null,
-          nota:          nota || null,
-        }),
-      })
-      if (!res.ok) { const e = await res.json(); alert(e.error || 'Error'); return }
-      const nuevo: RegistroHoras = await res.json()
-      setRegistros((prev) => [nuevo, ...prev])
-      setNota(''); setHoras(1); setHorasCustom('')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleEditSave(id: number) {
-    const horasVal = editData.horasStr ? parseFloat(editData.horasStr) : (editData.horas ?? 1)
-    const res = await fetch(`/api/horas/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        usuarioId:     editData.usuarioId,
-        fecha:         editData.fecha?.slice(0, 10),
-        horas:         horasVal,
-        tipoActividad: editData.tipoActividad,
-        proyectoId:    editData.proyectoId,
-        nota:          editData.nota,
-      }),
-    })
-    if (!res.ok) { alert('Error al actualizar'); return }
-    const updated: RegistroHoras = await res.json()
-    setRegistros((prev) =>
-      prev.map((r) => (r.id === id ? { ...updated, createdAt: r.createdAt } : r))
-    )
-    setEditId(null); setEditData({})
-  }
-
-  async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este registro?')) return
-    const res = await fetch(`/api/horas/${id}`, { method: 'DELETE' })
-    if (!res.ok) { alert('Error al eliminar'); return }
-    setRegistros((prev) => prev.filter((r) => r.id !== id))
-  }
-
-  async function handleDuplicar() {
-    const prevDay = shiftDate(selectedDate, -1)
-    const source  = registros.filter((r) => r.fecha.slice(0, 10) === prevDay)
-    if (source.length === 0) { alert('No hay registros del día anterior'); return }
-    if (!confirm(`¿Duplicar ${source.length} registro(s) del día anterior a hoy?`)) return
-
-    setDuplicating(true)
-    try {
-      const results = await Promise.all(
-        source.map((r) =>
-          fetch('/api/horas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              usuarioId:     r.usuarioId,
-              fecha:         selectedDate,
-              horas:         r.horas,
-              tipoActividad: r.tipoActividad,
-              proyectoId:    r.proyectoId,
-              nota:          r.nota,
-            }),
-          }).then((res) => res.json())
-        )
-      )
-      const nuevos = results.filter((r) => r.id) as RegistroHoras[]
-      setRegistros((prev) => [...nuevos, ...prev])
-    } finally {
-      setDuplicating(false)
-    }
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────
 
   return (
     <div>
-      {/* Tab bar */}
+      {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit mb-6">
-        {(['registros', 'reportes'] as const).map((t) => (
+        {(['grid', 'reportes'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -244,365 +442,229 @@ export function HorasPageClient({ registros: init, proyectos, usuarios }: Props)
                 : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             )}
           >
-            {t === 'registros' ? <><Clock className="w-3.5 h-3.5" /> Registros</> : <><BarChart3 className="w-3.5 h-3.5" /> Reportes</>}
+            {t === 'grid'
+              ? <><Clock className="w-3.5 h-3.5" /> Horario</>
+              : <><BarChart3 className="w-3.5 h-3.5" /> Reportes</>}
           </button>
         ))}
       </div>
 
-      {/* ── REGISTROS TAB ─────────────────────────────────────────────── */}
-      {tab === 'registros' && (
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start">
-
-          {/* Quick-add form */}
-          <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-            <h2 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-blue-500" /> Registrar horas
-            </h2>
-
-            {/* Tipo actividad */}
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tipo de actividad</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {TIPOS.map(({ label, Icon, bg, border, text }) => (
-                  <button
-                    key={label}
-                    onClick={() => { setTipo(label); if (label !== 'Proyecto') setProyId('') }}
-                    className={cn(
-                      'flex flex-col items-center gap-1 px-2 py-2 rounded-lg border text-xs font-medium transition-all',
-                      tipo === label
-                        ? `${bg} ${border} ${text} border-2`
-                        : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
+      {/* ── GRID TAB ──────────────────────────────────────────────── */}
+      {tab === 'grid' && (
+        <div className="space-y-4">
+          {/* Controls */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Week nav */}
+            <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">
+              <button
+                onClick={() => setMonday(shiftDate(monday, -7))}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <ChevronLeft className="w-4 h-4 text-slate-500" />
+              </button>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-[160px] text-center">
+                {fmtWeekRange(monday)}
+              </span>
+              <button
+                onClick={() => setMonday(shiftDate(monday, 7))}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
             </div>
 
-            {/* Proyecto */}
-            {tipo === 'Proyecto' && (
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Proyecto</p>
-                <select
-                  value={proyId}
-                  onChange={(e) => setProyId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">— Seleccionar proyecto —</option>
-                  {proyectos.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Today button */}
+            {monday !== getMondayOf(todayStr()) && (
+              <button
+                onClick={() => setMonday(getMondayOf(todayStr()))}
+                className="px-3 py-2 text-sm text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors"
+              >
+                Esta semana
+              </button>
             )}
 
-            {/* Persona */}
-            {usuarios.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Persona</p>
-                <select
-                  value={usrId}
-                  onChange={(e) => setUsrId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">— Sin asignar —</option>
-                  {usuarios.map((u) => (
-                    <option key={u.id} value={u.id}>{u.nombre}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Employee filter */}
+            {usuarios.length > 1 && (
+              <select
+                value={filterUsr}
+                onChange={(e) => setFilterUsr(e.target.value)}
+                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos los empleados</option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
             )}
 
-            {/* Horas rápidas */}
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Horas</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {HORAS_RAPIDAS.map((h) => (
-                  <button
-                    key={h}
-                    onClick={() => { setHoras(h); setHorasCustom('') }}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg border text-sm font-bold transition-all',
-                      horas === h && !horasCustom
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950'
-                    )}
-                  >
-                    {h === 0.5 ? '½' : h}h
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  min="0.25"
-                  max="24"
-                  step="0.25"
-                  placeholder="Otra"
-                  value={horasCustom}
-                  onChange={(e) => { setHorasCustom(e.target.value); if (e.target.value) setHoras(0) }}
-                  className={cn(
-                    'w-16 px-2 py-1.5 rounded-lg border text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500',
-                    horasCustom
-                      ? 'border-blue-400 bg-blue-50 dark:bg-blue-950'
-                      : 'border-slate-200 dark:border-slate-700 dark:bg-slate-800'
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Nota */}
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Nota (opcional)</p>
-              <input
-                type="text"
-                value={nota}
-                onChange={(e) => setNota(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleGuardar()}
-                placeholder="Descripción breve..."
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <Button
-              onClick={handleGuardar}
-              disabled={saving || !tipo || (tipo === 'Proyecto' && !proyId)}
-              className="w-full"
-            >
-              {saving ? 'Guardando...' : '+ Guardar registro'}
-            </Button>
+            <p className="text-xs text-slate-400 ml-auto hidden md:block">
+              Clic en una celda para agregar un bloque
+            </p>
           </div>
 
-          {/* Day view */}
-          <div>
-            {/* Date navigator */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
-                onClick={() => setSelectedDate(shiftDate(selectedDate, -1))}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-slate-500" />
-              </button>
-              <div className="flex-1 text-center">
-                <p className="font-semibold text-slate-800 dark:text-slate-200 capitalize text-sm">
-                  {fmtDate(selectedDate)}
-                </p>
-                {selectedDate === todayStr() && (
-                  <span className="text-xs text-blue-500 font-medium">Hoy</span>
-                )}
-              </div>
-              <button
-                onClick={() => setSelectedDate(shiftDate(selectedDate, 1))}
-                disabled={selectedDate >= todayStr()}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-5 h-5 text-slate-500" />
-              </button>
-              {selectedDate !== todayStr() && (
-                <button
-                  onClick={() => setSelectedDate(todayStr())}
-                  className="text-xs text-blue-500 hover:underline px-2"
-                >
-                  Ir a hoy
-                </button>
-              )}
-            </div>
+          {/* Grid */}
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: '900px' }}>
 
-            {/* Summary bar */}
-            <div className="bg-card border border-border rounded-xl p-4 mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950 rounded-xl flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-blue-600" />
+                {/* Hour header */}
+                <div className="flex border-b border-border bg-slate-50 dark:bg-slate-800/50">
+                  <div className="w-40 flex-shrink-0 border-r border-border px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Empleado
+                  </div>
+                  <div className="w-28 flex-shrink-0 border-r border-border px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Fecha
+                  </div>
+                  <div className="flex flex-1">
+                    {HOURS.map((h) => (
+                      <div
+                        key={h}
+                        className="flex-1 text-center py-2.5 text-xs font-medium text-slate-400 border-r border-border last:border-r-0"
+                      >
+                        {h}h
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-500">Total del día</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white tabular-nums leading-none mt-0.5">
-                    {totalDia % 1 === 0 ? totalDia : totalDia.toFixed(1)}h
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleDuplicar}
-                disabled={duplicating}
-                title="Copiar los registros del día anterior a este día"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                {duplicating ? 'Duplicando...' : 'Duplicar día anterior'}
-              </button>
-            </div>
 
-            {/* List */}
-            {registrosDia.length === 0 ? (
-              <div className="text-center py-16 text-slate-400">
-                <Clock className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">No hay registros para este día</p>
-                <p className="text-xs mt-1">Usa el formulario para agregar horas</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {registrosDia.map((r) => {
-                  const tc      = tipoConf(r.tipoActividad)
-                  const isEdit  = editId === r.id
+                {/* Employee groups */}
+                {groups.map((group, gi) => (
+                  <div key={group.usuarioId ?? 'all'}>
+                    {/* Date rows */}
+                    {weekDates.map((date, di) => {
+                      const isToday  = date === todayStr()
+                      const dayRegs  = group.registros.filter(
+                        (r) => r.fecha.slice(0, 10) === date && r.horaInicio != null
+                      )
+                      const { weekday, day, month } = fmtDayShort(date)
+                      const isLastRow =
+                        gi === groups.length - 1 && di === weekDates.length - 1
 
-                  return (
-                    <div key={r.id} className="bg-card border border-border rounded-xl p-4 transition-all">
-                      {isEdit ? (
-                        /* Inline edit */
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-1.5">
-                            {TIPOS.map(({ label, Icon, bg, border, text }) => (
-                              <button
-                                key={label}
-                                onClick={() =>
-                                  setEditData((p) => ({
-                                    ...p,
-                                    tipoActividad: label,
-                                    proyectoId: label !== 'Proyecto' ? null : p.proyectoId,
-                                  }))
-                                }
-                                className={cn(
-                                  'flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-medium',
-                                  editData.tipoActividad === label
-                                    ? `${bg} ${border} ${text} border-2`
-                                    : 'border-slate-200 dark:border-slate-700 text-slate-500'
-                                )}
-                              >
-                                <Icon className="w-3.5 h-3.5" /> {label}
-                              </button>
-                            ))}
-                          </div>
-
-                          {editData.tipoActividad === 'Proyecto' && (
-                            <select
-                              value={editData.proyectoId ?? ''}
-                              onChange={(e) =>
-                                setEditData((p) => ({
-                                  ...p,
-                                  proyectoId: e.target.value ? parseInt(e.target.value) : null,
-                                }))
-                              }
-                              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm bg-white dark:bg-slate-800"
-                            >
-                              <option value="">— Proyecto —</option>
-                              {proyectos.map((p) => (
-                                <option key={p.id} value={p.id}>{p.nombre}</option>
-                              ))}
-                            </select>
+                      return (
+                        <div
+                          key={date}
+                          className={cn(
+                            'flex border-b border-border',
+                            isLastRow && 'border-b-0',
+                            isToday && 'bg-blue-50/40 dark:bg-blue-950/20'
                           )}
-
-                          <div className="flex gap-3 items-center flex-wrap">
-                            <div className="flex items-center gap-1.5">
-                              <label className="text-xs text-slate-500">Horas:</label>
-                              <input
-                                type="number"
-                                min="0.25"
-                                step="0.25"
-                                value={editData.horasStr ?? editData.horas ?? ''}
-                                onChange={(e) =>
-                                  setEditData((p) => ({ ...p, horasStr: e.target.value }))
-                                }
-                                className="w-20 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-sm text-center bg-white dark:bg-slate-800"
-                              />
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-1">
-                              <label className="text-xs text-slate-500">Nota:</label>
-                              <input
-                                type="text"
-                                value={editData.nota ?? ''}
-                                onChange={(e) =>
-                                  setEditData((p) => ({ ...p, nota: e.target.value }))
-                                }
-                                placeholder="Nota..."
-                                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                              />
-                            </div>
+                        >
+                          {/* Employee name — only on first day of group */}
+                          <div className="w-40 flex-shrink-0 border-r border-border px-3 py-3 flex items-center">
+                            {di === 0 ? (
+                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                {group.nombre}
+                              </span>
+                            ) : null}
                           </div>
 
-                          <div className="flex gap-2 justify-end pt-1">
-                            <button
-                              onClick={() => { setEditId(null); setEditData({}) }}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                            >
-                              <X className="w-3.5 h-3.5" /> Cancelar
-                            </button>
-                            <button
-                              onClick={() => handleEditSave(r.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                            >
-                              <Check className="w-3.5 h-3.5" /> Guardar
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Row view */
-                        <div className="flex items-center gap-3">
-                          <span
+                          {/* Date */}
+                          <div
                             className={cn(
-                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0',
-                              tc.bg,
-                              tc.text
+                              'w-28 flex-shrink-0 border-r border-border px-3 py-3 flex flex-col justify-center',
+                              isToday && 'font-semibold'
                             )}
                           >
-                            <tc.Icon className="w-3 h-3" />
-                            {r.tipoActividad}
-                          </span>
-
-                          <div className="flex-1 min-w-0">
-                            {r.proyecto && (
-                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                                {r.proyecto.nombre}
-                              </p>
-                            )}
-                            {r.nota && (
-                              <p className={cn('text-xs text-slate-400 italic truncate', r.proyecto && 'mt-0.5')}>
-                                {r.nota}
-                              </p>
+                            <span className="text-xs text-slate-400 capitalize">{weekday}</span>
+                            <span className={cn('text-sm', isToday ? 'text-blue-600 font-bold' : 'text-slate-700 dark:text-slate-300')}>
+                              {day} {month}
+                            </span>
+                            {isToday && (
+                              <span className="text-xs text-blue-500 font-medium">Hoy</span>
                             )}
                           </div>
 
-                          {r.usuario && (
-                            <span className="text-xs text-slate-400 hidden md:block flex-shrink-0">
-                              {r.usuario.nombre}
-                            </span>
-                          )}
+                          {/* Hour cells + blocks */}
+                          <div className="flex-1 relative" style={{ height: '52px' }}>
+                            {/* Clickable cells */}
+                            <div className="absolute inset-0 flex">
+                              {HOURS.map((h) => {
+                                const occupied = dayRegs.some(
+                                  (r) =>
+                                    r.horaInicio! <= h &&
+                                    h < r.horaInicio! + r.horas
+                                )
+                                return (
+                                  <div
+                                    key={h}
+                                    onClick={() => !occupied && openCreate(group.usuarioId, date, h)}
+                                    className={cn(
+                                      'flex-1 border-r border-slate-100 dark:border-slate-700/50 last:border-r-0 transition-colors',
+                                      occupied
+                                        ? 'cursor-default'
+                                        : 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 group'
+                                    )}
+                                  >
+                                    {!occupied && (
+                                      <div className="hidden group-hover:flex items-center justify-center h-full">
+                                        <Plus className="w-3 h-3 text-blue-400" />
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
 
-                          <span className="font-bold text-slate-800 dark:text-white tabular-nums text-lg flex-shrink-0">
-                            {r.horas % 1 === 0 ? r.horas : r.horas.toFixed(1)}h
-                          </span>
+                            {/* Blocks */}
+                            {dayRegs.map((r) => {
+                              const cfg   = tc(r.tipoActividad)
+                              const left  = ((r.horaInicio! - HOUR_START) / TOTAL_H) * 100
+                              const width = Math.min(
+                                (r.horas / TOTAL_H) * 100,
+                                100 - left
+                              )
+                              const label = r.proyecto?.nombre || (r.nota ? r.nota : r.tipoActividad)
 
-                          <div className="flex gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => {
-                                setEditId(r.id)
-                                setEditData({ ...r, horasStr: String(r.horas) })
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(r.id)}
-                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              return (
+                                <div
+                                  key={r.id}
+                                  onClick={(e) => { e.stopPropagation(); openEdit(r) }}
+                                  style={{
+                                    position: 'absolute',
+                                    left:   `${left}%`,
+                                    width:  `${width}%`,
+                                    top:    '5px',
+                                    bottom: '5px',
+                                  }}
+                                  className={cn(
+                                    'rounded-lg px-2 flex items-center gap-1 text-xs font-semibold cursor-pointer shadow-sm overflow-hidden',
+                                    'hover:brightness-110 transition-all z-10',
+                                    cfg.bg,
+                                    cfg.text
+                                  )}
+                                  title={`${r.tipoActividad}${r.proyecto ? ` · ${r.proyecto.nombre}` : ''}${r.nota ? ` · ${r.nota}` : ''} | ${r.horas}h`}
+                                >
+                                  <cfg.Icon className="w-3 h-3 flex-shrink-0 opacity-80" />
+                                  <span className="truncate">{label}</span>
+                                  <span className="ml-auto flex-shrink-0 opacity-75 text-[10px]">{r.horas}h</span>
+                                  <Pencil className="w-2.5 h-2.5 flex-shrink-0 opacity-50" />
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 pt-1">
+            {TIPOS.map(({ label, Icon, bg, text }) => (
+              <span key={label} className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium', bg, text)}>
+                <Icon className="w-3 h-3" /> {label}
+              </span>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ── REPORTES TAB ──────────────────────────────────────────────── */}
+      {/* ── REPORTES TAB ────────────────────────────────────────────── */}
       {tab === 'reportes' && (
         <div className="space-y-6">
-          {/* Period selector */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-slate-500">Período:</span>
             {[7, 30, 90].map((d) => (
@@ -613,116 +675,109 @@ export function HorasPageClient({ registros: init, proyectos, usuarios }: Props)
                   'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
                   periodo === d
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
                 {d} días
               </button>
             ))}
             <span className="ml-auto text-sm text-slate-500">
-              Total:{' '}
-              <strong className="text-slate-800 dark:text-white">
+              Total: <strong className="text-slate-800 dark:text-white">
                 {totalPeriodo % 1 === 0 ? totalPeriodo : totalPeriodo.toFixed(1)}h
               </strong>
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Horas por proyecto */}
+            {/* Por proyecto */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
               <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
                 <FolderOpen className="w-4 h-4 text-blue-500" /> Horas por proyecto
               </h3>
-              {horasPorProyecto.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">Sin registros de proyecto</p>
-              ) : (
-                <div className="space-y-3">
-                  {horasPorProyecto.map(([nombre, h]) => (
-                    <div key={nombre}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-slate-700 dark:text-slate-300 truncate text-xs">{nombre}</span>
-                        <span className="font-bold text-slate-800 dark:text-white ml-2 flex-shrink-0 tabular-nums">
-                          {h % 1 === 0 ? h : h.toFixed(1)}h
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500 rounded-full transition-all"
-                          style={{ width: `${(h / (horasPorProyecto[0]?.[1] || 1)) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Por tipo de actividad */}
-            <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
-                <BarChart3 className="w-4 h-4 text-purple-500" /> Por actividad
-              </h3>
-              {horasPorActividad.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
-              ) : (
-                <div className="space-y-3">
-                  {horasPorActividad.map(([tipoLabel, h]) => {
-                    const tc  = tipoConf(tipoLabel)
-                    const pct = totalPeriodo > 0 ? (h / totalPeriodo) * 100 : 0
-                    return (
-                      <div key={tipoLabel}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className={cn('flex items-center gap-1 text-xs font-medium', tc.text)}>
-                            <tc.Icon className="w-3 h-3" /> {tipoLabel}
-                          </span>
-                          <span className="text-xs text-slate-500 tabular-nums">
-                            {h % 1 === 0 ? h : h.toFixed(1)}h{' '}
-                            <span className="text-slate-400">({pct.toFixed(0)}%)</span>
-                          </span>
+              {horasPorProyecto.length === 0
+                ? <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
+                : <div className="space-y-3">
+                    {horasPorProyecto.map(([nombre, h]) => (
+                      <div key={nombre}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-slate-700 dark:text-slate-300 truncate">{nombre}</span>
+                          <span className="font-bold ml-2 tabular-nums">{h % 1 === 0 ? h : h.toFixed(1)}h</span>
                         </div>
                         <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            className={cn('h-full rounded-full transition-all', tc.bar)}
-                            style={{ width: `${pct}%` }}
-                          />
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(h / (horasPorProyecto[0]?.[1] || 1)) * 100}%` }} />
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
+                    ))}
+                  </div>
+              }
             </div>
 
-            {/* Horas por persona */}
+            {/* Por actividad */}
+            <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+              <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
+                <BarChart3 className="w-4 h-4 text-purple-500" /> Por tipo de actividad
+              </h3>
+              {horasPorActividad.length === 0
+                ? <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
+                : <div className="space-y-3">
+                    {horasPorActividad.map(([tipoLabel, h]) => {
+                      const cfg = tc(tipoLabel)
+                      const pct = totalPeriodo > 0 ? (h / totalPeriodo) * 100 : 0
+                      return (
+                        <div key={tipoLabel}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className={cn('flex items-center gap-1 text-xs font-medium', cfg.light.split(' ')[1])}>
+                              <cfg.Icon className="w-3 h-3" /> {tipoLabel}
+                            </span>
+                            <span className="text-xs text-slate-500 tabular-nums">
+                              {h % 1 === 0 ? h : h.toFixed(1)}h <span className="text-slate-400">({pct.toFixed(0)}%)</span>
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className={cn('h-full rounded-full', cfg.bar)} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+              }
+            </div>
+
+            {/* Por persona */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
               <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
                 <Users className="w-4 h-4 text-green-500" /> Horas por persona
               </h3>
-              {horasPorUsuario.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
-              ) : (
-                <div className="space-y-3">
-                  {horasPorUsuario.map(([nombre, h]) => (
-                    <div key={nombre}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-slate-700 dark:text-slate-300 truncate text-xs">{nombre}</span>
-                        <span className="font-bold text-slate-800 dark:text-white ml-2 flex-shrink-0 tabular-nums">
-                          {h % 1 === 0 ? h : h.toFixed(1)}h
-                        </span>
+              {horasPorUsuario.length === 0
+                ? <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
+                : <div className="space-y-3">
+                    {horasPorUsuario.map(([nombre, h]) => (
+                      <div key={nombre}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-slate-700 dark:text-slate-300 truncate">{nombre}</span>
+                          <span className="font-bold ml-2 tabular-nums">{h % 1 === 0 ? h : h.toFixed(1)}h</span>
+                        </div>
+                        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500 rounded-full" style={{ width: `${(h / (horasPorUsuario[0]?.[1] || 1)) * 100}%` }} />
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-green-500 rounded-full transition-all"
-                          style={{ width: `${(h / (horasPorUsuario[0]?.[1] || 1)) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+              }
             </div>
           </div>
         </div>
+      )}
+
+      {/* Block popup (create / edit) */}
+      {popup && (
+        <BlockPopup
+          state={popup}
+          proyectos={proyectos}
+          onSave={handleSave}
+          onDelete={popup.mode === 'edit' ? handleDelete : undefined}
+          onClose={() => setPopup(null)}
+        />
       )}
     </div>
   )
