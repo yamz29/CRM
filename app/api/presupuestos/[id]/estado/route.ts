@@ -29,7 +29,7 @@ export async function PATCH(
     if (estado === 'Aprobado' && presupuesto.proyectoId) {
       await prisma.proyecto.update({
         where: { id: presupuesto.proyectoId },
-        data: { estado: 'Activo' },
+        data: { estado: 'En Ejecución' },
       })
     }
 

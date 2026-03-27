@@ -77,7 +77,7 @@ export async function POST(req: Request, { params }: Params) {
       suplidor: row.suplidor?.trim() || null,
       categoria: row.categoria?.trim() || null,
       subcategoria: row.subcategoria?.trim() || null,
-      monto: parseFloat(String(row.monto ?? '0')),
+      monto: Math.max(0, parseFloat(String(row.monto ?? '0'))),
       moneda: row.moneda || 'RD$',
       metodoPago: row.metodoPago || row.metodo_pago || 'Efectivo',
       cuentaOrigen: (row.cuentaOrigen || row.cuenta_origen)?.trim() || null,
