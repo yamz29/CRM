@@ -24,9 +24,10 @@ interface RegistroHoras {
 }
 
 interface Props {
-  registros: RegistroHoras[]
-  proyectos: { id: number; nombre: string }[]
-  usuarios:  { id: number; nombre: string }[]
+  registros:     RegistroHoras[]
+  proyectos:     { id: number; nombre: string }[]
+  usuarios:      { id: number; nombre: string }[]
+  currentUserId: number | null
 }
 
 // ── Constants ──────────────────────────────────────────────────────────
@@ -292,11 +293,11 @@ function BlockPopup({
 
 // ── Main Component ─────────────────────────────────────────────────────
 
-export function HorasPageClient({ registros: init, proyectos, usuarios }: Props) {
+export function HorasPageClient({ registros: init, proyectos, usuarios, currentUserId }: Props) {
   const [registros, setRegistros] = useState<RegistroHoras[]>(init)
   const [tab, setTab]             = useState<'grid' | 'reportes'>('grid')
   const [monday, setMonday]       = useState(getMondayOf(todayStr()))
-  const [filterUsr, setFilterUsr] = useState('')
+  const [filterUsr, setFilterUsr] = useState(currentUserId ? String(currentUserId) : '')
 
   const [popup,     setPopup]     = useState<PopupState | null>(null)
 

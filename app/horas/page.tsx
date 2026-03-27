@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth'
 import { StatsCard } from '@/components/ui/stats-card'
 import { Clock, TrendingUp, Calendar, Users } from 'lucide-react'
 import { HorasPageClient } from '@/components/horas/HorasPageClient'
@@ -10,6 +11,8 @@ export default async function HorasPage() {
   const hace7  = new Date(today);   hace7.setDate(today.getDate() - 7)
   const hace30 = new Date(today);   hace30.setDate(today.getDate() - 30)
   const hace90 = new Date(today);   hace90.setDate(today.getDate() - 90)
+
+  const session = await getSession()
 
   const [registros, proyectos, usuarios, agHoy, ag7d, ag30d] = await Promise.all([
     prisma.registroHoras.findMany({
@@ -94,6 +97,7 @@ export default async function HorasPage() {
         registros={registrosSerial as Parameters<typeof HorasPageClient>[0]['registros']}
         proyectos={proyectos}
         usuarios={usuarios}
+        currentUserId={session?.id ?? null}
       />
     </div>
   )
