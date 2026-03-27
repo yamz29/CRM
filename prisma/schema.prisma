@@ -49,6 +49,7 @@ model Proyecto {
   gastos          GastoProyecto[]
   capitulos       ProyectoCapitulo[]
   partidas        ProyectoPartida[]
+  registrosHoras  RegistroHoras[]
 }
 
 // ── GASTOS DEL PROYECTO ───────────────────────────────────────────────
@@ -577,7 +578,8 @@ model Usuario {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tareas    Tarea[]
+  tareas         Tarea[]
+  registrosHoras RegistroHoras[]
 }
 
 model Configuracion {
@@ -587,6 +589,25 @@ model Configuracion {
 }
 
 // ── UNIDADES GLOBALES ──────────────────────────────────────────────────
+
+// ── REGISTRO DE HORAS DEL EQUIPO ─────────────────────────────────────
+
+model RegistroHoras {
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int?
+  proyectoId    Int?
+  fecha         DateTime
+  horas         Float    @default(1)
+  tipoActividad String   // 'Proyecto' | 'Limpieza' | 'Organización' | 'Transporte' | 'Reunión' | 'Taller'
+  nota          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  usuario  Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+
+  @@map("registro_horas")
+}
 
 model UnidadGlobal {
   id          Int      @id @default(autoincrement())
