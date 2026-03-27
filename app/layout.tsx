@@ -18,15 +18,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
+      <head />
+      <body className={inter.className}>
         {/* Prevent flash of wrong theme before React hydrates */}
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem('crm-theme')??"dark";document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}`,
           }}
         />
-      </head>
-      <body className={inter.className}>
         <ThemeProvider>
           <AppLayout>
             {children}
