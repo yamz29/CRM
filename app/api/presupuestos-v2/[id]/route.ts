@@ -3,16 +3,22 @@ import { prisma } from '@/lib/prisma'
 
 type Params = { params: Promise<{ id: string }> }
 
+/** Clamp a numeric field to [0, max]. Defaults max to Infinity. */
+function safeNum(v: unknown, max = Infinity): number {
+  const n = parseFloat(String(v))
+  return isNaN(n) ? 0 : Math.min(max, Math.max(0, n))
+}
+
 function calcTotals(capitulos: any[], indirectoLineas: any[]) {
   let subtotalBase = 0
   for (const cap of capitulos) {
     for (const p of cap.partidas || []) {
-      subtotalBase += parseFloat(String(p.subtotal)) || parseFloat(String(p.cantidad)) * parseFloat(String(p.precioUnitario)) || 0
+      subtotalBase += safeNum(p.subtotal) || safeNum(p.cantidad) * safeNum(p.precioUnitario)
     }
   }
   const subtotalIndirecto = indirectoLineas
     .filter((l: any) => l.activo !== false)
-    .reduce((s: number, l: any) => s + subtotalBase * (parseFloat(String(l.porcentaje)) || 0) / 100, 0)
+    .reduce((s: number, l: any) => s + subtotalBase * safeNum(l.porcentaje, 100) / 100, 0)
   return { subtotalBase, subtotalIndirecto, total: subtotalBase + subtotalIndirecto }
 }
 
@@ -60,97 +66,101 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const { subtotalBase, total } = calcTotals(capitulos, indirectoLineas)
 
-    // Delete existing data (cascade handles partidas/analisis)
-    await prisma.capituloPresupuesto.deleteMany({ where: { presupuestoId: id } })
-    await prisma.presupuestoTitulo.deleteMany({ where: { presupuestoId: id } })
-    await prisma.presupuestoIndirectoLinea.deleteMany({ where: { presupuestoId: id } })
+    // All delete + recreate runs inside a single transaction.
+    // If any step fails, the entire operation is rolled back — no data loss.
+    await prisma.$transaction(async (tx) => {
+      // Delete existing data (cascade handles partidas/analisis)
+      await tx.capituloPresupuesto.deleteMany({ where: { presupuestoId: id } })
+      await tx.presupuestoTitulo.deleteMany({ where: { presupuestoId: id } })
+      await tx.presupuestoIndirectoLinea.deleteMany({ where: { presupuestoId: id } })
 
-    // Update base presupuesto
-    await prisma.presupuesto.update({
-      where: { id },
-      data: {
-        clienteId: parseInt(String(clienteId)),
-        proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
-        estado: estado || 'Borrador',
-        notas: notas || null,
-        subtotal: subtotalBase,
-        total,
-      },
-    })
-
-    // Create titulos
-    const tituloIdMap: Record<number, number> = {}
-    for (let ti = 0; ti < titulos.length; ti++) {
-      const t = titulos[ti]
-      const created = await prisma.presupuestoTitulo.create({
-        data: { presupuestoId: id, nombre: t.nombre, orden: ti, observaciones: t.observaciones || null },
-      })
-      tituloIdMap[ti] = created.id
-    }
-
-    // Create capitulos + partidas
-    for (let ci = 0; ci < capitulos.length; ci++) {
-      const cap = capitulos[ci]
-      const tituloId = cap.tituloIdx != null && tituloIdMap[cap.tituloIdx] != null ? tituloIdMap[cap.tituloIdx] : null
-      const created = await prisma.capituloPresupuesto.create({
+      // Update base presupuesto
+      await tx.presupuesto.update({
+        where: { id },
         data: {
-          presupuestoId: id,
-          tituloId,
-          codigo: cap.codigo || null,
-          nombre: cap.nombre,
-          orden: ci,
+          clienteId: parseInt(String(clienteId)),
+          proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+          estado: estado || 'Borrador',
+          notas: notas || null,
+          subtotal: subtotalBase,
+          total,
         },
       })
-      for (let pi = 0; pi < (cap.partidas || []).length; pi++) {
-        const p = cap.partidas[pi]
-        await prisma.partidaPresupuesto.create({
+
+      // Recreate titulos
+      const tituloIdMap: Record<number, number> = {}
+      for (let ti = 0; ti < titulos.length; ti++) {
+        const t = titulos[ti]
+        const created = await tx.presupuestoTitulo.create({
+          data: { presupuestoId: id, nombre: t.nombre, orden: ti, observaciones: t.observaciones || null },
+        })
+        tituloIdMap[ti] = created.id
+      }
+
+      // Recreate capitulos + partidas
+      for (let ci = 0; ci < capitulos.length; ci++) {
+        const cap = capitulos[ci]
+        const tituloId = cap.tituloIdx != null && tituloIdMap[cap.tituloIdx] != null ? tituloIdMap[cap.tituloIdx] : null
+        const capCreated = await tx.capituloPresupuesto.create({
           data: {
-            capituloId: created.id,
-            codigo: p.codigo || null,
-            descripcion: p.descripcion,
-            unidad: p.unidad || 'gl',
-            cantidad: parseFloat(String(p.cantidad)) || 0,
-            precioUnitario: parseFloat(String(p.precioUnitario)) || 0,
-            subtotal: parseFloat(String(p.subtotal)) || 0,
-            observaciones: p.observaciones || null,
-            orden: pi,
-            ...(p.analisis ? {
-              analisis: {
-                create: {
-                  materiales: p.analisis.materiales || 0,
-                  manoObra: p.analisis.manoObra || 0,
-                  equipos: p.analisis.equipos || 0,
-                  subcontratos: p.analisis.subcontratos || 0,
-                  transporte: p.analisis.transporte || 0,
-                  desperdicio: p.analisis.desperdicio || 0,
-                  indirectos: p.analisis.indirectos || 0,
-                  utilidad: p.analisis.utilidad || 0,
-                  costoDirecto: p.analisis.costoDirecto || 0,
-                  costoTotal: p.analisis.costoTotal || 0,
-                  precioSugerido: p.analisis.precioSugerido || 0,
-                  margen: p.analisis.margen || 0,
-                  detalleJson: p.analisis.detalle ? JSON.stringify(p.analisis.detalle) : null,
+            presupuestoId: id,
+            tituloId,
+            codigo: cap.codigo || null,
+            nombre: cap.nombre,
+            orden: ci,
+          },
+        })
+        for (let pi = 0; pi < (cap.partidas || []).length; pi++) {
+          const p = cap.partidas[pi]
+          await tx.partidaPresupuesto.create({
+            data: {
+              capituloId: capCreated.id,
+              codigo: p.codigo || null,
+              descripcion: p.descripcion,
+              unidad: p.unidad || 'gl',
+              cantidad: safeNum(p.cantidad),
+              precioUnitario: safeNum(p.precioUnitario),
+              subtotal: safeNum(p.subtotal),
+              observaciones: p.observaciones || null,
+              orden: pi,
+              ...(p.analisis ? {
+                analisis: {
+                  create: {
+                    materiales:      safeNum(p.analisis.materiales),
+                    manoObra:        safeNum(p.analisis.manoObra),
+                    equipos:         safeNum(p.analisis.equipos),
+                    subcontratos:    safeNum(p.analisis.subcontratos),
+                    transporte:      safeNum(p.analisis.transporte),
+                    desperdicio:     safeNum(p.analisis.desperdicio),
+                    indirectos:      safeNum(p.analisis.indirectos),
+                    utilidad:        safeNum(p.analisis.utilidad),
+                    costoDirecto:    safeNum(p.analisis.costoDirecto),
+                    costoTotal:      safeNum(p.analisis.costoTotal),
+                    precioSugerido:  safeNum(p.analisis.precioSugerido),
+                    margen:          safeNum(p.analisis.margen),
+                    detalleJson: p.analisis.detalle ? JSON.stringify(p.analisis.detalle) : null,
+                  },
                 },
-              },
-            } : {}),
+              } : {}),
+            },
+          })
+        }
+      }
+
+      // Recreate indirecto lineas
+      for (let li = 0; li < indirectoLineas.length; li++) {
+        const l = indirectoLineas[li]
+        await tx.presupuestoIndirectoLinea.create({
+          data: {
+            presupuestoId: id,
+            nombre: l.nombre,
+            porcentaje: safeNum(l.porcentaje, 100),
+            orden: li,
+            activo: l.activo !== false,
           },
         })
       }
-    }
-
-    // Create indirecto lineas
-    for (let li = 0; li < indirectoLineas.length; li++) {
-      const l = indirectoLineas[li]
-      await prisma.presupuestoIndirectoLinea.create({
-        data: {
-          presupuestoId: id,
-          nombre: l.nombre,
-          porcentaje: parseFloat(String(l.porcentaje)) || 0,
-          orden: li,
-          activo: l.activo !== false,
-        },
-      })
-    }
+    })
 
     return NextResponse.json({ ok: true, total })
   } catch (error) {

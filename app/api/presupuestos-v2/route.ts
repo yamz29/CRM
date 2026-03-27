@@ -3,16 +3,22 @@ import { prisma } from '@/lib/prisma'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
+/** Clamp a numeric field to [0, max]. Defaults max to Infinity. */
+function safeNum(v: unknown, max = Infinity): number {
+  const n = parseFloat(String(v))
+  return isNaN(n) ? 0 : Math.min(max, Math.max(0, n))
+}
+
 function calcTotals(capitulos: any[], indirectoLineas: any[]) {
   let subtotalBase = 0
   for (const cap of capitulos) {
     for (const p of cap.partidas || []) {
-      subtotalBase += parseFloat(String(p.subtotal)) || parseFloat(String(p.cantidad)) * parseFloat(String(p.precioUnitario)) || 0
+      subtotalBase += safeNum(p.subtotal) || safeNum(p.cantidad) * safeNum(p.precioUnitario)
     }
   }
   const subtotalIndirecto = indirectoLineas
     .filter((l: any) => l.activo !== false)
-    .reduce((s: number, l: any) => s + subtotalBase * (parseFloat(String(l.porcentaje)) || 0) / 100, 0)
+    .reduce((s: number, l: any) => s + subtotalBase * safeNum(l.porcentaje, 100) / 100, 0)
   return { subtotalBase, subtotalIndirecto, total: subtotalBase + subtotalIndirecto }
 }
 
@@ -69,93 +75,95 @@ export async function POST(request: NextRequest) {
 
     const { subtotalBase, total } = calcTotals(capitulos, indirectoLineas)
 
-    // Create presupuesto
-    const presupuesto = await prisma.presupuesto.create({
-      data: {
-        numero,
-        clienteId: parseInt(String(clienteId)),
-        proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
-        estado: estado || 'Borrador',
-        notas: notas || null,
-        subtotal: subtotalBase,
-        total,
-      },
-    })
-
-    // Create titulos and keep id map
-    const tituloIdMap: Record<number, number> = {}
-    for (let ti = 0; ti < titulos.length; ti++) {
-      const t = titulos[ti]
-      const created = await prisma.presupuestoTitulo.create({
-        data: { presupuestoId: presupuesto.id, nombre: t.nombre, orden: ti, observaciones: t.observaciones || null },
-      })
-      tituloIdMap[ti] = created.id
-    }
-
-    // Create capitulos with tituloId
-    for (let ci = 0; ci < capitulos.length; ci++) {
-      const cap = capitulos[ci]
-      const tituloId = cap.tituloIdx != null && tituloIdMap[cap.tituloIdx] ? tituloIdMap[cap.tituloIdx] : null
-      const created = await prisma.capituloPresupuesto.create({
+    const presupuesto = await prisma.$transaction(async (tx) => {
+      const created = await tx.presupuesto.create({
         data: {
-          presupuestoId: presupuesto.id,
-          tituloId,
-          codigo: cap.codigo || null,
-          nombre: cap.nombre,
-          orden: ci,
+          numero,
+          clienteId: parseInt(String(clienteId)),
+          proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+          estado: estado || 'Borrador',
+          notas: notas || null,
+          subtotal: subtotalBase,
+          total,
         },
       })
-      // Create partidas
-      for (let pi = 0; pi < (cap.partidas || []).length; pi++) {
-        const p = cap.partidas[pi]
-        await prisma.partidaPresupuesto.create({
+
+      // Create titulos and keep id map
+      const tituloIdMap: Record<number, number> = {}
+      for (let ti = 0; ti < titulos.length; ti++) {
+        const t = titulos[ti]
+        const t2 = await tx.presupuestoTitulo.create({
+          data: { presupuestoId: created.id, nombre: t.nombre, orden: ti, observaciones: t.observaciones || null },
+        })
+        tituloIdMap[ti] = t2.id
+      }
+
+      // Create capitulos with tituloId
+      for (let ci = 0; ci < capitulos.length; ci++) {
+        const cap = capitulos[ci]
+        const tituloId = cap.tituloIdx != null && tituloIdMap[cap.tituloIdx] ? tituloIdMap[cap.tituloIdx] : null
+        const capCreated = await tx.capituloPresupuesto.create({
           data: {
-            capituloId: created.id,
-            codigo: p.codigo || null,
-            descripcion: p.descripcion,
-            unidad: p.unidad || 'gl',
-            cantidad: parseFloat(String(p.cantidad)) || 0,
-            precioUnitario: parseFloat(String(p.precioUnitario)) || 0,
-            subtotal: parseFloat(String(p.subtotal)) || 0,
-            observaciones: p.observaciones || null,
-            orden: pi,
-            ...(p.analisis ? {
-              analisis: {
-                create: {
-                  materiales: p.analisis.materiales || 0,
-                  manoObra: p.analisis.manoObra || 0,
-                  equipos: p.analisis.equipos || 0,
-                  subcontratos: p.analisis.subcontratos || 0,
-                  transporte: p.analisis.transporte || 0,
-                  desperdicio: p.analisis.desperdicio || 0,
-                  indirectos: p.analisis.indirectos || 0,
-                  utilidad: p.analisis.utilidad || 0,
-                  costoDirecto: p.analisis.costoDirecto || 0,
-                  costoTotal: p.analisis.costoTotal || 0,
-                  precioSugerido: p.analisis.precioSugerido || 0,
-                  margen: p.analisis.margen || 0,
-                  detalleJson: p.analisis.detalle ? JSON.stringify(p.analisis.detalle) : null,
+            presupuestoId: created.id,
+            tituloId,
+            codigo: cap.codigo || null,
+            nombre: cap.nombre,
+            orden: ci,
+          },
+        })
+        for (let pi = 0; pi < (cap.partidas || []).length; pi++) {
+          const p = cap.partidas[pi]
+          await tx.partidaPresupuesto.create({
+            data: {
+              capituloId: capCreated.id,
+              codigo: p.codigo || null,
+              descripcion: p.descripcion,
+              unidad: p.unidad || 'gl',
+              cantidad: safeNum(p.cantidad),
+              precioUnitario: safeNum(p.precioUnitario),
+              subtotal: safeNum(p.subtotal),
+              observaciones: p.observaciones || null,
+              orden: pi,
+              ...(p.analisis ? {
+                analisis: {
+                  create: {
+                    materiales:      safeNum(p.analisis.materiales),
+                    manoObra:        safeNum(p.analisis.manoObra),
+                    equipos:         safeNum(p.analisis.equipos),
+                    subcontratos:    safeNum(p.analisis.subcontratos),
+                    transporte:      safeNum(p.analisis.transporte),
+                    desperdicio:     safeNum(p.analisis.desperdicio),
+                    indirectos:      safeNum(p.analisis.indirectos),
+                    utilidad:        safeNum(p.analisis.utilidad),
+                    costoDirecto:    safeNum(p.analisis.costoDirecto),
+                    costoTotal:      safeNum(p.analisis.costoTotal),
+                    precioSugerido:  safeNum(p.analisis.precioSugerido),
+                    margen:          safeNum(p.analisis.margen),
+                    detalleJson: p.analisis.detalle ? JSON.stringify(p.analisis.detalle) : null,
+                  },
                 },
-              },
-            } : {}),
+              } : {}),
+            },
+          })
+        }
+      }
+
+      // Create indirecto lineas
+      for (let li = 0; li < indirectoLineas.length; li++) {
+        const l = indirectoLineas[li]
+        await tx.presupuestoIndirectoLinea.create({
+          data: {
+            presupuestoId: created.id,
+            nombre: l.nombre,
+            porcentaje: safeNum(l.porcentaje, 100),
+            orden: li,
+            activo: l.activo !== false,
           },
         })
       }
-    }
 
-    // Create indirecto lineas
-    for (let li = 0; li < indirectoLineas.length; li++) {
-      const l = indirectoLineas[li]
-      await prisma.presupuestoIndirectoLinea.create({
-        data: {
-          presupuestoId: presupuesto.id,
-          nombre: l.nombre,
-          porcentaje: parseFloat(String(l.porcentaje)) || 0,
-          orden: li,
-          activo: l.activo !== false,
-        },
-      })
-    }
+      return created
+    })
 
     return NextResponse.json({ id: presupuesto.id, numero: presupuesto.numero }, { status: 201 })
   } catch (error) {
