@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import {
   ChevronLeft, ChevronRight, Clock, FolderOpen, Sparkles, Archive,
   Truck, Users, Wrench, Trash2, Pencil, X, BarChart3, Plus,
+  Search, FileText, DollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +14,7 @@ interface RegistroHoras {
   id: number
   usuarioId: number | null
   proyectoId: number | null
+  clienteId: number | null
   fecha: string
   horas: number
   tipoActividad: string
@@ -21,12 +23,14 @@ interface RegistroHoras {
   createdAt: string
   usuario: { id: number; nombre: string } | null
   proyecto: { id: number; nombre: string } | null
+  cliente:  { id: number; nombre: string } | null
 }
 
 interface Props {
   registros:     RegistroHoras[]
   proyectos:     { id: number; nombre: string }[]
   usuarios:      { id: number; nombre: string }[]
+  clientes:      { id: number; nombre: string }[]
   currentUserId: number | null
 }
 
@@ -38,13 +42,21 @@ const HOURS      = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_
 const TOTAL_H    = HOUR_END - HOUR_START
 
 const TIPOS = [
-  { label: 'Proyecto',     Icon: FolderOpen, bg: 'bg-blue-500',   text: 'text-white', light: 'bg-blue-100 text-blue-700',   bar: 'bg-blue-400'   },
-  { label: 'Limpieza',     Icon: Sparkles,   bg: 'bg-green-500',  text: 'text-white', light: 'bg-green-100 text-green-700', bar: 'bg-green-400'  },
-  { label: 'Organización', Icon: Archive,    bg: 'bg-yellow-400', text: 'text-white', light: 'bg-yellow-100 text-yellow-700', bar: 'bg-yellow-400'},
-  { label: 'Transporte',   Icon: Truck,      bg: 'bg-purple-500', text: 'text-white', light: 'bg-purple-100 text-purple-700', bar: 'bg-purple-400'},
-  { label: 'Reunión',      Icon: Users,      bg: 'bg-orange-500', text: 'text-white', light: 'bg-orange-100 text-orange-700', bar: 'bg-orange-400'},
-  { label: 'Taller',       Icon: Wrench,     bg: 'bg-red-500',    text: 'text-white', light: 'bg-red-100 text-red-700',     bar: 'bg-red-400'    },
+  // Producción
+  { label: 'Proyecto',      Icon: FolderOpen, bg: 'bg-blue-500',    text: 'text-white', light: 'bg-blue-100 text-blue-700',    bar: 'bg-blue-400',    grupo: 'Producción'  },
+  // Comercial
+  { label: 'Prospección',   Icon: Search,     bg: 'bg-teal-500',    text: 'text-white', light: 'bg-teal-100 text-teal-700',    bar: 'bg-teal-400',    grupo: 'Comercial'   },
+  { label: 'Levantamiento', Icon: FileText,   bg: 'bg-cyan-500',    text: 'text-white', light: 'bg-cyan-100 text-cyan-700',    bar: 'bg-cyan-400',    grupo: 'Comercial'   },
+  { label: 'Cotización',    Icon: DollarSign, bg: 'bg-indigo-500',  text: 'text-white', light: 'bg-indigo-100 text-indigo-700',bar: 'bg-indigo-400',  grupo: 'Comercial'   },
+  // Operativo
+  { label: 'Reunión',       Icon: Users,      bg: 'bg-orange-500',  text: 'text-white', light: 'bg-orange-100 text-orange-700',bar: 'bg-orange-400',  grupo: 'Operativo'   },
+  { label: 'Transporte',    Icon: Truck,      bg: 'bg-purple-500',  text: 'text-white', light: 'bg-purple-100 text-purple-700',bar: 'bg-purple-400',  grupo: 'Operativo'   },
+  { label: 'Organización',  Icon: Archive,    bg: 'bg-yellow-500',  text: 'text-white', light: 'bg-yellow-100 text-yellow-700',bar: 'bg-yellow-400',  grupo: 'Operativo'   },
+  { label: 'Limpieza',      Icon: Sparkles,   bg: 'bg-green-500',   text: 'text-white', light: 'bg-green-100 text-green-700',  bar: 'bg-green-400',   grupo: 'Operativo'   },
+  { label: 'Taller',        Icon: Wrench,     bg: 'bg-red-500',     text: 'text-white', light: 'bg-red-100 text-red-700',      bar: 'bg-red-400',     grupo: 'Operativo'   },
 ]
+
+const TIPOS_COMERCIAL = ['Prospección', 'Levantamiento', 'Cotización']
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -99,6 +111,12 @@ function fmtH(h: number) {
 
 // ── Sub-component: Block popup (create / edit) ─────────────────────────
 
+const GRUPOS_TIPOS = [
+  { grupo: 'Producción', tipos: TIPOS.filter((t) => t.grupo === 'Producción') },
+  { grupo: 'Comercial',  tipos: TIPOS.filter((t) => t.grupo === 'Comercial')  },
+  { grupo: 'Operativo',  tipos: TIPOS.filter((t) => t.grupo === 'Operativo')  },
+]
+
 interface PopupState {
   mode: 'create' | 'edit'
   registro?: RegistroHoras
@@ -108,37 +126,42 @@ interface PopupState {
   horas: number
   tipo: string
   proyectoId: string
+  clienteId: string
   nota: string
 }
 
 function BlockPopup({
   state,
   proyectos,
+  clientes,
   onSave,
   onDelete,
   onClose,
 }: {
   state: PopupState
   proyectos: { id: number; nombre: string }[]
+  clientes:  { id: number; nombre: string }[]
   onSave: (data: Omit<PopupState, 'mode' | 'registro'>) => Promise<void>
   onDelete?: () => Promise<void>
   onClose: () => void
 }) {
   const [tipo,       setTipo]       = useState(state.tipo)
   const [proyectoId, setProyectoId] = useState(state.proyectoId)
+  const [clienteId,  setClienteId]  = useState(state.clienteId)
   const [horas,      setHoras]      = useState(state.horas)
   const [nota,       setNota]       = useState(state.nota)
   const [horaInicio, setHoraInicio] = useState(state.horaInicio)
   const [saving,     setSaving]     = useState(false)
 
-  const horaFin = Math.min(horaInicio + horas, HOUR_END)
+  const horaFin      = Math.min(horaInicio + horas, HOUR_END)
+  const esComercial  = TIPOS_COMERCIAL.includes(tipo)
 
   async function handleSave() {
     if (!tipo) return
     if (tipo === 'Proyecto' && !proyectoId) return
     setSaving(true)
     try {
-      await onSave({ usuarioId: state.usuarioId, date: state.date, horaInicio, horas, tipo, proyectoId, nota })
+      await onSave({ usuarioId: state.usuarioId, date: state.date, horaInicio, horas, tipo, proyectoId, clienteId, nota })
     } finally {
       setSaving(false)
     }
@@ -149,7 +172,7 @@ function BlockPopup({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -210,32 +233,43 @@ function BlockPopup({
           </div>
         </div>
 
-        {/* Tipo */}
+        {/* Tipo agrupado */}
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Actividad</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {TIPOS.map(({ label, Icon, bg, text }) => (
-              <button
-                key={label}
-                onClick={() => { setTipo(label); if (label !== 'Proyecto') setProyectoId('') }}
-                className={cn(
-                  'flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg text-xs font-medium border-2 transition-all',
-                  tipo === label
-                    ? `${bg} ${text} border-transparent`
-                    : 'border-slate-200 text-slate-500 hover:border-slate-300 bg-white dark:bg-slate-800'
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </button>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Actividad</p>
+          <div className="space-y-2">
+            {GRUPOS_TIPOS.map(({ grupo, tipos }) => (
+              <div key={grupo}>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1">{grupo}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {tipos.map(({ label, Icon, bg, text }) => (
+                    <button
+                      key={label}
+                      onClick={() => {
+                        setTipo(label)
+                        if (label !== 'Proyecto') setProyectoId('')
+                        if (!TIPOS_COMERCIAL.includes(label)) setClienteId('')
+                      }}
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border-2 transition-all',
+                        tipo === label
+                          ? `${bg} ${text} border-transparent`
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300 bg-white dark:bg-slate-800'
+                      )}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Proyecto */}
+        {/* Proyecto (solo si tipo = Proyecto) */}
         {tipo === 'Proyecto' && (
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Proyecto</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Proyecto *</p>
             <select
               value={proyectoId}
               onChange={(e) => setProyectoId(e.target.value)}
@@ -244,6 +278,23 @@ function BlockPopup({
               <option value="">— Seleccionar —</option>
               {proyectos.map((p) => (
                 <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Cliente (solo si tipo es Comercial) */}
+        {esComercial && (
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Cliente (opcional)</p>
+            <select
+              value={clienteId}
+              onChange={(e) => setClienteId(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="">— Sin cliente específico —</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
               ))}
             </select>
           </div>
@@ -293,7 +344,7 @@ function BlockPopup({
 
 // ── Main Component ─────────────────────────────────────────────────────
 
-export function HorasPageClient({ registros: init, proyectos, usuarios, currentUserId }: Props) {
+export function HorasPageClient({ registros: init, proyectos, usuarios, clientes, currentUserId }: Props) {
   const [registros, setRegistros] = useState<RegistroHoras[]>(init)
   const [tab, setTab]             = useState<'grid' | 'reportes'>('grid')
   const [monday, setMonday]       = useState(getMondayOf(todayStr()))
@@ -333,6 +384,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, currentU
       horas: 2,
       tipo: '',
       proyectoId: '',
+      clienteId: '',
       nota: '',
     })
   }
@@ -347,6 +399,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, currentU
       horas: r.horas,
       tipo: r.tipoActividad,
       proyectoId: r.proyectoId ? String(r.proyectoId) : '',
+      clienteId:  r.clienteId  ? String(r.clienteId)  : '',
       nota: r.nota ?? '',
     })
   }
@@ -365,6 +418,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, currentU
         horas:         data.horas,
         tipoActividad: data.tipo,
         proyectoId:    data.tipo === 'Proyecto' ? (data.proyectoId ? parseInt(data.proyectoId) : null) : null,
+        clienteId:     TIPOS_COMERCIAL.includes(data.tipo) ? (data.clienteId ? parseInt(data.clienteId) : null) : null,
         nota:          data.nota || null,
         horaInicio:    data.horaInicio,
       }),
@@ -614,7 +668,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, currentU
                                 (r.horas / TOTAL_H) * 100,
                                 100 - left
                               )
-                              const label = r.proyecto?.nombre || (r.nota ? r.nota : r.tipoActividad)
+                              const label = r.proyecto?.nombre || r.cliente?.nombre || (r.nota ? r.nota : r.tipoActividad)
 
                               return (
                                 <div
@@ -633,7 +687,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, currentU
                                     cfg.bg,
                                     cfg.text
                                   )}
-                                  title={`${r.tipoActividad}${r.proyecto ? ` · ${r.proyecto.nombre}` : ''}${r.nota ? ` · ${r.nota}` : ''} | ${r.horas}h`}
+                                  title={`${r.tipoActividad}${r.proyecto ? ` · ${r.proyecto.nombre}` : ''}${r.cliente ? ` · ${r.cliente.nombre}` : ''}${r.nota ? ` · ${r.nota}` : ''} | ${r.horas}h`}
                                 >
                                   <cfg.Icon className="w-3 h-3 flex-shrink-0 opacity-80" />
                                   <span className="truncate">{label}</span>
@@ -775,6 +829,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, currentU
         <BlockPopup
           state={popup}
           proyectos={proyectos}
+          clientes={clientes}
           onSave={handleSave}
           onDelete={popup.mode === 'edit' ? handleDelete : undefined}
           onClose={() => setPopup(null)}

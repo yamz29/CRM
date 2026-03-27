@@ -8,7 +8,9 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { usuarioId, fecha, horas, tipoActividad, proyectoId, nota, horaInicio } = body
+    const { usuarioId, fecha, horas, tipoActividad, proyectoId, clienteId, nota, horaInicio } = body
+
+    const TIPOS_COMERCIAL = ['Prospección', 'Levantamiento', 'Cotización']
 
     const registro = await prisma.registroHoras.update({
       where: { id: parseInt(id) },
@@ -19,6 +21,8 @@ export async function PUT(
         tipoActividad: tipoActividad || undefined,
         proyectoId:    tipoActividad === 'Proyecto' && proyectoId
                          ? parseInt(String(proyectoId)) : null,
+        clienteId:     tipoActividad && TIPOS_COMERCIAL.includes(tipoActividad) && clienteId
+                         ? parseInt(String(clienteId)) : null,
         nota:          nota !== undefined ? (nota?.trim() || null) : undefined,
         horaInicio:    horaInicio !== undefined
                          ? (horaInicio != null ? parseFloat(String(horaInicio)) : null)
@@ -27,6 +31,7 @@ export async function PUT(
       include: {
         usuario:  { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        cliente:  { select: { id: true, nombre: true } },
       },
     })
 

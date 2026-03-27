@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       include: {
         usuario:  { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        cliente:  { select: { id: true, nombre: true } },
       },
       orderBy: [{ fecha: 'desc' }, { horaInicio: 'asc' }],
     })
@@ -43,7 +44,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { usuarioId, fecha, horas, tipoActividad, proyectoId, nota, horaInicio } = body
+    const { usuarioId, fecha, horas, tipoActividad, proyectoId, clienteId, nota, horaInicio } = body
+
+    const TIPOS_COMERCIAL = ['Prospección', 'Levantamiento', 'Cotización']
 
     if (!tipoActividad) {
       return NextResponse.json({ error: 'El tipo de actividad es requerido' }, { status: 400 })
@@ -61,6 +64,8 @@ export async function POST(request: NextRequest) {
         usuarioId:     usuarioId  ? parseInt(String(usuarioId))  : null,
         proyectoId:    tipoActividad === 'Proyecto' && proyectoId
                          ? parseInt(String(proyectoId)) : null,
+        clienteId:     TIPOS_COMERCIAL.includes(tipoActividad) && clienteId
+                         ? parseInt(String(clienteId)) : null,
         fecha:         fecha ? new Date(fecha) : new Date(),
         horas:         Math.max(0.25, horasVal),
         tipoActividad,
@@ -70,6 +75,7 @@ export async function POST(request: NextRequest) {
       include: {
         usuario:  { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        cliente:  { select: { id: true, nombre: true } },
       },
     })
 

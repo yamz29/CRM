@@ -21,9 +21,10 @@ model Cliente {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  proyectos    Proyecto[]
-  presupuestos Presupuesto[]
-  tareas       Tarea[]
+  proyectos      Proyecto[]
+  presupuestos   Presupuesto[]
+  tareas         Tarea[]
+  registrosHoras RegistroHoras[]
 }
 
 model Proyecto {
@@ -596,9 +597,10 @@ model RegistroHoras {
   id            Int      @id @default(autoincrement())
   usuarioId     Int?
   proyectoId    Int?
+  clienteId     Int?
   fecha         DateTime
   horas         Float    @default(1)
-  tipoActividad String   // 'Proyecto' | 'Limpieza' | 'Organización' | 'Transporte' | 'Reunión' | 'Taller'
+  tipoActividad String   // 'Proyecto' | 'Prospección' | 'Levantamiento' | 'Cotización' | 'Limpieza' | 'Organización' | 'Transporte' | 'Reunión' | 'Taller'
   nota          String?
   horaInicio    Float?   // 8.0 = 8am, 14.5 = 2:30pm; null = sin horario específico
   createdAt     DateTime @default(now())
@@ -606,6 +608,7 @@ model RegistroHoras {
 
   usuario  Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
   proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  cliente  Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
 
   @@map("registro_horas")
 }

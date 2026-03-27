@@ -14,12 +14,13 @@ export default async function HorasPage() {
 
   const session = await getSession()
 
-  const [registros, proyectos, usuarios, agHoy, ag7d, ag30d] = await Promise.all([
+  const [registros, proyectos, usuarios, clientes, agHoy, ag7d, ag30d] = await Promise.all([
     prisma.registroHoras.findMany({
       where: { fecha: { gte: hace90 } },
       include: {
         usuario:  { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        cliente:  { select: { id: true, nombre: true } },
       },
       orderBy: [{ fecha: 'desc' }, { createdAt: 'desc' }],
     }),
@@ -30,6 +31,10 @@ export default async function HorasPage() {
     }),
     prisma.usuario.findMany({
       where:   { activo: true },
+      select:  { id: true, nombre: true },
+      orderBy: { nombre: 'asc' },
+    }),
+    prisma.cliente.findMany({
       select:  { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
     }),
@@ -57,6 +62,7 @@ export default async function HorasPage() {
     fecha:     r.fecha.toISOString(),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
+    cliente:   r.cliente ?? null,
   }))
 
   return (
@@ -97,6 +103,7 @@ export default async function HorasPage() {
         registros={registrosSerial as Parameters<typeof HorasPageClient>[0]['registros']}
         proyectos={proyectos}
         usuarios={usuarios}
+        clientes={clientes}
         currentUserId={session?.id ?? null}
       />
     </div>
