@@ -109,6 +109,7 @@ function overlaps(
 function ElevationSVG({
   wall,
   placements,
+  allPlacements,
   alturaMm,
   selectedPlacementId,
   placingModule,
@@ -119,7 +120,8 @@ function ElevationSVG({
   onPlacementClick,
 }: {
   wall: Wall
-  placements: Placement[]
+  placements: Placement[]       // filtered to this wall (for rendering)
+  allPlacements: Placement[]    // all placements (for overlap detection)
   alturaMm: number
   selectedPlacementId: number | null
   placingModule: ModuloBasic | null
@@ -276,22 +278,37 @@ function ElevationSVG({
         {/* Ghost / hover preview */}
         {placingModule && hoverX !== null && (() => {
           const snapped = Math.round(hoverX / SNAP_MM) * SNAP_MM
-          const hasOverlap = overlaps(placements, placements[0]?.wallId ?? 0, snapped, placingModule.ancho)
-          const rectW = placingModule.ancho * scale
-          const rectH = placingModule.alto * scale
-          const rectX = snapped * scale
+          const clampedPos = Math.max(0, Math.min(snapped, wall.longitud - (placingModule.ancho || 300)))
+          const hasOverlap = overlaps(allPlacements, wall.id, clampedPos, placingModule.ancho || 300)
+          const outOfBounds = clampedPos + (placingModule.ancho || 300) > wall.longitud
+          // Use at least 60px wide and 40px tall so the ghost is always visible
+          const rawW = (placingModule.ancho || 300) * scale
+          const rawH = (placingModule.alto || 720) * scale
+          const rectW = Math.max(rawW, 40)
+          const rectH = Math.max(rawH, 30)
+          const rectX = clampedPos * scale
           const rectY = yFloor - rectH
+          const color = (hasOverlap || outOfBounds) ? '#ef4444' : '#3b82f6'
           return (
-            <rect
-              x={rectX} y={rectY}
-              width={rectW} height={rectH}
-              fill={hasOverlap ? '#ef4444' : '#3b82f6'}
-              fillOpacity={0.3}
-              stroke={hasOverlap ? '#ef4444' : '#93c5fd'}
-              strokeWidth={1.5}
-              strokeDasharray="4,2"
-              rx={2}
-            />
+            <g pointerEvents="none">
+              <rect
+                x={rectX} y={rectY}
+                width={rectW} height={rectH}
+                fill={color}
+                fillOpacity={0.25}
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="5,3"
+                rx={2}
+              />
+              <text
+                x={rectX + rectW / 2} y={rectY + rectH / 2}
+                textAnchor="middle" dominantBaseline="middle"
+                fontSize={9} fill={color} fontFamily="sans-serif"
+              >
+                {placingModule.ancho ? `${Math.round(placingModule.ancho)}mm` : '?mm'}
+              </text>
+            </g>
           )
         })()}
 
@@ -488,8 +505,14 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   const [showPresupuestoModal, setShowPresupuestoModal] = useState(false)
   const [presupuestoNombre, setPresupuestoNombre] = useState(project.nombre)
   const [generatingPresupuesto, setGeneratingPresupuesto] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function showError(msg: string) {
+    setErrorMsg(msg)
+    setTimeout(() => setErrorMsg(null), 4000)
+  }
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
@@ -525,10 +548,18 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   async function handleCanvasClick(xMm: number) {
     if (!placingModule || !activeWall) return
 
+    const moduleAncho = placingModule.ancho || 0
     const snapped = Math.round(xMm / SNAP_MM) * SNAP_MM
-    const clampedPos = Math.max(0, Math.min(snapped, activeWall.longitud - placingModule.ancho))
+    const clampedPos = Math.max(0, Math.min(snapped, activeWall.longitud - moduleAncho))
 
-    if (overlaps(placements, activeWallId, clampedPos, placingModule.ancho)) return
+    if (moduleAncho > 0 && clampedPos + moduleAncho > activeWall.longitud) {
+      showError('El módulo no cabe en esta posición de la pared.')
+      return
+    }
+    if (overlaps(placements, activeWallId, clampedPos, moduleAncho || 1)) {
+      showError('Hay un módulo en esa posición.')
+      return
+    }
 
     try {
       const res = await fetch(`/api/cocinas/${project.id}/placements`, {
@@ -541,12 +572,17 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
           nivel: 'base',
         }),
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        showError((err as { error?: string }).error ?? 'Error al colocar el módulo.')
+        return
+      }
       const newPlacement = await res.json() as Placement
-      setPlacements([...placements, newPlacement])
+      setPlacements((prev) => [...prev, newPlacement])
       setCalcResults(null)
     } catch (err) {
       console.error(err)
+      showError('Error de conexión al guardar.')
     }
   }
 
@@ -762,9 +798,13 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-xs font-medium truncate">{m.nombre}</p>
                       <p className="text-slate-500 text-xs mt-0.5 truncate">{m.tipoModulo}</p>
-                      <p className="text-slate-600 text-xs">
-                        {Math.round(m.ancho)}×{Math.round(m.alto)}×{Math.round(m.profundidad)} mm
-                      </p>
+                      {m.ancho > 0 && m.alto > 0 ? (
+                        <p className="text-slate-600 text-xs">
+                          {Math.round(m.ancho)}×{Math.round(m.alto)}×{Math.round(m.profundidad)} mm
+                        </p>
+                      ) : (
+                        <p className="text-amber-500 text-xs">⚠ Sin dimensiones</p>
+                      )}
                     </div>
                     {m.colorAcabado && (
                       <div
@@ -814,10 +854,17 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
 
               {/* SVG canvas */}
               <div className="flex-1 overflow-auto p-4">
+                {errorMsg && (
+                  <div className="mb-3 px-3 py-2 bg-red-900/40 border border-red-500/30 rounded-lg text-red-300 text-xs flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full flex-shrink-0" />
+                    {errorMsg}
+                  </div>
+                )}
                 {activeWall ? (
                   <ElevationSVG
                     wall={activeWall}
                     placements={wallPlacements}
+                    allPlacements={placements}
                     alturaMm={project.alturaMm}
                     selectedPlacementId={selectedPlacement?.id ?? null}
                     placingModule={placingModule}
