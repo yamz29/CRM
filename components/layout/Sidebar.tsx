@@ -18,6 +18,7 @@ import {
   Moon,
   Sun,
   Clock,
+  ChefHat,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/gastos', label: 'Gastos', icon: Receipt },
   { href: '/tareas', label: 'Tareas', icon: CheckSquare },
   { href: '/melamina', label: 'Módulos Melamina', icon: Box },
+  { href: '/cocinas',  label: 'Cocinas', icon: ChefHat },
   { href: '/horas',    label: 'Horas del Equipo', icon: Clock },
 ]
 

@@ -315,6 +315,7 @@ model ModuloMelaminaV2 {
   piezas            PiezaModulo[]
   recursosModulo    RecursoModulo[]
   materialesModulo  MaterialModuloMelamina[]
+  kitchenPlacements KitchenModulePlacement[]
 }
 
 model PiezaModulo {
@@ -622,4 +623,50 @@ model UnidadGlobal {
   activo      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ── CONFIGURADOR DE COCINAS ───────────────────────────────────────────────────
+
+model KitchenProject {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  layoutType String   @default("lineal") // lineal | L | U
+  alturaMm   Float    @default(2400)
+  profBase   Float    @default(580)   // depth of base cabinets mm
+  profAlto   Float    @default(350)   // depth of wall cabinets mm
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  paredes    KitchenWall[]
+  placements KitchenModulePlacement[]
+
+  @@map("kitchen_project")
+}
+
+model KitchenWall {
+  id               Int    @id @default(autoincrement())
+  kitchenProjectId Int
+  nombre           String // A, B, C
+  longitud         Float  // mm
+  orden            Int    @default(0)
+
+  proyecto   KitchenProject         @relation(fields: [kitchenProjectId], references: [id], onDelete: Cascade)
+  placements KitchenModulePlacement[]
+
+  @@map("kitchen_wall")
+}
+
+model KitchenModulePlacement {
+  id               Int    @id @default(autoincrement())
+  kitchenProjectId Int
+  wallId           Int
+  moduloId         Int
+  posicion         Float  @default(0)  // mm from start of wall
+  nivel            String @default("base") // base | alto | torre
+
+  proyecto KitchenProject   @relation(fields: [kitchenProjectId], references: [id], onDelete: Cascade)
+  wall     KitchenWall      @relation(fields: [wallId], references: [id], onDelete: Cascade)
+  modulo   ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+
+  @@map("kitchen_module_placement")
 }
