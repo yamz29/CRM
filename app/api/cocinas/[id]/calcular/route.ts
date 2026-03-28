@@ -35,6 +35,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     for (const placement of placements) {
       const modulo = placement.modulo
+      // Skip appliances — they have no material pieces
+      if (modulo.tipoModulo === 'Electrodoméstico') continue
       const boardW = modulo.anchoPlanchaCm  // stored as mm despite field name
       const boardH = modulo.largoPlanchaCm  // stored as mm despite field name
       const precio = modulo.materialTablero?.precio ?? 0

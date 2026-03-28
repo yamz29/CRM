@@ -83,6 +83,7 @@ const TIPO_FILTER_MAP: Record<string, string[]> = {
   Base: ['Base con puertas', 'Base con cajones', 'Base mixto'],
   Aéreo: ['Aéreo con puertas'],
   Torre: ['Columna', 'Torre'],
+  'Electrod.': ['Electrodoméstico'],
   Otro: ['Closet', 'Baño', 'Oficina', 'Otro'],
 }
 
@@ -210,24 +211,31 @@ function ElevationSVG({
 
         {/* Placement modules */}
         {placements.map((p) => {
-          const colors = NIVEL_COLORS[p.nivel] ?? NIVEL_COLORS.base
+          const isAppliance = p.modulo.tipoModulo === 'Electrodoméstico'
+          const colors = isAppliance
+            ? { fill: '#374151', stroke: '#6b7280' }
+            : (NIVEL_COLORS[p.nivel] ?? NIVEL_COLORS.base)
+
+          const modAncho = p.modulo.ancho || 300
+          const modAlto  = p.modulo.alto  || 720
+
           let rectY: number
           let rectH: number
 
-          if (p.nivel === 'base') {
-            rectH = p.modulo.alto * scale
+          if (p.nivel === 'base' || isAppliance) {
+            rectH = modAlto * scale
             rectY = yFloor - rectH
           } else if (p.nivel === 'alto') {
-            rectY = yWallCabBase - p.modulo.alto * scale
-            rectH = p.modulo.alto * scale
+            rectY = yWallCabBase - modAlto * scale
+            rectH = modAlto * scale
           } else {
             // torre
-            rectH = p.modulo.alto * scale
+            rectH = modAlto * scale
             rectY = yFloor - rectH
           }
 
           const rectX = p.posicion * scale
-          const rectW = p.modulo.ancho * scale
+          const rectW = Math.max(modAncho * scale, 8)
           const isSelected = p.id === selectedPlacementId
 
           return (
@@ -240,9 +248,10 @@ function ElevationSVG({
                 x={rectX} y={rectY}
                 width={rectW} height={rectH}
                 fill={colors.fill}
-                fillOpacity={0.7}
+                fillOpacity={isAppliance ? 0.9 : 0.7}
                 stroke={isSelected ? '#ffffff' : colors.stroke}
                 strokeWidth={isSelected ? 2 : 1}
+                strokeDasharray={isAppliance ? '5,3' : undefined}
                 rx={2}
               />
               {rectW > 24 && rectH > 16 && (
@@ -352,8 +361,8 @@ function PlanSVG({
   layoutType: string
   profBase: number
 }) {
-  const PLAN_W = 500
-  const PLAN_H = 320
+  const PLAN_W = 560
+  const PLAN_H = 360
 
   if (walls.length === 0) return (
     <div className="flex items-center justify-center h-[340px] bg-slate-900 rounded-lg text-slate-600 text-sm">
@@ -361,75 +370,75 @@ function PlanSVG({
     </div>
   )
 
-  // Simple floor plan based on layoutType
-  // We'll draw the walls as lines/rectangles in a top-down view
   const maxLen = Math.max(...walls.map((w) => w.longitud))
-  const scale = Math.min(PLAN_W * 0.8, PLAN_H * 0.8) / (maxLen || 3000)
+  const scale = Math.min(PLAN_W * 0.72, PLAN_H * 0.72) / (maxLen || 3000)
+  const wallThick = 8
 
-  // Build wall segments based on layoutType
-  type Segment = { x1: number; y1: number; x2: number; y2: number; wall: Wall }
+  // cabinetDir: 'down' | 'up' | 'right' | 'left' — which side is the interior
+  type Segment = {
+    x1: number; y1: number; x2: number; y2: number
+    wall: Wall
+    cabinetDir: 'down' | 'up' | 'right' | 'left'
+  }
   const segments: Segment[] = []
-  const padX = 40, padY = 40
+  const padX = 60, padY = 60
 
   if (layoutType === 'lineal') {
-    // Single horizontal wall
-    walls.forEach((wall, i) => {
-      const offset = walls.slice(0, i).reduce((acc, w) => acc + w.longitud * scale, 0)
+    let offsetX = padX
+    for (const wall of walls) {
       segments.push({
-        x1: padX + offset, y1: padY,
-        x2: padX + offset + wall.longitud * scale, y2: padY,
-        wall,
+        x1: offsetX, y1: padY,
+        x2: offsetX + wall.longitud * scale, y2: padY,
+        wall, cabinetDir: 'down',
       })
-    })
+      offsetX += wall.longitud * scale
+    }
   } else if (layoutType === 'L') {
-    // Two walls: first horizontal, second vertical
-    const w0 = walls[0]
-    if (w0) {
-      segments.push({ x1: padX, y1: padY, x2: padX + w0.longitud * scale, y2: padY, wall: w0 })
+    // Wall A: horizontal top, interior = down
+    // Wall B: vertical left side, interior = right
+    const w0 = walls[0], w1 = walls[1]
+    if (w0) segments.push({ x1: padX, y1: padY, x2: padX + w0.longitud * scale, y2: padY, wall: w0, cabinetDir: 'down' })
+    if (w1) segments.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1, cabinetDir: 'right' })
+    // extra walls: horizontal continuations
+    let offsetX = padX + (w0?.longitud ?? 0) * scale
+    for (const wall of walls.slice(2)) {
+      segments.push({ x1: offsetX, y1: padY + 20, x2: offsetX + wall.longitud * scale, y2: padY + 20, wall, cabinetDir: 'down' })
+      offsetX += wall.longitud * scale
     }
-    const w1 = walls[1]
-    if (w1) {
-      segments.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1 })
-    }
-    walls.slice(2).forEach((wall, i) => {
-      const offset = walls.slice(0, i + 2).reduce((acc, w) => acc + w.longitud * scale, 0)
-      segments.push({
-        x1: padX + offset, y1: padY + 20,
-        x2: padX + offset + wall.longitud * scale, y2: padY + 20,
-        wall,
-      })
-    })
   } else {
-    // U: three walls
-    const w0 = walls[0]
-    const w1 = walls[1]
-    const w2 = walls[2]
-    if (w0) segments.push({ x1: padX, y1: padY, x2: padX + w0.longitud * scale, y2: padY, wall: w0 })
-    if (w1) segments.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1 })
-    if (w2) segments.push({ x1: padX + (w0?.longitud ?? 0) * scale, y1: padY, x2: padX + (w0?.longitud ?? 0) * scale, y2: padY + w2.longitud * scale, wall: w2 })
-    walls.slice(3).forEach((wall, i) => {
-      const offset = walls.slice(0, i + 3).reduce((acc, w) => acc + w.longitud * scale, 0)
-      segments.push({
-        x1: padX + offset, y1: padY + 30,
-        x2: padX + offset + wall.longitud * scale, y2: padY + 30,
-        wall,
-      })
-    })
+    // U: Wall A = top horizontal, B = left vertical (interior right), C = right vertical (interior left)
+    const w0 = walls[0], w1 = walls[1], w2 = walls[2]
+    const rightX = padX + (w0?.longitud ?? 0) * scale
+    if (w0) segments.push({ x1: padX, y1: padY, x2: rightX, y2: padY, wall: w0, cabinetDir: 'down' })
+    if (w1) segments.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1, cabinetDir: 'right' })
+    if (w2) segments.push({ x1: rightX, y1: padY, x2: rightX, y2: padY + w2.longitud * scale, wall: w2, cabinetDir: 'left' })
+    // extra walls
+    let offsetX = rightX
+    for (const wall of walls.slice(3)) {
+      segments.push({ x1: offsetX, y1: padY + 30, x2: offsetX + wall.longitud * scale, y2: padY + 30, wall, cabinetDir: 'down' })
+      offsetX += wall.longitud * scale
+    }
   }
 
-  // Cabinets as depth rectangles along each wall
-  const cabinetRects: { x: number; y: number; w: number; h: number; nivel: string }[] = []
+  // Cabinets as depth rectangles on the INTERIOR side of each wall
+  type CabRect = { x: number; y: number; w: number; h: number; nivel: string; isAppliance: boolean }
+  const cabinetRects: CabRect[] = []
   for (const seg of segments) {
     const wallPlacements = placements.filter((p) => p.wallId === seg.wall.id)
-    const isHorizontal = Math.abs(seg.y2 - seg.y1) < 5
     for (const p of wallPlacements) {
-      const depth = profBase * scale
-      if (isHorizontal) {
-        const startX = seg.x1 + p.posicion * scale
-        cabinetRects.push({ x: startX, y: seg.y1, w: p.modulo.ancho * scale, h: depth, nivel: p.nivel })
+      const isAppliance = p.modulo.tipoModulo === 'Electrodoméstico'
+      const depth = (p.nivel === 'alto' ? 35 : profBase) * scale  // alto cabinets are shallower
+      const moduleW = (p.modulo.ancho || 300) * scale
+
+      if (seg.cabinetDir === 'down') {
+        cabinetRects.push({ x: seg.x1 + p.posicion * scale, y: seg.y1, w: moduleW, h: depth, nivel: p.nivel, isAppliance })
+      } else if (seg.cabinetDir === 'up') {
+        cabinetRects.push({ x: seg.x1 + p.posicion * scale, y: seg.y1 - depth, w: moduleW, h: depth, nivel: p.nivel, isAppliance })
+      } else if (seg.cabinetDir === 'right') {
+        cabinetRects.push({ x: seg.x1, y: seg.y1 + p.posicion * scale, w: depth, h: moduleW, nivel: p.nivel, isAppliance })
       } else {
-        const startY = seg.y1 + p.posicion * scale
-        cabinetRects.push({ x: seg.x1 - depth, y: startY, w: depth, h: p.modulo.ancho * scale, nivel: p.nivel })
+        // left
+        cabinetRects.push({ x: seg.x1 - depth, y: seg.y1 + p.posicion * scale, w: depth, h: moduleW, nivel: p.nivel, isAppliance })
       }
     }
   }
@@ -437,49 +446,72 @@ function PlanSVG({
   return (
     <div className="overflow-auto">
       <svg width={PLAN_W} height={PLAN_H} className="block bg-slate-900 rounded-lg">
+        {/* Cabinet / appliance rects (draw before walls so walls are on top) */}
         {cabinetRects.map((r, i) => {
+          if (r.isAppliance) {
+            return (
+              <g key={i}>
+                <rect
+                  x={r.x} y={r.y} width={r.w} height={r.h}
+                  fill="#374151" fillOpacity={0.9}
+                  stroke="#6b7280" strokeWidth={1.5}
+                  strokeDasharray="4,2" rx={2}
+                />
+                <text
+                  x={r.x + r.w / 2} y={r.y + r.h / 2}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={8} fill="#9ca3af" fontFamily="sans-serif"
+                >⚡</text>
+              </g>
+            )
+          }
           const colors = NIVEL_COLORS[r.nivel] ?? NIVEL_COLORS.base
           return (
             <rect
               key={i}
-              x={r.x} y={r.y}
-              width={r.w} height={r.h}
-              fill={colors.fill}
-              fillOpacity={0.6}
-              stroke={colors.stroke}
-              strokeWidth={1}
+              x={r.x} y={r.y} width={r.w} height={r.h}
+              fill={colors.fill} fillOpacity={0.6}
+              stroke={colors.stroke} strokeWidth={1} rx={1}
             />
           )
         })}
-        {segments.map((s, i) => (
-          <g key={i}>
-            <line
-              x1={s.x1} y1={s.y1}
-              x2={s.x2} y2={s.y2}
-              stroke="#475569" strokeWidth={8} strokeLinecap="round"
-            />
-            <text
-              x={(s.x1 + s.x2) / 2}
-              y={(s.y1 + s.y2) / 2 - 8}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#94a3b8"
-              fontFamily="sans-serif"
-            >
-              Pared {s.wall.nombre}
-            </text>
-          </g>
-        ))}
-        {/* Legend */}
-        <g>
-          {Object.entries(NIVEL_COLORS).map(([nivel, c], i) => (
-            <g key={nivel} transform={`translate(${10 + i * 80}, ${PLAN_H - 20})`}>
-              <rect x={0} y={0} width={12} height={12} fill={c.fill} fillOpacity={0.7} />
-              <text x={16} y={10} fontSize={9} fill="#94a3b8" fontFamily="sans-serif">
-                {nivel}
+
+        {/* Walls */}
+        {segments.map((s, i) => {
+          const isHoriz = Math.abs(s.y2 - s.y1) < 5
+          const labelX = isHoriz ? (s.x1 + s.x2) / 2 : s.x1
+          const labelY = isHoriz ? s.y1 - 10 : (s.y1 + s.y2) / 2
+          return (
+            <g key={i}>
+              <line
+                x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+                stroke="#64748b" strokeWidth={wallThick} strokeLinecap="square"
+              />
+              <text
+                x={labelX} y={labelY - (isHoriz ? 0 : 0)}
+                textAnchor="middle" dominantBaseline="middle"
+                fontSize={10} fill="#94a3b8" fontFamily="sans-serif"
+              >
+                Pared {s.wall.nombre}
+                {' '}
+                <tspan fontSize={8} fill="#64748b">{Math.round(s.wall.longitud)}mm</tspan>
               </text>
             </g>
+          )
+        })}
+
+        {/* Legend */}
+        <g transform={`translate(10, ${PLAN_H - 22})`}>
+          {Object.entries(NIVEL_COLORS).map(([nivel, c], i) => (
+            <g key={nivel} transform={`translate(${i * 70}, 0)`}>
+              <rect x={0} y={0} width={10} height={10} fill={c.fill} fillOpacity={0.7} />
+              <text x={13} y={8} fontSize={9} fill="#94a3b8" fontFamily="sans-serif">{nivel}</text>
+            </g>
           ))}
+          <g transform="translate(210, 0)">
+            <rect x={0} y={0} width={10} height={10} fill="#374151" stroke="#6b7280" strokeWidth={1} strokeDasharray="3,2" />
+            <text x={13} y={8} fontSize={9} fill="#94a3b8" fontFamily="sans-serif">electrodoméstico</text>
+          </g>
         </g>
       </svg>
     </div>

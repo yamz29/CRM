@@ -24,7 +24,8 @@ interface Props {
 
 const TIPOS_MODULO = [
   'Base con puertas', 'Base con cajones', 'Base mixto',
-  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro',
+  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina',
+  'Electrodoméstico', 'Otro',
 ]
 
 export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: Props) {
