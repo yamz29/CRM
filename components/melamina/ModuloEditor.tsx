@@ -23,6 +23,7 @@ interface PiezaLine {
   espesor: number
   material: string
   tapacanto: string[]
+  tapacantoColor: string
   observaciones: string
 }
 
@@ -137,6 +138,44 @@ function calcTapacantoMl(p: PiezaLine) {
   if (p.tapacanto.includes('derecho')) ml += p.largo
   return (ml * p.cantidad) / 1000
 }
+
+// Agrupa ML de tapacanto por color para el resumen de materiales
+function calcTapacantoByColor(piezas: PiezaLine[]): Record<string, number> {
+  const result: Record<string, number> = {}
+  for (const p of piezas) {
+    const ml = calcTapacantoMl(p)
+    if (ml === 0) continue
+    const key = p.tapacantoColor || 'General'
+    result[key] = (result[key] || 0) + ml
+  }
+  return result
+}
+
+// Codifica/decodifica el color en el array de tapacanto (almacenado como "_color:X")
+function extractTapacantoColor(arr: string[]): { lados: string[]; color: string } {
+  const colorEntry = arr.find((s) => s.startsWith('_color:'))
+  return {
+    lados: arr.filter((s) => !s.startsWith('_color:')),
+    color: colorEntry ? colorEntry.slice(7) : '',
+  }
+}
+function packTapacantoColor(lados: string[], color: string): string[] {
+  return color ? [...lados, `_color:${color}`] : lados
+}
+
+const TAPACANTO_COLORS = [
+  { value: '', label: '— Sin color' },
+  { value: 'Blanco', label: 'Blanco' },
+  { value: 'Blanco Roto', label: 'Blanco Roto' },
+  { value: 'Gris Perla', label: 'Gris Perla' },
+  { value: 'Gris', label: 'Gris' },
+  { value: 'Negro', label: 'Negro' },
+  { value: 'Wengué', label: 'Wengué' },
+  { value: 'Roble', label: 'Roble' },
+  { value: 'Haya', label: 'Haya' },
+  { value: 'Cerezo', label: 'Cerezo' },
+  { value: 'Aluminio', label: 'Aluminio' },
+]
 
 // ── Nesting (Shelf Packing) ───────────────────────────────────────────────────
 
@@ -294,36 +333,40 @@ function generarDespiece(
     {
       _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
       largo: alto, ancho: prof, cantidad: 2, espesor: esp, material: '',
-      tapacanto: ['izquierdo'], observaciones: '',
+      tapacanto: ['izquierdo'], tapacantoColor: '', observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Piso', nombre: 'Piso', tipoPieza: 'piso',
       largo: anchoInt, ancho: prof, cantidad: 1, espesor: esp, material: '',
-      tapacanto: ['izquierdo'], observaciones: '',
+      tapacanto: ['izquierdo'], tapacantoColor: '', observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Fondo', nombre: 'Fondo', tipoPieza: 'fondo',
       largo: alto - esp, ancho: anchoInt, cantidad: 1, espesor: 6, material: 'HDF 6mm',
-      tapacanto: [], observaciones: '',
+      tapacanto: [], tapacantoColor: '', observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Sop', nombre: 'Soporte', tipoPieza: 'soporte',
       largo: anchoInt, ancho: 100, cantidad: 2, espesor: esp, material: '',
-      tapacanto: ['superior'], observaciones: '',
+      tapacanto: ['superior'], tapacantoColor: '', observaciones: '',
     },
   )
 
-  if ((tipo === 'Base con puertas' || tipo === 'Aéreo con puertas') && cantPuertas > 0) {
-    const anchoPuerta = Math.round((ancho - 3) / cantPuertas)
+  // Puertas: siempre si cantPuertas > 0 (independiente del tipoModulo)
+  // Gap de 2mm entre puertas cuando hay 2 o más
+  if (cantPuertas > 0) {
+    const gapTotal = (cantPuertas - 1) * 2          // 2mm entre cada par de puertas
+    const anchoPuerta = Math.round((ancho - 3 - gapTotal) / cantPuertas)
     const altoPuerta = alto - esp - 2
     piezas.push({
       _key: newKey(), etiqueta: 'Puerta', nombre: 'Puerta', tipoPieza: 'puerta',
       largo: altoPuerta, ancho: anchoPuerta, cantidad: cantPuertas, espesor: esp, material: '',
-      tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], observaciones: '',
+      tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '', observaciones: '',
     })
   }
 
-  if ((tipo === 'Base con cajones' || tipo === 'Base mixto') && cantCajones > 0) {
+  // Cajones: siempre si cantCajones > 0 (incluye F-Caj, T-Caj, Fd-Caj)
+  if (cantCajones > 0) {
     const altoCajonFrente = Math.round((alto - esp - cantCajones * 3) / cantCajones)
     const anchoCajon = anchoInt - 3
     const anchoCajonInt = anchoInt - 34
@@ -334,17 +377,17 @@ function generarDespiece(
       {
         _key: newKey(), etiqueta: 'F-Caj', nombre: 'Frente de Cajón', tipoPieza: 'frente_cajon',
         largo: altoCajonFrente, ancho: anchoCajon, cantidad: cantCajones, espesor: esp, material: '',
-        tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], observaciones: '',
+        tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '', observaciones: '',
       },
       {
         _key: newKey(), etiqueta: 'T-Caj', nombre: 'Trasero de Cajón', tipoPieza: 'trasero_cajon',
         largo: altoCajonInt, ancho: anchoCajonInt, cantidad: cantCajones, espesor: esp, material: '',
-        tapacanto: [], observaciones: '',
+        tapacanto: [], tapacantoColor: '', observaciones: '',
       },
       {
         _key: newKey(), etiqueta: 'Fd-Caj', nombre: 'Fondo de Cajón', tipoPieza: 'fondo_cajon',
         largo: profFondo, ancho: anchoCajonInt, cantidad: cantCajones, espesor: 6, material: 'HDF 6mm',
-        tapacanto: [], observaciones: '',
+        tapacanto: [], tapacantoColor: '', observaciones: '',
       },
     )
   }
@@ -379,12 +422,16 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   const [materialTableroId, setMaterialTableroId] = useState(String(modulo.materialTableroId || ''))
 
   // Nesting settings
-  const [nestKerf, setNestKerf] = useState(3)
+  const [nestKerf, setNestKerf] = useState(3.3)
   const [nestRotation, setNestRotation] = useState(true)
 
   // Despiece
   const [piezas, setPiezas] = useState<PiezaLine[]>(
-    modulo.piezas.map((p) => ({ ...p, _key: newKey(), tapacanto: Array.isArray(p.tapacanto) ? p.tapacanto : [] }))
+    modulo.piezas.map((p) => {
+      const arr = Array.isArray(p.tapacanto) ? p.tapacanto : []
+      const { lados, color } = extractTapacantoColor(arr)
+      return { ...p, _key: newKey(), tapacanto: lados, tapacantoColor: color }
+    })
   )
 
   // Materiales (cantos + herrajes del módulo)
@@ -468,7 +515,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       ...prev,
       {
         _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
-        largo: 0, ancho: 0, cantidad: 1, espesor: materialTablero?.espesorMm ?? 18, material: '', tapacanto: [], observaciones: '',
+        largo: 0, ancho: 0, cantidad: 1, espesor: materialTablero?.espesorMm ?? 18,
+        material: '', tapacanto: [], tapacantoColor: '', observaciones: '',
       },
     ])
   }
@@ -577,7 +625,10 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
         materialTableroId: materialTableroId ? parseInt(materialTableroId) : null,
         anchoPlanchaCm: materialTablero?.anchoMm ?? 2440,
         largoPlanchaCm: materialTablero?.largoMm ?? 1830,
-        piezas: piezas.map(({ _key, id: _id, ...p }) => p),
+        piezas: piezas.map(({ _key, id: _id, tapacantoColor, tapacanto, ...p }) => ({
+          ...p,
+          tapacanto: packTapacantoColor(tapacanto, tapacantoColor),
+        })),
         materialesModulo: materialesModulo.map(({ _key, id: _id, search: _s, ...r }) => r),
       }
 
@@ -876,21 +927,35 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                           </select>
                         </td>
                         <td className="px-2 py-1.5">
-                          <div className="flex gap-0.5">
-                            {TAPACANTO_LADOS.map((l) => (
-                              <button
-                                key={l.key}
-                                title={l.title}
-                                onClick={() => toggleTapacanto(p._key, l.key)}
-                                className={`w-6 h-6 rounded text-xs font-bold transition-colors ${
-                                  p.tapacanto.includes(l.key)
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                                }`}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex gap-0.5">
+                              {TAPACANTO_LADOS.map((l) => (
+                                <button
+                                  key={l.key}
+                                  title={l.title}
+                                  onClick={() => toggleTapacanto(p._key, l.key)}
+                                  className={`w-6 h-6 rounded text-xs font-bold transition-colors ${
+                                    p.tapacanto.includes(l.key)
+                                      ? 'bg-amber-500 text-white'
+                                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {l.label}
+                                </button>
+                              ))}
+                            </div>
+                            {p.tapacanto.length > 0 && (
+                              <select
+                                value={p.tapacantoColor}
+                                onChange={(e) => updatePieza(p._key, 'tapacantoColor', e.target.value)}
+                                title="Color del tapacanto"
+                                className="border border-amber-200 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 text-amber-800 w-full"
                               >
-                                {l.label}
-                              </button>
-                            ))}
+                                {TAPACANTO_COLORS.map((c) => (
+                                  <option key={c.value} value={c.value}>{c.label}</option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                         </td>
                         <td className="px-2 py-1.5 text-right text-xs text-slate-600 font-mono">{area.toFixed(4)}</td>
@@ -928,7 +993,14 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
             <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Consumo de tablero</p>
-                <span className="text-xs text-slate-400">{totalAreaM2.toFixed(3)} m² total · {totalTapacantoMl.toFixed(2)} ml tapacanto</span>
+                <span className="text-xs text-slate-400">
+                {totalAreaM2.toFixed(3)} m² · {totalTapacantoMl.toFixed(2)} ml canto
+                {Object.entries(calcTapacantoByColor(piezas)).map(([color, ml]) => (
+                  <span key={color} className="ml-2 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px]">
+                    {color}: {ml.toFixed(2)} ml
+                  </span>
+                ))}
+              </span>
               </div>
               <div className="space-y-2">
                 {tableroGroups.map((g) => (
@@ -1242,54 +1314,70 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       {/* ── TAB: RESUMEN ────────────────────────────────────────────────────── */}
       {tab === 'resumen' && (
         <div className="space-y-4 print:hidden">
-          {/* Tablero */}
+          {/* Tablero — distribución por tipo */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Consumo de tablero</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-slate-500">Piezas</p>
-                <p className="text-2xl font-bold text-slate-800">{piezas.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Área total</p>
-                <p className="text-2xl font-bold text-slate-800">{totalAreaM2.toFixed(3)} m²</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">
-                  Planchas{materialTablero ? ` (${materialTablero.anchoMm}×${materialTablero.largoMm}mm)` : ''}
-                </p>
-                <p className="text-2xl font-bold text-blue-700">{numPlanchas}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Tapacanto total</p>
-                <p className="text-2xl font-bold text-amber-700">{totalTapacantoMl.toFixed(2)} ml</p>
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Distribución de tableros</p>
+              <span className="text-xs text-slate-400">{piezas.length} piezas · {totalAreaM2.toFixed(3)} m² total</span>
             </div>
-            {materialTablero && (
-              <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">
-                    <strong>{materialTablero.nombre}</strong>
-                    {' — '}
-                    <span className="text-xs">
-                      {totalAreaM2.toFixed(3)} m² / {areaPlanchaM2.toFixed(3)} m²
-                      {' '}(<span className={pctProporcionalTablero >= 70 ? 'text-green-600 font-semibold' : 'text-amber-600 font-semibold'}>
-                        {pctProporcionalTablero.toFixed(1)}%
-                      </span>)
-                      {' × '}{formatCurrency(materialTablero.precio)}
-                    </span>
-                  </span>
-                  <span className="font-bold text-slate-800">{formatCurrency(costoTablero)}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="w-4 h-2 rounded-full bg-blue-500 shrink-0" />
-                  <div className="flex-1 bg-slate-100 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: costoTotal > 0 ? `${Math.min(100, (costoTablero / costoTotal) * 100)}%` : '0%' }} />
-                  </div>
-                  <span className="w-10 text-right shrink-0">
-                    {costoTotal > 0 ? `${((costoTablero / costoTotal) * 100).toFixed(1)}%` : '—'}
-                  </span>
-                </div>
+            {tableroGroups.length === 0 ? (
+              <p className="text-sm text-slate-400">Sin piezas definidas.</p>
+            ) : (
+              <div className="space-y-3">
+                {tableroGroups.map((g) => {
+                  const costoG = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * (g.mat?.precio || 0) : 0
+                  const pctPlancha = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * 100 : 0
+                  return (
+                    <div key={g.nombre} className="border border-slate-100 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-700">{g.nombre}</span>
+                        <span className="text-sm font-bold text-slate-800">{formatCurrency(costoG)}</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <p className="text-slate-400">Área usada</p>
+                          <p className="font-semibold text-slate-700">{g.areaM2.toFixed(3)} m²</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">Plancha ({g.boardW}×{g.boardH})</p>
+                          <p className="font-semibold text-slate-700">{g.boardAreaM2.toFixed(3)} m²</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">% plancha consumida</p>
+                          <p className={`font-bold ${pctPlancha >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+                            {pctPlancha.toFixed(1)}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400">Precio plancha</p>
+                          <p className="font-semibold text-slate-700">{g.mat?.precio ? formatCurrency(g.mat.precio) : '—'}</p>
+                        </div>
+                      </div>
+                      {/* Barra visual de uso */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${pctPlancha >= 70 ? 'bg-green-500' : 'bg-amber-400'}`}
+                            style={{ width: `${Math.min(100, pctPlancha)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-slate-400 w-20 text-right">
+                          {pctPlancha.toFixed(1)}% × {formatCurrency(g.mat?.precio || 0)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        Tapacanto: {g.tapacantoMl.toFixed(2)} ml
+                        {Object.entries(calcTapacantoByColor(piezas.filter((p) =>
+                          (p.material || materialTablero?.nombre || 'Sin tablero') === g.nombre
+                        ))).map(([color, ml]) => (
+                          <span key={color} className="ml-2 px-1 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px]">
+                            {color}: {ml.toFixed(2)} ml
+                          </span>
+                        ))}
+                      </p>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

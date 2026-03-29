@@ -39,6 +39,7 @@ export default async function ModuloDetallePage({
       observaciones: p.observaciones ?? '',
       material: p.material ?? '',
       tapacanto: (() => { try { return JSON.parse(p.tapacanto) } catch { return [] } })(),
+      tapacantoColor: '',  // extracted by ModuloEditor from tapacanto array (_color: prefix)
     })),
     materialesModulo: modulo.materialesModulo.map((r) => ({
       ...r,

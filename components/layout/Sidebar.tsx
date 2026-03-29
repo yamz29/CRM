@@ -32,7 +32,7 @@ const navItems = [
   { href: '/gastos', label: 'Gastos', icon: Receipt },
   { href: '/tareas', label: 'Tareas', icon: CheckSquare },
   { href: '/melamina', label: 'Módulos Melamina', icon: Box },
-  { href: '/cocinas',  label: 'Cocinas', icon: ChefHat },
+  { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat },
   { href: '/horas',    label: 'Horas del Equipo', icon: Clock },
 ]
 

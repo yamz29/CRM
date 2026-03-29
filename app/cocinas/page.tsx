@@ -28,9 +28,9 @@ export default async function CocinasPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Configurador de Cocinas</h1>
+        <h1 className="text-2xl font-bold text-white">Espacios (Modulares)</h1>
         <p className="text-slate-400 text-sm mt-1">
-          Diseña y presupuesta proyectos de cocina colocando módulos sobre paredes
+          Diseña y presupuesta espacios modulares colocando módulos sobre paredes
         </p>
       </div>
       <KitchenListClient initialProjects={projectsWithCounts} />
