@@ -500,8 +500,9 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   )
 
   // ── Cálculos de costo ────────────────────────────────────────────────────
-  // Proporcional: área usada / área plancha × precio (no multiplica planchas enteras)
-  const costoTablero = areaPlanchaM2 > 0 ? (totalAreaM2 / areaPlanchaM2) * (materialTablero?.precio || 0) : 0
+  // Suma proporcional de TODOS los tableros usados en el módulo
+  const costoTablero = tableroGroups.reduce((acc, g) =>
+    acc + (g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * (g.mat?.precio || 0) : 0), 0)
   const pctProporcionalTablero = areaPlanchaM2 > 0 ? (totalAreaM2 / areaPlanchaM2) * 100 : 0
   const totalMateriales = materialesModulo.reduce((acc, r) => acc + r.subtotal, 0)
   const costoTotal = costoTablero + totalMateriales
@@ -1432,10 +1433,26 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Resumen de costos</p>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Tablero ({pctProporcionalTablero.toFixed(1)}% de plancha)</span>
-                <span className="font-medium">{formatCurrency(costoTablero)}</span>
-              </div>
+              {/* Tablero: una línea por cada tipo con su costo proporcional */}
+              {tableroGroups.map((g) => {
+                const costoG = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * (g.mat?.precio || 0) : 0
+                const pctG   = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * 100 : 0
+                return (
+                  <div key={g.nombre} className="flex justify-between text-sm">
+                    <span className="text-slate-600">
+                      {g.nombre}
+                      <span className="text-xs text-slate-400 ml-1">({pctG.toFixed(1)}% plancha)</span>
+                    </span>
+                    <span className="font-medium">{formatCurrency(costoG)}</span>
+                  </div>
+                )
+              })}
+              {tableroGroups.length > 1 && (
+                <div className="flex justify-between text-xs text-slate-500 border-t border-dashed border-slate-200 pt-1">
+                  <span>Subtotal tableros</span>
+                  <span className="font-semibold">{formatCurrency(costoTablero)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Cantos y Herrajes</span>
                 <span className="font-medium">{formatCurrency(totalMateriales)}</span>
