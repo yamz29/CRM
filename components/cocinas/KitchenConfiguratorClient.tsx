@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Calculator, LayoutPanelLeft, Map, Search, X,
-  ChevronRight, Trash2, FileText,
+  Trash2, FileText,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 
@@ -28,6 +28,7 @@ interface Placement {
   moduloId: number
   posicion: number
   nivel: string
+  alturaDesdeSupelo: number
   modulo: ModuloBasic
 }
 
@@ -76,7 +77,7 @@ const NIVEL_COLORS: Record<string, { fill: string; stroke: string; badge: string
 const SNAP_MM = 50
 const CANVAS_HEIGHT_PX = 380
 const COUNTERTOP_MM = 850
-const WALL_CABINET_BASE_MM = 900
+const DEFAULT_ALTURA_DESDE_SUELO = 1400
 
 const TIPO_FILTER_MAP: Record<string, string[]> = {
   Todos: [],
@@ -105,6 +106,72 @@ function overlaps(
     })
 }
 
+// ── Wall adjacency ────────────────────────────────────────────────────────────
+
+function getAdjacentWalls(
+  walls: Wall[],
+  wallId: number,
+  layoutType: string,
+): { atStart: Wall | null; atEnd: Wall | null } {
+  if (!walls.length) return { atStart: null, atEnd: null }
+  const idx = walls.findIndex((w) => w.id === wallId)
+  if (idx === -1) return { atStart: null, atEnd: null }
+
+  if (layoutType === 'lineal') {
+    return { atStart: walls[idx - 1] ?? null, atEnd: walls[idx + 1] ?? null }
+  }
+  if (layoutType === 'L') {
+    const [wA, wB] = walls
+    if (wallId === wA?.id) return { atStart: wB ?? null, atEnd: null }
+    if (wallId === wB?.id) return { atStart: wA ?? null, atEnd: null }
+    return { atStart: null, atEnd: null }
+  }
+  // U layout: A=top horizontal, B=left vertical, C=right vertical
+  const [wA, wB, wC] = walls
+  if (wallId === wA?.id) return { atStart: wB ?? null, atEnd: wC ?? null }
+  if (wallId === wB?.id) return { atStart: null, atEnd: wA ?? null }
+  if (wallId === wC?.id) return { atStart: null, atEnd: wA ?? null }
+  return { atStart: null, atEnd: null }
+}
+
+// ── Plan segment computation ──────────────────────────────────────────────────
+
+type PlanSegment = {
+  x1: number; y1: number; x2: number; y2: number
+  wall: Wall
+  cabinetDir: 'down' | 'up' | 'right' | 'left'
+  isHoriz: boolean
+}
+
+function computeSegments(
+  walls: Wall[],
+  layoutType: string,
+  scale: number,
+  padX: number,
+  padY: number,
+): PlanSegment[] {
+  const segs: PlanSegment[] = []
+  if (layoutType === 'lineal') {
+    let ox = padX
+    for (const w of walls) {
+      segs.push({ x1: ox, y1: padY, x2: ox + w.longitud * scale, y2: padY, wall: w, cabinetDir: 'down', isHoriz: true })
+      ox += w.longitud * scale
+    }
+  } else if (layoutType === 'L') {
+    const [w0, w1] = walls
+    if (w0) segs.push({ x1: padX, y1: padY, x2: padX + w0.longitud * scale, y2: padY, wall: w0, cabinetDir: 'down', isHoriz: true })
+    if (w1) segs.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1, cabinetDir: 'right', isHoriz: false })
+  } else {
+    // U
+    const [w0, w1, w2] = walls
+    const rightX = padX + (w0?.longitud ?? 0) * scale
+    if (w0) segs.push({ x1: padX, y1: padY, x2: rightX, y2: padY, wall: w0, cabinetDir: 'down', isHoriz: true })
+    if (w1) segs.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1, cabinetDir: 'right', isHoriz: false })
+    if (w2) segs.push({ x1: rightX, y1: padY, x2: rightX, y2: padY + w2.longitud * scale, wall: w2, cabinetDir: 'left', isHoriz: false })
+  }
+  return segs
+}
+
 // ── Elevation SVG ─────────────────────────────────────────────────────────────
 
 function ElevationSVG({
@@ -115,231 +182,246 @@ function ElevationSVG({
   selectedPlacementId,
   placingModule,
   hoverX,
+  adjacentAtStart,
+  adjacentAtEnd,
   onCanvasClick,
   onCanvasMouseMove,
   onCanvasMouseLeave,
   onPlacementClick,
+  onDragEnd,
 }: {
   wall: Wall
-  placements: Placement[]       // filtered to this wall (for rendering)
-  allPlacements: Placement[]    // all placements (for overlap detection)
+  placements: Placement[]
+  allPlacements: Placement[]
   alturaMm: number
   selectedPlacementId: number | null
   placingModule: ModuloBasic | null
   hoverX: number | null
+  adjacentAtStart: Wall | null
+  adjacentAtEnd: Wall | null
   onCanvasClick: (xMm: number) => void
   onCanvasMouseMove: (xMm: number) => void
   onCanvasMouseLeave: () => void
   onPlacementClick: (placement: Placement) => void
+  onDragEnd: (placementId: number, newPosicion: number, targetWall?: Wall) => void
 }) {
   const scale = CANVAS_HEIGHT_PX / alturaMm
   const svgWidth = Math.max(wall.longitud * scale, 400)
-
   const yFloor = CANVAS_HEIGHT_PX
   const yCountertop = yFloor - COUNTERTOP_MM * scale
-  const yWallCabBase = yFloor - WALL_CABINET_BASE_MM * scale
 
-  // Ruler ticks every 500mm
+  const [dragState, setDragState] = useState<{
+    id: number
+    startClientX: number
+    startPosicion: number
+    currentPosicion: number
+  } | null>(null)
+
   const rulerTicks: number[] = []
   for (let mm = 0; mm <= wall.longitud; mm += 500) rulerTicks.push(mm)
-
-  // Grid lines every 600mm
   const gridLines: number[] = []
   for (let mm = 0; mm <= wall.longitud; mm += 600) gridLines.push(mm)
 
   function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+    if (dragState) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const xPx = e.clientX - rect.left
-    const xMm = xPx / scale
-    onCanvasClick(xMm)
+    onCanvasClick((e.clientX - rect.left) / scale)
   }
 
   function handleSvgMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const xPx = e.clientX - rect.left
-    const xMm = xPx / scale
-    onCanvasMouseMove(xMm)
+    if (dragState) {
+      const dMm = (e.clientX - dragState.startClientX) / scale
+      setDragState((prev) => prev ? { ...prev, currentPosicion: prev.startPosicion + dMm } : null)
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect()
+      onCanvasMouseMove((e.clientX - rect.left) / scale)
+    }
   }
+
+  function handleSvgMouseUp(e: React.MouseEvent<SVGSVGElement>) {
+    if (!dragState) return
+    const dMm = (e.clientX - dragState.startClientX) / scale
+    const raw = dragState.startPosicion + dMm
+    const p = allPlacements.find((x) => x.id === dragState.id)
+    if (p) {
+      const moduleAncho = p.modulo.ancho || 300
+      let targetWall: Wall | undefined
+      let finalPosicion: number
+      if (raw < 0 && adjacentAtStart) {
+        finalPosicion = Math.max(0, adjacentAtStart.longitud - moduleAncho)
+        targetWall = adjacentAtStart
+      } else if (raw + moduleAncho > wall.longitud && adjacentAtEnd) {
+        finalPosicion = 0
+        targetWall = adjacentAtEnd
+      } else {
+        const snapped = Math.round(raw / SNAP_MM) * SNAP_MM
+        finalPosicion = Math.max(0, Math.min(snapped, wall.longitud - moduleAncho))
+        if (overlaps(allPlacements, wall.id, finalPosicion, moduleAncho, dragState.id)) {
+          finalPosicion = dragState.startPosicion
+        }
+      }
+      onDragEnd(dragState.id, finalPosicion, targetWall)
+    }
+    setDragState(null)
+  }
+
+  const draggingP = dragState ? allPlacements.find((p) => p.id === dragState.id) : null
 
   return (
     <div className="overflow-x-auto">
       <svg
         width={svgWidth}
         height={CANVAS_HEIGHT_PX + 24}
-        className={cn('block', placingModule ? 'cursor-crosshair' : 'cursor-default')}
+        className={cn(
+          'block select-none',
+          placingModule ? 'cursor-crosshair' : dragState ? 'cursor-grabbing' : 'cursor-default',
+        )}
         onClick={handleSvgClick}
         onMouseMove={handleSvgMouseMove}
-        onMouseLeave={onCanvasMouseLeave}
+        onMouseLeave={() => {
+          if (dragState) { onDragEnd(dragState.id, dragState.startPosicion); setDragState(null) }
+          else onCanvasMouseLeave()
+        }}
+        onMouseUp={handleSvgMouseUp}
       >
         {/* Background */}
         <rect x={0} y={0} width={svgWidth} height={CANVAS_HEIGHT_PX + 24} fill="#0f172a" />
 
-        {/* Grid lines */}
+        {/* Grid */}
         {gridLines.map((mm) => (
-          <line
-            key={`grid-${mm}`}
-            x1={mm * scale} y1={0}
-            x2={mm * scale} y2={CANVAS_HEIGHT_PX}
-            stroke="#1e293b" strokeWidth={1}
-          />
+          <line key={`g-${mm}`} x1={mm * scale} y1={0} x2={mm * scale} y2={CANVAS_HEIGHT_PX} stroke="#1e293b" strokeWidth={1} />
         ))}
 
-        {/* Countertop dashed line */}
-        <line
-          x1={0} y1={yCountertop}
-          x2={svgWidth} y2={yCountertop}
-          stroke="#64748b" strokeWidth={1}
-          strokeDasharray="6,4"
-        />
+        {/* Countertop reference */}
+        <line x1={0} y1={yCountertop} x2={svgWidth} y2={yCountertop} stroke="#64748b" strokeWidth={1} strokeDasharray="6,4" />
         <text x={4} y={yCountertop - 3} fill="#64748b" fontSize={9}>Muestrario 850mm</text>
 
-        {/* Wall cabinet base dashed line */}
-        <line
-          x1={0} y1={yWallCabBase}
-          x2={svgWidth} y2={yWallCabBase}
-          stroke="#475569" strokeWidth={1}
-          strokeDasharray="4,3"
-        />
-        <text x={4} y={yWallCabBase - 3} fill="#475569" fontSize={9}>Aéreos 900mm</text>
-
         {/* Floor */}
-        <line
-          x1={0} y1={yFloor}
-          x2={svgWidth} y2={yFloor}
-          stroke="#475569" strokeWidth={2}
-        />
+        <line x1={0} y1={yFloor} x2={svgWidth} y2={yFloor} stroke="#475569" strokeWidth={2} />
 
-        {/* Placement modules */}
+        {/* Placements */}
         {placements.map((p) => {
+          const isDragging = dragState?.id === p.id
           const isAppliance = p.modulo.tipoModulo === 'Electrodoméstico'
           const colors = isAppliance
             ? { fill: '#374151', stroke: '#6b7280' }
             : (NIVEL_COLORS[p.nivel] ?? NIVEL_COLORS.base)
 
           const modAncho = p.modulo.ancho || 300
-          const modAlto  = p.modulo.alto  || 720
+          const modAlto = p.modulo.alto || 720
+          const currentPos = isDragging && dragState ? dragState.currentPosicion : p.posicion
 
-          let rectY: number
-          let rectH: number
-
-          if (p.nivel === 'base' || isAppliance) {
+          let rectY: number, rectH: number
+          if (p.nivel === 'alto') {
+            const altBottom = p.alturaDesdeSupelo || DEFAULT_ALTURA_DESDE_SUELO
             rectH = modAlto * scale
-            rectY = yFloor - rectH
-          } else if (p.nivel === 'alto') {
-            rectY = yWallCabBase - modAlto * scale
-            rectH = modAlto * scale
+            rectY = yFloor - (altBottom + modAlto) * scale
           } else {
-            // torre
             rectH = modAlto * scale
             rectY = yFloor - rectH
           }
 
-          const rectX = p.posicion * scale
+          const rectX = currentPos * scale
           const rectW = Math.max(modAncho * scale, 8)
           const isSelected = p.id === selectedPlacementId
 
           return (
             <g
               key={p.id}
-              onClick={(e) => { e.stopPropagation(); onPlacementClick(p) }}
-              className="cursor-pointer"
+              onClick={(e) => {
+                if (!dragState || Math.abs(e.clientX - (dragState?.startClientX ?? 0)) < 5) {
+                  e.stopPropagation()
+                  onPlacementClick(p)
+                }
+              }}
+              onMouseDown={(e) => {
+                if (placingModule) return
+                e.stopPropagation()
+                setDragState({ id: p.id, startClientX: e.clientX, startPosicion: p.posicion, currentPosicion: p.posicion })
+              }}
+              className={isDragging ? 'cursor-grabbing' : 'cursor-grab'}
             >
               <rect
-                x={rectX} y={rectY}
-                width={rectW} height={rectH}
-                fill={colors.fill}
-                fillOpacity={isAppliance ? 0.9 : 0.7}
-                stroke={isSelected ? '#ffffff' : colors.stroke}
-                strokeWidth={isSelected ? 2 : 1}
+                x={rectX} y={rectY} width={rectW} height={rectH}
+                fill={colors.fill} fillOpacity={isAppliance ? 0.9 : 0.7}
+                stroke={isDragging ? '#f59e0b' : isSelected ? '#ffffff' : colors.stroke}
+                strokeWidth={isDragging || isSelected ? 2 : 1}
                 strokeDasharray={isAppliance ? '5,3' : undefined}
                 rx={2}
               />
               {rectW > 24 && rectH > 16 && (
                 <text
-                  x={rectX + rectW / 2}
-                  y={rectY + rectH / 2}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
+                  x={rectX + rectW / 2} y={rectY + rectH / 2}
+                  textAnchor="middle" dominantBaseline="middle"
                   fontSize={Math.min(10, rectW / 7, rectH / 2.5)}
-                  fill="#ffffff"
-                  fontFamily="sans-serif"
+                  fill="#ffffff" fontFamily="sans-serif"
                 >
                   {rectW > 60 ? p.modulo.nombre.slice(0, 14) : p.modulo.nombre.slice(0, 4)}
                 </text>
               )}
               {rectW > 30 && rectH > 28 && (
                 <text
-                  x={rectX + rectW / 2}
-                  y={rectY + rectH / 2 + 10}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={8}
-                  fill="#cbd5e1"
-                  fontFamily="sans-serif"
+                  x={rectX + rectW / 2} y={rectY + rectH / 2 + 10}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={8} fill="#cbd5e1" fontFamily="sans-serif"
                 >
-                  {Math.round(p.modulo.ancho)}×{Math.round(p.modulo.alto)}
+                  {Math.round(modAncho)}×{Math.round(modAlto)}
                 </text>
               )}
             </g>
           )
         })}
 
-        {/* Ghost / hover preview */}
+        {/* Ghost preview when placing */}
         {placingModule && hoverX !== null && (() => {
           const snapped = Math.round(hoverX / SNAP_MM) * SNAP_MM
-          const clampedPos = Math.max(0, Math.min(snapped, wall.longitud - (placingModule.ancho || 300)))
-          const hasOverlap = overlaps(allPlacements, wall.id, clampedPos, placingModule.ancho || 300)
-          const outOfBounds = clampedPos + (placingModule.ancho || 300) > wall.longitud
-          // Use at least 60px wide and 40px tall so the ghost is always visible
-          const rawW = (placingModule.ancho || 300) * scale
-          const rawH = (placingModule.alto || 720) * scale
-          const rectW = Math.max(rawW, 40)
-          const rectH = Math.max(rawH, 30)
-          const rectX = clampedPos * scale
+          const clamped = Math.max(0, Math.min(snapped, wall.longitud - (placingModule.ancho || 300)))
+          const hasOverlap = overlaps(allPlacements, wall.id, clamped, placingModule.ancho || 300)
+          const rectW = Math.max((placingModule.ancho || 300) * scale, 40)
+          const rectH = Math.max((placingModule.alto || 720) * scale, 30)
+          const rectX = clamped * scale
           const rectY = yFloor - rectH
-          const color = (hasOverlap || outOfBounds) ? '#ef4444' : '#3b82f6'
+          const color = hasOverlap ? '#ef4444' : '#3b82f6'
           return (
             <g pointerEvents="none">
-              <rect
-                x={rectX} y={rectY}
-                width={rectW} height={rectH}
-                fill={color}
-                fillOpacity={0.25}
-                stroke={color}
-                strokeWidth={1.5}
-                strokeDasharray="5,3"
-                rx={2}
-              />
-              <text
-                x={rectX + rectW / 2} y={rectY + rectH / 2}
-                textAnchor="middle" dominantBaseline="middle"
-                fontSize={9} fill={color} fontFamily="sans-serif"
-              >
+              <rect x={rectX} y={rectY} width={rectW} height={rectH} fill={color} fillOpacity={0.25} stroke={color} strokeWidth={1.5} strokeDasharray="5,3" rx={2} />
+              <text x={rectX + rectW / 2} y={rectY + rectH / 2} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill={color} fontFamily="sans-serif">
                 {placingModule.ancho ? `${Math.round(placingModule.ancho)}mm` : '?mm'}
               </text>
             </g>
           )
         })()}
 
+        {/* Jump indicators when dragging near edges */}
+        {draggingP && dragState && (() => {
+          const moduleAncho = draggingP.modulo.ancho || 300
+          const nearLeft = dragState.currentPosicion < 0 && adjacentAtStart
+          const nearRight = dragState.currentPosicion + moduleAncho > wall.longitud && adjacentAtEnd
+          return (
+            <>
+              {nearLeft && (
+                <g pointerEvents="none">
+                  <rect x={0} y={0} width={70} height={CANVAS_HEIGHT_PX} fill="#f59e0b" fillOpacity={0.1} />
+                  <text x={35} y={CANVAS_HEIGHT_PX / 2} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="#f59e0b" fontFamily="sans-serif">← {adjacentAtStart.nombre}</text>
+                </g>
+              )}
+              {nearRight && (
+                <g pointerEvents="none">
+                  <rect x={svgWidth - 70} y={0} width={70} height={CANVAS_HEIGHT_PX} fill="#f59e0b" fillOpacity={0.1} />
+                  <text x={svgWidth - 35} y={CANVAS_HEIGHT_PX / 2} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="#f59e0b" fontFamily="sans-serif">{adjacentAtEnd.nombre} →</text>
+                </g>
+              )}
+            </>
+          )
+        })()}
+
         {/* Ruler */}
         <rect x={0} y={CANVAS_HEIGHT_PX} width={svgWidth} height={24} fill="#1e293b" />
         {rulerTicks.map((mm) => (
-          <g key={`ruler-${mm}`}>
-            <line
-              x1={mm * scale} y1={CANVAS_HEIGHT_PX}
-              x2={mm * scale} y2={CANVAS_HEIGHT_PX + (mm % 1000 === 0 ? 8 : 5)}
-              stroke="#475569" strokeWidth={1}
-            />
+          <g key={`r-${mm}`}>
+            <line x1={mm * scale} y1={CANVAS_HEIGHT_PX} x2={mm * scale} y2={CANVAS_HEIGHT_PX + (mm % 1000 === 0 ? 8 : 5)} stroke="#475569" strokeWidth={1} />
             {mm % 500 === 0 && (
-              <text
-                x={mm * scale} y={CANVAS_HEIGHT_PX + 18}
-                textAnchor="middle"
-                fontSize={8}
-                fill="#64748b"
-                fontFamily="monospace"
-              >
-                {mm}
-              </text>
+              <text x={mm * scale} y={CANVAS_HEIGHT_PX + 18} textAnchor="middle" fontSize={8} fill="#64748b" fontFamily="monospace">{mm}</text>
             )}
           </g>
         ))}
@@ -348,153 +430,262 @@ function ElevationSVG({
   )
 }
 
-// ── Plan SVG ──────────────────────────────────────────────────────────────────
+// ── Interactive Plan SVG ──────────────────────────────────────────────────────
 
-function PlanSVG({
+function InteractivePlanSVG({
   walls,
   placements,
   layoutType,
   profBase,
+  activeWallId,
+  onWallClick,
+  placingModule,
+  selectedPlacementId,
+  onPlanPlace,
+  onPlacementClick,
+  onPlanDragEnd,
 }: {
   walls: Wall[]
   placements: Placement[]
   layoutType: string
   profBase: number
+  activeWallId: number
+  onWallClick: (wallId: number) => void
+  placingModule: ModuloBasic | null
+  selectedPlacementId: number | null
+  onPlanPlace: (wallId: number, positionMm: number) => void
+  onPlacementClick: (p: Placement) => void
+  onPlanDragEnd: (placementId: number, newPosicion: number) => void
 }) {
-  const PLAN_W = 560
-  const PLAN_H = 360
+  const PLAN_W = 580
+  const PLAN_H = 380
 
-  if (walls.length === 0) return (
-    <div className="flex items-center justify-center h-[340px] bg-slate-900 rounded-lg text-slate-600 text-sm">
-      Sin paredes configuradas
-    </div>
-  )
+  if (!walls.length) {
+    return (
+      <div className="flex items-center justify-center h-[340px] bg-slate-900 rounded-lg text-slate-600 text-sm">
+        Sin paredes configuradas
+      </div>
+    )
+  }
 
-  const maxLen = Math.max(...walls.map((w) => w.longitud))
-  const scale = Math.min(PLAN_W * 0.72, PLAN_H * 0.72) / (maxLen || 3000)
+  const maxLen = Math.max(...walls.map((w) => w.longitud), 1000)
+  const scale = Math.min(PLAN_W * 0.65, PLAN_H * 0.65) / maxLen
+  const padX = 70, padY = 70
   const wallThick = 8
 
-  // cabinetDir: 'down' | 'up' | 'right' | 'left' — which side is the interior
-  type Segment = {
-    x1: number; y1: number; x2: number; y2: number
-    wall: Wall
-    cabinetDir: 'down' | 'up' | 'right' | 'left'
-  }
-  const segments: Segment[] = []
-  const padX = 60, padY = 60
+  const segments = computeSegments(walls, layoutType, scale, padX, padY)
 
-  if (layoutType === 'lineal') {
-    let offsetX = padX
-    for (const wall of walls) {
-      segments.push({
-        x1: offsetX, y1: padY,
-        x2: offsetX + wall.longitud * scale, y2: padY,
-        wall, cabinetDir: 'down',
-      })
-      offsetX += wall.longitud * scale
-    }
-  } else if (layoutType === 'L') {
-    // Wall A: horizontal top, interior = down
-    // Wall B: vertical left side, interior = right
-    const w0 = walls[0], w1 = walls[1]
-    if (w0) segments.push({ x1: padX, y1: padY, x2: padX + w0.longitud * scale, y2: padY, wall: w0, cabinetDir: 'down' })
-    if (w1) segments.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1, cabinetDir: 'right' })
-    // extra walls: horizontal continuations
-    let offsetX = padX + (w0?.longitud ?? 0) * scale
-    for (const wall of walls.slice(2)) {
-      segments.push({ x1: offsetX, y1: padY + 20, x2: offsetX + wall.longitud * scale, y2: padY + 20, wall, cabinetDir: 'down' })
-      offsetX += wall.longitud * scale
-    }
-  } else {
-    // U: Wall A = top horizontal, B = left vertical (interior right), C = right vertical (interior left)
-    const w0 = walls[0], w1 = walls[1], w2 = walls[2]
-    const rightX = padX + (w0?.longitud ?? 0) * scale
-    if (w0) segments.push({ x1: padX, y1: padY, x2: rightX, y2: padY, wall: w0, cabinetDir: 'down' })
-    if (w1) segments.push({ x1: padX, y1: padY, x2: padX, y2: padY + w1.longitud * scale, wall: w1, cabinetDir: 'right' })
-    if (w2) segments.push({ x1: rightX, y1: padY, x2: rightX, y2: padY + w2.longitud * scale, wall: w2, cabinetDir: 'left' })
-    // extra walls
-    let offsetX = rightX
-    for (const wall of walls.slice(3)) {
-      segments.push({ x1: offsetX, y1: padY + 30, x2: offsetX + wall.longitud * scale, y2: padY + 30, wall, cabinetDir: 'down' })
-      offsetX += wall.longitud * scale
-    }
+  const [hoverSeg, setHoverSeg] = useState<{ idx: number; posMm: number } | null>(null)
+  const [planDrag, setPlanDrag] = useState<{
+    placementId: number
+    segIdx: number
+    startClientX: number
+    startClientY: number
+    startPosicion: number
+    currentPosicion: number
+  } | null>(null)
+
+  function getPosOnSeg(seg: PlanSegment, clientX: number, clientY: number, svgRect: DOMRect): number {
+    const mx = clientX - svgRect.left
+    const my = clientY - svgRect.top
+    if (seg.isHoriz) return (mx - seg.x1) / scale
+    return (my - seg.y1) / scale
   }
 
-  // Cabinets as depth rectangles on the INTERIOR side of each wall
-  type CabRect = { x: number; y: number; w: number; h: number; nivel: string; isAppliance: boolean }
+  function handleSvgMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    const svgRect = e.currentTarget.getBoundingClientRect()
+    const mx = e.clientX - svgRect.left
+    const my = e.clientY - svgRect.top
+
+    if (planDrag) {
+      const seg = segments[planDrag.segIdx]
+      const dMm = seg.isHoriz
+        ? (e.clientX - planDrag.startClientX) / scale
+        : (e.clientY - planDrag.startClientY) / scale
+      setPlanDrag((prev) => prev ? { ...prev, currentPosicion: prev.startPosicion + dMm } : null)
+      return
+    }
+
+    if (!placingModule) { setHoverSeg(null); return }
+
+    // Find which segment the mouse is hovering over (within cabinet depth band)
+    const depth = profBase * scale
+    let found: { idx: number; posMm: number } | null = null
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      if (seg.isHoriz) {
+        const yMin = seg.y1, yMax = seg.y1 + depth
+        if (my >= yMin - 4 && my <= yMax + depth && mx >= seg.x1 && mx <= seg.x2) {
+          found = { idx: i, posMm: Math.max(0, Math.round(((mx - seg.x1) / scale) / SNAP_MM) * SNAP_MM) }
+          break
+        }
+      } else {
+        const x = seg.x1
+        const xMin = seg.cabinetDir === 'right' ? x : x - depth
+        const xMax = seg.cabinetDir === 'right' ? x + depth : x
+        if (mx >= xMin - 4 && mx <= xMax + 4 && my >= seg.y1 && my <= seg.y2) {
+          found = { idx: i, posMm: Math.max(0, Math.round(((my - seg.y1) / scale) / SNAP_MM) * SNAP_MM) }
+          break
+        }
+      }
+    }
+    setHoverSeg(found)
+  }
+
+  function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+    if (planDrag) return
+    if (placingModule && hoverSeg !== null) {
+      onPlanPlace(segments[hoverSeg.idx].wall.id, hoverSeg.posMm)
+    }
+  }
+
+  function handleSvgMouseUp() {
+    if (!planDrag) return
+    const seg = segments[planDrag.segIdx]
+    const p = placements.find((x) => x.id === planDrag.placementId)
+    if (p) {
+      const moduleAncho = p.modulo.ancho || 300
+      const snapped = Math.round(planDrag.currentPosicion / SNAP_MM) * SNAP_MM
+      const clamped = Math.max(0, Math.min(snapped, seg.wall.longitud - moduleAncho))
+      if (!overlaps(placements, seg.wall.id, clamped, moduleAncho, planDrag.placementId)) {
+        onPlanDragEnd(planDrag.placementId, clamped)
+      }
+    }
+    setPlanDrag(null)
+  }
+
+  // Build cabinet rects for rendering
+  type CabRect = {
+    x: number; y: number; w: number; h: number
+    nivel: string; isAppliance: boolean
+    placement: Placement; isDragging: boolean; isSelected: boolean
+    segIdx: number
+  }
   const cabinetRects: CabRect[] = []
-  for (const seg of segments) {
+  for (let si = 0; si < segments.length; si++) {
+    const seg = segments[si]
     const wallPlacements = placements.filter((p) => p.wallId === seg.wall.id)
     for (const p of wallPlacements) {
       const isAppliance = p.modulo.tipoModulo === 'Electrodoméstico'
-      const depth = (p.nivel === 'alto' ? 35 : profBase) * scale  // alto cabinets are shallower
+      const depth = (p.nivel === 'alto' ? profBase * 0.6 : profBase) * scale
+      const isDragging = planDrag?.placementId === p.id
+      const currentPos = isDragging && planDrag ? planDrag.currentPosicion : p.posicion
       const moduleW = (p.modulo.ancho || 300) * scale
 
+      let x: number, y: number, w: number, h: number
       if (seg.cabinetDir === 'down') {
-        cabinetRects.push({ x: seg.x1 + p.posicion * scale, y: seg.y1, w: moduleW, h: depth, nivel: p.nivel, isAppliance })
+        x = seg.x1 + currentPos * scale; y = seg.y1; w = moduleW; h = depth
       } else if (seg.cabinetDir === 'up') {
-        cabinetRects.push({ x: seg.x1 + p.posicion * scale, y: seg.y1 - depth, w: moduleW, h: depth, nivel: p.nivel, isAppliance })
+        x = seg.x1 + currentPos * scale; y = seg.y1 - depth; w = moduleW; h = depth
       } else if (seg.cabinetDir === 'right') {
-        cabinetRects.push({ x: seg.x1, y: seg.y1 + p.posicion * scale, w: depth, h: moduleW, nivel: p.nivel, isAppliance })
+        x = seg.x1; y = seg.y1 + currentPos * scale; w = depth; h = moduleW
       } else {
-        // left
-        cabinetRects.push({ x: seg.x1 - depth, y: seg.y1 + p.posicion * scale, w: depth, h: moduleW, nivel: p.nivel, isAppliance })
+        x = seg.x1 - depth; y = seg.y1 + currentPos * scale; w = depth; h = moduleW
       }
+
+      cabinetRects.push({
+        x, y, w, h, nivel: p.nivel, isAppliance,
+        placement: p, isDragging, isSelected: p.id === selectedPlacementId, segIdx: si,
+      })
     }
   }
 
   return (
     <div className="overflow-auto">
-      <svg width={PLAN_W} height={PLAN_H} className="block bg-slate-900 rounded-lg">
-        {/* Cabinet / appliance rects (draw before walls so walls are on top) */}
+      <svg
+        width={PLAN_W} height={PLAN_H}
+        className={cn('block bg-slate-900 rounded-lg select-none', planDrag ? 'cursor-grabbing' : placingModule ? 'cursor-crosshair' : 'cursor-default')}
+        onMouseMove={handleSvgMouseMove}
+        onClick={handleSvgClick}
+        onMouseUp={handleSvgMouseUp}
+        onMouseLeave={() => {
+          if (planDrag) { onPlanDragEnd(planDrag.placementId, planDrag.startPosicion); setPlanDrag(null) }
+          setHoverSeg(null)
+        }}
+      >
+        {/* Cabinet rects (below walls) */}
         {cabinetRects.map((r, i) => {
           if (r.isAppliance) {
             return (
-              <g key={i}>
-                <rect
-                  x={r.x} y={r.y} width={r.w} height={r.h}
-                  fill="#374151" fillOpacity={0.9}
-                  stroke="#6b7280" strokeWidth={1.5}
-                  strokeDasharray="4,2" rx={2}
-                />
-                <text
-                  x={r.x + r.w / 2} y={r.y + r.h / 2}
-                  textAnchor="middle" dominantBaseline="middle"
-                  fontSize={8} fill="#9ca3af" fontFamily="sans-serif"
-                >⚡</text>
+              <g key={i} onClick={(e) => { e.stopPropagation(); onPlacementClick(r.placement) }} className="cursor-pointer">
+                <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="#374151" fillOpacity={0.9} stroke={r.isSelected ? '#fff' : '#6b7280'} strokeWidth={r.isSelected ? 2 : 1.5} strokeDasharray="4,2" rx={2} />
+                <text x={r.x + r.w / 2} y={r.y + r.h / 2} textAnchor="middle" dominantBaseline="middle" fontSize={8} fill="#9ca3af" fontFamily="sans-serif">⚡</text>
               </g>
             )
           }
           const colors = NIVEL_COLORS[r.nivel] ?? NIVEL_COLORS.base
           return (
-            <rect
+            <g
               key={i}
-              x={r.x} y={r.y} width={r.w} height={r.h}
-              fill={colors.fill} fillOpacity={0.6}
-              stroke={colors.stroke} strokeWidth={1} rx={1}
-            />
+              onClick={(e) => { e.stopPropagation(); onPlacementClick(r.placement) }}
+              onMouseDown={(e) => {
+                if (placingModule) return
+                e.stopPropagation()
+                const seg = segments[r.segIdx]
+                const svgRect = e.currentTarget.closest('svg')!.getBoundingClientRect()
+                const posMm = getPosOnSeg(seg, e.clientX, e.clientY, svgRect)
+                const offset = posMm - r.placement.posicion
+                setPlanDrag({
+                  placementId: r.placement.id, segIdx: r.segIdx,
+                  startClientX: e.clientX, startClientY: e.clientY,
+                  startPosicion: r.placement.posicion, currentPosicion: r.placement.posicion,
+                })
+              }}
+              className="cursor-grab"
+            >
+              <rect
+                x={r.x} y={r.y} width={r.w} height={r.h}
+                fill={colors.fill} fillOpacity={0.65}
+                stroke={r.isDragging ? '#f59e0b' : r.isSelected ? '#ffffff' : colors.stroke}
+                strokeWidth={r.isDragging || r.isSelected ? 2 : 1}
+                rx={1}
+              />
+            </g>
           )
         })}
 
+        {/* Ghost preview in plan view */}
+        {placingModule && hoverSeg !== null && (() => {
+          const seg = segments[hoverSeg.idx]
+          const posMm = Math.min(hoverSeg.posMm, seg.wall.longitud - (placingModule.ancho || 300))
+          const depth = profBase * scale
+          const moduleW = (placingModule.ancho || 300) * scale
+          const hasOv = overlaps(placements, seg.wall.id, posMm, placingModule.ancho || 300)
+          const color = hasOv ? '#ef4444' : '#3b82f6'
+          let gx: number, gy: number, gw: number, gh: number
+          if (seg.cabinetDir === 'down') { gx = seg.x1 + posMm * scale; gy = seg.y1; gw = moduleW; gh = depth }
+          else if (seg.cabinetDir === 'up') { gx = seg.x1 + posMm * scale; gy = seg.y1 - depth; gw = moduleW; gh = depth }
+          else if (seg.cabinetDir === 'right') { gx = seg.x1; gy = seg.y1 + posMm * scale; gw = depth; gh = moduleW }
+          else { gx = seg.x1 - depth; gy = seg.y1 + posMm * scale; gw = depth; gh = moduleW }
+          return (
+            <g pointerEvents="none">
+              <rect x={gx} y={gy} width={gw} height={gh} fill={color} fillOpacity={0.3} stroke={color} strokeWidth={1.5} strokeDasharray="5,3" rx={2} />
+            </g>
+          )
+        })()}
+
         {/* Walls */}
         {segments.map((s, i) => {
-          const isHoriz = Math.abs(s.y2 - s.y1) < 5
-          const labelX = isHoriz ? (s.x1 + s.x2) / 2 : s.x1
-          const labelY = isHoriz ? s.y1 - 10 : (s.y1 + s.y2) / 2
+          const isActive = s.wall.id === activeWallId
+          const labelX = s.isHoriz ? (s.x1 + s.x2) / 2 : s.x1 + (s.cabinetDir === 'right' ? -14 : 14)
+          const labelY = s.isHoriz ? s.y1 - 12 : (s.y1 + s.y2) / 2
           return (
-            <g key={i}>
+            <g key={i} onClick={(e) => { e.stopPropagation(); onWallClick(s.wall.id) }} className="cursor-pointer">
               <line
                 x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-                stroke="#64748b" strokeWidth={wallThick} strokeLinecap="square"
+                stroke={isActive ? '#3b82f6' : '#64748b'}
+                strokeWidth={isActive ? wallThick + 2 : wallThick}
+                strokeLinecap="square"
               />
               <text
-                x={labelX} y={labelY - (isHoriz ? 0 : 0)}
+                x={labelX} y={labelY}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize={10} fill="#94a3b8" fontFamily="sans-serif"
+                fontSize={10} fill={isActive ? '#93c5fd' : '#94a3b8'}
+                fontFamily="sans-serif"
               >
-                Pared {s.wall.nombre}
+                {s.wall.nombre}
                 {' '}
-                <tspan fontSize={8} fill="#64748b">{Math.round(s.wall.longitud)}mm</tspan>
+                <tspan fontSize={8} fill={isActive ? '#60a5fa' : '#64748b'}>{Math.round(s.wall.longitud)}mm</tspan>
               </text>
             </g>
           )
@@ -503,14 +694,17 @@ function PlanSVG({
         {/* Legend */}
         <g transform={`translate(10, ${PLAN_H - 22})`}>
           {Object.entries(NIVEL_COLORS).map(([nivel, c], i) => (
-            <g key={nivel} transform={`translate(${i * 70}, 0)`}>
+            <g key={nivel} transform={`translate(${i * 72}, 0)`}>
               <rect x={0} y={0} width={10} height={10} fill={c.fill} fillOpacity={0.7} />
               <text x={13} y={8} fontSize={9} fill="#94a3b8" fontFamily="sans-serif">{nivel}</text>
             </g>
           ))}
-          <g transform="translate(210, 0)">
+          <g transform="translate(216, 0)">
             <rect x={0} y={0} width={10} height={10} fill="#374151" stroke="#6b7280" strokeWidth={1} strokeDasharray="3,2" />
             <text x={13} y={8} fontSize={9} fill="#94a3b8" fontFamily="sans-serif">electrodoméstico</text>
+          </g>
+          <g transform="translate(320, 0)">
+            <text x={0} y={8} fontSize={9} fill="#475569" fontFamily="sans-serif">Clic en pared para seleccionar</text>
           </g>
         </g>
       </svg>
@@ -523,7 +717,9 @@ function PlanSVG({
 export function KitchenConfiguratorClient({ project, availableModules }: Props) {
   const router = useRouter()
 
-  const [placements, setPlacements] = useState<Placement[]>(project.placements)
+  const [placements, setPlacements] = useState<Placement[]>(
+    project.placements.map((p) => ({ ...p, alturaDesdeSupelo: (p as { alturaDesdeSupelo?: number }).alturaDesdeSupelo ?? DEFAULT_ALTURA_DESDE_SUELO }))
+  )
   const [activeWallId, setActiveWallId] = useState<number>(project.paredes[0]?.id ?? 0)
   const [view, setView] = useState<'elevation' | 'plan'>('elevation')
   const [placingModule, setPlacingModule] = useState<ModuloBasic | null>(null)
@@ -534,6 +730,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   const [calcResults, setCalcResults] = useState<CalcResult[] | null>(null)
   const [calculating, setCalculating] = useState(false)
   const [positionInput, setPositionInput] = useState('')
+  const [alturaInput, setAlturaInput] = useState(String(DEFAULT_ALTURA_DESDE_SUELO))
   const [showPresupuestoModal, setShowPresupuestoModal] = useState(false)
   const [presupuestoNombre, setPresupuestoNombre] = useState(project.nombre)
   const [generatingPresupuesto, setGeneratingPresupuesto] = useState(false)
@@ -549,8 +746,8 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   // ── Derived ────────────────────────────────────────────────────────────────
 
   const activeWall = project.paredes.find((w) => w.id === activeWallId) ?? project.paredes[0]
-
   const wallPlacements = placements.filter((p) => p.wallId === activeWallId)
+  const adjacentWalls = getAdjacentWalls(project.paredes, activeWallId, project.layoutType)
 
   const filteredModules = availableModules.filter((m) => {
     const matchesSearch =
@@ -569,21 +766,15 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   function handleModuleSelect(m: ModuloBasic) {
-    if (placingModule?.id === m.id) {
-      setPlacingModule(null)
-    } else {
-      setPlacingModule(m)
-      setSelectedPlacement(null)
-    }
+    setPlacingModule(placingModule?.id === m.id ? null : m)
+    setSelectedPlacement(null)
   }
 
   async function handleCanvasClick(xMm: number) {
     if (!placingModule || !activeWall) return
-
     const moduleAncho = placingModule.ancho || 0
     const snapped = Math.round(xMm / SNAP_MM) * SNAP_MM
     const clampedPos = Math.max(0, Math.min(snapped, activeWall.longitud - moduleAncho))
-
     if (moduleAncho > 0 && clampedPos + moduleAncho > activeWall.longitud) {
       showError('El módulo no cabe en esta posición de la pared.')
       return
@@ -592,16 +783,36 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
       showError('Hay un módulo en esa posición.')
       return
     }
+    await doPlace(activeWallId, clampedPos)
+  }
 
+  async function handlePlanPlace(wallId: number, positionMm: number) {
+    if (!placingModule) return
+    const wall = project.paredes.find((w) => w.id === wallId)
+    if (!wall) return
+    const moduleAncho = placingModule.ancho || 0
+    const clamped = Math.max(0, Math.min(positionMm, wall.longitud - moduleAncho))
+    if (overlaps(placements, wallId, clamped, moduleAncho || 1)) {
+      showError('Hay un módulo en esa posición.')
+      return
+    }
+    // Switch to that wall in elevation view too
+    setActiveWallId(wallId)
+    await doPlace(wallId, clamped)
+  }
+
+  async function doPlace(wallId: number, posicion: number) {
+    if (!placingModule) return
     try {
       const res = await fetch(`/api/cocinas/${project.id}/placements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          wallId: activeWallId,
+          wallId,
           moduloId: placingModule.id,
-          posicion: clampedPos,
+          posicion,
           nivel: 'base',
+          alturaDesdeSupelo: DEFAULT_ALTURA_DESDE_SUELO,
         }),
       })
       if (!res.ok) {
@@ -610,7 +821,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
         return
       }
       const newPlacement = await res.json() as Placement
-      setPlacements((prev) => [...prev, newPlacement])
+      setPlacements((prev) => [...prev, { ...newPlacement, alturaDesdeSupelo: newPlacement.alturaDesdeSupelo ?? DEFAULT_ALTURA_DESDE_SUELO }])
       setCalcResults(null)
     } catch (err) {
       console.error(err)
@@ -622,6 +833,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     if (placingModule) return
     setSelectedPlacement(p)
     setPositionInput(String(Math.round(p.posicion)))
+    setAlturaInput(String(Math.round(p.alturaDesdeSupelo ?? DEFAULT_ALTURA_DESDE_SUELO)))
+    // Switch elevation tab to the wall containing this placement
+    setActiveWallId(p.wallId)
   }
 
   async function handleDeletePlacement(pid: number) {
@@ -644,39 +858,59 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
       if (isNaN(newPos)) return
       const clampedPos = Math.max(0, Math.min(newPos, activeWall.longitud - selectedPlacement.modulo.ancho))
       if (overlaps(placements, selectedPlacement.wallId, clampedPos, selectedPlacement.modulo.ancho, selectedPlacement.id)) return
-      try {
-        const res = await fetch(`/api/cocinas/${project.id}/placements/${selectedPlacement.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ posicion: clampedPos }),
-        })
-        if (!res.ok) return
-        const updated = await res.json() as Placement
-        setPlacements(placements.map((p) => (p.id === updated.id ? updated : p)))
-        setSelectedPlacement(updated)
-        setCalcResults(null)
-      } catch (err) {
-        console.error(err)
-      }
+      await doPatchPlacement(selectedPlacement.id, { posicion: clampedPos })
+    }, 600)
+  }
+
+  function handleAlturaChange(val: string) {
+    setAlturaInput(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      if (!selectedPlacement) return
+      const newAltura = parseFloat(val)
+      if (isNaN(newAltura) || newAltura < 0) return
+      await doPatchPlacement(selectedPlacement.id, { alturaDesdeSupelo: newAltura })
     }, 600)
   }
 
   async function handleNivelChange(nivel: string) {
     if (!selectedPlacement) return
+    await doPatchPlacement(selectedPlacement.id, { nivel })
+  }
+
+  async function doPatchPlacement(id: number, data: Record<string, unknown>) {
     try {
-      const res = await fetch(`/api/cocinas/${project.id}/placements/${selectedPlacement.id}`, {
+      const res = await fetch(`/api/cocinas/${project.id}/placements/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nivel }),
+        body: JSON.stringify(data),
       })
       if (!res.ok) return
       const updated = await res.json() as Placement
-      setPlacements(placements.map((p) => (p.id === updated.id ? updated : p)))
-      setSelectedPlacement(updated)
+      const merged = { ...updated, alturaDesdeSupelo: updated.alturaDesdeSupelo ?? DEFAULT_ALTURA_DESDE_SUELO }
+      setPlacements((prev) => prev.map((p) => (p.id === id ? merged : p)))
+      if (selectedPlacement?.id === id) setSelectedPlacement(merged)
       setCalcResults(null)
     } catch (err) {
       console.error(err)
     }
+  }
+
+  // Drag end from elevation view (may jump to adjacent wall)
+  async function handleElevDragEnd(placementId: number, newPosicion: number, targetWall?: Wall) {
+    const p = placements.find((x) => x.id === placementId)
+    if (!p) return
+    const data: Record<string, unknown> = { posicion: newPosicion }
+    if (targetWall && targetWall.id !== p.wallId) {
+      data.wallId = targetWall.id
+      setActiveWallId(targetWall.id)
+    }
+    await doPatchPlacement(placementId, data)
+  }
+
+  // Drag end from plan view
+  async function handlePlanDragEnd(placementId: number, newPosicion: number) {
+    await doPatchPlacement(placementId, { posicion: newPosicion })
   }
 
   const handleCalcular = useCallback(async () => {
@@ -709,13 +943,8 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     }
   }
 
-  // ── Keyboard ESC ──────────────────────────────────────────────────────────
-
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') {
-      setPlacingModule(null)
-      setHoverX(null)
-    }
+    if (e.key === 'Escape') { setPlacingModule(null); setHoverX(null) }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -736,24 +965,17 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
           <h1 className="text-white font-semibold text-sm truncate">{project.nombre}</h1>
           <p className="text-slate-500 text-xs">{placements.length} módulo{placements.length !== 1 ? 's' : ''} colocado{placements.length !== 1 ? 's' : ''}</p>
         </div>
-        {/* View toggle */}
         <div className="flex bg-slate-800 rounded-lg p-0.5">
           <button
             onClick={() => setView('elevation')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              view === 'elevation' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-            )}
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'elevation' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white')}
           >
             <LayoutPanelLeft className="w-3.5 h-3.5" />
             Elevación
           </button>
           <button
             onClick={() => setView('plan')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              view === 'plan' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-            )}
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'plan' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white')}
           >
             <Map className="w-3.5 h-3.5" />
             Planta
@@ -769,7 +991,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
         </button>
       </header>
 
-      {/* Body: left + canvas + right */}
+      {/* Body */}
       <div className="flex flex-1 min-h-0">
         {/* Left panel: module library */}
         <aside className="w-60 flex-shrink-0 border-r border-white/5 flex flex-col bg-slate-900/50">
@@ -789,12 +1011,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                 <button
                   key={f}
                   onClick={() => setTipoFilter(f)}
-                  className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-medium transition-colors',
-                    tipoFilter === f
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 text-slate-400 hover:text-white'
-                  )}
+                  className={cn('px-2 py-0.5 rounded-full text-xs font-medium transition-colors', tipoFilter === f ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white')}
                 >
                   {f}
                 </button>
@@ -805,9 +1022,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
           {placingModule && (
             <div className="px-3 py-2 bg-blue-900/30 border-b border-blue-500/20 text-xs text-blue-300 flex items-center justify-between">
               <span>ESC para cancelar</span>
-              <button onClick={() => setPlacingModule(null)}>
-                <X className="w-3 h-3" />
-              </button>
+              <button onClick={() => setPlacingModule(null)}><X className="w-3 h-3" /></button>
             </div>
           )}
 
@@ -823,7 +1038,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     'w-full text-left p-2.5 rounded-lg border transition-colors',
                     placingModule?.id === m.id
                       ? 'border-blue-500 bg-blue-900/30'
-                      : 'border-slate-700 bg-slate-800/50 hover:border-slate-500 hover:bg-slate-800'
+                      : 'border-slate-700 bg-slate-800/50 hover:border-slate-500 hover:bg-slate-800',
                   )}
                 >
                   <div className="flex items-start gap-2">
@@ -831,19 +1046,13 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                       <p className="text-white text-xs font-medium truncate">{m.nombre}</p>
                       <p className="text-slate-500 text-xs mt-0.5 truncate">{m.tipoModulo}</p>
                       {m.ancho > 0 && m.alto > 0 ? (
-                        <p className="text-slate-600 text-xs">
-                          {Math.round(m.ancho)}×{Math.round(m.alto)}×{Math.round(m.profundidad)} mm
-                        </p>
+                        <p className="text-slate-600 text-xs">{Math.round(m.ancho)}×{Math.round(m.alto)}×{Math.round(m.profundidad)} mm</p>
                       ) : (
                         <p className="text-amber-500 text-xs">⚠ Sin dimensiones</p>
                       )}
                     </div>
                     {m.colorAcabado && (
-                      <div
-                        className="w-4 h-4 rounded border border-slate-600 flex-shrink-0 mt-0.5"
-                        style={{ background: m.colorAcabado }}
-                        title={m.colorAcabado}
-                      />
+                      <div className="w-4 h-4 rounded border border-slate-600 flex-shrink-0 mt-0.5" style={{ background: m.colorAcabado }} title={m.colorAcabado} />
                     )}
                   </div>
                 </button>
@@ -866,7 +1075,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                       'px-3 py-1.5 rounded-t-lg text-xs font-medium transition-colors border-t border-l border-r',
                       activeWallId === wall.id
                         ? 'bg-slate-800 border-slate-600 text-white'
-                        : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
+                        : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300',
                     )}
                   >
                     Pared {wall.nombre}
@@ -875,7 +1084,6 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                 ))}
               </div>
 
-              {/* Instruction bar */}
               {placingModule && (
                 <div className="px-4 py-2 bg-blue-900/20 border-b border-blue-500/10 text-xs text-blue-300 flex items-center gap-2 flex-shrink-0">
                   <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse inline-block" />
@@ -884,7 +1092,6 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                 </div>
               )}
 
-              {/* SVG canvas */}
               <div className="flex-1 overflow-auto p-4">
                 {errorMsg && (
                   <div className="mb-3 px-3 py-2 bg-red-900/40 border border-red-500/30 rounded-lg text-red-300 text-xs flex items-center gap-2">
@@ -901,10 +1108,13 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     selectedPlacementId={selectedPlacement?.id ?? null}
                     placingModule={placingModule}
                     hoverX={hoverX}
+                    adjacentAtStart={adjacentWalls.atStart}
+                    adjacentAtEnd={adjacentWalls.atEnd}
                     onCanvasClick={handleCanvasClick}
                     onCanvasMouseMove={setHoverX}
                     onCanvasMouseLeave={() => setHoverX(null)}
                     onPlacementClick={handlePlacementClick}
+                    onDragEnd={handleElevDragEnd}
                   />
                 ) : (
                   <p className="text-slate-600 text-sm">Sin paredes configuradas</p>
@@ -913,11 +1123,30 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
             </>
           ) : (
             <div className="flex-1 overflow-auto p-4">
-              <PlanSVG
+              {errorMsg && (
+                <div className="mb-3 px-3 py-2 bg-red-900/40 border border-red-500/30 rounded-lg text-red-300 text-xs flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-red-400 rounded-full flex-shrink-0" />
+                  {errorMsg}
+                </div>
+              )}
+              {placingModule && (
+                <div className="mb-3 px-3 py-2 bg-blue-900/20 border border-blue-500/10 rounded-lg text-xs text-blue-300 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse inline-block" />
+                  Haz clic sobre una pared en el plano para colocar <strong>{placingModule.nombre}</strong>
+                </div>
+              )}
+              <InteractivePlanSVG
                 walls={project.paredes}
                 placements={placements}
                 layoutType={project.layoutType}
                 profBase={project.profBase}
+                activeWallId={activeWallId}
+                onWallClick={(wallId) => { setActiveWallId(wallId) }}
+                placingModule={placingModule}
+                selectedPlacementId={selectedPlacement?.id ?? null}
+                onPlanPlace={handlePlanPlace}
+                onPlacementClick={handlePlacementClick}
+                onPlanDragEnd={handlePlanDragEnd}
               />
             </div>
           )}
@@ -926,14 +1155,10 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
         {/* Right panel */}
         <aside className="w-72 flex-shrink-0 border-l border-white/5 flex flex-col bg-slate-900/50">
           {selectedPlacement ? (
-            // Placement properties
             <div className="p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-white font-semibold text-sm">Módulo seleccionado</h3>
-                <button
-                  onClick={() => setSelectedPlacement(null)}
-                  className="text-slate-500 hover:text-white"
-                >
+                <button onClick={() => setSelectedPlacement(null)} className="text-slate-500 hover:text-white">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -974,7 +1199,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                         'flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize',
                         selectedPlacement.nivel === n
                           ? NIVEL_COLORS[n].badge
-                          : 'bg-slate-700 text-slate-400 hover:text-white'
+                          : 'bg-slate-700 text-slate-400 hover:text-white',
                       )}
                     >
                       {n}
@@ -982,6 +1207,24 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                   ))}
                 </div>
               </div>
+
+              {selectedPlacement.nivel === 'alto' && (
+                <div>
+                  <label className="block text-slate-400 text-xs font-medium mb-1">
+                    Altura desde el suelo (mm)
+                  </label>
+                  <input
+                    type="number"
+                    value={alturaInput}
+                    onChange={(e) => handleAlturaChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-green-500"
+                    placeholder="1400"
+                  />
+                  <p className="text-slate-600 text-xs mt-1">
+                    Parte inferior del módulo aéreo (default 1400mm)
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={() => handleDeletePlacement(selectedPlacement.id)}
@@ -992,7 +1235,6 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
               </button>
             </div>
           ) : calcResults ? (
-            // Calculation results
             <div className="flex flex-col h-full">
               <div className="p-4 border-b border-white/5">
                 <h3 className="text-white font-semibold text-sm flex items-center gap-2">
@@ -1011,10 +1253,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                         <span className="text-slate-500 text-xs">Planchas</span>
                         <span className="text-white text-xs font-medium">{r.numPlanchas}</span>
                         <span className="text-slate-500 text-xs">Aprovech.</span>
-                        <span className={cn(
-                          'text-xs font-medium',
-                          r.aprovechamiento >= 70 ? 'text-emerald-400' : r.aprovechamiento >= 50 ? 'text-amber-400' : 'text-red-400'
-                        )}>
+                        <span className={cn('text-xs font-medium', r.aprovechamiento >= 70 ? 'text-emerald-400' : r.aprovechamiento >= 50 ? 'text-amber-400' : 'text-red-400')}>
                           {r.aprovechamiento.toFixed(1)}%
                         </span>
                         <span className="text-slate-500 text-xs">Costo</span>
@@ -1045,12 +1284,11 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
               )}
             </div>
           ) : (
-            // Default state
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
               <LayoutPanelLeft className="w-10 h-10 text-slate-700 mb-3" />
               <p className="text-slate-500 text-sm font-medium">Panel de propiedades</p>
               <p className="text-slate-600 text-xs mt-1">
-                Selecciona un módulo de la biblioteca y haz clic en la pared para colocarlo.
+                Selecciona un módulo y haz clic en la pared para colocarlo.
                 Luego haz clic en un módulo colocado para editar sus propiedades.
               </p>
               {placements.length > 0 && (

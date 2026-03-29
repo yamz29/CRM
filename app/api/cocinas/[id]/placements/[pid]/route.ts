@@ -14,14 +14,21 @@ export async function PUT(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    const body = await request.json() as { posicion?: number; nivel?: string }
-    const { posicion, nivel } = body
+    const body = await request.json() as {
+      posicion?: number
+      nivel?: string
+      alturaDesdeSupelo?: number
+      wallId?: number
+    }
+    const { posicion, nivel, alturaDesdeSupelo, wallId } = body
 
     const updated = await prisma.kitchenModulePlacement.update({
       where: { id: placementId, kitchenProjectId: projectId },
       data: {
         ...(posicion !== undefined && { posicion }),
         ...(nivel !== undefined && { nivel }),
+        ...(alturaDesdeSupelo !== undefined && { alturaDesdeSupelo }),
+        ...(wallId !== undefined && { wallId }),
       },
       include: {
         modulo: {

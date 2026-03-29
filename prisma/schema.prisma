@@ -649,6 +649,9 @@ model KitchenWall {
   nombre           String // A, B, C
   longitud         Float  // mm
   orden            Int    @default(0)
+  x                Float  @default(0)   // origin x mm (top-left of wall start)
+  y                Float  @default(0)   // origin y mm
+  angulo           Float  @default(0)   // 0=right, 90=down, 180=left, 270=up
 
   proyecto   KitchenProject         @relation(fields: [kitchenProjectId], references: [id], onDelete: Cascade)
   placements KitchenModulePlacement[]
@@ -657,12 +660,13 @@ model KitchenWall {
 }
 
 model KitchenModulePlacement {
-  id               Int    @id @default(autoincrement())
-  kitchenProjectId Int
-  wallId           Int
-  moduloId         Int
-  posicion         Float  @default(0)  // mm from start of wall
-  nivel            String @default("base") // base | alto | torre
+  id                Int    @id @default(autoincrement())
+  kitchenProjectId  Int
+  wallId            Int
+  moduloId          Int
+  posicion          Float  @default(0)    // mm from start of wall
+  nivel             String @default("base") // base | alto | torre
+  alturaDesdeSupelo Float  @default(1400) // mm from floor (relevant for nivel=alto)
 
   proyecto KitchenProject   @relation(fields: [kitchenProjectId], references: [id], onDelete: Cascade)
   wall     KitchenWall      @relation(fields: [wallId], references: [id], onDelete: Cascade)

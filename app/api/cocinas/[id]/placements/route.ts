@@ -16,9 +16,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       moduloId: number
       posicion: number
       nivel?: string
+      alturaDesdeSupelo?: number
     }
 
-    const { wallId, moduloId, posicion, nivel = 'base' } = body
+    const { wallId, moduloId, posicion, nivel = 'base', alturaDesdeSupelo = 1400 } = body
 
     if (!wallId || !moduloId) {
       return NextResponse.json({ error: 'wallId y moduloId son requeridos' }, { status: 400 })
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         moduloId,
         posicion: posicion ?? 0,
         nivel,
+        alturaDesdeSupelo,
       },
       include: {
         modulo: {
