@@ -18,9 +18,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
       posicion?: number
       nivel?: string
       alturaDesdeSupelo?: number
-      wallId?: number
+      wallId?: number | null
+      posX?: number
+      posY?: number
     }
-    const { posicion, nivel, alturaDesdeSupelo, wallId } = body
+    const { posicion, nivel, alturaDesdeSupelo, wallId, posX, posY } = body
 
     const updated = await prisma.kitchenModulePlacement.update({
       where: { id: placementId, kitchenProjectId: projectId },
@@ -29,6 +31,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
         ...(nivel !== undefined && { nivel }),
         ...(alturaDesdeSupelo !== undefined && { alturaDesdeSupelo }),
         ...(wallId !== undefined && { wallId }),
+        ...(posX !== undefined && { posX }),
+        ...(posY !== undefined && { posY }),
       },
       include: {
         modulo: {

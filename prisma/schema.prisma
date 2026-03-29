@@ -662,14 +662,16 @@ model KitchenWall {
 model KitchenModulePlacement {
   id                Int    @id @default(autoincrement())
   kitchenProjectId  Int
-  wallId            Int
+  wallId            Int?   // null = isla/peninsular (free placement)
   moduloId          Int
-  posicion          Float  @default(0)    // mm from start of wall
-  nivel             String @default("base") // base | alto | torre
+  posicion          Float  @default(0)    // mm from start of wall (wall-based)
+  nivel             String @default("base") // base | alto | torre | isla
   alturaDesdeSupelo Float  @default(1400) // mm from floor (relevant for nivel=alto)
+  posX              Float  @default(0)   // absolute mm X in plan (for islands)
+  posY              Float  @default(0)   // absolute mm Y in plan (for islands)
 
   proyecto KitchenProject   @relation(fields: [kitchenProjectId], references: [id], onDelete: Cascade)
-  wall     KitchenWall      @relation(fields: [wallId], references: [id], onDelete: Cascade)
+  wall     KitchenWall?     @relation(fields: [wallId], references: [id], onDelete: Cascade)
   modulo   ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
 
   @@map("kitchen_module_placement")

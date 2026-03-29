@@ -12,27 +12,39 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (isNaN(projectId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const body = await request.json() as {
-      wallId: number
+      wallId?: number | null
       moduloId: number
-      posicion: number
+      posicion?: number
       nivel?: string
       alturaDesdeSupelo?: number
+      posX?: number
+      posY?: number
     }
 
-    const { wallId, moduloId, posicion, nivel = 'base', alturaDesdeSupelo = 1400 } = body
+    const {
+      wallId = null,
+      moduloId,
+      posicion = 0,
+      nivel = wallId ? 'base' : 'isla',
+      alturaDesdeSupelo = 1400,
+      posX = 0,
+      posY = 0,
+    } = body
 
-    if (!wallId || !moduloId) {
-      return NextResponse.json({ error: 'wallId y moduloId son requeridos' }, { status: 400 })
+    if (!moduloId) {
+      return NextResponse.json({ error: 'moduloId es requerido' }, { status: 400 })
     }
 
     const placement = await prisma.kitchenModulePlacement.create({
       data: {
         kitchenProjectId: projectId,
-        wallId,
+        wallId: wallId ?? null,
         moduloId,
-        posicion: posicion ?? 0,
+        posicion,
         nivel,
         alturaDesdeSupelo,
+        posX,
+        posY,
       },
       include: {
         modulo: {
