@@ -120,6 +120,12 @@ function nivelGroup(nivel: string): 'floor' | 'wall' {
   return nivel === 'alto' ? 'wall' : 'floor'
 }
 
+const TIPOS_AEREO = ['Aéreo con puertas', 'Aéreo']
+
+function nivelForTipo(tipoModulo: string): string {
+  return TIPOS_AEREO.some((t) => tipoModulo.includes(t)) ? 'alto' : 'base'
+}
+
 function getAdjacentWalls(
   walls: Wall[],
   wallId: number,
@@ -344,13 +350,16 @@ function ElevationSVG({
         {placingModule && hoverX !== null && (() => {
           const snapped = Math.round(hoverX / SNAP_MM) * SNAP_MM
           const clamped = Math.max(0, Math.min(snapped, wall.longitud - (placingModule.ancho || 300)))
-          const ng = nivelGroup('base') // ghost always previews as base on first click
+          const isAereo = nivelForTipo(placingModule.tipoModulo) === 'alto'
+          const ng = nivelGroup(isAereo ? 'alto' : 'base')
           const hasOv = overlaps(allPlacements, wall.id, clamped, placingModule.ancho || 300, ng)
           const rectW = Math.max((placingModule.ancho || 300) * scale, 40)
           const rectH = Math.max((placingModule.alto || 720) * scale, 30)
           const rectX = clamped * scale
-          const rectY = yFloor - rectH
-          const color = hasOv ? '#ef4444' : '#3b82f6'
+          const rectY = isAereo
+            ? yFloor - (DEFAULT_ALTURA + (placingModule.alto || 720)) * scale
+            : yFloor - rectH
+          const color = hasOv ? '#ef4444' : (isAereo ? '#22c55e' : '#3b82f6')
           return (
             <g pointerEvents="none">
               <rect x={rectX} y={rectY} width={rectW} height={rectH} fill={color} fillOpacity={0.25}
@@ -701,7 +710,7 @@ function InteractivePlanSVG({
           const posMm = Math.min(hoverPos.posMm, seg.wall.longitud - (placingModule.ancho || 300))
           const depth = profBase * scale
           const moduleW = (placingModule.ancho || 300) * scale
-          const hasOv = overlaps(placements, seg.wall.id, posMm, placingModule.ancho || 300, 'floor')
+          const hasOv = overlaps(placements, seg.wall.id, posMm, placingModule.ancho || 300, nivelGroup(nivelForTipo(placingModule.tipoModulo)))
           const color = hasOv ? '#ef4444' : '#3b82f6'
           let gx: number, gy: number, gw: number, gh: number
           if (seg.cabinetDir === 'down') { gx = seg.x1 + posMm * scale; gy = seg.y1; gw = moduleW; gh = depth }
@@ -855,7 +864,8 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
       showError('El módulo no cabe en esta posición.')
       return
     }
-    if (overlaps(placements, activeWallId, clamped, modAncho || 1, 'floor')) {
+    const ng = nivelGroup(nivelForTipo(placingModule.tipoModulo))
+    if (overlaps(placements, activeWallId, clamped, modAncho || 1, ng)) {
       showError('Hay un módulo en esa posición.')
       return
     }
@@ -868,7 +878,8 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     if (!wall) return
     const modAncho = placingModule.ancho || 0
     const clamped = Math.max(0, Math.min(positionMm, wall.longitud - modAncho))
-    if (overlaps(placements, wallId, clamped, modAncho || 1, 'floor')) {
+    const ng = nivelGroup(nivelForTipo(placingModule.tipoModulo))
+    if (overlaps(placements, wallId, clamped, modAncho || 1, ng)) {
       showError('Hay un módulo en esa posición.')
       return
     }
@@ -908,7 +919,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
       const res = await fetch(`/api/cocinas/${project.id}/placements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallId, moduloId: placingModule.id, posicion, nivel: 'base', alturaDesdeSupelo: DEFAULT_ALTURA }),
+        body: JSON.stringify({ wallId, moduloId: placingModule.id, posicion, nivel: nivelForTipo(placingModule.tipoModulo), alturaDesdeSupelo: DEFAULT_ALTURA }),
       })
       if (!res.ok) { showError('Error al colocar el módulo.'); return }
       const np = await res.json() as Placement
