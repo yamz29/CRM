@@ -115,6 +115,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         sheetTotal: g.totalSheetAreaMm2,
         costoEstimado: numPlanchas * (lookup?.precio ?? 0),
         piezas: cortesByMaterial[g.tablero] ?? [],
+        sheets: g.sheets,
       }
     })
 
