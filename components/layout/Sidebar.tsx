@@ -115,7 +115,7 @@ export function Sidebar({
           )}
           <div className="min-w-0">
             <p className="text-white font-bold text-sm leading-tight truncate">{nombreEmpresa}</p>
-            <p className="text-slate-500 text-xs">CRM Gestión <span className="text-slate-600 ml-1">v1.2</span></p>
+            <p className="text-slate-500 text-xs">CRM Gestión <span className="text-slate-600 ml-1">v1.3</span></p>
           </div>
         </div>
       </div>
