@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle } from 'lucide-react'
 import { DeleteProyectoButton } from './DeleteProyectoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
+import { HelpDrawer } from '@/components/help/HelpDrawer'
 
 interface SearchParams {
   estado?: string
@@ -67,12 +68,15 @@ export default async function ProyectosPage({
           <h1 className="text-2xl font-bold text-foreground">Proyectos</h1>
           <p className="text-muted-foreground mt-1">{proyectos.length} proyectos encontrados</p>
         </div>
-        <Link href="/proyectos/nuevo">
-          <Button>
-            <Plus className="w-4 h-4" />
-            Nuevo Proyecto
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <HelpDrawer slug="proyectos" titulo="Proyectos" />
+          <Link href="/proyectos/nuevo">
+            <Button>
+              <Plus className="w-4 h-4" />
+              Nuevo Proyecto
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

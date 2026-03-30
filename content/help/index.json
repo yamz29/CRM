@@ -1,0 +1,58 @@
+[
+  {
+    "slug": "proyectos",
+    "titulo": "Proyectos",
+    "descripcion": "Gestión de obras, trabajos y clientes",
+    "modulo": "/proyectos",
+    "icono": "FolderOpen",
+    "tags": ["proyecto", "obra", "cliente", "estado", "contrato"]
+  },
+  {
+    "slug": "apu",
+    "titulo": "APU — Análisis de Precio Unitario",
+    "descripcion": "Calcula el costo real de cada ítem de trabajo",
+    "modulo": "/apus",
+    "icono": "Calculator",
+    "tags": ["apu", "precio", "unitario", "rendimiento", "insumo", "costo"]
+  },
+  {
+    "slug": "materiales",
+    "titulo": "Materiales y Tableros",
+    "descripcion": "Catálogo de tableros, cantos y herrajes",
+    "modulo": "/melamina",
+    "icono": "Layers",
+    "tags": ["material", "tablero", "canto", "herraje", "mdp", "mdf", "precio"]
+  },
+  {
+    "slug": "nesting",
+    "titulo": "Nesting",
+    "descripcion": "Optimización automática del corte de planchas",
+    "modulo": "/melamina",
+    "icono": "Grid2x2",
+    "tags": ["nesting", "corte", "plancha", "aprovechamiento", "optimizar", "cnc"]
+  },
+  {
+    "slug": "cocinas",
+    "titulo": "Configurador de Cocinas",
+    "descripcion": "Diseña y presupuesta cocinas modulares",
+    "modulo": "/cocinas",
+    "icono": "ChefHat",
+    "tags": ["cocina", "modulo", "plancha", "despiece", "isla", "aéreo", "base"]
+  },
+  {
+    "slug": "horas",
+    "titulo": "Control de Horas",
+    "descripcion": "Registro de horas trabajadas por proyecto y empleado",
+    "modulo": "/horas",
+    "icono": "Clock",
+    "tags": ["horas", "empleado", "tiempo", "mano de obra", "productividad"]
+  },
+  {
+    "slug": "gastos",
+    "titulo": "Gastos",
+    "descripcion": "Control de gastos del negocio y por proyecto",
+    "modulo": "/gastos",
+    "icono": "Receipt",
+    "tags": ["gasto", "compra", "factura", "egreso", "costo", "proyecto"]
+  }
+]

@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { StatsCard } from '@/components/ui/stats-card'
 import { Clock, TrendingUp, Calendar, Users } from 'lucide-react'
 import { HorasPageClient } from '@/components/horas/HorasPageClient'
+import { HelpDrawer } from '@/components/help/HelpDrawer'
 
 export default async function HorasPage() {
   const now   = new Date()
@@ -67,9 +68,12 @@ export default async function HorasPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Horas del Equipo</h1>
-        <p className="text-slate-500 mt-1">Registro y análisis de tiempo del equipo</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Horas del Equipo</h1>
+          <p className="text-slate-500 mt-1">Registro y análisis de tiempo del equipo</p>
+        </div>
+        <HelpDrawer slug="horas" titulo="Control de Horas" />
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

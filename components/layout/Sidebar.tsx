@@ -19,6 +19,7 @@ import {
   Sun,
   Clock,
   ChefHat,
+  BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -42,6 +43,7 @@ const catalogoItems = [
 ]
 
 const systemItems = [
+  { href: '/ayuda', label: 'Ayuda', icon: BookOpen },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 

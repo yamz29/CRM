@@ -8,6 +8,7 @@ import { SuccessBanner } from '@/components/ui/success-banner'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Box, Pencil, Layers, Package2, Scissors } from 'lucide-react'
 import { DeleteModuloButton } from './DeleteModuloButton'
+import { HelpDrawer } from '@/components/help/HelpDrawer'
 
 interface SearchParams {
   msg?: string
@@ -63,6 +64,7 @@ export default async function MelaminaPage({
           <p className="text-slate-500 mt-1">{modulos.length} módulos registrados</p>
         </div>
         <div className="flex gap-2">
+          <HelpDrawer slug="materiales" titulo="Módulos Melamina" />
           <Link href="/melamina/materiales">
             <Button variant="secondary">
               <Package2 className="w-4 h-4" />

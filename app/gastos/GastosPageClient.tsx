@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { GastoForm, type GastoData } from '@/components/gastos/GastoForm'
 import { Plus, Search, Pencil, Trash2, Paperclip, Building2, Wrench, LayoutGrid, HelpCircle, FolderOpen, Receipt } from 'lucide-react'
+import { HelpDrawer } from '@/components/help/HelpDrawer'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -149,10 +150,13 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">Registro general de gastos operativos</p>
         </div>
-        <Button onClick={openNew} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Nuevo Gasto
-        </Button>
+        <div className="flex items-center gap-2">
+          <HelpDrawer slug="gastos" titulo="Gastos" />
+          <Button onClick={openNew} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Nuevo Gasto
+          </Button>
+        </div>
       </div>
 
       {/* Stats cards */}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { ApusTable } from '@/components/apus/ApusTable'
+import { HelpDrawer } from '@/components/help/HelpDrawer'
 
 interface SearchParams { msg?: string }
 
@@ -26,9 +27,12 @@ export default async function ApusPage({ searchParams }: { searchParams: Promise
           <h1 className="text-2xl font-bold text-foreground">Catálogo de APUs</h1>
           <p className="text-muted-foreground mt-1">{apus.length} análisis de precios unitarios</p>
         </div>
-        <Link href="/apus/nuevo">
-          <Button><Plus className="w-4 h-4" /> Nuevo APU</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <HelpDrawer slug="apu" titulo="APU" />
+          <Link href="/apus/nuevo">
+            <Button><Plus className="w-4 h-4" /> Nuevo APU</Button>
+          </Link>
+        </div>
       </div>
 
       <ApusTable apus={apus} />
