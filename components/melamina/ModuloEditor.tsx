@@ -463,6 +463,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   // ── Cálculos globales ────────────────────────────────────────────────────
   const totalAreaM2 = piezas.reduce((acc, p) => acc + calcAreaM2(p), 0)
   const totalTapacantoMl = piezas.reduce((acc, p) => acc + calcTapacantoMl(p), 0)
+  // ML de tapacanto agrupado por nombre de canto (key = tapacantoColor del despiece)
+  const tapacantoByColor = useMemo(() => calcTapacantoByColor(piezas), [piezas])
 
   // ── Consumo agrupado por tablero ─────────────────────────────────────────
   const tableroGroups = useMemo(() => {
@@ -1265,16 +1267,26 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         value={r.cantidad}
                         onChange={(e) => updateMaterial(r._key, 'cantidad', parseFloat(e.target.value) || 0)}
                       />
-                      {r.tipo === 'canto' && totalTapacantoMl > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => updateMaterial(r._key, 'cantidad', parseFloat(totalTapacantoMl.toFixed(2)))}
-                          className="text-xs text-amber-600 hover:text-amber-800 underline mt-0.5 block w-full text-right"
-                          title="Usar el total de tapacanto calculado de las piezas"
-                        >
-                          ↺ {totalTapacantoMl.toFixed(2)} ml
-                        </button>
-                      )}
+                      {r.tipo === 'canto' && (() => {
+                        const mat = cantosYHerrajes.find((m) => m.id === r.materialId)
+                        const specificMl = mat ? (tapacantoByColor[mat.nombre] ?? 0) : 0
+                        const fallbackMl = totalTapacantoMl
+                        const suggestedMl = specificMl > 0 ? specificMl : (mat ? 0 : fallbackMl)
+                        if (suggestedMl <= 0) return null
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => updateMaterial(r._key, 'cantidad', parseFloat(suggestedMl.toFixed(2)))}
+                            className="text-xs text-amber-600 hover:text-amber-800 underline mt-0.5 flex items-center justify-end gap-1 w-full"
+                            title={specificMl > 0
+                              ? `ML calculados para "${mat?.nombre}" en el despiece`
+                              : 'Total de tapacanto calculado de todas las piezas'}
+                          >
+                            ↺ {suggestedMl.toFixed(2)} ml
+                            {specificMl > 0 && <span className="text-amber-400 font-semibold">✓</span>}
+                          </button>
+                        )
+                      })()}
                     </td>
                     <td className="px-2 py-1.5">
                       <input
