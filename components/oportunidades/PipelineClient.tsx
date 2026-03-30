@@ -31,9 +31,18 @@ export interface Oportunidad {
   _count: { actividades: number }
 }
 
+export interface PresupuestoOpcion {
+  id: number
+  numero: string
+  clienteId: number
+  estado: string
+  total: number
+}
+
 interface Props {
   oportunidades: Oportunidad[]
   clientes: { id: number; nombre: string }[]
+  presupuestos: PresupuestoOpcion[]
 }
 
 // ── Etapas config ─────────────────────────────────────────────────────────────
@@ -153,7 +162,7 @@ function KanbanColumn({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function PipelineClient({ oportunidades: initial, clientes }: Props) {
+export function PipelineClient({ oportunidades: initial, clientes, presupuestos }: Props) {
   const router = useRouter()
   const [oportunidades, setOportunidades] = useState<Oportunidad[]>(initial)
   const [view, setView] = useState<'kanban' | 'lista'>('kanban')
@@ -385,6 +394,7 @@ export function PipelineClient({ oportunidades: initial, clientes }: Props) {
       {formOpen && (
         <OportunidadForm
           clientes={clientes}
+          presupuestos={presupuestos}
           initial={editing}
           onClose={() => setFormOpen(false)}
           onSaved={() => { setFormOpen(false); reload() }}

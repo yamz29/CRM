@@ -3,16 +3,18 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ETAPAS, type Oportunidad } from './PipelineClient'
+import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'
+import { formatCurrency } from '@/lib/utils'
 
 interface Props {
   clientes: { id: number; nombre: string }[]
+  presupuestos: PresupuestoOpcion[]
   initial: Oportunidad | null
   onClose: () => void
   onSaved: () => void
 }
 
-export function OportunidadForm({ clientes, initial, onClose, onSaved }: Props) {
+export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
   const [clienteId, setClienteId]           = useState(String(initial?.clienteId ?? ''))
   const [nombre, setNombre]                 = useState(initial?.nombre ?? '')
@@ -22,6 +24,12 @@ export function OportunidadForm({ clientes, initial, onClose, onSaved }: Props) 
   const [fechaCierreEst, setFechaCierreEst] = useState(initial?.fechaCierreEst?.split('T')[0] ?? '')
   const [responsable, setResponsable]       = useState(initial?.responsable ?? '')
   const [notas, setNotas]                   = useState(initial?.notas ?? '')
+  const [presupuestoId, setPresupuestoId]   = useState('')
+
+  // Presupuestos del cliente seleccionado (solo al crear)
+  const presupuestosCliente = presupuestos.filter(
+    (p) => clienteId && p.clienteId === parseInt(clienteId)
+  )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,6 +45,7 @@ export function OportunidadForm({ clientes, initial, onClose, onSaved }: Props) 
       fechaCierreEst: fechaCierreEst || null,
       responsable: responsable || null,
       notas: notas || null,
+      ...((!initial && presupuestoId) ? { presupuestoId } : {}),
     }
 
     const url = initial ? `/api/oportunidades/${initial.id}` : '/api/oportunidades'
@@ -91,6 +100,39 @@ export function OportunidadForm({ clientes, initial, onClose, onSaved }: Props) 
                 {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
+
+            {/* Vincular cotización existente — solo al crear */}
+            {!initial && (
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Vincular cotización existente
+                  <span className="ml-1 text-muted-foreground/60 font-normal">(opcional)</span>
+                </label>
+                <select
+                  value={presupuestoId}
+                  onChange={(e) => {
+                    setPresupuestoId(e.target.value)
+                    // Auto-completar valor si hay total en el presupuesto
+                    if (e.target.value && !valor) {
+                      const p = presupuestos.find((p) => String(p.id) === e.target.value)
+                      if (p && p.total > 0) setValor(String(p.total))
+                    }
+                  }}
+                  disabled={!clienteId}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                >
+                  <option value="">{clienteId ? (presupuestosCliente.length === 0 ? 'Sin cotizaciones para este cliente' : 'Seleccionar cotización...') : 'Primero selecciona un cliente'}</option>
+                  {presupuestosCliente.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.numero} — {p.estado} — {formatCurrency(p.total)}
+                    </option>
+                  ))}
+                </select>
+                {!clienteId && (
+                  <p className="text-xs text-muted-foreground mt-1">Selecciona un cliente para ver sus cotizaciones disponibles.</p>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Etapa</label>
