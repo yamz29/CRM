@@ -11,6 +11,7 @@ interface PiezaCorte {
   ancho: number
   cantidad: number
   modulo: string
+  tapacanto: string[]
 }
 
 export async function POST(_req: NextRequest, { params }: Params) {
@@ -61,6 +62,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
         if (existing) {
           existing.cantidad += pieza.cantidad
         } else {
+          let tapacanto: string[] = []
+          try { tapacanto = JSON.parse(pieza.tapacanto as unknown as string) } catch { tapacanto = [] }
           cortesMap.set(corteKey, {
             etiqueta: pieza.etiqueta,
             nombre: pieza.nombre,
@@ -68,6 +71,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
             ancho: pieza.ancho,
             cantidad: pieza.cantidad,
             modulo: modulo.nombre,
+            tapacanto,
           })
         }
 

@@ -60,6 +60,7 @@ interface PiezaCorte {
   ancho: number
   cantidad: number
   modulo: string
+  tapacanto: string[]
 }
 
 interface PlacedPieceVis {
@@ -1286,30 +1287,39 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
 
   function buildCutListText(): string {
     if (!calcResults) return ''
-    const lines: string[] = [
-      `ORDEN DE CORTE — ${project.nombre}`,
-      `Generado: ${new Date().toLocaleDateString('es-DO')}`,
-      '='.repeat(60),
-    ]
+    const T = '\t'
+    const header = ['Length', 'Width', 'Quantity', 'Material', 'Texture', 'Label',
+      'Edgebands', 'Edgebands', 'Edgebands', 'Edgebands', 'Customer'].join(T)
+    const rows: string[] = [header]
+
     for (const r of calcResults) {
-      lines.push('')
-      lines.push(`MATERIAL: ${r.tablero}`)
-      lines.push(`Plancha: ${r.boardW}×${r.boardH}mm | Cantidad: ${r.numPlanchas} plancha${r.numPlanchas !== 1 ? 's' : ''} | Aprovech.: ${r.aprovechamiento}%`)
-      lines.push('-'.repeat(60))
-      lines.push(`${'#'.padEnd(4)} ${'Etiqueta'.padEnd(12)} ${'Nombre'.padEnd(24)} ${'Largo'.padStart(6)} ${'Ancho'.padStart(6)} ${'Cant'.padStart(5)}`)
-      lines.push('-'.repeat(60))
-      r.piezas.forEach((p, i) => {
-        lines.push(
-          `${String(i + 1).padEnd(4)} ${p.etiqueta.padEnd(12)} ${p.nombre.slice(0, 24).padEnd(24)} ${String(Math.round(p.largo)).padStart(6)} ${String(Math.round(p.ancho)).padStart(6)} ${String(p.cantidad).padStart(5)}`
-        )
-      })
-      const totalPiezas = r.piezas.reduce((s, p) => s + p.cantidad, 0)
-      lines.push('-'.repeat(60))
-      lines.push(`${''.padEnd(42)} Total: ${totalPiezas} piezas`)
+      for (const p of r.piezas) {
+        // decode tapacanto: sides + optional _color:xxx
+        const tc = Array.isArray(p.tapacanto) ? p.tapacanto : []
+        const colorEntry = tc.find((s) => s.startsWith('_color:'))
+        const cantoVal = colorEntry ? colorEntry.slice(7) : (tc.some((s) => ['superior','inferior','izquierdo','derecho'].includes(s)) ? '1' : '')
+        const eb1 = tc.includes('superior')  ? cantoVal : ''  // Top
+        const eb2 = tc.includes('inferior')  ? cantoVal : ''  // Bottom
+        const eb3 = tc.includes('izquierdo') ? cantoVal : ''  // Left
+        const eb4 = tc.includes('derecho')   ? cantoVal : ''  // Right
+
+        // Expand by quantity — one row per individual piece for CNC
+        for (let i = 0; i < p.cantidad; i++) {
+          rows.push([
+            Math.round(p.largo),
+            Math.round(p.ancho),
+            1,
+            r.tablero,
+            '',                        // Texture
+            `${p.etiqueta} ${p.nombre}`,
+            eb1, eb2, eb3, eb4,
+            project.nombre,
+          ].join(T))
+        }
+      }
     }
-    lines.push('')
-    lines.push('='.repeat(60))
-    return lines.join('\n')
+
+    return rows.join('\n')
   }
 
   async function handleCopyText() {
