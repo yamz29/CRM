@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const { clienteId, proyectoId, nombre } = body
 
-    // Fetch all placements with modules and pieces
+    // Fetch all placements with modules, pieces, and materials (cantos + herrajes)
     const placements = await prisma.kitchenModulePlacement.findMany({
       where: { kitchenProjectId: projectId },
       include: {
@@ -26,6 +26,9 @@ export async function POST(request: NextRequest, { params }: Params) {
           include: {
             piezas: true,
             materialTablero: true,
+            materialesModulo: {
+              include: { material: true },
+            },
           },
         },
       },
@@ -66,6 +69,28 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const nestGroups = runNesting(allPieces, materialLookup, 2440, 1830, 4, true)
 
+    // Aggregate cantos + herrajes across all placements
+    type MatLine = { nombre: string; tipo: string; unidad: string; cantidad: number; costoSnapshot: number }
+    const herrajesCantos = new Map<number, MatLine>()
+    for (const placement of placements) {
+      const modulo = placement.modulo
+      if (modulo.tipoModulo === 'Electrodoméstico') continue
+      for (const mat of modulo.materialesModulo) {
+        const existing = herrajesCantos.get(mat.materialId)
+        if (existing) {
+          existing.cantidad += mat.cantidad
+        } else {
+          herrajesCantos.set(mat.materialId, {
+            nombre: mat.material.nombre,
+            tipo: mat.tipo,
+            unidad: mat.unidad,
+            cantidad: mat.cantidad,
+            costoSnapshot: mat.costoSnapshot,
+          })
+        }
+      }
+    }
+
     // Build presupuesto data
     const year = new Date().getFullYear()
     const existing = await prisma.presupuesto.findMany({
@@ -78,9 +103,10 @@ export async function POST(request: NextRequest, { params }: Params) {
     const maxSeq = usedSeqs.length > 0 ? Math.max(...usedSeqs) : 0
     const numero = `COT-${year}-${String(maxSeq + 1).padStart(3, '0')}`
 
-    // Calculate subtotal from nesting groups
+    // Calculate subtotal from nesting groups (tableros)
+    type Partida = { descripcion: string; unidad: string; cantidad: number; precioUnitario: number; subtotal: number }
     let subtotalBase = 0
-    const partidas: { descripcion: string; cantidad: number; precioUnitario: number; subtotal: number }[] = []
+    const partidasTableros: Partida[] = []
 
     for (const g of nestGroups) {
       const lookup = materialLookup[g.tablero]
@@ -88,13 +114,33 @@ export async function POST(request: NextRequest, { params }: Params) {
       const numPlanchas = g.sheets.length
       const lineSubtotal = numPlanchas * precio
       subtotalBase += lineSubtotal
-      partidas.push({
-        descripcion: `Tablero ${g.tablero} - ${numPlanchas} plancha${numPlanchas !== 1 ? 's' : ''}`,
+      partidasTableros.push({
+        descripcion: `Tablero ${g.tablero} — ${numPlanchas} plancha${numPlanchas !== 1 ? 's' : ''}`,
+        unidad: 'ud',
         cantidad: numPlanchas,
         precioUnitario: precio,
         subtotal: lineSubtotal,
       })
     }
+
+    // Subtotal from cantos + herrajes
+    let subtotalMatExtras = 0
+    const partidasExtras: Partida[] = []
+    for (const mat of herrajesCantos.values()) {
+      const lineSubtotal = mat.cantidad * mat.costoSnapshot
+      subtotalMatExtras += lineSubtotal
+      partidasExtras.push({
+        descripcion: `${mat.tipo === 'canto' ? 'Canto' : 'Herraje'} — ${mat.nombre}`,
+        unidad: mat.unidad,
+        cantidad: Math.round(mat.cantidad * 100) / 100,
+        precioUnitario: mat.costoSnapshot,
+        subtotal: lineSubtotal,
+      })
+    }
+    // Sort: cantos first, then herrajes, alphabetically
+    partidasExtras.sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+
+    const totalSubtotal = subtotalBase + subtotalMatExtras
 
     // Need a valid clienteId — if not provided, try to get any default
     let resolvedClienteId = clienteId
@@ -114,32 +160,49 @@ export async function POST(request: NextRequest, { params }: Params) {
           proyectoId: proyectoId ?? null,
           estado: 'Borrador',
           notas: nombre ? `Cocina: ${nombre}` : null,
-          subtotal: subtotalBase,
-          total: subtotalBase,
+          subtotal: totalSubtotal,
+          total: totalSubtotal,
         },
       })
 
-      const capitulo = await tx.capituloPresupuesto.create({
-        data: {
-          presupuestoId: created.id,
-          nombre: 'Materiales de cocina',
-          orden: 0,
-        },
+      // Capítulo 1: Tableros
+      const capTableros = await tx.capituloPresupuesto.create({
+        data: { presupuestoId: created.id, nombre: 'Tableros', orden: 0 },
       })
-
-      for (let pi = 0; pi < partidas.length; pi++) {
-        const p = partidas[pi]
+      for (let pi = 0; pi < partidasTableros.length; pi++) {
+        const p = partidasTableros[pi]
         await tx.partidaPresupuesto.create({
           data: {
-            capituloId: capitulo.id,
+            capituloId: capTableros.id,
             descripcion: p.descripcion,
-            unidad: 'ud',
+            unidad: p.unidad,
             cantidad: p.cantidad,
             precioUnitario: p.precioUnitario,
             subtotal: p.subtotal,
             orden: pi,
           },
         })
+      }
+
+      // Capítulo 2: Cantos y Herrajes (only if any exist)
+      if (partidasExtras.length > 0) {
+        const capExtras = await tx.capituloPresupuesto.create({
+          data: { presupuestoId: created.id, nombre: 'Cantos y Herrajes', orden: 1 },
+        })
+        for (let pi = 0; pi < partidasExtras.length; pi++) {
+          const p = partidasExtras[pi]
+          await tx.partidaPresupuesto.create({
+            data: {
+              capituloId: capExtras.id,
+              descripcion: p.descripcion,
+              unidad: p.unidad,
+              cantidad: p.cantidad,
+              precioUnitario: p.precioUnitario,
+              subtotal: p.subtotal,
+              orden: pi,
+            },
+          })
+        }
       }
 
       return created
