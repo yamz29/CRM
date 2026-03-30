@@ -163,8 +163,8 @@ function packTapacantoColor(lados: string[], color: string): string[] {
   return color ? [...lados, `_color:${color}`] : lados
 }
 
-const TAPACANTO_COLORS = [
-  { value: '', label: '— Sin color' },
+// TAPACANTO_COLORS kept as legacy fallback when no canto resources exist
+const TAPACANTO_COLORS_FALLBACK = [
   { value: 'Blanco', label: 'Blanco' },
   { value: 'Blanco Roto', label: 'Blanco Roto' },
   { value: 'Gris Perla', label: 'Gris Perla' },
@@ -455,6 +455,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
   // ── Filtros derivados ────────────────────────────────────────────────────
   const tableros = materialesDisponibles.filter((m) => m.tipo === 'tablero')
+  const cantos = materialesDisponibles.filter((m) => m.tipo === 'canto')
   const cantosYHerrajes = materialesDisponibles.filter((m) => m.tipo === 'canto' || m.tipo === 'herraje')
 
   const materialTablero = tableros.find((m) => m.id === parseInt(materialTableroId))
@@ -959,12 +960,20 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                               <select
                                 value={p.tapacantoColor}
                                 onChange={(e) => updatePieza(p._key, 'tapacantoColor', e.target.value)}
-                                title="Color del tapacanto"
+                                title="Canto / color del tapacanto"
                                 className="border border-amber-200 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 text-amber-800 w-full"
                               >
-                                {TAPACANTO_COLORS.map((c) => (
-                                  <option key={c.value} value={c.value}>{c.label}</option>
-                                ))}
+                                <option value="">— Sin canto —</option>
+                                {cantos.length > 0
+                                  ? cantos.map((c) => (
+                                      <option key={c.id} value={c.nombre}>
+                                        {c.codigo ? `[${c.codigo}] ` : ''}{c.nombre}
+                                      </option>
+                                    ))
+                                  : TAPACANTO_COLORS_FALLBACK.map((c) => (
+                                      <option key={c.value} value={c.value}>{c.label}</option>
+                                    ))
+                                }
                               </select>
                             )}
                           </div>
