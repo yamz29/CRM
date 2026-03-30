@@ -412,8 +412,18 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
   const [ancho, setAncho] = useState(String(modulo.ancho || ''))
   const [alto, setAlto] = useState(String(modulo.alto || ''))
   const [prof, setProf] = useState(String(modulo.profundidad || ''))
-  const [cantPuertas, setCantPuertas] = useState(String(modulo.cantidadPuertas || 0))
-  const [cantCajones, setCantCajones] = useState(String(modulo.cantidadCajones || 0))
+  const [cantPuertas, setCantPuertas] = useState(() => {
+    if (modulo.cantidadPuertas > 0) return String(modulo.cantidadPuertas)
+    if (modulo.tipoModulo === 'Base con puertas' || modulo.tipoModulo === 'Aéreo con puertas') return '2'
+    if (modulo.tipoModulo === 'Base mixto') return '1'
+    return '0'
+  })
+  const [cantCajones, setCantCajones] = useState(() => {
+    if (modulo.cantidadCajones > 0) return String(modulo.cantidadCajones)
+    if (modulo.tipoModulo === 'Base con cajones') return '3'
+    if (modulo.tipoModulo === 'Base mixto') return '2'
+    return '0'
+  })
   const [colorAcabado, setColorAcabado] = useState(modulo.colorAcabado || '')
   const [cantidad, setCantidad] = useState(String(modulo.cantidad || 1))
   const [precioVenta, setPrecioVenta] = useState(String(modulo.precioVenta || ''))

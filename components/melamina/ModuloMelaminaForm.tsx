@@ -40,6 +40,22 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
   const [recursoTableroId, setRecursoTableroId] = useState(String(initialData?.recursoTableroId || ''))
   const [colorAcabado, setColorAcabado] = useState(initialData?.colorAcabado || '')
   const [observaciones, setObservaciones] = useState(initialData?.observaciones || '')
+  const [cantidadPuertas, setCantidadPuertas] = useState(() => {
+    const stored = (initialData as any)?.cantidadPuertas
+    if (stored != null && stored > 0) return String(stored)
+    const tipo = initialData?.tipoModulo || 'Base con puertas'
+    if (tipo === 'Base con puertas' || tipo === 'Aéreo con puertas') return '2'
+    if (tipo === 'Base mixto') return '1'
+    return '0'
+  })
+  const [cantidadCajones, setCantidadCajones] = useState(() => {
+    const stored = (initialData as any)?.cantidadCajones
+    if (stored != null && stored > 0) return String(stored)
+    const tipo = initialData?.tipoModulo || 'Base con puertas'
+    if (tipo === 'Base con cajones') return '3'
+    if (tipo === 'Base mixto') return '2'
+    return '0'
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -64,6 +80,8 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
         ancho: parseFloat(ancho) || 0,
         alto: parseFloat(alto) || 0,
         profundidad: parseFloat(profundidad) || 0,
+        cantidadPuertas: parseInt(cantidadPuertas) || 0,
+        cantidadCajones: parseInt(cantidadCajones) || 0,
         material: tablero?.nombre || '',
         colorAcabado: colorAcabado || null,
         observaciones: observaciones || null,
@@ -136,7 +154,15 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
           <select
             value={tipoModulo}
-            onChange={(e) => setTipoModulo(e.target.value)}
+            onChange={(e) => {
+              const t = e.target.value
+              setTipoModulo(t)
+              // Reset door/drawer counts to sensible defaults on type change
+              if (t === 'Base con puertas' || t === 'Aéreo con puertas') { setCantidadPuertas('2'); setCantidadCajones('0') }
+              else if (t === 'Base con cajones') { setCantidadPuertas('0'); setCantidadCajones('3') }
+              else if (t === 'Base mixto') { setCantidadPuertas('1'); setCantidadCajones('2') }
+              else { setCantidadPuertas('0'); setCantidadCajones('0') }
+            }}
             className={inputCls + ' bg-white'}
           >
             {TIPOS_MODULO.map((t) => (
@@ -191,6 +217,33 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           />
         </div>
       </div>
+
+      {/* Puertas y Cajones */}
+      {(tipoModulo === 'Base con puertas' || tipoModulo === 'Base con cajones' ||
+        tipoModulo === 'Base mixto' || tipoModulo === 'Aéreo con puertas') && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Cantidad de puertas</label>
+            <input
+              type="number"
+              value={cantidadPuertas}
+              onChange={(e) => setCantidadPuertas(e.target.value)}
+              min="0" step="1"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Cantidad de cajones</label>
+            <input
+              type="number"
+              value={cantidadCajones}
+              onChange={(e) => setCantidadCajones(e.target.value)}
+              min="0" step="1"
+              className={inputCls}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Material y Color */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
