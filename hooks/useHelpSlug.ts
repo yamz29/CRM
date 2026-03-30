@@ -9,8 +9,9 @@ const ROUTE_TO_SLUG: Record<string, string> = {
   '/recursos':     'materiales',
   '/cocinas':      'cocinas',
   '/horas':        'horas',
-  '/gastos':       'gastos',
-  '/presupuestos': 'proyectos',
+  '/gastos':        'gastos',
+  '/presupuestos':  'proyectos',
+  '/oportunidades': 'oportunidades',
 }
 
 export function useHelpSlug(): string | null {

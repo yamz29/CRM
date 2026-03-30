@@ -54,5 +54,13 @@
     "modulo": "/gastos",
     "icono": "Receipt",
     "tags": ["gasto", "compra", "factura", "egreso", "costo", "proyecto"]
+  },
+  {
+    "slug": "oportunidades",
+    "titulo": "Pipeline de Ventas",
+    "descripcion": "Seguimiento de oportunidades desde el lead hasta el cierre",
+    "modulo": "/oportunidades",
+    "icono": "TrendingUp",
+    "tags": ["pipeline", "ventas", "oportunidad", "lead", "cotización", "cierre", "cliente"]
   }
 ]

@@ -20,6 +20,7 @@ import {
   Clock,
   ChefHat,
   BookOpen,
+  TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/proyectos', label: 'Proyectos', icon: FolderOpen },
   { href: '/presupuestos', label: 'Presupuestos', icon: FileText },
   { href: '/gastos', label: 'Gastos', icon: Receipt },
+  { href: '/oportunidades', label: 'Pipeline', icon: TrendingUp },
   { href: '/tareas', label: 'Tareas', icon: CheckSquare },
   { href: '/melamina', label: 'Módulos Melamina', icon: Box },
   { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat },

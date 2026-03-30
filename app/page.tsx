@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EstadoProyectoBadge, EstadoPresupuestoBadge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Users, FolderOpen, FileText, TrendingUp, ArrowRight, AlertTriangle, Box } from 'lucide-react'
+import { Users, FolderOpen, FileText, TrendingUp, ArrowRight, AlertTriangle, Box, Target, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
 async function getDashboardData() {
@@ -21,6 +21,10 @@ async function getDashboardData() {
     proyectosRecientes,
     presupuestosRecientes,
     tareasPendientesRecientes,
+    oportunidadesActivas,
+    valorPipelineAgg,
+    oportunidadesGanadas,
+    oportunidadesPerdidas,
   ] = await Promise.all([
     prisma.cliente.count(),
     prisma.proyecto.count({ where: { estado: { in: ['En Ejecución', 'Adjudicado'] } } }),
@@ -58,7 +62,17 @@ async function getDashboardData() {
         proyecto: { select: { nombre: true } },
       },
     }),
+    prisma.oportunidad.count({ where: { etapa: { notIn: ['Ganado', 'Perdido'] } } }),
+    prisma.oportunidad.aggregate({
+      where: { etapa: { notIn: ['Ganado', 'Perdido'] }, valor: { not: null } },
+      _sum: { valor: true },
+    }),
+    prisma.oportunidad.count({ where: { etapa: 'Ganado' } }),
+    prisma.oportunidad.count({ where: { etapa: 'Perdido' } }),
   ])
+
+  const cerradas = oportunidadesGanadas + oportunidadesPerdidas
+  const tasaCierre = cerradas > 0 ? Math.round((oportunidadesGanadas / cerradas) * 100) : null
 
   return {
     totalClientes,
@@ -71,6 +85,9 @@ async function getDashboardData() {
     proyectosRecientes,
     presupuestosRecientes,
     tareasPendientesRecientes,
+    oportunidadesActivas,
+    valorPipeline: valorPipelineAgg._sum.valor ?? 0,
+    tasaCierre,
   }
 }
 
@@ -138,6 +155,27 @@ export default async function DashboardPage() {
           icon={<Box className="w-5 h-5" />}
           description="Melamina pendientes de completar"
           colorClass="bg-amber-500/10 text-amber-500"
+        />
+        <StatsCard
+          title="Pipeline Activo"
+          value={data.oportunidadesActivas}
+          icon={<TrendingUp className="w-5 h-5" />}
+          description="Oportunidades en curso"
+          colorClass="bg-blue-500/10 text-blue-500"
+        />
+        <StatsCard
+          title="Valor Pipeline"
+          value={formatCurrency(data.valorPipeline)}
+          icon={<DollarSign className="w-5 h-5" />}
+          description="Valor estimado de oportunidades activas"
+          colorClass="bg-green-500/10 text-green-500"
+        />
+        <StatsCard
+          title="Tasa de Cierre"
+          value={data.tasaCierre !== null ? `${data.tasaCierre}%` : '—'}
+          icon={<Target className="w-5 h-5" />}
+          description="Oportunidades ganadas vs cerradas"
+          colorClass="bg-purple-500/10 text-purple-500"
         />
       </div>
 

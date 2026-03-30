@@ -1,0 +1,408 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
+  Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
+import { ETAPAS, type Oportunidad } from './PipelineClient'
+
+interface ActividadCRM {
+  id: number
+  tipo: string
+  descripcion: string
+  fecha: string
+  createdAt: string
+}
+
+interface Props {
+  oportunidad: Oportunidad
+  onClose: () => void
+  onEdit: (op: Oportunidad) => void
+  onSaved: () => void
+}
+
+const TIPO_ACTIVIDAD_ICONS: Record<string, React.ReactNode> = {
+  Llamada:  <Phone className="w-3.5 h-3.5" />,
+  WhatsApp: <MessageCircle className="w-3.5 h-3.5" />,
+  Reunión:  <Users className="w-3.5 h-3.5" />,
+  Visita:   <MapPin className="w-3.5 h-3.5" />,
+  Correo:   <Mail className="w-3.5 h-3.5" />,
+  Nota:     <StickyNote className="w-3.5 h-3.5" />,
+}
+
+const ESTADO_PRES_COLORS: Record<string, string> = {
+  Borrador: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  Enviado:  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  Aprobado: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  Rechazado:'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+}
+
+// ── Ganar Modal ───────────────────────────────────────────────────────────────
+
+function GanarModal({ oportunidad, onClose, onGanada }: { oportunidad: Oportunidad; onClose: () => void; onGanada: (proyectoId: number) => void }) {
+  const [nombreProyecto, setNombreProyecto] = useState(oportunidad.nombre)
+  const [tipoProyecto, setTipoProyecto]     = useState('Remodelación')
+  const [saving, setSaving]                 = useState(false)
+
+  async function handleGanar() {
+    if (!nombreProyecto) return
+    setSaving(true)
+    const res = await fetch(`/api/oportunidades/${oportunidad.id}/ganar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombreProyecto, tipoProyecto }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      onGanada(data.proyectoId)
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+          <Trophy className="w-5 h-5 text-green-500" />
+          <h3 className="font-semibold text-foreground">¡Oportunidad ganada!</h3>
+          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-muted-foreground">Se creará un proyecto automáticamente vinculado a esta oportunidad.</p>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre del proyecto</label>
+            <input
+              value={nombreProyecto}
+              onChange={(e) => setNombreProyecto(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo de proyecto</label>
+            <select
+              value={tipoProyecto}
+              onChange={(e) => setTipoProyecto(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {['Remodelación', 'Construcción', 'Diseño interior', 'Instalación', 'Mantenimiento', 'Consultoría', 'Otro'].map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+            <Button onClick={handleGanar} disabled={saving || !nombreProyecto} className="bg-green-600 hover:bg-green-700">
+              <CheckCircle className="w-4 h-4 mr-1" />
+              {saving ? 'Creando...' : 'Crear proyecto'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Drawer ───────────────────────────────────────────────────────────────
+
+export function OportunidadDrawer({ oportunidad, onClose, onEdit, onSaved }: Props) {
+  const router = useRouter()
+  const [actividades, setActividades] = useState<ActividadCRM[]>([])
+  const [actLoaded, setActLoaded]     = useState(false)
+  const [newTipo, setNewTipo]         = useState('Nota')
+  const [newDesc, setNewDesc]         = useState('')
+  const [saving, setSaving]           = useState(false)
+  const [ganarOpen, setGanarOpen]     = useState(false)
+  const [perdidaOpen, setPerdidaOpen] = useState(false)
+  const [motivoPerdida, setMotivoPerdida] = useState('')
+
+  const etapaCfg = ETAPAS.find((e) => e.key === oportunidad.etapa)
+
+  // Load activities on mount
+  useState(() => {
+    fetch(`/api/oportunidades/${oportunidad.id}/actividades`)
+      .then((r) => r.json())
+      .then((data) => { setActividades(data); setActLoaded(true) })
+  })
+
+  async function addActividad() {
+    if (!newDesc.trim()) return
+    setSaving(true)
+    const res = await fetch(`/api/oportunidades/${oportunidad.id}/actividades`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: newTipo, descripcion: newDesc }),
+    })
+    if (res.ok) {
+      const act = await res.json()
+      setActividades((prev) => [act, ...prev])
+      setNewDesc('')
+      onSaved()
+    }
+    setSaving(false)
+  }
+
+  async function marcarPerdida() {
+    await fetch(`/api/oportunidades/${oportunidad.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ etapa: 'Perdido', motivoPerdida: motivoPerdida || null }),
+    })
+    setPerdidaOpen(false)
+    onSaved()
+    onClose()
+  }
+
+  function handleGanada(proyectoId: number) {
+    setGanarOpen(false)
+    onSaved()
+    onClose()
+    router.push(`/proyectos/${proyectoId}`)
+  }
+
+  const isActive = !['Ganado', 'Perdido'].includes(oportunidad.etapa)
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-card border-l border-border shadow-2xl flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-start gap-3 px-5 py-4 border-b border-border">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-foreground leading-tight">{oportunidad.nombre}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{oportunidad.cliente.nombre}</p>
+          </div>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${etapaCfg?.light ?? ''}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${etapaCfg?.color}`} />
+            {oportunidad.etapa}
+          </span>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+
+          {/* Datos generales */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-muted/30 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground mb-0.5">Valor estimado</p>
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {oportunidad.valor ? formatCurrency(oportunidad.valor) : '—'}
+              </p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground mb-0.5">Probabilidad</p>
+              <p className="text-sm font-bold text-foreground">
+                {oportunidad.probabilidad ? `${oportunidad.probabilidad}%` : '—'}
+              </p>
+            </div>
+            {oportunidad.responsable && (
+              <div className="bg-muted/30 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">Responsable</p>
+                <p className="text-sm text-foreground">{oportunidad.responsable}</p>
+              </div>
+            )}
+            {oportunidad.fechaCierreEst && (
+              <div className="bg-muted/30 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-0.5">Cierre estimado</p>
+                <p className="text-sm text-foreground">
+                  {new Date(oportunidad.fechaCierreEst).toLocaleDateString('es-DO')}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {oportunidad.notas && (
+            <div className="bg-muted/20 border border-border rounded-lg p-3">
+              <p className="text-xs text-muted-foreground mb-1">Notas</p>
+              <p className="text-sm text-foreground">{oportunidad.notas}</p>
+            </div>
+          )}
+
+          {oportunidad.motivoPerdida && (
+            <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p className="text-xs text-red-600 dark:text-red-400 mb-1">Motivo de pérdida</p>
+              <p className="text-sm text-foreground">{oportunidad.motivoPerdida}</p>
+            </div>
+          )}
+
+          {oportunidad.proyecto && (
+            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-green-700 dark:text-green-400 mb-0.5">Proyecto creado</p>
+                <p className="text-sm font-medium text-foreground">{oportunidad.proyecto.nombre}</p>
+              </div>
+              <a
+                href={`/proyectos/${oportunidad.proyecto.id}`}
+                className="text-green-600 hover:text-green-700 dark:text-green-400"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          )}
+
+          {/* Cotizaciones vinculadas */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cotizaciones</p>
+              <a
+                href={`/presupuestos/nuevo-v2?clienteId=${oportunidad.clienteId}&oportunidadId=${oportunidad.id}`}
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Nueva cotización
+              </a>
+            </div>
+            {oportunidad.presupuestos.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Sin cotizaciones aún.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {oportunidad.presupuestos.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between bg-muted/20 border border-border rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-foreground">{p.numero}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${ESTADO_PRES_COLORS[p.estado] ?? 'bg-muted text-muted-foreground'}`}>
+                        {p.estado}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-foreground tabular-nums">{formatCurrency(p.total)}</span>
+                      <a href={`/presupuestos/${p.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actividades */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Actividades</p>
+
+            {/* Add activity */}
+            {isActive && (
+              <div className="flex gap-2 mb-3">
+                <select
+                  value={newTipo}
+                  onChange={(e) => setNewTipo(e.target.value)}
+                  className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground shrink-0"
+                >
+                  {Object.keys(TIPO_ACTIVIDAD_ICONS).map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addActividad()}
+                  placeholder="Descripción de la actividad..."
+                  className="flex-1 px-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  onClick={addActividad}
+                  disabled={saving || !newDesc.trim()}
+                  className="h-8 w-8 flex items-center justify-center bg-primary text-primary-foreground rounded-lg disabled:opacity-50 hover:bg-primary/90 transition-colors shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Timeline */}
+            {!actLoaded ? (
+              <p className="text-xs text-muted-foreground">Cargando...</p>
+            ) : actividades.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Sin actividades registradas.</p>
+            ) : (
+              <div className="space-y-2">
+                {actividades.map((act) => (
+                  <div key={act.id} className="flex gap-2.5">
+                    <div className="mt-0.5 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                      {TIPO_ACTIVIDAD_ICONS[act.tipo] ?? <StickyNote className="w-3 h-3" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-foreground">{act.tipo}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(act.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{act.descripcion}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="border-t border-border px-5 py-3 flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(oportunidad)} className="gap-1.5">
+            <Pencil className="w-3.5 h-3.5" /> Editar
+          </Button>
+          <div className="flex-1" />
+          {isActive && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPerdidaOpen(true)}
+                className="text-red-500 hover:text-red-600 hover:bg-red-500/10 gap-1.5"
+              >
+                <XCircle className="w-3.5 h-3.5" /> Perdida
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setGanarOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+              >
+                <Trophy className="w-3.5 h-3.5" /> Ganada
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Ganar modal */}
+      {ganarOpen && (
+        <GanarModal oportunidad={oportunidad} onClose={() => setGanarOpen(false)} onGanada={handleGanada} />
+      )}
+
+      {/* Perdida confirm */}
+      {perdidaOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-card border border-border rounded-xl w-full max-w-sm shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-500" />
+              <h3 className="font-semibold text-foreground">Marcar como perdida</h3>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo (opcional)</label>
+              <input
+                value={motivoPerdida}
+                onChange={(e) => setMotivoPerdida(e.target.value)}
+                placeholder="ej: Precio, decidió otro proveedor..."
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setPerdidaOpen(false)}>Cancelar</Button>
+              <Button onClick={marcarPerdida} className="bg-red-600 hover:bg-red-700 text-white">Confirmar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}

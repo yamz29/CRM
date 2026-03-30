@@ -25,6 +25,7 @@ model Cliente {
   presupuestos   Presupuesto[]
   tareas         Tarea[]
   registrosHoras RegistroHoras[]
+  oportunidades  Oportunidad[]
 }
 
 model Proyecto {
@@ -51,6 +52,7 @@ model Proyecto {
   capitulos       ProyectoCapitulo[]
   partidas        ProyectoPartida[]
   registrosHoras  RegistroHoras[]
+  oportunidades   Oportunidad[]
 }
 
 // ── GASTOS DEL PROYECTO ───────────────────────────────────────────────
@@ -127,19 +129,21 @@ model ProyectoPartida {
 }
 
 model Presupuesto {
-  id         Int      @id @default(autoincrement())
-  numero     String   @unique
-  proyectoId Int?
-  clienteId  Int
-  estado     String   @default("Borrador")
-  subtotal   Float    @default(0)
-  total      Float    @default(0)
-  notas      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  numero         String   @unique
+  proyectoId     Int?
+  clienteId      Int
+  oportunidadId  Int?
+  estado         String   @default("Borrador")
+  subtotal       Float    @default(0)
+  total          Float    @default(0)
+  notas          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   proyecto        Proyecto?          @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   cliente         Cliente            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  oportunidad     Oportunidad?       @relation(fields: [oportunidadId], references: [id], onDelete: SetNull)
   partidas        Partida[]
   modulosMelamina ModuloMelamina[]
   capitulos       CapituloPresupuesto[]
@@ -675,4 +679,42 @@ model KitchenModulePlacement {
   modulo   ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
 
   @@map("kitchen_module_placement")
+}
+
+// ── PIPELINE DE VENTAS ────────────────────────────────────────────────
+
+model Oportunidad {
+  id             Int       @id @default(autoincrement())
+  clienteId      Int
+  nombre         String
+  etapa          String    @default("Lead")
+  // etapas: Lead | Levantamiento | Cotización | Negociación | Ganado | Perdido
+  valor          Float?
+  moneda         String    @default("DOP")
+  probabilidad   Int?      // 0-100
+  fechaCierreEst DateTime?
+  responsable    String?
+  motivoPerdida  String?
+  notas          String?
+  proyectoId     Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  cliente      Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  proyecto     Proyecto?     @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  actividades  ActividadCRM[]
+  presupuestos Presupuesto[]
+}
+
+model ActividadCRM {
+  id            Int         @id @default(autoincrement())
+  oportunidadId Int
+  tipo          String      // Llamada | WhatsApp | Reunión | Visita | Correo | Nota
+  descripcion   String
+  fecha         DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+
+  oportunidad Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+
+  @@map("actividad_crm")
 }
