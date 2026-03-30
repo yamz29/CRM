@@ -1,20 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'
+import { ETAPAS, type Oportunidad, type PresupuestoOpcion, type UsuarioOpcion } from './PipelineClient'
 import { formatCurrency } from '@/lib/utils'
 
 interface Props {
   clientes: { id: number; nombre: string }[]
   presupuestos: PresupuestoOpcion[]
+  usuarios: UsuarioOpcion[]
   initial: Oportunidad | null
   onClose: () => void
   onSaved: () => void
 }
 
-export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSaved }: Props) {
+export function OportunidadForm({ clientes, presupuestos, usuarios, initial, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
   const [clienteId, setClienteId]           = useState(String(initial?.clienteId ?? ''))
   const [nombre, setNombre]                 = useState(initial?.nombre ?? '')
@@ -24,12 +25,23 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
   const [fechaCierreEst, setFechaCierreEst] = useState(initial?.fechaCierreEst?.split('T')[0] ?? '')
   const [responsable, setResponsable]       = useState(initial?.responsable ?? '')
   const [notas, setNotas]                   = useState(initial?.notas ?? '')
-  const [presupuestoId, setPresupuestoId]   = useState('')
+  const [presupuestosSeleccionados, setPresupuestosSeleccionados] = useState<number[]>([])
 
-  // Presupuestos del cliente seleccionado (solo al crear)
+  // Presupuestos del cliente seleccionado sin oportunidad (solo al crear)
   const presupuestosCliente = presupuestos.filter(
     (p) => clienteId && p.clienteId === parseInt(clienteId)
   )
+
+  function togglePresupuesto(id: number, total: number) {
+    setPresupuestosSeleccionados((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      // Auto-completar valor con el total del primer presupuesto seleccionado
+      if (!prev.includes(id) && next.length === 1 && !valor && total > 0) {
+        setValor(String(total))
+      }
+      return next
+    })
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -45,7 +57,7 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
       fechaCierreEst: fechaCierreEst || null,
       responsable: responsable || null,
       notas: notas || null,
-      ...((!initial && presupuestoId) ? { presupuestoId } : {}),
+      ...(!initial && presupuestosSeleccionados.length > 0 ? { presupuestoIds: presupuestosSeleccionados } : {}),
     }
 
     const url = initial ? `/api/oportunidades/${initial.id}` : '/api/oportunidades'
@@ -63,9 +75,9 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl">
+      <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h2 className="font-semibold text-foreground">
             {initial ? 'Editar oportunidad' : 'Nueva oportunidad'}
           </h2>
@@ -75,7 +87,7 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre de la oportunidad *</label>
@@ -92,7 +104,7 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
               <label className="block text-xs font-medium text-muted-foreground mb-1">Cliente *</label>
               <select
                 value={clienteId}
-                onChange={(e) => setClienteId(e.target.value)}
+                onChange={(e) => { setClienteId(e.target.value); setPresupuestosSeleccionados([]) }}
                 required
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
@@ -101,35 +113,46 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
               </select>
             </div>
 
-            {/* Vincular cotización existente — solo al crear */}
+            {/* Vincular cotizaciones existentes — solo al crear */}
             {!initial && (
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Vincular cotización existente
+                  Vincular cotizaciones existentes
                   <span className="ml-1 text-muted-foreground/60 font-normal">(opcional)</span>
                 </label>
-                <select
-                  value={presupuestoId}
-                  onChange={(e) => {
-                    setPresupuestoId(e.target.value)
-                    // Auto-completar valor si hay total en el presupuesto
-                    if (e.target.value && !valor) {
-                      const p = presupuestos.find((p) => String(p.id) === e.target.value)
-                      if (p && p.total > 0) setValor(String(p.total))
-                    }
-                  }}
-                  disabled={!clienteId}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                >
-                  <option value="">{clienteId ? (presupuestosCliente.length === 0 ? 'Sin cotizaciones para este cliente' : 'Seleccionar cotización...') : 'Primero selecciona un cliente'}</option>
-                  {presupuestosCliente.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.numero} — {p.estado} — {formatCurrency(p.total)}
-                    </option>
-                  ))}
-                </select>
-                {!clienteId && (
-                  <p className="text-xs text-muted-foreground mt-1">Selecciona un cliente para ver sus cotizaciones disponibles.</p>
+                {!clienteId ? (
+                  <p className="text-xs text-muted-foreground py-2">Selecciona un cliente primero.</p>
+                ) : presupuestosCliente.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">Sin cotizaciones disponibles para este cliente.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto border border-border rounded-lg p-2">
+                    {presupuestosCliente.map((p) => {
+                      const selected = presupuestosSeleccionados.includes(p.id)
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => togglePresupuesto(p.id, p.total)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors ${
+                            selected
+                              ? 'bg-primary/10 border border-primary/30 text-foreground'
+                              : 'bg-muted/30 border border-transparent hover:bg-muted/60 text-muted-foreground'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded flex items-center justify-center border ${selected ? 'bg-primary border-primary' : 'border-border'}`}>
+                              {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                            </div>
+                            <span className="font-medium">{p.numero}</span>
+                            <span className={`px-1.5 py-0.5 rounded-full text-xs ${p.estado === 'Aprobado' ? 'bg-green-100 text-green-700' : p.estado === 'Enviado' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {p.estado}
+                            </span>
+                          </div>
+                          <span className="font-semibold tabular-nums">{formatCurrency(p.total)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             )}
@@ -182,12 +205,14 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
 
             <div className="col-span-2">
               <label className="block text-xs font-medium text-muted-foreground mb-1">Responsable</label>
-              <input
+              <select
                 value={responsable}
                 onChange={(e) => setResponsable(e.target.value)}
-                placeholder="Nombre del responsable"
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Sin asignar</option>
+                {usuarios.map((u) => <option key={u.id} value={u.nombre}>{u.nombre}</option>)}
+              </select>
             </div>
 
             <div className="col-span-2">
@@ -202,7 +227,7 @@ export function OportunidadForm({ clientes, presupuestos, initial, onClose, onSa
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
             <Button type="submit" disabled={saving}>
               {saving ? 'Guardando...' : initial ? 'Guardar cambios' : 'Crear oportunidad'}

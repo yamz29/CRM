@@ -39,10 +39,16 @@ export interface PresupuestoOpcion {
   total: number
 }
 
+export interface UsuarioOpcion {
+  id: number
+  nombre: string
+}
+
 interface Props {
   oportunidades: Oportunidad[]
   clientes: { id: number; nombre: string }[]
   presupuestos: PresupuestoOpcion[]
+  usuarios: UsuarioOpcion[]
 }
 
 // ── Etapas config ─────────────────────────────────────────────────────────────
@@ -162,12 +168,13 @@ function KanbanColumn({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function PipelineClient({ oportunidades: initial, clientes, presupuestos }: Props) {
+export function PipelineClient({ oportunidades: initial, clientes, presupuestos, usuarios }: Props) {
   const router = useRouter()
   const [oportunidades, setOportunidades] = useState<Oportunidad[]>(initial)
   const [view, setView] = useState<'kanban' | 'lista'>('kanban')
   const [q, setQ] = useState('')
   const [filtroEtapa, setFiltroEtapa] = useState('')
+  const [filtroResponsable, setFiltroResponsable] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Oportunidad | null>(null)
   const [drawerOp, setDrawerOp] = useState<Oportunidad | null>(null)
@@ -176,13 +183,14 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos 
   const filtered = useMemo(() => {
     return oportunidades.filter((o) => {
       if (filtroEtapa && o.etapa !== filtroEtapa) return false
+      if (filtroResponsable && o.responsable !== filtroResponsable) return false
       if (q) {
         const lq = q.toLowerCase()
         if (!o.nombre.toLowerCase().includes(lq) && !o.cliente.nombre.toLowerCase().includes(lq)) return false
       }
       return true
     })
-  }, [oportunidades, q, filtroEtapa])
+  }, [oportunidades, q, filtroEtapa, filtroResponsable])
 
   // Stats
   const activas = oportunidades.filter((o) => !['Ganado', 'Perdido'].includes(o.etapa))
@@ -300,6 +308,14 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos 
             {ETAPAS.map((e) => <option key={e.key} value={e.key}>{e.label}</option>)}
           </select>
         )}
+        <select
+          value={filtroResponsable}
+          onChange={(e) => setFiltroResponsable(e.target.value)}
+          className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground"
+        >
+          <option value="">Todos los responsables</option>
+          {usuarios.map((u) => <option key={u.id} value={u.nombre}>{u.nombre}</option>)}
+        </select>
         <div className="flex items-center border border-border rounded-lg overflow-hidden">
           <button
             onClick={() => setView('kanban')}
@@ -395,6 +411,7 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos 
         <OportunidadForm
           clientes={clientes}
           presupuestos={presupuestos}
+          usuarios={usuarios}
           initial={editing}
           onClose={() => setFormOpen(false)}
           onSaved={() => { setFormOpen(false); reload() }}
@@ -405,6 +422,9 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos 
       {drawerOp && (
         <OportunidadDrawer
           oportunidad={drawerOp}
+          presupuestosDisponibles={presupuestos.filter(
+            (p) => p.clienteId === drawerOp.clienteId
+          )}
           onClose={() => setDrawerOp(null)}
           onEdit={handleEdit}
           onSaved={reload}

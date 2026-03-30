@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { clienteId, nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, notas, presupuestoId } = body
+  const { clienteId, nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, notas, presupuestoIds } = body
 
   if (!clienteId || !nombre) {
     return NextResponse.json({ error: 'clienteId y nombre son requeridos' }, { status: 400 })
@@ -48,10 +48,10 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Vincular presupuesto existente si se proporcionó
-  if (presupuestoId) {
-    await prisma.presupuesto.update({
-      where: { id: parseInt(presupuestoId) },
+  // Vincular presupuestos existentes si se proporcionaron
+  if (presupuestoIds && Array.isArray(presupuestoIds) && presupuestoIds.length > 0) {
+    await prisma.presupuesto.updateMany({
+      where: { id: { in: presupuestoIds.map((id: number | string) => parseInt(String(id))) } },
       data: { oportunidadId: oportunidad.id },
     })
   }

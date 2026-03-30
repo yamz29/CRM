@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
-  Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle
+  Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import { ETAPAS, type Oportunidad } from './PipelineClient'
+import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'
 
 interface ActividadCRM {
   id: number
@@ -20,6 +20,7 @@ interface ActividadCRM {
 
 interface Props {
   oportunidad: Oportunidad
+  presupuestosDisponibles: PresupuestoOpcion[]
   onClose: () => void
   onEdit: (op: Oportunidad) => void
   onSaved: () => void
@@ -110,16 +111,19 @@ function GanarModal({ oportunidad, onClose, onGanada }: { oportunidad: Oportunid
 
 // ── Main Drawer ───────────────────────────────────────────────────────────────
 
-export function OportunidadDrawer({ oportunidad, onClose, onEdit, onSaved }: Props) {
+export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClose, onEdit, onSaved }: Props) {
   const router = useRouter()
   const [actividades, setActividades] = useState<ActividadCRM[]>([])
   const [actLoaded, setActLoaded]     = useState(false)
   const [newTipo, setNewTipo]         = useState('Nota')
   const [newDesc, setNewDesc]         = useState('')
   const [saving, setSaving]           = useState(false)
-  const [ganarOpen, setGanarOpen]     = useState(false)
-  const [perdidaOpen, setPerdidaOpen] = useState(false)
+  const [ganarOpen, setGanarOpen]       = useState(false)
+  const [perdidaOpen, setPerdidaOpen]   = useState(false)
   const [motivoPerdida, setMotivoPerdida] = useState('')
+  const [vincularOpen, setVincularOpen] = useState(false)
+  const [presupuestoAVincular, setPresupuestoAVincular] = useState('')
+  const [vinculando, setVinculando]     = useState(false)
 
   const etapaCfg = ETAPAS.find((e) => e.key === oportunidad.etapa)
 
@@ -145,6 +149,29 @@ export function OportunidadDrawer({ oportunidad, onClose, onEdit, onSaved }: Pro
       onSaved()
     }
     setSaving(false)
+  }
+
+  async function vincularPresupuesto() {
+    if (!presupuestoAVincular) return
+    setVinculando(true)
+    await fetch(`/api/oportunidades/${oportunidad.id}/presupuestos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ presupuestoId: parseInt(presupuestoAVincular) }),
+    })
+    setVinculando(false)
+    setVincularOpen(false)
+    setPresupuestoAVincular('')
+    onSaved()
+  }
+
+  async function desvincularPresupuesto(presupuestoId: number) {
+    await fetch(`/api/oportunidades/${oportunidad.id}/presupuestos`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ presupuestoId }),
+    })
+    onSaved()
   }
 
   async function marcarPerdida() {
@@ -255,19 +282,64 @@ export function OportunidadDrawer({ oportunidad, onClose, onEdit, onSaved }: Pro
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cotizaciones</p>
-              <a
-                href={`/presupuestos/nuevo-v2?clienteId=${oportunidad.clienteId}&oportunidadId=${oportunidad.id}`}
-                className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3 h-3" /> Nueva cotización
-              </a>
+              <div className="flex items-center gap-2">
+                {presupuestosDisponibles.length > 0 && isActive && (
+                  <button
+                    onClick={() => setVincularOpen((v) => !v)}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                  >
+                    <Link2 className="w-3 h-3" /> Vincular existente
+                  </button>
+                )}
+                <a
+                  href={`/presupuestos/nuevo-v2?clienteId=${oportunidad.clienteId}&oportunidadId=${oportunidad.id}`}
+                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-3 h-3" /> Nueva cotización
+                </a>
+              </div>
             </div>
+
+            {/* Panel vincular existente */}
+            {vincularOpen && (
+              <div className="mb-2 p-3 bg-muted/30 border border-border rounded-lg space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Selecciona una cotización del cliente:</p>
+                <div className="flex gap-2">
+                  <select
+                    value={presupuestoAVincular}
+                    onChange={(e) => setPresupuestoAVincular(e.target.value)}
+                    className="flex-1 h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {presupuestosDisponibles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.numero} — {p.estado} — {formatCurrency(p.total)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={vincularPresupuesto}
+                    disabled={!presupuestoAVincular || vinculando}
+                    className="h-8 px-3 text-xs bg-primary text-primary-foreground rounded-lg disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                  >
+                    {vinculando ? '...' : 'Vincular'}
+                  </button>
+                  <button
+                    onClick={() => { setVincularOpen(false); setPresupuestoAVincular('') }}
+                    className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {oportunidad.presupuestos.length === 0 ? (
               <p className="text-xs text-muted-foreground">Sin cotizaciones aún.</p>
             ) : (
               <div className="space-y-1.5">
                 {oportunidad.presupuestos.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between bg-muted/20 border border-border rounded-lg px-3 py-2">
+                  <div key={p.id} className="flex items-center justify-between bg-muted/20 border border-border rounded-lg px-3 py-2 group">
                     <div className="flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="text-xs font-medium text-foreground">{p.numero}</span>
@@ -280,6 +352,15 @@ export function OportunidadDrawer({ oportunidad, onClose, onEdit, onSaved }: Pro
                       <a href={`/presupuestos/${p.id}`} className="text-muted-foreground hover:text-primary transition-colors">
                         <ExternalLink className="w-3 h-3" />
                       </a>
+                      {isActive && (
+                        <button
+                          onClick={() => desvincularPresupuesto(p.id)}
+                          title="Desvincular"
+                          className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

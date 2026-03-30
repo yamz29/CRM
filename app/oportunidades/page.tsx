@@ -5,7 +5,7 @@ import { HelpDrawer } from '@/components/help/HelpDrawer'
 export const dynamic = 'force-dynamic'
 
 export default async function OportunidadesPage() {
-  const [oportunidades, clientes, presupuestos] = await Promise.all([
+  const [oportunidades, clientes, presupuestos, usuarios] = await Promise.all([
     prisma.oportunidad.findMany({
       include: {
         cliente: { select: { id: true, nombre: true } },
@@ -23,6 +23,11 @@ export default async function OportunidadesPage() {
       where: { oportunidadId: null },
       select: { id: true, numero: true, clienteId: true, estado: true, total: true },
       orderBy: { createdAt: 'desc' },
+    }),
+    prisma.usuario.findMany({
+      where: { activo: true },
+      select: { id: true, nombre: true },
+      orderBy: { nombre: 'asc' },
     }),
   ])
 
@@ -44,7 +49,7 @@ export default async function OportunidadesPage() {
         </div>
         <HelpDrawer slug="oportunidades" titulo="Pipeline de Ventas" />
       </div>
-      <PipelineClient oportunidades={serialized} clientes={clientes} presupuestos={presupuestos} />
+      <PipelineClient oportunidades={serialized} clientes={clientes} presupuestos={presupuestos} usuarios={usuarios} />
     </div>
   )
 }
