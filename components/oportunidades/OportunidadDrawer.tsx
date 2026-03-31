@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
@@ -128,11 +128,11 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
   const etapaCfg = ETAPAS.find((e) => e.key === oportunidad.etapa)
 
   // Load activities on mount
-  useState(() => {
+  useEffect(() => {
     fetch(`/api/oportunidades/${oportunidad.id}/actividades`)
       .then((r) => r.json())
       .then((data) => { setActividades(data); setActLoaded(true) })
-  })
+  }, [oportunidad.id])
 
   async function addActividad() {
     if (!newDesc.trim()) return

@@ -4,25 +4,52 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EstadoPresupuestoBadge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Eye, Pencil, FileText } from 'lucide-react'
+import { Plus, Eye, Pencil, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { DeletePresupuestoButton } from './DeletePresupuestoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
+import { PresupuestosBuscador } from './PresupuestosBuscador'
+
+const PER_PAGE = 20
 
 interface SearchParams {
   estado?: string
   msg?: string
+  q?: string
+  page?: string
 }
 
-async function getPresupuestos(estado?: string) {
-  return prisma.presupuesto.findMany({
-    where: estado ? { estado } : undefined,
-    include: {
-      cliente: { select: { id: true, nombre: true } },
-      proyecto: { select: { id: true, nombre: true } },
-      _count: { select: { partidas: true, modulosMelamina: true, capitulos: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+async function getPresupuestos(estado?: string, q?: string, page = 1) {
+  const skip = (page - 1) * PER_PAGE
+
+  const where = {
+    ...(estado ? { estado } : {}),
+    ...(q
+      ? {
+          OR: [
+            { numero: { contains: q } },
+            { cliente: { nombre: { contains: q } } },
+            { proyecto: { nombre: { contains: q } } },
+          ],
+        }
+      : {}),
+  }
+
+  const [presupuestos, total] = await Promise.all([
+    prisma.presupuesto.findMany({
+      where,
+      include: {
+        cliente: { select: { id: true, nombre: true } },
+        proyecto: { select: { id: true, nombre: true } },
+        _count: { select: { partidas: true, modulosMelamina: true, capitulos: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: PER_PAGE,
+      skip,
+    }),
+    prisma.presupuesto.count({ where }),
+  ])
+
+  return { presupuestos, total, totalPages: Math.ceil(total / PER_PAGE) }
 }
 
 const estadoOptions = [
@@ -33,13 +60,23 @@ const estadoOptions = [
   { value: 'Rechazado', label: 'Rechazado' },
 ]
 
+function buildHref(params: Record<string, string | undefined>) {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v) p.set(k, v)
+  }
+  const s = p.toString()
+  return `/presupuestos${s ? `?${s}` : ''}`
+}
+
 export default async function PresupuestosPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { estado, msg } = await searchParams
-  const presupuestos = await getPresupuestos(estado)
+  const { estado, msg, q, page: pageStr } = await searchParams
+  const page = Math.max(1, parseInt(pageStr ?? '1') || 1)
+  const { presupuestos, total, totalPages } = await getPresupuestos(estado, q, page)
 
   return (
     <div className="space-y-6">
@@ -50,7 +87,11 @@ export default async function PresupuestosPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Presupuestos</h1>
-          <p className="text-muted-foreground mt-1">{presupuestos.length} presupuestos encontrados</p>
+          <p className="text-muted-foreground mt-1">
+            {total} {total === 1 ? 'presupuesto' : 'presupuestos'}
+            {q ? ` para "${q}"` : ''}
+            {estado ? ` · ${estado}` : ''}
+          </p>
         </div>
         <Link href="/presupuestos/nuevo-v2">
           <Button>
@@ -60,14 +101,18 @@ export default async function PresupuestosPage({
         </Link>
       </div>
 
-      {/* Filter */}
+      {/* Filters */}
       <Card>
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-3">
+          {/* Búsqueda */}
+          <PresupuestosBuscador q={q} estado={estado} />
+
+          {/* Estado tabs */}
           <div className="flex gap-2 flex-wrap">
             {estadoOptions.map((opt) => (
               <Link
                 key={opt.value}
-                href={opt.value ? `/presupuestos?estado=${encodeURIComponent(opt.value)}` : '/presupuestos'}
+                href={buildHref({ estado: opt.value || undefined, q })}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   estado === opt.value || (!estado && opt.value === '')
                     ? 'bg-primary text-primary-foreground'
@@ -87,12 +132,16 @@ export default async function PresupuestosPage({
           {presupuestos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <FileText className="w-12 h-12 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground font-medium">No hay presupuestos en este estado</p>
-              <Link href="/presupuestos/nuevo" className="mt-4">
-                <Button size="sm">
-                  <Plus className="w-4 h-4" /> Crear presupuesto
-                </Button>
-              </Link>
+              <p className="text-muted-foreground font-medium">
+                {q ? `Sin resultados para "${q}"` : 'No hay presupuestos en este estado'}
+              </p>
+              {!q && (
+                <Link href="/presupuestos/nuevo-v2" className="mt-4">
+                  <Button size="sm">
+                    <Plus className="w-4 h-4" /> Crear presupuesto
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -175,6 +224,39 @@ export default async function PresupuestosPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Página {page} de {totalPages} · {total} resultados
+          </p>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link href={buildHref({ estado, q, page: String(page - 1) })}>
+                <Button variant="secondary" size="sm" className="gap-1">
+                  <ChevronLeft className="w-4 h-4" /> Anterior
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="secondary" size="sm" disabled className="gap-1">
+                <ChevronLeft className="w-4 h-4" /> Anterior
+              </Button>
+            )}
+            {page < totalPages ? (
+              <Link href={buildHref({ estado, q, page: String(page + 1) })}>
+                <Button variant="secondary" size="sm" className="gap-1">
+                  Siguiente <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="secondary" size="sm" disabled className="gap-1">
+                Siguiente <ChevronRight className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

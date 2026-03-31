@@ -25,12 +25,16 @@ async function getProyecto(id: number) {
 }
 
 async function getGastosResumen(proyectoId: number) {
-  const gastos = await prisma.gastoProyecto.findMany({
-    where: { proyectoId, estado: { not: 'Anulado' } },
-    select: { monto: true },
-  })
-  const total = gastos.reduce((s, g) => s + g.monto, 0)
-  return { total, cantidad: gastos.length }
+  const [agg, cantidad] = await Promise.all([
+    prisma.gastoProyecto.aggregate({
+      where: { proyectoId, estado: { not: 'Anulado' } },
+      _sum: { monto: true },
+    }),
+    prisma.gastoProyecto.count({
+      where: { proyectoId, estado: { not: 'Anulado' } },
+    }),
+  ])
+  return { total: agg._sum.monto ?? 0, cantidad }
 }
 
 export default async function ProyectoDetailPage({
@@ -129,6 +133,29 @@ export default async function ProyectoDetailPage({
       {/* RESUMEN */}
       {tab === 'resumen' && (
         <div className="space-y-6">
+
+        {/* ── Alerta presupuesto ── */}
+        {pctGastado != null && pctGastado >= 90 && (
+          <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${
+            pctGastado >= 100
+              ? 'bg-red-50 border-red-200 dark:bg-red-900/15 dark:border-red-800'
+              : 'bg-amber-50 border-amber-200 dark:bg-amber-900/15 dark:border-amber-800'
+          }`}>
+            <AlertTriangle className={`w-5 h-5 mt-0.5 shrink-0 ${pctGastado >= 100 ? 'text-red-500' : 'text-amber-500'}`} />
+            <div>
+              <p className={`text-sm font-semibold ${pctGastado >= 100 ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                {pctGastado >= 100
+                  ? `Presupuesto superado — ${formatCurrency(Math.abs(balance!))} por encima del límite`
+                  : `Advertencia — ${pctGastado.toFixed(0)}% del presupuesto ejecutado`}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {pctGastado >= 100
+                  ? 'Los gastos registrados superan el presupuesto estimado del proyecto.'
+                  : `Quedan ${formatCurrency(balance!)} disponibles. Revisa los gastos antes de continuar.`}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Tarjeta financiera ── */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">

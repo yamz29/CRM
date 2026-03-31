@@ -53,6 +53,9 @@ model Proyecto {
   partidas        ProyectoPartida[]
   registrosHoras  RegistroHoras[]
   oportunidades   Oportunidad[]
+
+  @@index([estado])
+  @@index([clienteId, estado])
 }
 
 // ── GASTOS DEL PROYECTO ───────────────────────────────────────────────
@@ -87,6 +90,10 @@ model GastoProyecto {
   proyecto  Proyecto?        @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   partida   ProyectoPartida? @relation(fields: [partidaId], references: [id], onDelete: SetNull)
   recurso   Recurso?         @relation(fields: [recursoId], references: [id], onDelete: SetNull)
+
+  @@index([proyectoId])
+  @@index([proyectoId, estado])
+  @@index([fecha])
 }
 
 // ── ESTRUCTURA PRESUPUESTARIA DEL PROYECTO (snapshot) ─────────────────
@@ -149,6 +156,10 @@ model Presupuesto {
   capitulos       CapituloPresupuesto[]
   titulos         PresupuestoTitulo[]
   indirectos      PresupuestoIndirectoLinea[]
+
+  @@index([estado])
+  @@index([clienteId])
+  @@index([oportunidadId])
 }
 
 // ── PRESUPUESTOS V2: Capítulos y Partidas ────────────────────────────
@@ -615,6 +626,9 @@ model RegistroHoras {
   proyecto Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   cliente  Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
 
+  @@index([usuarioId])
+  @@index([proyectoId])
+  @@index([fecha])
   @@map("registro_horas")
 }
 
@@ -704,6 +718,10 @@ model Oportunidad {
   proyecto     Proyecto?     @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   actividades  ActividadCRM[]
   presupuestos Presupuesto[]
+
+  @@index([etapa])
+  @@index([clienteId, etapa])
+  @@index([responsable])
 }
 
 model ActividadCRM {

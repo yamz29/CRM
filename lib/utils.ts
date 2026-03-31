@@ -17,7 +17,7 @@ export function formatCurrency(amount: number | null | undefined): string {
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '-'
   const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleDateString('es-CL', {
+  return d.toLocaleDateString('es-DO', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
