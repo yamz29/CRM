@@ -8,6 +8,7 @@ import {
   FolderOpen,
   FileText,
   ChevronRight,
+  ChevronDown,
   Settings,
   CheckSquare,
   Box,
@@ -21,33 +22,62 @@ import {
   ChefHat,
   BookOpen,
   TrendingUp,
+  Briefcase,
+  ClipboardList,
+  Wrench,
+  Monitor,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useTheme } from '@/components/theme/ThemeProvider'
 
-const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/clientes', label: 'Clientes', icon: Users },
-  { href: '/proyectos', label: 'Proyectos', icon: FolderOpen },
-  { href: '/presupuestos', label: 'Presupuestos', icon: FileText },
-  { href: '/gastos', label: 'Gastos', icon: Receipt },
-  { href: '/oportunidades', label: 'Pipeline', icon: TrendingUp },
-  { href: '/tareas', label: 'Tareas', icon: CheckSquare },
-  { href: '/melamina', label: 'Módulos Melamina', icon: Box },
-  { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat },
-  { href: '/horas',    label: 'Horas del Equipo', icon: Clock },
+// ── Nav structure ─────────────────────────────────────────────────────────────
+
+const NAV_GROUPS = [
+  {
+    key: 'operaciones',
+    label: 'Operaciones',
+    icon: Briefcase,
+    items: [
+      { href: '/clientes',      label: 'Clientes',      icon: Users },
+      { href: '/oportunidades', label: 'Pipeline',       icon: TrendingUp },
+      { href: '/presupuestos',  label: 'Presupuestos',  icon: FileText },
+      { href: '/proyectos',     label: 'Proyectos',     icon: FolderOpen },
+      { href: '/gastos',        label: 'Gastos',        icon: Receipt },
+      { href: '/recursos',      label: 'Recursos',      icon: Package },
+      { href: '/apus',          label: 'Catálogo APU',  icon: FileSpreadsheet },
+    ],
+  },
+  {
+    key: 'gestion',
+    label: 'Gestión',
+    icon: ClipboardList,
+    items: [
+      { href: '/tareas', label: 'Tareas',          icon: CheckSquare },
+      { href: '/horas',  label: 'Horas del Equipo', icon: Clock },
+    ],
+  },
+  {
+    key: 'taller',
+    label: 'Taller',
+    icon: Wrench,
+    items: [
+      { href: '/melamina', label: 'Módulos Melamina',    icon: Box },
+      { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat },
+    ],
+  },
+  {
+    key: 'sistema',
+    label: 'Sistema',
+    icon: Monitor,
+    items: [
+      { href: '/ayuda',         label: 'Ayuda',          icon: BookOpen },
+      { href: '/configuracion', label: 'Configuración',  icon: Settings },
+    ],
+  },
 ]
 
-const catalogoItems = [
-  { href: '/recursos', label: 'Recursos', icon: Package },
-  { href: '/apus', label: 'Catálogo APU', icon: FileSpreadsheet },
-]
-
-const systemItems = [
-  { href: '/ayuda', label: 'Ayuda', icon: BookOpen },
-  { href: '/configuracion', label: 'Configuración', icon: Settings },
-]
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
   userName?: string
@@ -56,6 +86,8 @@ interface SidebarProps {
   nombreEmpresa?: string
 }
 
+// ── NavLink ───────────────────────────────────────────────────────────────────
+
 function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
   const pathname = usePathname()
   const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -63,7 +95,7 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group',
+        'flex items-center gap-3 pl-8 pr-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 group',
         isActive
           ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
           : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -75,6 +107,52 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
     </Link>
   )
 }
+
+// ── NavGroup ──────────────────────────────────────────────────────────────────
+
+function NavGroup({
+  group,
+  defaultOpen,
+}: {
+  group: typeof NAV_GROUPS[0]
+  defaultOpen: boolean
+}) {
+  const pathname = usePathname()
+  const hasActive = group.items.some((item) =>
+    item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+  )
+  const [open, setOpen] = useState(defaultOpen || hasActive)
+  const Icon = group.icon
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-150',
+          hasActive
+            ? 'text-slate-300'
+            : 'text-slate-600 hover:text-slate-400'
+        )}
+      >
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="flex-1 text-left">{group.label}</span>
+        <ChevronDown
+          className={cn('w-3.5 h-3.5 transition-transform duration-200', open ? 'rotate-0' : '-rotate-90')}
+        />
+      </button>
+      {open && (
+        <div className="mt-0.5 space-y-0.5">
+          {group.items.map((item) => (
+            <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function Sidebar({
   userName = 'Administrador',
@@ -124,27 +202,15 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="px-3 mb-2 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-          Menú Principal
-        </p>
-        {navItems.map((item) => (
-          <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} />
-        ))}
+      {/* Dashboard (siempre visible, sin grupo) */}
+      <div className="px-3 pt-3 pb-1">
+        <NavLink href="/" label="Dashboard" icon={LayoutDashboard} />
+      </div>
 
-        <p className="px-3 mb-1 mt-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-          Catálogos
-        </p>
-        {catalogoItems.map((item) => (
-          <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} />
-        ))}
-
-        <p className="px-3 mb-1 mt-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-          Sistema
-        </p>
-        {systemItems.map((item) => (
-          <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} />
+      {/* Navigation groups */}
+      <nav className="flex-1 px-3 pb-4 space-y-1 overflow-y-auto">
+        {NAV_GROUPS.map((group, i) => (
+          <NavGroup key={group.key} group={group} defaultOpen={i === 0} />
         ))}
       </nav>
 
