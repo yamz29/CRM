@@ -11,11 +11,14 @@ prisma/dev.db-journal
 prisma/*.db
 prisma/*.db-wal
 prisma/*.db-shm
+# Carpeta de bases de datos en producción
+data/
 
 # Variables de entorno (contienen contraseñas y secretos)
 .env
 .env.local
 .env.production
+.env.test
 .env*.local
 
 # Archivos subidos por usuarios
