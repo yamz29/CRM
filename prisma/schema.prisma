@@ -592,6 +592,7 @@ model Usuario {
   password  String?
   rol       String   @default("Admin")
   activo    Boolean  @default(true)
+  costoHora Float    @default(0)  // costo por hora para calcular mano de obra interna
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

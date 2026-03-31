@@ -10,7 +10,7 @@ import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupue
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
-  TrendingUp, AlertTriangle, Receipt, BarChart2, Percent,
+  TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -19,13 +19,13 @@ async function getProyecto(id: number) {
     include: {
       cliente: { select: { id: true, nombre: true } },
       presupuestos: { orderBy: { createdAt: 'desc' } },
-      _count: { select: { partidas: true } },
+      _count: { select: { partidas: true, capitulos: true } },
     },
   })
 }
 
 async function getGastosResumen(proyectoId: number) {
-  const [agg, cantidad] = await Promise.all([
+  const [agg, cantidad, horas] = await Promise.all([
     prisma.gastoProyecto.aggregate({
       where: { proyectoId, estado: { not: 'Anulado' } },
       _sum: { monto: true },
@@ -33,8 +33,24 @@ async function getGastosResumen(proyectoId: number) {
     prisma.gastoProyecto.count({
       where: { proyectoId, estado: { not: 'Anulado' } },
     }),
+    prisma.registroHoras.findMany({
+      where: { proyectoId },
+      include: { usuario: { select: { costoHora: true } } },
+    }),
   ])
-  return { total: agg._sum.monto ?? 0, cantidad }
+
+  const costoHoras = horas.reduce((acc, r) => {
+    const tarifa = r.usuario?.costoHora ?? 0
+    return acc + r.horas * tarifa
+  }, 0)
+  const totalHoras = horas.reduce((acc, r) => acc + r.horas, 0)
+
+  return {
+    total: agg._sum.monto ?? 0,
+    cantidad,
+    costoHoras,
+    totalHoras,
+  }
 }
 
 export default async function ProyectoDetailPage({
@@ -55,14 +71,15 @@ export default async function ProyectoDetailPage({
   if (!proyecto) notFound()
 
   const tab = sp.tab ?? 'resumen'
-  const { total: totalGastado, cantidad: cantidadGastos } = gastosResumen
-  const balance = proyecto.presupuestoEstimado != null ? proyecto.presupuestoEstimado - totalGastado : null
-  const pctGastado = proyecto.presupuestoEstimado ? Math.min((totalGastado / proyecto.presupuestoEstimado) * 100, 100) : null
+  const { total: totalGastado, cantidad: cantidadGastos, costoHoras, totalHoras } = gastosResumen
+  const costoTotal = totalGastado + costoHoras
+  const balance = proyecto.presupuestoEstimado != null ? proyecto.presupuestoEstimado - costoTotal : null
+  const pctGastado = proyecto.presupuestoEstimado ? Math.min((costoTotal / proyecto.presupuestoEstimado) * 100, 100) : null
 
   // Rentabilidad Real
   const presupuestoAprobado = proyecto.presupuestos.find(p => p.estado === 'Aprobado')
   const ingresos = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
-  const costos = totalGastado
+  const costos = costoTotal
   const utilidad = ingresos != null ? ingresos - costos : null
   const margen = ingresos != null && ingresos > 0 ? (utilidad! / ingresos) * 100 : null
 
@@ -157,6 +174,26 @@ export default async function ProyectoDetailPage({
           </div>
         )}
 
+        {/* ── Banner: poblar control presupuestario ── */}
+        {presupuestoAprobado && proyecto._count.capitulos === 0 && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl border bg-blue-50 border-blue-200 dark:bg-blue-900/15 dark:border-blue-800">
+            <ClipboardList className="w-5 h-5 mt-0.5 shrink-0 text-blue-500" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                Presupuesto aprobado — sin control presupuestario iniciado
+              </p>
+              <p className="text-xs text-blue-600/80 mt-0.5">
+                El presupuesto {presupuestoAprobado.numero} está aprobado. Puedes poblar el control para comparar gastos contra partidas.
+              </p>
+            </div>
+            <Link href={`/proyectos/${proyecto.id}?tab=control`}>
+              <Button size="sm" className="shrink-0 text-xs">
+                Ir a Control →
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* ── Tarjeta financiera ── */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -172,7 +209,7 @@ export default async function ProyectoDetailPage({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-100">
+          <div className="grid grid-cols-2 lg:grid-cols-5 divide-x divide-slate-100">
             {/* Presupuesto estimado */}
             <div className="px-5 py-4">
               <div className="flex items-center gap-1.5 mb-1">
@@ -186,16 +223,35 @@ export default async function ProyectoDetailPage({
               )}
             </div>
 
-            {/* Total gastado */}
+            {/* Gastos directos */}
             <div className="px-5 py-4">
               <div className="flex items-center gap-1.5 mb-1">
                 <TrendingDownIcon className="w-3.5 h-3.5 text-red-500" />
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total gastado</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Gastos directos</span>
               </div>
               <p className="text-lg font-black text-slate-800">{formatCurrency(totalGastado)}</p>
               <p className="text-xs text-slate-400 mt-0.5">
-                {cantidadGastos} {cantidadGastos === 1 ? 'gasto' : 'gastos'} activos
+                {cantidadGastos} {cantidadGastos === 1 ? 'registro' : 'registros'}
               </p>
+            </div>
+
+            {/* Mano de obra interna */}
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <User className="w-3.5 h-3.5 text-purple-500" />
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">M.O. Interna</span>
+              </div>
+              {costoHoras > 0 ? (
+                <>
+                  <p className="text-lg font-black text-slate-800">{formatCurrency(costoHoras)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{totalHoras.toFixed(1)} h registradas</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-black text-slate-400">{formatCurrency(0)}</p>
+                  <p className="text-xs text-slate-300 mt-0.5">{totalHoras.toFixed(1)} h · sin tarifa</p>
+                </>
+              )}
             </div>
 
             {/* Diferencia / balance */}
@@ -232,16 +288,17 @@ export default async function ProyectoDetailPage({
               )}
             </div>
 
-            {/* Acceso rápido a gastos */}
+            {/* Total costos */}
             <div className="px-5 py-4 flex flex-col justify-between">
               <div className="flex items-center gap-1.5 mb-1">
                 <Receipt className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Gastos</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Costo total</span>
               </div>
-              <p className="text-2xl font-black text-slate-800">{cantidadGastos}</p>
+              <p className="text-lg font-black text-slate-800">{formatCurrency(costoTotal)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">Gastos + M.O.</p>
               <Link href={`/proyectos/${proyecto.id}?tab=gastos`}>
                 <Button size="sm" variant="secondary" className="mt-2 w-full text-xs">
-                  <TrendingDownIcon className="w-3 h-3" /> Gestionar gastos
+                  <TrendingDownIcon className="w-3 h-3" /> Ver gastos
                 </Button>
               </Link>
             </div>

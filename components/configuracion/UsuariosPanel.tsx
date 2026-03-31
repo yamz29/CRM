@@ -13,10 +13,11 @@ interface Usuario {
   correo: string
   rol: string
   activo: boolean
+  costoHora: number
   hasPassword: boolean
 }
 
-const emptyForm = { nombre: '', correo: '', rol: 'Admin', activo: true, password: '', confirmPassword: '' }
+const emptyForm = { nombre: '', correo: '', rol: 'Admin', activo: true, costoHora: '', password: '', confirmPassword: '' }
 
 const ROLES = ['Admin', 'Gerente', 'Vendedor', 'Técnico']
 
@@ -32,7 +33,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState(emptyForm)
   const [editId, setEditId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState({ ...emptyForm, changePassword: false })
+  const [editForm, setEditForm] = useState({ ...emptyForm, changePassword: false, costoHora: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -55,6 +56,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
         body: JSON.stringify({
           nombre: addForm.nombre, correo: addForm.correo,
           rol: addForm.rol, activo: addForm.activo,
+          costoHora: addForm.costoHora || 0,
           password: addForm.password || undefined,
         }),
       })
@@ -83,6 +85,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
         body: JSON.stringify({
           nombre: editForm.nombre, correo: editForm.correo,
           rol: editForm.rol, activo: editForm.activo,
+          costoHora: editForm.costoHora || 0,
           password: editForm.changePassword && editForm.password ? editForm.password : undefined,
         }),
       })
@@ -103,7 +106,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
 
   function startEdit(u: Usuario) {
     setEditId(u.id)
-    setEditForm({ nombre: u.nombre, correo: u.correo, rol: u.rol, activo: u.activo, password: '', confirmPassword: '', changePassword: false })
+    setEditForm({ nombre: u.nombre, correo: u.correo, rol: u.rol, activo: u.activo, costoHora: String(u.costoHora ?? 0), password: '', confirmPassword: '', changePassword: false })
     setShowAddForm(false)
     setError(null)
   }
@@ -137,6 +140,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Nombre</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Correo</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Rol</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Costo/Hora</th>
                 <th className="px-4 py-2.5 text-center text-xs font-semibold text-slate-500 uppercase">Login</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
                 <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
@@ -155,7 +159,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                   <tr key={u.id} className="bg-blue-50">
                     <td colSpan={6} className="px-4 py-4">
                       <form onSubmit={handleEdit} className="space-y-3">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">Nombre *</Label>
                             <Input value={editForm.nombre} onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))} required className="h-8 text-sm" />
@@ -170,6 +174,12 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                               className="w-full h-8 text-sm border border-slate-200 rounded-md px-2 bg-white">
                               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                             </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Costo/hora (RD$)</Label>
+                            <Input type="number" min="0" step="50" value={editForm.costoHora}
+                              onChange={(e) => setEditForm((p) => ({ ...p, costoHora: e.target.value }))}
+                              className="h-8 text-sm" placeholder="0" />
                           </div>
                           <div className="flex items-center gap-2 pt-4">
                             <input type="checkbox" id={`a-e-${u.id}`} checked={editForm.activo}
@@ -220,6 +230,9 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                         {u.rol}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-right text-sm text-slate-600 tabular-nums">
+                      {u.costoHora > 0 ? `RD$ ${u.costoHora.toLocaleString('es-DO')}` : <span className="text-slate-300">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {u.hasPassword
                         ? <span title="Puede iniciar sesión"><ShieldCheck className="w-4 h-4 text-green-500 mx-auto" /></span>
@@ -254,7 +267,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
               <Plus className="w-4 h-4 text-blue-600" /> Nuevo usuario
             </p>
             <form onSubmit={handleAdd} className="space-y-3">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Nombre *</Label>
                   <Input value={addForm.nombre} onChange={(e) => setAddForm((p) => ({ ...p, nombre: e.target.value }))} required className="h-8 text-sm" placeholder="Juan Pérez" />
@@ -269,6 +282,12 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                     className="w-full h-8 text-sm border border-slate-200 rounded-md px-2 bg-white">
                     {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Costo/hora (RD$)</Label>
+                  <Input type="number" min="0" step="50" value={addForm.costoHora}
+                    onChange={(e) => setAddForm((p) => ({ ...p, costoHora: e.target.value }))}
+                    className="h-8 text-sm" placeholder="0" />
                 </div>
                 <div className="flex items-center gap-2 pt-4">
                   <input type="checkbox" id="activo-add-u" checked={addForm.activo} onChange={(e) => setAddForm((p) => ({ ...p, activo: e.target.checked }))} className="w-4 h-4" />

@@ -12,7 +12,7 @@ export async function GET() {
   const all = await prisma.usuario.findMany({ orderBy: { nombre: 'asc' } })
   const withFlag = all.map((u) => ({
     id: u.id, nombre: u.nombre, correo: u.correo, rol: u.rol,
-    activo: u.activo, createdAt: u.createdAt,
+    activo: u.activo, costoHora: u.costoHora, createdAt: u.createdAt,
     hasPassword: Boolean(u.password),
   }))
   return NextResponse.json(withFlag)
@@ -21,7 +21,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { nombre, correo, rol, activo, password } = body
+    const { nombre, correo, rol, activo, password, costoHora } = body
 
     if (!nombre || !correo) {
       return NextResponse.json({ error: 'Nombre y correo son requeridos' }, { status: 400 })
@@ -41,14 +41,15 @@ export async function POST(request: Request) {
         correo,
         rol: rol || 'Admin',
         activo: activo !== undefined ? activo : true,
+        costoHora: costoHora ? parseFloat(costoHora) : 0,
         password: hashedPassword,
       },
     })
 
     return NextResponse.json({
       id: usuario.id, nombre: usuario.nombre, correo: usuario.correo,
-      rol: usuario.rol, activo: usuario.activo, createdAt: usuario.createdAt,
-      hasPassword: Boolean(usuario.password),
+      rol: usuario.rol, activo: usuario.activo, costoHora: usuario.costoHora,
+      createdAt: usuario.createdAt, hasPassword: Boolean(usuario.password),
     }, { status: 201 })
   } catch (error: unknown) {
     console.error(error)

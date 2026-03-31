@@ -19,8 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'nombreProyecto es requerido' }, { status: 400 })
   }
 
-  const [proyecto] = await prisma.$transaction([
-    prisma.proyecto.create({
+  const proyecto = await prisma.$transaction(async (tx) => {
+    const nuevoProyecto = await tx.proyecto.create({
       data: {
         nombre: nombreProyecto,
         clienteId: oportunidad.clienteId,
@@ -29,17 +29,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         presupuestoEstimado: oportunidad.valor ?? null,
         fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
       },
-    }),
-    prisma.oportunidad.update({
-      where: { id: numId },
-      data: { etapa: 'Ganado' },
-    }),
-  ])
+    })
 
-  // Actualizar la oportunidad con el proyectoId (no se puede en la misma transaction con SQLite fácilmente)
-  await prisma.oportunidad.update({
-    where: { id: numId },
-    data: { proyectoId: proyecto.id },
+    // Vincular la oportunidad al proyecto nuevo y marcarla como Ganada
+    await tx.oportunidad.update({
+      where: { id: numId },
+      data: { etapa: 'Ganado', proyectoId: nuevoProyecto.id },
+    })
+
+    // Transferir todos los presupuestos de la oportunidad al proyecto nuevo
+    await tx.presupuesto.updateMany({
+      where: { oportunidadId: numId },
+      data: { proyectoId: nuevoProyecto.id },
+    })
+
+    return nuevoProyecto
   })
 
   return NextResponse.json({ proyectoId: proyecto.id, proyecto })

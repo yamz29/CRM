@@ -9,9 +9,12 @@ export async function PUT(
   const { id: idStr } = await params
   const id = parseInt(idStr)
   const body = await request.json()
-  const { nombre, correo, rol, activo, password } = body
+  const { nombre, correo, rol, activo, password, costoHora } = body
 
-  const updateData: Record<string, unknown> = { nombre, correo, rol: rol || 'Admin', activo }
+  const updateData: Record<string, unknown> = {
+    nombre, correo, rol: rol || 'Admin', activo,
+    costoHora: costoHora !== undefined ? parseFloat(costoHora) : undefined,
+  }
 
   if (password) {
     if (password.length < 6) {
@@ -24,8 +27,8 @@ export async function PUT(
     const usuario = await prisma.usuario.update({ where: { id }, data: updateData })
     return NextResponse.json({
       id: usuario.id, nombre: usuario.nombre, correo: usuario.correo,
-      rol: usuario.rol, activo: usuario.activo, createdAt: usuario.createdAt,
-      hasPassword: Boolean(usuario.password),
+      rol: usuario.rol, activo: usuario.activo, costoHora: usuario.costoHora,
+      createdAt: usuario.createdAt, hasPassword: Boolean(usuario.password),
     })
   } catch (error: unknown) {
     const msg = error instanceof Error && error.message.includes('Unique')
