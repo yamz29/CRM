@@ -94,6 +94,7 @@ export async function PUT(
         indirectos: parseFloat(apuData.indirectos) || 0,
         utilidad: parseFloat(apuData.utilidad) || 0,
         desperdicio: parseFloat(apuData.desperdicio) || 0,
+        rendimiento: apuData.rendimiento != null ? parseFloat(apuData.rendimiento) : null,
         costoDirecto,
         costoTotal,
         precioVenta,

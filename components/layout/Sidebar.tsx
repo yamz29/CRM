@@ -26,6 +26,7 @@ import {
   ClipboardList,
   Wrench,
   Monitor,
+  GanttChart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -43,6 +44,7 @@ const NAV_GROUPS = [
       { href: '/oportunidades', label: 'Pipeline',       icon: TrendingUp },
       { href: '/presupuestos',  label: 'Presupuestos',  icon: FileText },
       { href: '/proyectos',     label: 'Proyectos',     icon: FolderOpen },
+      { href: '/cronograma',    label: 'Cronogramas',   icon: GanttChart },
       { href: '/gastos',        label: 'Gastos',        icon: Receipt },
       { href: '/recursos',      label: 'Recursos',      icon: Package },
       { href: '/apus',          label: 'Catálogo APU',  icon: FileSpreadsheet },

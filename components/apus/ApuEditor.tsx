@@ -63,6 +63,7 @@ interface Props {
     indirectos?: number
     utilidad?: number
     desperdicio?: number
+    rendimiento?: number | null
     activo?: boolean
     observaciones?: string
     recursos?: Array<{
@@ -728,6 +729,7 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
     indirectos: initialData?.indirectos ?? 10,
     utilidad: initialData?.utilidad ?? 20,
     desperdicio: initialData?.desperdicio ?? 5,
+    rendimiento: initialData?.rendimiento ?? null as number | null,
     activo: initialData?.activo !== false,
     observaciones: initialData?.observaciones || '',
   })
@@ -881,6 +883,19 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Desperdicio %</label>
             <NumericInput value={header.desperdicio} onChange={(v) => setH('desperdicio', v)} step="0.5" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
+              Rendimiento <span className="font-normal text-slate-400">(unidades/día)</span>
+            </label>
+            <input
+              type="number" min="0" step="0.5"
+              value={header.rendimiento ?? ''}
+              onChange={(e) => setHeader(p => ({ ...p, rendimiento: e.target.value === '' ? null : parseFloat(e.target.value) }))}
+              placeholder="Ej: 20"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-400 mt-0.5">Para calcular duración en cronograma: Cantidad ÷ Rendimiento</p>
           </div>
         </div>
 

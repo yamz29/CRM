@@ -53,6 +53,7 @@ model Proyecto {
   partidas        ProyectoPartida[]
   registrosHoras  RegistroHoras[]
   oportunidades   Oportunidad[]
+  cronogramas     Cronograma[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -156,6 +157,7 @@ model Presupuesto {
   capitulos       CapituloPresupuesto[]
   titulos         PresupuestoTitulo[]
   indirectos      PresupuestoIndirectoLinea[]
+  cronogramas     Cronograma[]
 
   @@index([estado])
   @@index([clienteId])
@@ -241,6 +243,7 @@ model AnalisisPartida {
   costoTotal     Float    @default(0)
   precioSugerido Float    @default(0)
   margen         Float    @default(0)
+  rendimiento    Float?   // unidades por día (ej: 20 m²/día) — para calcular duración en cronograma
   // Detalle de líneas por categoría (JSON)
   detalleJson    String?
   createdAt      DateTime @default(now())
@@ -511,6 +514,7 @@ model ApuCatalogo {
   indirectos    Float    @default(10)
   utilidad      Float    @default(20)
   desperdicio   Float    @default(5)
+  rendimiento   Float?   // unidades por día — para calcular duración en cronograma
   costoDirecto  Float    @default(0)
   costoTotal    Float    @default(0)
   precioVenta   Float    @default(0)
@@ -736,4 +740,73 @@ model ActividadCRM {
   oportunidad Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
 
   @@map("actividad_crm")
+}
+
+// ── CRONOGRAMA DE OBRA ────────────────────────────────────────────────
+
+model Cronograma {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  proyectoId       Int?
+  presupuestoId    Int?
+  fechaInicio      DateTime
+  fechaFinEstimado DateTime?
+  estado           String    @default("Planificado")
+  // Planificado | En Ejecución | Terminado | Pausado
+  version          Int       @default(1)
+  notas            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  proyecto     Proyecto?             @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  presupuesto  Presupuesto?          @relation(fields: [presupuestoId], references: [id], onDelete: SetNull)
+  actividades  ActividadCronograma[]
+
+  @@index([proyectoId])
+  @@index([estado])
+  @@map("cronograma")
+}
+
+model ActividadCronograma {
+  id              Int      @id @default(autoincrement())
+  cronogramaId    Int
+  partidaId       Int?     // referencia a PartidaPresupuesto (opcional)
+  capituloNombre  String?  // nombre del capítulo para agrupar en Gantt
+  nombre          String
+  descripcion     String?
+  duracion        Int      @default(1)    // días calendario
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  pctAvance       Float    @default(0)   // 0-100
+  estado          String   @default("Pendiente")
+  // Pendiente | En Ejecución | Completado | Atrasado
+  dependenciaId   Int?
+  tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio
+  orden           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cronograma  Cronograma            @relation(fields: [cronogramaId], references: [id], onDelete: Cascade)
+  dependencia ActividadCronograma?  @relation("Dependencia", fields: [dependenciaId], references: [id], onDelete: SetNull)
+  dependientes ActividadCronograma[] @relation("Dependencia")
+  avances     AvanceCronograma[]
+
+  @@index([cronogramaId])
+  @@index([dependenciaId])
+  @@map("actividad_cronograma")
+}
+
+model AvanceCronograma {
+  id          Int      @id @default(autoincrement())
+  actividadId Int
+  fecha       DateTime @default(now())
+  pctAvance   Float
+  comentario  String?
+  usuarioId   Int?
+  createdAt   DateTime @default(now())
+
+  actividad ActividadCronograma @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  @@index([actividadId])
+  @@map("avance_cronograma")
 }
