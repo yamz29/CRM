@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { StatsCard } from '@/components/ui/stats-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,7 +8,8 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { Users, FolderOpen, FileText, TrendingUp, ArrowRight, AlertTriangle, Box, Target, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
-async function getDashboardData() {
+const getDashboardData = unstable_cache(
+  async function () {
   const today = new Date()
 
   const [
@@ -89,7 +91,10 @@ async function getDashboardData() {
     valorPipeline: valorPipelineAgg._sum.valor ?? 0,
     tasaCierre,
   }
-}
+  },
+  ['dashboard-data'],
+  { revalidate: 60 }
+)
 
 function getPrioridadBadge(prioridad: string) {
   const map: Record<string, 'danger' | 'warning' | 'success'> = {

@@ -14,8 +14,10 @@ async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, getSecret())
     return {
+      id: String(payload.id ?? payload.userId ?? ''),
       nombre: payload.nombre as string,
       correo: payload.correo as string,
+      rol: (payload.rol as string) ?? '',
     }
   } catch {
     return null
@@ -54,8 +56,10 @@ export async function middleware(request: NextRequest) {
   // Forward pathname and user info to server components via request headers
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
+  requestHeaders.set('x-user-id', user.id)
   requestHeaders.set('x-user-nombre', user.nombre)
   requestHeaders.set('x-user-correo', user.correo)
+  requestHeaders.set('x-user-rol', user.rol)
 
   return NextResponse.next({ request: { headers: requestHeaders } })
 }

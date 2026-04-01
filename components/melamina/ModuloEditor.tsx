@@ -787,16 +787,17 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                   </option>
                 ))}
               </select>
-              {materialTablero && (
+              {materialTablero ? (
                 <p className="text-xs text-slate-400 mt-1">
-                  Área: {(((materialTablero.anchoMm ?? 0) * (materialTablero.largoMm ?? 0)) / 1_000_000).toFixed(4)} m² / plancha
+                  Espesor: <span className="font-semibold text-slate-600">{materialTablero.espesorMm ?? 18}mm</span>
+                  {!materialTablero.espesorMm && <span className="text-amber-500"> (sin espesor en catálogo — usando 18mm)</span>}
+                  {' · '}Área: {(((materialTablero.anchoMm ?? 0) * (materialTablero.largoMm ?? 0)) / 1_000_000).toFixed(4)} m² / plancha
                   {materialTablero.precio > 0 && ` · ${formatCurrency(materialTablero.precio)} / plancha`}
                 </p>
-              )}
-              {tableros.length === 0 && (
+              ) : (
                 <p className="text-xs text-amber-600 mt-1">
-                  Sin tableros en catálogo.{' '}
-                  <a href="/melamina/materiales" className="underline">Agregar en Materiales</a>
+                  Sin tablero seleccionado — el despiece usará 18mm por defecto.{' '}
+                  {tableros.length === 0 && <a href="/melamina/materiales" className="underline">Agregar tableros en Materiales</a>}
                 </p>
               )}
             </div>
@@ -834,7 +835,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
               <p className="text-sm font-semibold text-blue-800">Generación automática de despiece</p>
               <p className="text-xs text-blue-600 mt-0.5">
                 Basado en: {ancho || '?'}×{alto || '?'}×{prof || '?'} mm — {cantPuertas} puerta(s) — {cantCajones} cajón(es)
-                {materialTablero?.espesorMm && <span> — Espesor: {materialTablero.espesorMm}mm</span>}
+                {' — '}Espesor: <strong>{materialTablero?.espesorMm ?? 18}mm</strong>
+                {!materialTablero?.espesorMm && <span className="text-amber-600"> (default — selecciona un tablero)</span>}
               </p>
             </div>
             <div className="flex gap-2">
@@ -925,7 +927,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                             type="number" min="0" step="1"
                             className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
                             value={p.espesor}
-                            onChange={(e) => updatePieza(p._key, 'espesor', parseFloat(e.target.value) || 18)}
+                            onChange={(e) => updatePieza(p._key, 'espesor', parseFloat(e.target.value) || 0)}
                           />
                         </td>
                         <td className="px-2 py-1.5">

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Users, Plus, Pencil, Trash2, X, Check, ShieldCheck, ShieldOff, KeyRound } from 'lucide-react'
+import { Users, Plus, Pencil, Trash2, X, Check, ShieldCheck, ShieldOff, KeyRound, Shield } from 'lucide-react'
+import { PermisosModal } from './PermisosModal'
 
 interface Usuario {
   id: number
@@ -36,6 +37,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
   const [editForm, setEditForm] = useState({ ...emptyForm, changePassword: false, costoHora: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [permisosUsuario, setPermisosUsuario] = useState<{ id: number; nombre: string; rol: string } | null>(null)
 
   async function refreshData() {
     const res = await fetch('/api/configuracion/usuarios')
@@ -112,6 +114,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -245,6 +248,13 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => setPermisosUsuario({ id: u.id, nombre: u.nombre, rol: u.rol })}
+                          className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                          title="Gestionar permisos"
+                        >
+                          <Shield className="w-4 h-4" />
+                        </button>
                         <button onClick={() => startEdit(u)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -314,5 +324,13 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
         )}
       </CardContent>
     </Card>
+
+    {permisosUsuario && (
+      <PermisosModal
+        usuario={permisosUsuario}
+        onClose={() => setPermisosUsuario(null)}
+      />
+    )}
+  </>
   )
 }

@@ -18,7 +18,7 @@ export interface SessionUser {
 }
 
 export async function createSessionToken(user: SessionUser): Promise<string> {
-  return new SignJWT({ id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol })
+  return new SignJWT({ id: user.id, nombre: user.nombre, correo: user.correo, rol: user.rol, userId: user.id })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(EXPIRY)

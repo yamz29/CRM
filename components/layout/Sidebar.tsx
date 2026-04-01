@@ -31,6 +31,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useTheme } from '@/components/theme/ThemeProvider'
+import { type PermisosMap, type ModuloKey, getNivel } from '@/lib/permisos'
 
 // ── Nav structure ─────────────────────────────────────────────────────────────
 
@@ -40,14 +41,14 @@ const NAV_GROUPS = [
     label: 'Operaciones',
     icon: Briefcase,
     items: [
-      { href: '/clientes',      label: 'Clientes',      icon: Users },
-      { href: '/oportunidades', label: 'Pipeline',       icon: TrendingUp },
-      { href: '/presupuestos',  label: 'Presupuestos',  icon: FileText },
-      { href: '/proyectos',     label: 'Proyectos',     icon: FolderOpen },
-      { href: '/cronograma',    label: 'Cronogramas',   icon: GanttChart },
-      { href: '/gastos',        label: 'Gastos',        icon: Receipt },
-      { href: '/recursos',      label: 'Recursos',      icon: Package },
-      { href: '/apus',          label: 'Catálogo APU',  icon: FileSpreadsheet },
+      { href: '/clientes',      label: 'Clientes',      icon: Users,          modulo: 'clientes'      as ModuloKey },
+      { href: '/oportunidades', label: 'Pipeline',       icon: TrendingUp,     modulo: 'oportunidades' as ModuloKey },
+      { href: '/presupuestos',  label: 'Presupuestos',  icon: FileText,       modulo: 'presupuestos'  as ModuloKey },
+      { href: '/proyectos',     label: 'Proyectos',     icon: FolderOpen,     modulo: 'proyectos'     as ModuloKey },
+      { href: '/cronograma',    label: 'Cronogramas',   icon: GanttChart,     modulo: 'cronogramas'   as ModuloKey },
+      { href: '/gastos',        label: 'Gastos',        icon: Receipt,        modulo: 'gastos'        as ModuloKey },
+      { href: '/recursos',      label: 'Recursos',      icon: Package,        modulo: 'recursos'      as ModuloKey },
+      { href: '/apus',          label: 'Catálogo APU',  icon: FileSpreadsheet, modulo: 'apus'         as ModuloKey },
     ],
   },
   {
@@ -55,8 +56,8 @@ const NAV_GROUPS = [
     label: 'Gestión',
     icon: ClipboardList,
     items: [
-      { href: '/tareas', label: 'Tareas',          icon: CheckSquare },
-      { href: '/horas',  label: 'Horas del Equipo', icon: Clock },
+      { href: '/tareas', label: 'Tareas',           icon: CheckSquare, modulo: 'tareas' as ModuloKey },
+      { href: '/horas',  label: 'Horas del Equipo', icon: Clock,       modulo: 'horas'  as ModuloKey },
     ],
   },
   {
@@ -64,8 +65,8 @@ const NAV_GROUPS = [
     label: 'Taller',
     icon: Wrench,
     items: [
-      { href: '/melamina', label: 'Módulos Melamina',    icon: Box },
-      { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat },
+      { href: '/melamina', label: 'Módulos Melamina',     icon: Box,     modulo: 'melamina' as ModuloKey },
+      { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat, modulo: 'cocinas'  as ModuloKey },
     ],
   },
   {
@@ -73,8 +74,8 @@ const NAV_GROUPS = [
     label: 'Sistema',
     icon: Monitor,
     items: [
-      { href: '/ayuda',         label: 'Ayuda',          icon: BookOpen },
-      { href: '/configuracion', label: 'Configuración',  icon: Settings },
+      { href: '/ayuda',         label: 'Ayuda',         icon: BookOpen, modulo: null },
+      { href: '/configuracion', label: 'Configuración', icon: Settings, modulo: 'configuracion' as ModuloKey },
     ],
   },
 ]
@@ -86,6 +87,8 @@ interface SidebarProps {
   userEmail?: string
   logoUrl?: string | null
   nombreEmpresa?: string
+  permisos?: PermisosMap
+  esAdmin?: boolean
 }
 
 // ── NavLink ───────────────────────────────────────────────────────────────────
@@ -115,16 +118,28 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
 function NavGroup({
   group,
   defaultOpen,
+  permisos,
+  esAdmin,
 }: {
   group: typeof NAV_GROUPS[0]
   defaultOpen: boolean
+  permisos: PermisosMap
+  esAdmin: boolean
 }) {
   const pathname = usePathname()
-  const hasActive = group.items.some((item) =>
+
+  const visibleItems = group.items.filter((item) => {
+    if (!item.modulo) return true // Ayuda siempre visible
+    return getNivel(permisos, item.modulo, esAdmin) !== 'ninguno'
+  })
+
+  const hasActive = visibleItems.some((item) =>
     item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
   )
   const [open, setOpen] = useState(defaultOpen || hasActive)
   const Icon = group.icon
+
+  if (visibleItems.length === 0) return null
 
   return (
     <div>
@@ -145,7 +160,7 @@ function NavGroup({
       </button>
       {open && (
         <div className="mt-0.5 space-y-0.5">
-          {group.items.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} />
           ))}
         </div>
@@ -161,6 +176,8 @@ export function Sidebar({
   userEmail = '',
   logoUrl = null,
   nombreEmpresa = 'Gonzalva Group',
+  permisos = {},
+  esAdmin = false,
 }: SidebarProps) {
   const router = useRouter()
   const { theme, toggle } = useTheme()
@@ -204,15 +221,17 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Dashboard (siempre visible, sin grupo) */}
-      <div className="px-3 pt-3 pb-1">
-        <NavLink href="/" label="Dashboard" icon={LayoutDashboard} />
-      </div>
+      {/* Dashboard (visible si tiene permiso) */}
+      {getNivel(permisos, 'dashboard', esAdmin) !== 'ninguno' && (
+        <div className="px-3 pt-3 pb-1">
+          <NavLink href="/" label="Dashboard" icon={LayoutDashboard} />
+        </div>
+      )}
 
       {/* Navigation groups */}
       <nav className="flex-1 px-3 pb-4 space-y-1 overflow-y-auto">
         {NAV_GROUPS.map((group, i) => (
-          <NavGroup key={group.key} group={group} defaultOpen={i === 0} />
+          <NavGroup key={group.key} group={group} defaultOpen={i === 0} permisos={permisos} esAdmin={esAdmin} />
         ))}
       </nav>
 
