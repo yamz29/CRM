@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Trash2, TrendingUp, ChevronDown, ChevronRight, Link2, Users, GripVertical, Diamond } from 'lucide-react'
+import {
+  Trash2, TrendingUp, ChevronDown, ChevronRight, Link2, Users,
+  GripVertical, Diamond, Search, X, FolderPlus,
+} from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import type { Actividad } from './CronogramaClient'
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -10,7 +14,6 @@ const ESTADO_COLORS: Record<string, string> = {
   'Completado':   'bg-green-100 text-green-700 border-green-200',
   'Atrasado':     'bg-red-100 text-red-700 border-red-200',
 }
-
 const ESTADOS = ['Pendiente', 'En Ejecución', 'Completado', 'Atrasado']
 
 interface Props {
@@ -22,35 +25,88 @@ interface Props {
 
 type EditableField = 'nombre' | 'duracion' | 'fechaInicio' | 'fechaFin' | 'pctAvance' | 'estado' | 'cuadrilla' | 'dependenciaId' | 'wbs'
 
-function toDateInput(d: string | Date) {
-  return new Date(d).toISOString().split('T')[0]
-}
+function toDateInput(d: string | Date) { return new Date(d).toISOString().split('T')[0] }
 function fmtFecha(d: string | Date) {
   return new Date(d).toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
+function wbsSegments(wbs: string) { return wbs.split('.').filter(Boolean) }
+function wbsPrefix(wbs: string) {
+  const segs = wbsSegments(wbs)
+  return segs.length >= 3 ? segs.slice(0, segs.length - 1).join('.') : null
+}
+function wbsSort(a: string, b: string) {
+  const segsA = wbsSegments(a).map(Number)
+  const segsB = wbsSegments(b).map(Number)
+  for (let i = 0; i < Math.max(segsA.length, segsB.length); i++) {
+    const diff = (segsA[i] ?? 0) - (segsB[i] ?? 0)
+    if (diff !== 0) return diff
+  }
+  return 0
+}
 
-export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbrirAvance }: Props) {
-  // ── Estado edición inline ──────────────────────────────────────
-  const [editCell, setEditCell] = useState<{ id: number; field: EditableField } | null>(null)
-  const [editValue, setEditValue] = useState<string>('')
-
-  // ── Estado drag & drop ─────────────────────────────────────────
-  const [dragId, setDragId] = useState<number | null>(null)
-  const [dragOverId, setDragOverId] = useState<number | null>(null)
-  const dragCapitulo = useRef<string | null>(null)
-
-  // ── Colapso de grupos ──────────────────────────────────────────
-  const [colapsados, setColapsados] = useState<Set<string>>(new Set())
-
-  // Agrupar por capítulo
+// Compute auto-WBS for all actividades
+function computeWbsAuto(actividades: Actividad[]) {
   const grupos = new Map<string, Actividad[]>()
   for (const a of actividades) {
     const key = a.capituloNombre ?? 'General'
     if (!grupos.has(key)) grupos.set(key, [])
     grupos.get(key)!.push(a)
   }
+  const map = new Map<number, string>()
+  let gIdx = 1
+  for (const acts of grupos.values()) {
+    acts.forEach((a, tIdx) => { map.set(a.id, a.wbs ?? `${gIdx}.${tIdx + 1}`) })
+    gIdx++
+  }
+  return map
+}
 
-  // ── Helpers edición inline ─────────────────────────────────────
+export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbrirAvance }: Props) {
+  // ── Filtros ────────────────────────────────────────────────────
+  const [search, setSearch] = useState('')
+  const [filterEstado, setFilterEstado] = useState<string | null>(null)
+  const [filterCuadrilla, setFilterCuadrilla] = useState<string | null>(null)
+
+  // ── Edición inline ─────────────────────────────────────────────
+  const [editCell, setEditCell] = useState<{ id: number; field: EditableField } | null>(null)
+  const [editValue, setEditValue] = useState<string>('')
+  const [wbsError, setWbsError] = useState<string | null>(null)
+
+  // ── Drag & drop ────────────────────────────────────────────────
+  const [dragId, setDragId] = useState<number | null>(null)
+  const [dragOverId, setDragOverId] = useState<number | null>(null)
+  const dragCapitulo = useRef<string | null>(null)
+
+  // ── Colapso ────────────────────────────────────────────────────
+  const [colapsados, setColapsados] = useState<Set<string>>(new Set())
+
+  // ── Datos derivados ────────────────────────────────────────────
+  const wbsAuto = computeWbsAuto(actividades)
+  const cuadrillasList = [...new Set(actividades.map(a => a.cuadrilla).filter(Boolean))] as string[]
+  const hayFiltro = search || filterEstado || filterCuadrilla
+
+  const actsFiltradas = actividades.filter(a => {
+    if (search && !a.nombre.toLowerCase().includes(search.toLowerCase()) &&
+        !(a.wbs ?? wbsAuto.get(a.id) ?? '').includes(search)) return false
+    if (filterEstado && a.estado !== filterEstado) return false
+    if (filterCuadrilla && a.cuadrilla !== filterCuadrilla) return false
+    return true
+  })
+
+  const grupos = new Map<string, Actividad[]>()
+  for (const a of actsFiltradas) {
+    const key = a.capituloNombre ?? 'General'
+    if (!grupos.has(key)) grupos.set(key, [])
+    grupos.get(key)!.push(a)
+  }
+
+  // ── WBS validación duplicado ───────────────────────────────────
+  function isDuplicateWbs(actId: number, wbs: string) {
+    if (!wbs) return false
+    return actividades.some(a => a.id !== actId && a.wbs === wbs)
+  }
+
+  // ── Edición inline ─────────────────────────────────────────────
   function startEdit(a: Actividad, field: EditableField) {
     let val = ''
     if (field === 'nombre') val = a.nombre
@@ -62,6 +118,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     else if (field === 'cuadrilla') val = a.cuadrilla ?? ''
     else if (field === 'wbs') val = a.wbs ?? ''
     else if (field === 'dependenciaId') val = a.dependenciaId ? String(a.dependenciaId) : ''
+    setWbsError(null)
     setEditCell({ id: a.id, field })
     setEditValue(val)
   }
@@ -69,6 +126,10 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
   async function commitEdit(a: Actividad) {
     if (!editCell || editCell.id !== a.id) return
     const { field } = editCell
+    if (field === 'wbs' && isDuplicateWbs(a.id, editValue)) {
+      setWbsError(`WBS "${editValue}" ya está en uso`)
+      return
+    }
     let data: Partial<Actividad> = {}
     if (field === 'nombre') data = { nombre: editValue }
     else if (field === 'duracion') data = { duracion: Math.max(1, parseInt(editValue) || 1) }
@@ -79,82 +140,98 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     else if (field === 'cuadrilla') data = { cuadrilla: editValue || null }
     else if (field === 'wbs') data = { wbs: editValue || null }
     else if (field === 'dependenciaId') data = { dependenciaId: editValue ? parseInt(editValue) : null }
-    setEditCell(null)
+    setEditCell(null); setWbsError(null)
     await onActualizar(a.id, data)
   }
 
-  function cancelEdit() { setEditCell(null) }
+  function cancelEdit() { setEditCell(null); setWbsError(null) }
+  function isEditing(id: number, field: EditableField) { return editCell?.id === id && editCell?.field === field }
 
-  function isEditing(id: number, field: EditableField) {
-    return editCell?.id === id && editCell?.field === field
-  }
-
-  // ── Helpers drag & drop ────────────────────────────────────────
-  function handleDragStart(a: Actividad, capitulo: string) {
-    setDragId(a.id)
-    dragCapitulo.current = capitulo
-  }
-
-  function handleDragOver(e: React.DragEvent, a: Actividad, capitulo: string) {
+  // ── Drag & drop ────────────────────────────────────────────────
+  function handleDragStart(a: Actividad, cap: string) { setDragId(a.id); dragCapitulo.current = cap }
+  function handleDragOver(e: React.DragEvent, a: Actividad, cap: string) {
     e.preventDefault()
-    if (capitulo !== dragCapitulo.current) return
-    setDragOverId(a.id)
+    if (cap === dragCapitulo.current) setDragOverId(a.id)
   }
-
-  async function handleDrop(e: React.DragEvent, targetA: Actividad, capitulo: string) {
+  async function handleDrop(e: React.DragEvent, target: Actividad, cap: string) {
     e.preventDefault()
-    if (!dragId || capitulo !== dragCapitulo.current || dragId === targetA.id) {
+    if (!dragId || cap !== dragCapitulo.current || dragId === target.id) {
       setDragId(null); setDragOverId(null); return
     }
-    const grupo = grupos.get(capitulo) ?? []
+    const grupo = grupos.get(cap) ?? []
     const oldIdx = grupo.findIndex(a => a.id === dragId)
-    const newIdx = grupo.findIndex(a => a.id === targetA.id)
+    const newIdx = grupo.findIndex(a => a.id === target.id)
     if (oldIdx === -1 || newIdx === -1) { setDragId(null); setDragOverId(null); return }
-
-    // Reordenar localmente y persistir
-    const reordenado = [...grupo]
-    const [moved] = reordenado.splice(oldIdx, 1)
-    reordenado.splice(newIdx, 0, moved)
+    const reord = [...grupo]; const [moved] = reord.splice(oldIdx, 1); reord.splice(newIdx, 0, moved)
     setDragId(null); setDragOverId(null)
+    await Promise.all(reord.map((a, idx) => a.orden !== idx ? onActualizar(a.id, { orden: idx }) : Promise.resolve()))
+  }
 
-    // Actualizar orden de los afectados
-    await Promise.all(
-      reordenado.map((a, idx) =>
-        a.orden !== idx ? onActualizar(a.id, { orden: idx }) : Promise.resolve()
-      )
+  function toggleColapso(key: string) {
+    setColapsados(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
+  }
+
+  // ── Sub-agrupación WBS ─────────────────────────────────────────
+  type RowItem =
+    | { type: 'subgroup'; prefix: string; acts: Actividad[]; capitulo: string }
+    | { type: 'task'; act: Actividad; capitulo: string; indented: boolean }
+
+  function buildRows(acts: Actividad[], capitulo: string): RowItem[] {
+    // Ordenar por WBS numérico
+    const sorted = [...acts].sort((a, b) =>
+      wbsSort(a.wbs ?? wbsAuto.get(a.id) ?? '', b.wbs ?? wbsAuto.get(b.id) ?? '')
     )
+
+    // Detectar sub-grupos: prefijos comunes en WBS de 3+ segmentos
+    const subGroupMap = new Map<string, Actividad[]>()
+    for (const a of sorted) {
+      const prefix = wbsPrefix(a.wbs ?? wbsAuto.get(a.id) ?? '')
+      if (prefix) {
+        if (!subGroupMap.has(prefix)) subGroupMap.set(prefix, [])
+        subGroupMap.get(prefix)!.push(a)
+      }
+    }
+
+    const rows: RowItem[] = []
+    const seenPrefixes = new Set<string>()
+
+    for (const a of sorted) {
+      const w = a.wbs ?? wbsAuto.get(a.id) ?? ''
+      const prefix = wbsPrefix(w)
+      if (prefix) {
+        if (!seenPrefixes.has(prefix)) {
+          seenPrefixes.add(prefix)
+          rows.push({ type: 'subgroup', prefix, acts: subGroupMap.get(prefix)!, capitulo })
+        }
+        // la tarea se renderiza dentro del sub-grupo, no aquí
+      } else {
+        rows.push({ type: 'task', act: a, capitulo, indented: false })
+      }
+    }
+    return rows
   }
 
-  function toggleGrupo(key: string) {
-    setColapsados(prev => {
-      const n = new Set(prev)
-      n.has(key) ? n.delete(key) : n.add(key)
-      return n
-    })
-  }
-
-  // ── Render celda editable ──────────────────────────────────────
+  // ── Celdas editables ───────────────────────────────────────────
   function CeldaTexto({ a, field, display, className = '' }: {
     a: Actividad; field: EditableField; display: React.ReactNode; className?: string
   }) {
     if (isEditing(a.id, field)) {
       return (
-        <input
-          autoFocus
-          value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-          onBlur={() => commitEdit(a)}
-          onKeyDown={e => { if (e.key === 'Enter') commitEdit(a); if (e.key === 'Escape') cancelEdit() }}
-          className={`w-full h-7 px-1.5 text-sm border border-primary rounded bg-background focus:outline-none ${className}`}
-        />
+        <div>
+          <input autoFocus value={editValue} onChange={e => { setEditValue(e.target.value); setWbsError(null) }}
+            onBlur={() => commitEdit(a)}
+            onKeyDown={e => { if (e.key === 'Enter') commitEdit(a); if (e.key === 'Escape') cancelEdit() }}
+            className={`w-full h-7 px-1.5 text-sm border rounded bg-background focus:outline-none ${wbsError && field === 'wbs' ? 'border-red-500' : 'border-primary'} ${className}`}
+          />
+          {field === 'wbs' && wbsError && (
+            <p className="text-xs text-red-500 mt-0.5">{wbsError}</p>
+          )}
+        </div>
       )
     }
     return (
-      <div
-        onClick={() => startEdit(a, field)}
-        className="cursor-text min-h-[28px] flex items-center hover:bg-muted/40 rounded px-1 -mx-1 transition-colors"
-        title="Clic para editar"
-      >
+      <div onClick={() => startEdit(a, field)}
+        className="cursor-text min-h-[28px] flex items-center hover:bg-muted/40 rounded px-1 -mx-1 transition-colors" title="Clic para editar">
         {display}
       </div>
     )
@@ -162,24 +239,14 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
 
   function CeldaFecha({ a, field, display }: { a: Actividad; field: EditableField; display: string }) {
     if (isEditing(a.id, field)) {
-      return (
-        <input
-          autoFocus
-          type="date"
-          value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-          onBlur={() => commitEdit(a)}
-          onKeyDown={e => { if (e.key === 'Enter') commitEdit(a); if (e.key === 'Escape') cancelEdit() }}
-          className="w-full h-7 px-1 text-xs border border-primary rounded bg-background focus:outline-none"
-        />
-      )
+      return <input autoFocus type="date" value={editValue} onChange={e => setEditValue(e.target.value)}
+        onBlur={() => commitEdit(a)}
+        onKeyDown={e => { if (e.key === 'Enter') commitEdit(a); if (e.key === 'Escape') cancelEdit() }}
+        className="w-full h-7 px-1 text-xs border border-primary rounded bg-background focus:outline-none" />
     }
     return (
-      <div
-        onClick={() => startEdit(a, field)}
-        className="cursor-text text-sm text-muted-foreground tabular-nums min-h-[28px] flex items-center hover:bg-muted/40 rounded px-1 -mx-1 transition-colors"
-        title="Clic para editar"
-      >
+      <div onClick={() => startEdit(a, field)}
+        className="cursor-text text-sm text-muted-foreground tabular-nums min-h-[28px] flex items-center hover:bg-muted/40 rounded px-1 -mx-1 transition-colors" title="Clic para editar">
         {display}
       </div>
     )
@@ -187,22 +254,15 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
 
   function CeldaEstado({ a }: { a: Actividad }) {
     if (isEditing(a.id, 'estado')) {
-      return (
-        <select
-          autoFocus
-          value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-          onBlur={() => commitEdit(a)}
-          onKeyDown={e => { if (e.key === 'Escape') cancelEdit() }}
-          className="h-7 text-xs border border-primary rounded px-1 bg-background focus:outline-none w-full"
-        >
-          {ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      )
+      return <select autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+        onBlur={() => commitEdit(a)} onKeyDown={e => { if (e.key === 'Escape') cancelEdit() }}
+        className="h-7 text-xs border border-primary rounded px-1 bg-background focus:outline-none w-full">
+        {ESTADOS.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
     }
     return (
       <div onClick={() => startEdit(a, 'estado')} className="cursor-pointer" title="Clic para cambiar estado">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border hover:opacity-80 transition-opacity ${ESTADO_COLORS[a.estado] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border hover:opacity-80 ${ESTADO_COLORS[a.estado] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
           {a.estado}
         </span>
       </div>
@@ -211,50 +271,173 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
 
   function CeldaDependencia({ a }: { a: Actividad }) {
     if (isEditing(a.id, 'dependenciaId')) {
-      return (
-        <select
-          autoFocus
-          value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-          onBlur={() => commitEdit(a)}
-          onKeyDown={e => { if (e.key === 'Escape') cancelEdit() }}
-          className="h-6 text-xs border border-primary rounded px-1 bg-background focus:outline-none w-full"
-        >
-          <option value="">Sin dependencia</option>
-          {actividades.filter(x => x.id !== a.id).map(x => (
-            <option key={x.id} value={x.id}>{x.nombre}</option>
-          ))}
-        </select>
-      )
+      return <select autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+        onBlur={() => commitEdit(a)} onKeyDown={e => { if (e.key === 'Escape') cancelEdit() }}
+        className="h-6 text-xs border border-primary rounded px-1 bg-background focus:outline-none w-full">
+        <option value="">Sin dependencia</option>
+        {actividades.filter(x => x.id !== a.id).map(x => (
+          <option key={x.id} value={x.id}>{wbsAuto.get(x.id)} {x.nombre}</option>
+        ))}
+      </select>
     }
     return (
-      <div
-        onClick={() => startEdit(a, 'dependenciaId')}
-        className="cursor-pointer text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
-        title="Clic para asignar dependencia"
-      >
+      <div onClick={() => startEdit(a, 'dependenciaId')}
+        className="cursor-pointer text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors mt-0.5" title="Clic para asignar dependencia">
         {a.dependencia
           ? <><Link2 className="w-3 h-3 shrink-0" />{a.tipoDependencia}: {a.dependencia.nombre}</>
-          : <span className="text-muted-foreground/40 italic">+ dependencia</span>
-        }
+          : <span className="text-muted-foreground/40 italic">+ dependencia</span>}
       </div>
     )
   }
 
-  // Auto-generar WBS si la tarea no tiene uno asignado
-  const wbsAuto = new Map<number, string>()
-  let gIdx = 1
-  for (const [, acts] of grupos.entries()) {
-    acts.forEach((a, tIdx) => { wbsAuto.set(a.id, a.wbs ?? `${gIdx}.${tIdx + 1}`) })
-    gIdx++
+  // ── Render fila de actividad ───────────────────────────────────
+  function FilaActividad({ a, capitulo, indented = false }: { a: Actividad; capitulo: string; indented?: boolean }) {
+    return (
+      <tr
+        draggable
+        onDragStart={() => handleDragStart(a, capitulo)}
+        onDragOver={e => handleDragOver(e, a, capitulo)}
+        onDrop={e => handleDrop(e, a, capitulo)}
+        onDragEnd={() => { setDragId(null); setDragOverId(null) }}
+        className={`transition-colors ${
+          dragId === a.id ? 'opacity-40' :
+          dragOverId === a.id && dragCapitulo.current === capitulo ? 'bg-blue-50 dark:bg-blue-900/20 border-t-2 border-t-blue-400' :
+          'hover:bg-muted/20'
+        }`}
+      >
+        <td className="w-8 px-1 text-center cursor-grab active:cursor-grabbing">
+          <GripVertical className="w-4 h-4 text-muted-foreground/40 mx-auto" />
+        </td>
+        {/* WBS */}
+        <td className={`px-3 py-2 ${indented ? 'pl-8' : ''}`}>
+          <CeldaTexto a={a} field="wbs" className="w-16 font-mono" display={
+            <span className="text-xs font-mono font-semibold text-muted-foreground tabular-nums">
+              {wbsAuto.get(a.id)}
+            </span>
+          } />
+        </td>
+        {/* Nombre */}
+        <td className={`px-3 py-2 ${indented ? 'pl-6' : 'pl-7'}`}>
+          <CeldaTexto a={a} field="nombre" display={
+            <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              {a.tipo === 'hito' && <Diamond className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+              {a.nombre}
+            </span>
+          } />
+          <CeldaDependencia a={a} />
+        </td>
+        {/* Días */}
+        <td className="px-3 py-2 text-center">
+          {a.tipo !== 'hito' ? (
+            <CeldaTexto a={a} field="duracion" className="text-center w-12" display={
+              <span className="text-sm text-muted-foreground w-full text-center">{a.duracion}d</span>
+            } />
+          ) : <span className="text-xs text-amber-500 font-semibold">hito</span>}
+        </td>
+        {/* Fechas */}
+        <td className="px-3 py-2"><CeldaFecha a={a} field="fechaInicio" display={fmtFecha(a.fechaInicio)} /></td>
+        <td className="px-3 py-2"><CeldaFecha a={a} field="fechaFin" display={fmtFecha(a.fechaFin)} /></td>
+        {/* Avance */}
+        <td className="px-3 py-2">
+          {a.tipo !== 'hito' ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${a.pctAvance >= 100 ? 'bg-green-500' : a.estado === 'Atrasado' ? 'bg-red-500' : 'bg-blue-500'}`}
+                  style={{ width: `${a.pctAvance}%` }} />
+              </div>
+              <CeldaTexto a={a} field="pctAvance" className="text-right w-10" display={
+                <span className="text-xs font-bold text-foreground w-8 text-right tabular-nums">{a.pctAvance.toFixed(0)}%</span>
+              } />
+            </div>
+          ) : <span className="text-xs text-muted-foreground/40">—</span>}
+        </td>
+        {/* Estado */}
+        <td className="px-3 py-2"><CeldaEstado a={a} /></td>
+        {/* Cuadrilla */}
+        <td className="px-3 py-2">
+          <CeldaTexto a={a} field="cuadrilla" display={
+            a.cuadrilla
+              ? <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Users className="w-3 h-3" />{a.cuadrilla}</span>
+              : <span className="text-xs text-muted-foreground/40 italic">+ cuadrilla</span>
+          } />
+        </td>
+        {/* Acciones */}
+        <td className="px-3 py-2">
+          <div className="flex justify-end gap-1">
+            <button onClick={() => onAbrirAvance(a)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded" title="Registrar avance">
+              <TrendingUp className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onEliminar(a.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    )
   }
 
+  // ── Render ─────────────────────────────────────────────────────
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
+
+      {/* Barra de filtros */}
+      <div className="px-4 py-3 border-b border-border bg-muted/10 flex flex-wrap items-center gap-2">
+        {/* Búsqueda */}
+        <div className="relative flex-1 min-w-40 max-w-64">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar actividad..."
+            className="w-full h-8 pl-8 pr-3 text-xs border border-border rounded-lg bg-background focus:outline-none focus:border-primary" />
+        </div>
+
+        {/* Filtro estado */}
+        <div className="flex items-center gap-1 flex-wrap">
+          {ESTADOS.map(e => (
+            <button key={e} onClick={() => setFilterEstado(filterEstado === e ? null : e)}
+              className={`px-2.5 py-1 text-xs rounded-full border font-medium transition-colors ${
+                filterEstado === e
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'text-muted-foreground border-border hover:bg-muted'
+              }`}>
+              {e}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtro cuadrilla */}
+        {cuadrillasList.length > 0 && (
+          <div className="flex items-center gap-1">
+            {cuadrillasList.map(c => (
+              <button key={c} onClick={() => setFilterCuadrilla(filterCuadrilla === c ? null : c)}
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border font-medium transition-colors ${
+                  filterCuadrilla === c
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'text-muted-foreground border-border hover:bg-muted'
+                }`}>
+                <Users className="w-3 h-3" />{c}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Limpiar filtros */}
+        {hayFiltro && (
+          <button onClick={() => { setSearch(''); setFilterEstado(null); setFilterCuadrilla(null) }}
+            className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
+            <X className="w-3 h-3" /> Limpiar
+          </button>
+        )}
+
+        {hayFiltro && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            {actsFiltradas.length} de {actividades.length} actividades
+          </span>
+        )}
+      </div>
+
       <table className="w-full">
         <thead>
           <tr className="bg-muted/40 border-b border-border">
-            <th className="w-8"></th>
+            <th className="w-8" />
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-16">WBS</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Actividad</th>
             <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase w-14">Días</th>
@@ -267,29 +450,29 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {actividades.length === 0 && (
+          {actsFiltradas.length === 0 && (
             <tr>
               <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                Sin actividades. Agrega una o genera desde un presupuesto.
+                {hayFiltro ? 'Sin resultados para los filtros aplicados.' : 'Sin actividades. Agrega una o genera desde un presupuesto.'}
               </td>
             </tr>
           )}
 
           {Array.from(grupos.entries()).map(([capitulo, acts]) => {
-            const colapsado = colapsados.has(capitulo)
-            const pctGrupo = Math.round(acts.reduce((s, a) => s + a.pctAvance, 0) / acts.length)
+            const colapsado = colapsados.has(`cap-${capitulo}`)
+            const pctGrupo = Math.round(acts.reduce((s, a) => s + a.pctAvance, 0) / acts.length || 0)
+            const grupoWbs = acts[0] ? wbsAuto.get(acts[0].id)?.split('.')[0] : ''
+            const rows = buildRows(acts, capitulo)
 
             return [
-              // ── Fila grupo ───────────────────────────────────────
-              <tr key={`g-${capitulo}`} className="bg-muted/20 cursor-pointer select-none" onClick={() => toggleGrupo(capitulo)}>
+              // ── Fila capítulo ──────────────────────────────────
+              <tr key={`cap-${capitulo}`} className="bg-muted/30 cursor-pointer select-none border-t-2 border-border/40"
+                onClick={() => toggleColapso(`cap-${capitulo}`)}>
                 <td className="px-2 py-2 text-center">
-                  {colapsado
-                    ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground mx-auto" />
-                    : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground mx-auto" />}
+                  {colapsado ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground mx-auto" />
+                              : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground mx-auto" />}
                 </td>
-                <td className="px-3 py-2 text-xs font-bold text-muted-foreground">
-                  {acts[0] ? wbsAuto.get(acts[0].id)?.split('.')[0] : ''}
-                </td>
+                <td className="px-3 py-2 text-xs font-bold text-muted-foreground">{grupoWbs}</td>
                 <td className="px-3 py-2" colSpan={4}>
                   <span className="text-xs font-bold text-foreground uppercase tracking-wide">{capitulo}</span>
                   <span className="text-xs text-muted-foreground ml-2">({acts.length} actividades)</span>
@@ -304,109 +487,54 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                 </td>
               </tr>,
 
-              // ── Filas actividades ────────────────────────────────
-              ...(!colapsado ? acts.map(a => (
-                <tr
-                  key={a.id}
-                  draggable
-                  onDragStart={() => handleDragStart(a, capitulo)}
-                  onDragOver={e => handleDragOver(e, a, capitulo)}
-                  onDrop={e => handleDrop(e, a, capitulo)}
-                  onDragEnd={() => { setDragId(null); setDragOverId(null) }}
-                  className={`transition-colors ${
-                    dragId === a.id ? 'opacity-40' :
-                    dragOverId === a.id && dragCapitulo.current === capitulo ? 'bg-blue-50 dark:bg-blue-900/20 border-t-2 border-t-blue-400' :
-                    'hover:bg-muted/20'
-                  }`}
-                >
-                  {/* Handle drag */}
-                  <td className="w-8 px-1 text-center cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-4 h-4 text-muted-foreground/40 mx-auto" />
-                  </td>
+              // ── Filas actividades / sub-grupos ─────────────────
+              ...(!colapsado ? rows.flatMap(row => {
+                if (row.type === 'task') {
+                  return [<FilaActividad key={row.act.id} a={row.act} capitulo={capitulo} indented={row.indented} />]
+                }
 
-                  {/* WBS */}
-                  <td className="px-3 py-2.5">
-                    <CeldaTexto a={a} field="wbs" className="w-16 font-mono" display={
-                      <span className="text-xs font-mono font-semibold text-muted-foreground tabular-nums">
-                        {wbsAuto.get(a.id)}
+                // Sub-grupo
+                const sgKey = `sg-${row.prefix}`
+                const colSg = colapsados.has(sgKey)
+                const pctSg = Math.round(row.acts.reduce((s, a) => s + a.pctAvance, 0) / row.acts.length || 0)
+                return [
+                  <tr key={sgKey} className="bg-muted/15 cursor-pointer select-none"
+                    onClick={() => toggleColapso(sgKey)}>
+                    <td className="px-2 py-1.5 text-center">
+                      {colSg ? <ChevronRight className="w-3 h-3 text-muted-foreground mx-auto" />
+                               : <ChevronDown className="w-3 h-3 text-muted-foreground mx-auto" />}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <span className="text-xs font-bold text-muted-foreground font-mono">{row.prefix}</span>
+                    </td>
+                    <td className="px-3 py-1.5 pl-6" colSpan={4}>
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <FolderPlus className="w-3.5 h-3.5 text-muted-foreground" />
+                        Sub-grupo {row.prefix}
+                        <span className="text-muted-foreground font-normal">({row.acts.length})</span>
                       </span>
-                    } />
-                  </td>
-
-                  {/* Nombre + dependencia */}
-                  <td className="px-3 py-2.5 pl-7">
-                    <CeldaTexto a={a} field="nombre" display={
-                      <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                        {a.tipo === 'hito' && <Diamond className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                        {a.nombre}
-                      </span>
-                    } />
-                    <CeldaDependencia a={a} />
-                  </td>
-
-                  {/* Días */}
-                  <td className="px-3 py-2.5 text-center">
-                    <CeldaTexto a={a} field="duracion" className="text-center w-12" display={
-                      <span className="text-sm text-muted-foreground w-full text-center">{a.duracion}d</span>
-                    } />
-                  </td>
-
-                  {/* Fecha inicio */}
-                  <td className="px-3 py-2.5">
-                    <CeldaFecha a={a} field="fechaInicio" display={fmtFecha(a.fechaInicio)} />
-                  </td>
-
-                  {/* Fecha fin */}
-                  <td className="px-3 py-2.5">
-                    <CeldaFecha a={a} field="fechaFin" display={fmtFecha(a.fechaFin)} />
-                  </td>
-
-                  {/* Avance */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${a.pctAvance >= 100 ? 'bg-green-500' : a.estado === 'Atrasado' ? 'bg-red-500' : 'bg-blue-500'}`}
-                          style={{ width: `${a.pctAvance}%` }} />
+                    </td>
+                    <td className="px-3 py-1.5 text-center">
+                      <span className="text-xs font-bold text-foreground">{pctSg}%</span>
+                    </td>
+                    <td colSpan={3} className="px-3 py-1.5">
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-400 rounded-full" style={{ width: `${pctSg}%` }} />
                       </div>
-                      <CeldaTexto a={a} field="pctAvance" className="text-right w-10" display={
-                        <span className="text-xs font-bold text-foreground w-8 text-right tabular-nums">{a.pctAvance.toFixed(0)}%</span>
-                      } />
-                    </div>
-                  </td>
-
-                  {/* Estado */}
-                  <td className="px-3 py-2.5">
-                    <CeldaEstado a={a} />
-                  </td>
-
-                  {/* Cuadrilla */}
-                  <td className="px-3 py-2.5">
-                    <CeldaTexto a={a} field="cuadrilla" display={
-                      a.cuadrilla
-                        ? <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Users className="w-3 h-3" />{a.cuadrilla}</span>
-                        : <span className="text-xs text-muted-foreground/40 italic">+ cuadrilla</span>
-                    } />
-                  </td>
-
-                  {/* Acciones */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => onAbrirAvance(a)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded" title="Registrar avance">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => onEliminar(a.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )) : []),
+                    </td>
+                  </tr>,
+                  ...(!colSg ? row.acts.map(a =>
+                    <FilaActividad key={a.id} a={a} capitulo={capitulo} indented />
+                  ) : []),
+                ]
+              }) : []),
             ]
           })}
         </tbody>
       </table>
+
       <p className="px-4 py-2 text-xs text-muted-foreground/60 border-t border-border bg-muted/10 flex items-center gap-1">
-        Arrastra <GripVertical className="inline w-3 h-3" /> para reordenar · Clic en cualquier celda para editar · WBS auto-generado si está vacío
+        Arrastra <GripVertical className="inline w-3 h-3" /> para reordenar · Clic en celda para editar · WBS de 3 segmentos (ej: 1.1.2) crea sub-grupos automáticamente
       </p>
     </div>
   )
