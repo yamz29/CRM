@@ -782,6 +782,7 @@ model ActividadCronograma {
   // Pendiente | En Ejecución | Completado | Atrasado
   dependenciaId   Int?
   tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio
+  cuadrilla       String?  // nombre de la cuadrilla asignada
   orden           Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

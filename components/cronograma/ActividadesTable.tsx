@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, TrendingUp, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, TrendingUp, Check, X, ChevronDown, ChevronRight, Link2, Users } from 'lucide-react'
 import type { Actividad } from './CronogramaClient'
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -22,6 +22,10 @@ interface Props {
 
 function toDateInput(d: string | Date) {
   return new Date(d).toISOString().split('T')[0]
+}
+
+function fmtFecha(d: string | Date) {
+  return new Date(d).toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
 export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbrirAvance }: Props) {
@@ -46,6 +50,9 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
       fechaFin: a.fechaFin,
       pctAvance: a.pctAvance,
       estado: a.estado,
+      dependenciaId: a.dependenciaId,
+      tipoDependencia: a.tipoDependencia,
+      cuadrilla: a.cuadrilla,
     })
   }
 
@@ -69,18 +76,19 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
           <tr className="bg-muted/40 border-b border-border">
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-6"></th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Actividad</th>
-            <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase w-16">Días</th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-28">Inicio</th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-28">Fin</th>
+            <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase w-14">Días</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Inicio</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Fin</th>
             <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase w-20">Avance</th>
-            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-28">Estado</th>
-            <th className="px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase w-28">Acciones</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Estado</th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-28">Cuadrilla</th>
+            <th className="px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase w-24">Acciones</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
           {actividades.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
+              <td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">
                 Sin actividades. Agrega una o genera desde un presupuesto.
               </td>
             </tr>
@@ -105,7 +113,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                 <td className="px-3 py-2 text-center">
                   <span className="text-xs font-bold text-foreground">{pctGrupo}%</span>
                 </td>
-                <td colSpan={2} className="px-3 py-2">
+                <td colSpan={3} className="px-3 py-2">
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pctGrupo}%` }} />
                   </div>
@@ -115,33 +123,60 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
               // Filas actividades del grupo
               ...(!colapsado ? acts.map(a => (
                 editId === a.id ? (
+                  // ── Fila edición ──────────────────────────────────────────
                   <tr key={a.id} className="bg-blue-50/50 dark:bg-blue-900/10">
                     <td className="px-3 py-2" />
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 space-y-1.5">
+                      {/* Nombre */}
                       <Input value={editForm.nombre ?? ''} onChange={e => setEditForm(p => ({ ...p, nombre: e.target.value }))}
-                        className="h-7 text-xs" />
+                        className="h-7 text-xs" placeholder="Nombre actividad" />
+                      {/* Dependencia */}
+                      <div className="flex items-center gap-1">
+                        <Link2 className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <select
+                          value={editForm.dependenciaId ?? ''}
+                          onChange={e => setEditForm(p => ({ ...p, dependenciaId: e.target.value ? parseInt(e.target.value) : null }))}
+                          className="h-6 text-xs border border-border rounded px-1 bg-background flex-1"
+                        >
+                          <option value="">Sin dependencia</option>
+                          {actividades.filter(x => x.id !== a.id).map(x => (
+                            <option key={x.id} value={x.id}>{x.nombre}</option>
+                          ))}
+                        </select>
+                        {editForm.dependenciaId && (
+                          <select
+                            value={editForm.tipoDependencia ?? 'FS'}
+                            onChange={e => setEditForm(p => ({ ...p, tipoDependencia: e.target.value }))}
+                            className="h-6 text-xs border border-border rounded px-1 bg-background w-14"
+                          >
+                            <option value="FS">FS</option>
+                            <option value="SS">SS</option>
+                            <option value="FF">FF</option>
+                          </select>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top pt-3">
                       <Input type="number" min="1" value={editForm.duracion ?? 1}
                         onChange={e => setEditForm(p => ({ ...p, duracion: parseInt(e.target.value) }))}
-                        className="h-7 text-xs w-16" />
+                        className="h-7 text-xs w-14" />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top pt-3">
                       <Input type="date" value={toDateInput(editForm.fechaInicio ?? a.fechaInicio)}
                         onChange={e => setEditForm(p => ({ ...p, fechaInicio: e.target.value }))}
                         className="h-7 text-xs" />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top pt-3">
                       <Input type="date" value={toDateInput(editForm.fechaFin ?? a.fechaFin)}
                         onChange={e => setEditForm(p => ({ ...p, fechaFin: e.target.value }))}
                         className="h-7 text-xs" />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top pt-3">
                       <Input type="number" min="0" max="100" value={editForm.pctAvance ?? 0}
                         onChange={e => setEditForm(p => ({ ...p, pctAvance: parseFloat(e.target.value) }))}
                         className="h-7 text-xs w-16" />
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top pt-3">
                       <select value={editForm.estado ?? 'Pendiente'}
                         onChange={e => setEditForm(p => ({ ...p, estado: e.target.value }))}
                         className="h-7 text-xs border border-border rounded px-1 bg-background">
@@ -150,7 +185,12 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                         )}
                       </select>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 align-top pt-3">
+                      <Input value={editForm.cuadrilla ?? ''}
+                        onChange={e => setEditForm(p => ({ ...p, cuadrilla: e.target.value || null }))}
+                        className="h-7 text-xs" placeholder="Cuadrilla..." />
+                    </td>
+                    <td className="px-3 py-2 align-top pt-3">
                       <div className="flex justify-end gap-1">
                         <button onClick={() => saveEdit(a.id)} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Guardar">
                           <Check className="w-4 h-4" />
@@ -162,23 +202,21 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                     </td>
                   </tr>
                 ) : (
+                  // ── Fila vista ────────────────────────────────────────────
                   <tr key={a.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-3 py-2.5 pl-7" />
                     <td className="px-3 py-2.5">
                       <p className="text-sm font-medium text-foreground">{a.nombre}</p>
                       {a.dependencia && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          FS: {a.dependencia.nombre}
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Link2 className="w-3 h-3" />
+                          {a.tipoDependencia}: {a.dependencia.nombre}
                         </p>
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-center text-sm text-muted-foreground">{a.duracion}d</td>
-                    <td className="px-3 py-2.5 text-sm text-muted-foreground">
-                      {new Date(a.fechaInicio).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })}
-                    </td>
-                    <td className="px-3 py-2.5 text-sm text-muted-foreground">
-                      {new Date(a.fechaFin).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })}
-                    </td>
+                    <td className="px-3 py-2.5 text-sm text-muted-foreground tabular-nums">{fmtFecha(a.fechaInicio)}</td>
+                    <td className="px-3 py-2.5 text-sm text-muted-foreground tabular-nums">{fmtFecha(a.fechaFin)}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -192,6 +230,15 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${ESTADO_COLORS[a.estado] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                         {a.estado}
                       </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {a.cuadrilla ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="w-3 h-3" />{a.cuadrilla}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/40">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="flex justify-end gap-1">

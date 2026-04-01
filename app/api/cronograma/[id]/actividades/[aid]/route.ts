@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const body = await req.json()
   const {
     nombre, descripcion, duracion, fechaInicio, fechaFin,
-    pctAvance, estado, dependenciaId, tipoDependencia, orden, capituloNombre,
+    pctAvance, estado, dependenciaId, tipoDependencia, orden, capituloNombre, cuadrilla,
   } = body
 
   const actividad = await prisma.actividadCronograma.update({
@@ -28,6 +28,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       ...(dependenciaId !== undefined && { dependenciaId: dependenciaId ? parseInt(dependenciaId) : null }),
       ...(tipoDependencia !== undefined && { tipoDependencia }),
       ...(orden !== undefined && { orden: parseInt(orden) }),
+      ...(cuadrilla !== undefined && { cuadrilla: cuadrilla || null }),
     },
   })
 

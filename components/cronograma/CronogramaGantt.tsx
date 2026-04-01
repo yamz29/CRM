@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Gantt, Task, ViewMode } from 'gantt-task-react'
 import 'gantt-task-react/dist/index.css'
 import type { Actividad } from './CronogramaClient'
@@ -12,6 +12,12 @@ const ESTADO_COLORS: Record<string, string> = {
   'Atrasado':      '#ef4444',
 }
 
+const VIEW_MODES = [
+  { label: 'Día',   mode: ViewMode.Day,   colWidth: 40 },
+  { label: 'Semana', mode: ViewMode.Week,  colWidth: 80 },
+  { label: 'Mes',   mode: ViewMode.Month, colWidth: 120 },
+]
+
 interface Props {
   actividades: Actividad[]
   onActualizarActividad: (id: number, data: Partial<Actividad>) => Promise<void>
@@ -19,10 +25,13 @@ interface Props {
 }
 
 export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAvance }: Props) {
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Day)
+
+  const currentView = VIEW_MODES.find(v => v.mode === viewMode) ?? VIEW_MODES[0]
+
   const tasks: Task[] = useMemo(() => {
     if (actividades.length === 0) return []
 
-    // Agrupar por capítulo para crear tasks de proyecto (grupo)
     const grupos = new Map<string, Actividad[]>()
     for (const a of actividades) {
       const key = a.capituloNombre ?? 'General'
@@ -33,7 +42,6 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
     const tasks: Task[] = []
 
     for (const [capitulo, acts] of grupos.entries()) {
-      // Task de grupo (capítulo)
       const fechasGrupo = acts.map(a => ({
         inicio: new Date(a.fechaInicio),
         fin: new Date(a.fechaFin),
@@ -54,7 +62,6 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
         displayOrder: tasks.length,
       })
 
-      // Tasks de actividades
       for (const a of acts) {
         const color = ESTADO_COLORS[a.estado] ?? '#94a3b8'
         tasks.push({
@@ -90,7 +97,7 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
 
   function handleTaskChange(task: Task) {
     const actividadId = parseInt(task.id)
-    if (isNaN(actividadId)) return // es un grupo
+    if (isNaN(actividadId)) return
     onActualizarActividad(actividadId, {
       fechaInicio: task.start,
       fechaFin: task.end,
@@ -113,11 +120,30 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-2 border-b border-border bg-muted/30 flex items-center gap-4">
+      <div className="px-4 py-2 border-b border-border bg-muted/30 flex items-center gap-4 flex-wrap">
+        {/* Escala de tiempo */}
+        <div className="flex items-center border border-border rounded-lg overflow-hidden">
+          {VIEW_MODES.map(v => (
+            <button
+              key={v.label}
+              onClick={() => setViewMode(v.mode)}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${
+                viewMode === v.mode
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+
         <p className="text-xs text-muted-foreground">
           Arrastra las barras para mover fechas · Doble clic para registrar avance
         </p>
-        <div className="flex items-center gap-3 ml-auto">
+
+        {/* Leyenda */}
+        <div className="flex items-center gap-3 ml-auto flex-wrap">
           {Object.entries(ESTADO_COLORS).map(([estado, color]) => (
             <div key={estado} className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: color }} />
@@ -129,12 +155,12 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
       <div className="overflow-x-auto">
         <Gantt
           tasks={tasks}
-          viewMode={ViewMode.Day}
+          viewMode={viewMode}
           onDateChange={handleTaskChange}
           onProgressChange={handleProgressChange}
           onDoubleClick={handleDoubleClick}
           listCellWidth="200px"
-          columnWidth={40}
+          columnWidth={currentView.colWidth}
           ganttHeight={Math.min(600, tasks.length * 40 + 60)}
           locale="es"
           todayColor="rgba(59, 130, 246, 0.08)"

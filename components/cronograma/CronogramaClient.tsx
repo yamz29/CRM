@@ -23,6 +23,7 @@ export interface Actividad {
   estado: string
   dependenciaId: number | null
   tipoDependencia: string
+  cuadrilla: string | null
   orden: number
   dependencia: { id: number; nombre: string } | null
   avances: { id: number; pctAvance: number; comentario: string | null; fecha: string | Date }[]
