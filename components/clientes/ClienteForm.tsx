@@ -11,6 +11,7 @@ import { Save, X, Loader2 } from 'lucide-react'
 
 interface ClienteFormData {
   nombre: string
+  rnc: string
   telefono: string
   whatsapp: string
   correo: string
@@ -31,14 +32,15 @@ export function ClienteForm({ initialData, mode = 'create' }: ClienteFormProps) 
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<ClienteFormData>({
-    nombre: initialData?.nombre || '',
-    telefono: initialData?.telefono || '',
-    whatsapp: initialData?.whatsapp || '',
-    correo: initialData?.correo || '',
-    direccion: initialData?.direccion || '',
+    nombre:      initialData?.nombre      || '',
+    rnc:         (initialData as any)?.rnc || '',
+    telefono:    initialData?.telefono    || '',
+    whatsapp:    initialData?.whatsapp    || '',
+    correo:      initialData?.correo      || '',
+    direccion:   initialData?.direccion   || '',
     tipoCliente: initialData?.tipoCliente || 'Particular',
-    fuente: initialData?.fuente || 'Directo',
-    notas: initialData?.notas || '',
+    fuente:      initialData?.fuente      || 'Directo',
+    notas:       initialData?.notas       || '',
   })
 
   const handleChange = (
@@ -115,6 +117,17 @@ export function ClienteForm({ initialData, mode = 'create' }: ClienteFormProps) 
                   onChange={handleChange}
                   placeholder="Ej: Juan Pérez González"
                   required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rnc">RNC / Cédula</Label>
+                <Input
+                  id="rnc"
+                  name="rnc"
+                  value={formData.rnc}
+                  onChange={handleChange}
+                  placeholder="001-1234567-8"
                 />
               </div>
 

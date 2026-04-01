@@ -11,6 +11,7 @@ datasource db {
 model Cliente {
   id          Int      @id @default(autoincrement())
   nombre      String
+  rnc         String?  // RNC (empresas) o cédula (personas)
   telefono    String?
   whatsapp    String?
   correo      String?

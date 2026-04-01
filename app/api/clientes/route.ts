@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ClienteSchema, zodError } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,18 +11,16 @@ export async function GET(request: NextRequest) {
       where: search
         ? {
             OR: [
-              { nombre: { contains: search } },
-              { correo: { contains: search } },
-              { telefono: { contains: search } },
+              { nombre:  { contains: search, mode: 'insensitive' } },
+              { correo:  { contains: search, mode: 'insensitive' } },
+              { telefono:{ contains: search, mode: 'insensitive' } },
+              { rnc:     { contains: search, mode: 'insensitive' } },
             ],
           }
         : undefined,
       include: {
         _count: {
-          select: {
-            proyectos: true,
-            presupuestos: true,
-          },
+          select: { proyectos: true, presupuestos: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -30,44 +29,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(clientes)
   } catch (error) {
     console.error('Error fetching clientes:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener clientes' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al obtener clientes' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { nombre, telefono, whatsapp, correo, direccion, tipoCliente, fuente, notas } = body
+    const parsed = ClienteSchema.safeParse(body)
+    if (!parsed.success) return zodError(parsed.error)
 
-    if (!nombre) {
-      return NextResponse.json(
-        { error: 'El nombre es requerido' },
-        { status: 400 }
-      )
-    }
+    const { nombre, rnc, telefono, whatsapp, correo, direccion, tipoCliente, fuente, notas } = parsed.data
 
     const cliente = await prisma.cliente.create({
       data: {
         nombre,
-        telefono: telefono || null,
-        whatsapp: whatsapp || null,
-        correo: correo || null,
-        direccion: direccion || null,
-        tipoCliente: tipoCliente || 'Particular',
-        fuente: fuente || 'Directo',
-        notas: notas || null,
+        rnc:         rnc     || null,
+        telefono:    telefono || null,
+        whatsapp:    whatsapp || null,
+        correo:      correo   || null,
+        direccion:   direccion || null,
+        tipoCliente,
+        fuente,
+        notas:       notas || null,
       },
     })
 
     return NextResponse.json(cliente, { status: 201 })
   } catch (error) {
     console.error('Error creating cliente:', error)
-    return NextResponse.json(
-      { error: 'Error al crear cliente' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 })
   }
 }

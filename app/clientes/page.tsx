@@ -17,9 +17,10 @@ async function getClientes(search?: string) {
     where: search
       ? {
           OR: [
-            { nombre: { contains: search } },
-            { correo: { contains: search } },
-            { telefono: { contains: search } },
+            { nombre:   { contains: search, mode: 'insensitive' } },
+            { correo:   { contains: search, mode: 'insensitive' } },
+            { telefono: { contains: search, mode: 'insensitive' } },
+            { rnc:      { contains: search, mode: 'insensitive' } },
           ],
         }
       : undefined,
@@ -75,7 +76,7 @@ export default async function ClientesPage({
                 type="text"
                 name="search"
                 defaultValue={search || ''}
-                placeholder="Buscar por nombre, correo o teléfono..."
+                placeholder="Buscar por nombre, RNC/cédula, correo o teléfono..."
                 className="flex h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -118,6 +119,7 @@ export default async function ClientesPage({
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">RNC / Cédula</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Teléfono</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Fuente</th>
@@ -140,6 +142,13 @@ export default async function ClientesPage({
                             <p className="text-xs text-slate-500 mt-0.5">{cliente.correo}</p>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {(cliente as any).rnc ? (
+                          <span className="text-sm text-slate-600 font-mono">{(cliente as any).rnc}</span>
+                        ) : (
+                          <span className="text-slate-400 text-sm">-</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {cliente.telefono ? (
