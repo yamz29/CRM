@@ -20,7 +20,7 @@ interface Props {
   onAbrirAvance: (a: Actividad) => void
 }
 
-type EditableField = 'nombre' | 'duracion' | 'fechaInicio' | 'fechaFin' | 'pctAvance' | 'estado' | 'cuadrilla' | 'dependenciaId'
+type EditableField = 'nombre' | 'duracion' | 'fechaInicio' | 'fechaFin' | 'pctAvance' | 'estado' | 'cuadrilla' | 'dependenciaId' | 'wbs'
 
 function toDateInput(d: string | Date) {
   return new Date(d).toISOString().split('T')[0]
@@ -60,6 +60,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     else if (field === 'pctAvance') val = String(a.pctAvance)
     else if (field === 'estado') val = a.estado
     else if (field === 'cuadrilla') val = a.cuadrilla ?? ''
+    else if (field === 'wbs') val = a.wbs ?? ''
     else if (field === 'dependenciaId') val = a.dependenciaId ? String(a.dependenciaId) : ''
     setEditCell({ id: a.id, field })
     setEditValue(val)
@@ -76,6 +77,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     else if (field === 'pctAvance') data = { pctAvance: Math.min(100, Math.max(0, parseFloat(editValue) || 0)) }
     else if (field === 'estado') data = { estado: editValue }
     else if (field === 'cuadrilla') data = { cuadrilla: editValue || null }
+    else if (field === 'wbs') data = { wbs: editValue || null }
     else if (field === 'dependenciaId') data = { dependenciaId: editValue ? parseInt(editValue) : null }
     setEditCell(null)
     await onActualizar(a.id, data)
@@ -239,12 +241,21 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     )
   }
 
+  // Auto-generar WBS si la tarea no tiene uno asignado
+  const wbsAuto = new Map<number, string>()
+  let gIdx = 1
+  for (const [, acts] of grupos.entries()) {
+    acts.forEach((a, tIdx) => { wbsAuto.set(a.id, a.wbs ?? `${gIdx}.${tIdx + 1}`) })
+    gIdx++
+  }
+
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="bg-muted/40 border-b border-border">
             <th className="w-8"></th>
+            <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-16">WBS</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Actividad</th>
             <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase w-14">Días</th>
             <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Inicio</th>
@@ -258,7 +269,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
         <tbody className="divide-y divide-border">
           {actividades.length === 0 && (
             <tr>
-              <td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">
+              <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
                 Sin actividades. Agrega una o genera desde un presupuesto.
               </td>
             </tr>
@@ -275,6 +286,9 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                   {colapsado
                     ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground mx-auto" />
                     : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground mx-auto" />}
+                </td>
+                <td className="px-3 py-2 text-xs font-bold text-muted-foreground">
+                  {acts[0] ? wbsAuto.get(acts[0].id)?.split('.')[0] : ''}
                 </td>
                 <td className="px-3 py-2" colSpan={4}>
                   <span className="text-xs font-bold text-foreground uppercase tracking-wide">{capitulo}</span>
@@ -308,6 +322,15 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                   {/* Handle drag */}
                   <td className="w-8 px-1 text-center cursor-grab active:cursor-grabbing">
                     <GripVertical className="w-4 h-4 text-muted-foreground/40 mx-auto" />
+                  </td>
+
+                  {/* WBS */}
+                  <td className="px-3 py-2.5">
+                    <CeldaTexto a={a} field="wbs" className="w-16 font-mono" display={
+                      <span className="text-xs font-mono font-semibold text-muted-foreground tabular-nums">
+                        {wbsAuto.get(a.id)}
+                      </span>
+                    } />
                   </td>
 
                   {/* Nombre + dependencia */}
@@ -382,8 +405,8 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
           })}
         </tbody>
       </table>
-      <p className="px-4 py-2 text-xs text-muted-foreground/60 border-t border-border bg-muted/10">
-        Arrastra <GripVertical className="inline w-3 h-3" /> para reordenar · Clic en cualquier celda para editar
+      <p className="px-4 py-2 text-xs text-muted-foreground/60 border-t border-border bg-muted/10 flex items-center gap-1">
+        Arrastra <GripVertical className="inline w-3 h-3" /> para reordenar · Clic en cualquier celda para editar · WBS auto-generado si está vacío
       </p>
     </div>
   )

@@ -22,6 +22,7 @@ export interface Actividad {
   pctAvance: number
   estado: string
   tipo: string
+  wbs: string | null
   dependenciaId: number | null
   tipoDependencia: string
   cuadrilla: string | null
@@ -61,6 +62,32 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
   }, [router])
 
   async function handleActualizarActividad(actividadId: number, data: Partial<Actividad>) {
+    // Validar restricción de dependencia al cambiar fechas
+    if (data.fechaInicio !== undefined || data.fechaFin !== undefined) {
+      const act = cronograma.actividades.find(a => a.id === actividadId)
+      if (act?.dependenciaId) {
+        const pred = cronograma.actividades.find(a => a.id === act.dependenciaId)
+        if (pred) {
+          const tipo = act.tipoDependencia
+          const predFin   = new Date(pred.fechaFin)
+          const predInicio = new Date(pred.fechaInicio)
+          const curInicio  = data.fechaInicio ? new Date(data.fechaInicio as string) : new Date(act.fechaInicio)
+          const durMs = (new Date(act.fechaFin).getTime() - new Date(act.fechaInicio).getTime())
+
+          let minInicio: Date
+          if (tipo === 'SS') minInicio = predInicio
+          else if (tipo === 'FF') minInicio = new Date(predFin.getTime() - durMs)
+          else minInicio = predFin // FS (default)
+
+          if (curInicio < minInicio) {
+            // Auto-snap al mínimo permitido
+            const newFin = new Date(minInicio.getTime() + durMs)
+            data = { ...data, fechaInicio: minInicio, fechaFin: newFin }
+          }
+        }
+      }
+    }
+
     const res = await fetch(`/api/cronograma/${cronograma.id}/actividades/${actividadId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

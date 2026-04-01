@@ -781,6 +781,7 @@ model ActividadCronograma {
   estado          String   @default("Pendiente")
   // Pendiente | En Ejecución | Completado | Atrasado
   tipo            String   @default("tarea") // tarea | hito
+  wbs             String?  // código WBS ej: 1.1, 1.2.3
   dependenciaId   Int?
   tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio
   cuadrilla       String?  // nombre de la cuadrilla asignada
