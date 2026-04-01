@@ -63,14 +63,18 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
       })
 
       for (const a of acts) {
-        const color = ESTADO_COLORS[a.estado] ?? '#94a3b8'
+        const color = a.tipo === 'hito' ? '#f59e0b' : (ESTADO_COLORS[a.estado] ?? '#94a3b8')
+        const fechaInicio = new Date(a.fechaInicio)
+        const fechaFin = a.tipo === 'hito' ? new Date(fechaInicio) : new Date(a.fechaFin)
+        // gantt-task-react requires end > start
+        if (fechaFin <= fechaInicio) fechaFin.setDate(fechaInicio.getDate() + 1)
         tasks.push({
           id: String(a.id),
           name: a.nombre,
-          start: new Date(a.fechaInicio),
-          end: new Date(a.fechaFin),
-          progress: a.pctAvance,
-          type: 'task',
+          start: fechaInicio,
+          end: fechaFin,
+          progress: a.tipo === 'hito' ? 0 : a.pctAvance,
+          type: a.tipo === 'hito' ? 'milestone' : 'task',
           project: grupoId,
           dependencies: a.dependenciaId ? [String(a.dependenciaId)] : undefined,
           styles: {

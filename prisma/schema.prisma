@@ -780,6 +780,7 @@ model ActividadCronograma {
   pctAvance       Float    @default(0)   // 0-100
   estado          String   @default("Pendiente")
   // Pendiente | En Ejecución | Completado | Atrasado
+  tipo            String   @default("tarea") // tarea | hito
   dependenciaId   Int?
   tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio
   cuadrilla       String?  // nombre de la cuadrilla asignada

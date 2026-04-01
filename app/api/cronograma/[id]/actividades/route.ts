@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const {
     nombre, descripcion, capituloNombre, partidaId,
     duracion, fechaInicio, fechaFin,
-    pctAvance, estado, dependenciaId, tipoDependencia, orden,
+    pctAvance, estado, dependenciaId, tipoDependencia, orden, tipo,
   } = body
 
   if (!nombre || !fechaInicio || !fechaFin) {
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     data: {
       cronogramaId,
       nombre,
+      tipo: tipo ?? 'tarea',
       descripcion,
       capituloNombre,
       partidaId: partidaId ? parseInt(partidaId) : null,

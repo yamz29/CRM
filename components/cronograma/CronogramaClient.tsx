@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { LayoutGrid, List, Wand2, Plus, RefreshCw } from 'lucide-react'
+import { LayoutGrid, List, Wand2, Plus, RefreshCw, Diamond } from 'lucide-react'
 import { CronogramaGantt } from './CronogramaGantt'
 import { ActividadesTable } from './ActividadesTable'
 import { AvanceModal } from './AvanceModal'
@@ -21,6 +21,7 @@ export interface Actividad {
   fechaFin: string | Date
   pctAvance: number
   estado: string
+  tipo: string
   dependenciaId: number | null
   tipoDependencia: string
   cuadrilla: string | null
@@ -108,19 +109,20 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
     }
   }
 
-  async function handleAgregarActividad() {
+  async function handleAgregarActividad(tipo: 'tarea' | 'hito' = 'tarea') {
     const fechaInicio = new Date(cronograma.fechaInicio)
-    const fechaFin = new Date(fechaInicio)
-    fechaFin.setDate(fechaFin.getDate() + 2)
+    const fechaFin = tipo === 'hito' ? new Date(fechaInicio) : new Date(fechaInicio)
+    if (tipo === 'tarea') fechaFin.setDate(fechaFin.getDate() + 2)
 
     const res = await fetch(`/api/cronograma/${cronograma.id}/actividades`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nombre: 'Nueva actividad',
+        nombre: tipo === 'hito' ? 'Nuevo hito' : 'Nueva actividad',
+        tipo,
         fechaInicio: fechaInicio.toISOString(),
         fechaFin: fechaFin.toISOString(),
-        duracion: 3,
+        duracion: tipo === 'hito' ? 0 : 3,
         orden: cronograma.actividades.length,
       }),
     })
@@ -185,8 +187,11 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
               <Wand2 className="w-3.5 h-3.5" /> Generar desde presupuesto
             </Button>
           )}
-          <Button size="sm" onClick={handleAgregarActividad}>
+          <Button size="sm" onClick={() => handleAgregarActividad('tarea')}>
             <Plus className="w-3.5 h-3.5" /> Añadir actividad
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => handleAgregarActividad('hito')}>
+            <Diamond className="w-3.5 h-3.5" /> Añadir hito
           </Button>
         </div>
       </div>
