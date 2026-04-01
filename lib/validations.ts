@@ -4,9 +4,12 @@ import { NextResponse } from 'next/server'
 // ── Helper ─────────────────────────────────────────────────────────────────────
 
 export function zodError(error: z.ZodError) {
-  const message = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+  const message = error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
   return NextResponse.json({ error: message }, { status: 400 })
 }
+
+// Fecha opcional: string ISO o vacío → null
+const fechaOpcional = z.string().optional().nullable().transform(v => v || null)
 
 // ── Clientes ───────────────────────────────────────────────────────────────────
 
@@ -15,7 +18,7 @@ export const ClienteSchema = z.object({
   rnc:         z.string().max(20).optional().nullable(),
   telefono:    z.string().max(30).optional().nullable(),
   whatsapp:    z.string().max(30).optional().nullable(),
-  correo:      z.string().email('Correo inválido').max(200).optional().nullable().or(z.literal('')),
+  correo:      z.union([z.string().email('Correo inválido').max(200), z.literal(''), z.null()]).optional(),
   direccion:   z.string().max(500).optional().nullable(),
   tipoCliente: z.enum(['Particular', 'Empresa', 'Arquitecto', 'Inmobiliaria']).default('Particular'),
   fuente:      z.enum(['Referido', 'Web', 'Instagram', 'Facebook', 'Directo', 'Otro']).default('Directo'),
@@ -31,8 +34,8 @@ export const ProyectoSchema = z.object({
   clienteId:           z.coerce.number().int().positive('Cliente requerido'),
   tipoProyecto:        z.string().max(100).default('Remodelación'),
   ubicacion:           z.string().max(500).optional().nullable(),
-  fechaInicio:         z.string().datetime({ offset: true }).optional().nullable().or(z.literal('')),
-  fechaEstimada:       z.string().datetime({ offset: true }).optional().nullable().or(z.literal('')),
+  fechaInicio:         fechaOpcional,
+  fechaEstimada:       fechaOpcional,
   estado:              z.enum(['Prospecto', 'Adjudicado', 'En Ejecución', 'Pausado', 'Finalizado', 'Cancelado']).default('Prospecto'),
   descripcion:         z.string().max(2000).optional().nullable(),
   responsable:         z.string().max(200).optional().nullable(),
@@ -50,7 +53,7 @@ export const OportunidadSchema = z.object({
   valor:          z.coerce.number().min(0).optional().nullable(),
   moneda:         z.string().max(10).default('DOP'),
   probabilidad:   z.coerce.number().int().min(0).max(100).optional().nullable(),
-  fechaCierreEst: z.string().datetime({ offset: true }).optional().nullable().or(z.literal('')),
+  fechaCierreEst: fechaOpcional,
   responsable:    z.string().max(200).optional().nullable(),
   motivoPerdida:  z.string().max(500).optional().nullable(),
   notas:          z.string().max(2000).optional().nullable(),
@@ -67,7 +70,7 @@ export const TareaSchema = z.object({
   clienteId:   z.coerce.number().int().positive().optional().nullable(),
   proyectoId:  z.coerce.number().int().positive().optional().nullable(),
   asignadoId:  z.coerce.number().int().positive().optional().nullable(),
-  fechaLimite: z.string().datetime({ offset: true }).optional().nullable().or(z.literal('')),
+  fechaLimite: fechaOpcional,
   prioridad:   z.enum(['Alta', 'Media', 'Baja']).default('Media'),
   estado:      z.enum(['Pendiente', 'En proceso', 'Completada', 'Cancelada']).default('Pendiente'),
   avance:      z.coerce.number().int().min(0).max(100).default(0),
