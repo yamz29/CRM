@@ -19,8 +19,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        DATABASE_URL: 'file:/var/www/crm/prisma/data/prod.db',
-        JWT_SECRET: 'REEMPLAZAR_CON_SECRET_PRODUCCION',
+        DATABASE_URL: 'postgresql://gonzalva_user:CONTRASEÑA_PROD@localhost:5432/gonzalva_prod',
+        JWT_SECRET: 'REEMPLAZAR_CON_64_CARACTERES_ALEATORIOS_PROD',
       },
     },
 
@@ -37,8 +37,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
-        DATABASE_URL: 'file:/var/www/crm/prisma/data/test.db',
-        JWT_SECRET: 'REEMPLAZAR_CON_SECRET_TEST',
+        DATABASE_URL: 'postgresql://gonzalva_user:CONTRASEÑA_TEST@localhost:5432/gonzalva_test',
+        JWT_SECRET: 'REEMPLAZAR_CON_64_CARACTERES_ALEATORIOS_TEST',
       },
     },
   ],
