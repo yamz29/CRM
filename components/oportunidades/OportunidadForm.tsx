@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Check } from 'lucide-react'
+import { X, Check, Plus, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ETAPAS, type Oportunidad, type PresupuestoOpcion, type UsuarioOpcion } from './PipelineClient'
 import { formatCurrency } from '@/lib/utils'
@@ -15,9 +15,35 @@ interface Props {
   onSaved: () => void
 }
 
-export function OportunidadForm({ clientes, presupuestos, usuarios, initial, onClose, onSaved }: Props) {
+export function OportunidadForm({ clientes: clientesIniciales, presupuestos, usuarios, initial, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
+  const [clientes, setClientes] = useState(clientesIniciales)
   const [clienteId, setClienteId]           = useState(String(initial?.clienteId ?? ''))
+
+  // ── Mini-form crear cliente ────────────────────────────────────
+  const [showNuevoCliente, setShowNuevoCliente] = useState(false)
+  const [nuevoNombre, setNuevoNombre] = useState('')
+  const [nuevoTelefono, setNuevoTelefono] = useState('')
+  const [nuevoCorreo, setNuevoCorreo] = useState('')
+  const [savingCliente, setSavingCliente] = useState(false)
+
+  async function handleCrearCliente() {
+    if (!nuevoNombre.trim()) return
+    setSavingCliente(true)
+    const res = await fetch('/api/clientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: nuevoNombre.trim(), telefono: nuevoTelefono || null, correo: nuevoCorreo || null }),
+    })
+    if (res.ok) {
+      const nuevo = await res.json()
+      setClientes(prev => [...prev, { id: nuevo.id, nombre: nuevo.nombre }])
+      setClienteId(String(nuevo.id))
+      setShowNuevoCliente(false)
+      setNuevoNombre(''); setNuevoTelefono(''); setNuevoCorreo('')
+    }
+    setSavingCliente(false)
+  }
   const [nombre, setNombre]                 = useState(initial?.nombre ?? '')
   const [etapa, setEtapa]                   = useState(initial?.etapa ?? 'Lead')
   const [valor, setValor]                   = useState(initial?.valor ? String(initial.valor) : '')
@@ -102,15 +128,70 @@ export function OportunidadForm({ clientes, presupuestos, usuarios, initial, onC
 
             <div className="col-span-2">
               <label className="block text-xs font-medium text-muted-foreground mb-1">Cliente *</label>
-              <select
-                value={clienteId}
-                onChange={(e) => { setClienteId(e.target.value); setPresupuestosSeleccionados([]) }}
-                required
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Seleccionar cliente...</option>
-                {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={clienteId}
+                  onChange={(e) => { setClienteId(e.target.value); setPresupuestosSeleccionados([]) }}
+                  required
+                  className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Seleccionar cliente...</option>
+                  {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowNuevoCliente(v => !v)}
+                  title="Crear nuevo cliente"
+                  className={`flex items-center gap-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors shrink-0 ${
+                    showNuevoCliente
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Nuevo
+                </button>
+              </div>
+
+              {/* Mini-form crear cliente */}
+              {showNuevoCliente && (
+                <div className="mt-2 p-3 border border-border rounded-lg bg-muted/20 space-y-2">
+                  <p className="text-xs font-semibold text-foreground">Crear nuevo cliente</p>
+                  <input
+                    autoFocus
+                    value={nuevoNombre}
+                    onChange={e => setNuevoNombre(e.target.value)}
+                    placeholder="Nombre *"
+                    className="w-full px-2.5 py-1.5 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={nuevoTelefono}
+                      onChange={e => setNuevoTelefono(e.target.value)}
+                      placeholder="Teléfono"
+                      className="px-2.5 py-1.5 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <input
+                      value={nuevoCorreo}
+                      onChange={e => setNuevoCorreo(e.target.value)}
+                      placeholder="Correo"
+                      type="email"
+                      className="px-2.5 py-1.5 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button type="button" onClick={() => setShowNuevoCliente(false)}
+                      className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">
+                      Cancelar
+                    </button>
+                    <button type="button" onClick={handleCrearCliente} disabled={!nuevoNombre.trim() || savingCliente}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg disabled:opacity-50 hover:opacity-90">
+                      <Plus className="w-3 h-3" />
+                      {savingCliente ? 'Guardando...' : 'Crear cliente'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Vincular cotizaciones existentes — solo al crear */}
