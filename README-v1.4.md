@@ -36,7 +36,7 @@ sudo systemctl status postgresql
 
 ```bash
 sudo -u postgres psql << 'EOF'
-CREATE USER gonzalva_user WITH PASSWORD 'PON_UNA_CONTRASEÑA_SEGURA_AQUI';
+CREATE USER gonzalva_user WITH PASSWORD 'TU_CONTRASEÑA_AQUI';
 CREATE DATABASE gonzalva_prod OWNER gonzalva_user;
 CREATE DATABASE gonzalva_test OWNER gonzalva_user;
 GRANT ALL PRIVILEGES ON DATABASE gonzalva_prod TO gonzalva_user;
@@ -53,8 +53,8 @@ Este archivo NUNCA va a git. Contiene las URLs reales de PostgreSQL.
 
 ```bash
 cat > /var/www/crm/.env.server << 'EOF'
-DATABASE_URL_PROD=postgresql://gonzalva_user:PON_UNA_CONTRASEÑA_SEGURA_AQUI@localhost:5432/gonzalva_prod
-DATABASE_URL_TEST=postgresql://gonzalva_user:PON_UNA_CONTRASEÑA_SEGURA_AQUI@localhost:5432/gonzalva_test
+DATABASE_URL_PROD=postgresql://gonzalva_user:TU_CONTRASEÑA_AQUI@localhost:5432/gonzalva_prod
+DATABASE_URL_TEST=postgresql://gonzalva_user:TU_CONTRASEÑA_AQUI@localhost:5432/gonzalva_test
 EOF
 ```
 
@@ -68,7 +68,7 @@ node -e "console.log('PROD:', require('crypto').randomBytes(64).toString('hex'))
 node -e "console.log('TEST:', require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-Copia los valores generados para usarlos en el siguiente paso.
+Copia los valores generados y úsalos en el siguiente paso. **No los guardes en ningún archivo del repositorio.**
 
 ---
 
