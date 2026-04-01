@@ -32,12 +32,12 @@ npm install --production=false
 echo ""
 if [ "$TARGET" = "prod" ] || [ "$TARGET" = "all" ]; then
     echo "→ prisma db push (prod)..."
-    DATABASE_URL="file:$APP_DIR/data/prod.db" npx prisma db push --skip-generate
+    DATABASE_URL="file:$APP_DIR/prisma/data/prod.db" npx prisma db push --skip-generate
 fi
 
 if [ "$TARGET" = "test" ] || [ "$TARGET" = "all" ]; then
     echo "→ prisma db push (test)..."
-    DATABASE_URL="file:$APP_DIR/data/test.db" npx prisma db push --skip-generate
+    DATABASE_URL="file:$APP_DIR/prisma/data/test.db" npx prisma db push --skip-generate
 fi
 
 # 3b. Regenerar cliente Prisma (una sola vez, independiente del TARGET)

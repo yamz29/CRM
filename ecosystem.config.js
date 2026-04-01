@@ -19,7 +19,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        DATABASE_URL: 'file:./data/prod.db',
+        DATABASE_URL: 'file:/var/www/crm/prisma/data/prod.db',
         JWT_SECRET: 'REEMPLAZAR_CON_SECRET_PRODUCCION',
       },
     },
@@ -37,7 +37,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
-        DATABASE_URL: 'file:./data/test.db',
+        DATABASE_URL: 'file:/var/www/crm/prisma/data/test.db',
         JWT_SECRET: 'REEMPLAZAR_CON_SECRET_TEST',
       },
     },
