@@ -23,7 +23,7 @@ interface Props {
   onAbrirAvance: (a: Actividad) => void
 }
 
-type EditableField = 'nombre' | 'duracion' | 'fechaInicio' | 'fechaFin' | 'pctAvance' | 'estado' | 'cuadrilla' | 'dependenciaId' | 'wbs'
+type EditableField = 'nombre' | 'duracion' | 'fechaInicio' | 'fechaFin' | 'pctAvance' | 'estado' | 'cuadrilla' | 'dependenciaId' | 'wbs' | 'capituloNombre'
 
 function toDateInput(d: string | Date) { return new Date(d).toISOString().split('T')[0] }
 function fmtFecha(d: string | Date) {
@@ -67,6 +67,10 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
   const [filterEstado, setFilterEstado] = useState<string | null>(null)
   const [filterCuadrilla, setFilterCuadrilla] = useState<string | null>(null)
 
+  // ── Edición nombre de grupo ────────────────────────────────────
+  const [editGrupo, setEditGrupo] = useState<string | null>(null) // capitulo actual
+  const [editGrupoVal, setEditGrupoVal] = useState('')
+
   // ── Edición inline ─────────────────────────────────────────────
   const [editCell, setEditCell] = useState<{ id: number; field: EditableField } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
@@ -101,6 +105,22 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
   }
 
   // ── WBS validación duplicado ───────────────────────────────────
+  // ── Renombrar capítulo ─────────────────────────────────────────
+  function startEditGrupo(e: React.MouseEvent, capitulo: string) {
+    e.stopPropagation()
+    setEditGrupo(capitulo)
+    setEditGrupoVal(capitulo)
+  }
+
+  async function saveGrupo(capitulo: string) {
+    const newName = editGrupoVal.trim() || capitulo
+    setEditGrupo(null)
+    if (newName === capitulo) return
+    const actsGrupo = actividades.filter(a => (a.capituloNombre ?? 'General') === capitulo)
+    await Promise.all(actsGrupo.map(a => onActualizar(a.id, { capituloNombre: newName } as Partial<Actividad>)))
+  }
+
+  // ── WBS validación duplicado ───────────────────────────────────
   function isDuplicateWbs(actId: number, wbs: string) {
     if (!wbs) return false
     return actividades.some(a => a.id !== actId && a.wbs === wbs)
@@ -117,6 +137,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     else if (field === 'estado') val = a.estado
     else if (field === 'cuadrilla') val = a.cuadrilla ?? ''
     else if (field === 'wbs') val = a.wbs ?? ''
+    else if (field === 'capituloNombre') val = a.capituloNombre ?? ''
     else if (field === 'dependenciaId') val = a.dependenciaId ? String(a.dependenciaId) : ''
     setWbsError(null)
     setEditCell({ id: a.id, field })
@@ -139,6 +160,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     else if (field === 'estado') data = { estado: editValue }
     else if (field === 'cuadrilla') data = { cuadrilla: editValue || null }
     else if (field === 'wbs') data = { wbs: editValue || null }
+    else if (field === 'capituloNombre') data = { capituloNombre: editValue || null } as Partial<Actividad>
     else if (field === 'dependenciaId') data = { dependenciaId: editValue ? parseInt(editValue) : null }
     setEditCell(null); setWbsError(null)
     await onActualizar(a.id, data)
@@ -325,6 +347,30 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
             </span>
           } />
           <CeldaDependencia a={a} />
+          {/* Capítulo editable — para mover la tarea entre grupos */}
+          {isEditing(a.id, 'capituloNombre') ? (
+            <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+              onBlur={() => commitEdit(a)}
+              onKeyDown={e => { if (e.key === 'Enter') commitEdit(a); if (e.key === 'Escape') cancelEdit() }}
+              className="mt-1 h-5 px-1.5 text-xs border border-primary rounded bg-background focus:outline-none w-36"
+              placeholder="Nombre del capítulo" list={`caps-${a.id}`}
+            />
+          ) : (
+            <datalist id={`caps-${a.id}`}>
+              {Array.from(new Set(actividades.map(x => x.capituloNombre ?? 'General'))).map(c => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          )}
+          {!isEditing(a.id, 'capituloNombre') && (
+            <span
+              onClick={() => startEdit(a, 'capituloNombre')}
+              className="inline-block mt-0.5 text-xs text-muted-foreground/50 hover:text-muted-foreground cursor-pointer italic"
+              title="Clic para cambiar de grupo"
+            >
+              {a.capituloNombre ?? 'General'}
+            </span>
+          )}
         </td>
         {/* Días */}
         <td className="px-3 py-2 text-center">
@@ -474,8 +520,26 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
                 </td>
                 <td className="px-3 py-2 text-xs font-bold text-muted-foreground">{grupoWbs}</td>
                 <td className="px-3 py-2" colSpan={4}>
-                  <span className="text-xs font-bold text-foreground uppercase tracking-wide">{capitulo}</span>
-                  <span className="text-xs text-muted-foreground ml-2">({acts.length} actividades)</span>
+                  {editGrupo === capitulo ? (
+                    <input
+                      autoFocus
+                      value={editGrupoVal}
+                      onChange={e => setEditGrupoVal(e.target.value)}
+                      onBlur={() => saveGrupo(capitulo)}
+                      onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') saveGrupo(capitulo); if (e.key === 'Escape') setEditGrupo(null) }}
+                      onClick={e => e.stopPropagation()}
+                      className="h-7 px-2 text-xs font-bold border border-primary rounded bg-background focus:outline-none uppercase tracking-wide w-48"
+                    />
+                  ) : (
+                    <>
+                      <span
+                        className="text-xs font-bold text-foreground uppercase tracking-wide hover:text-primary cursor-text border-b border-dashed border-transparent hover:border-primary transition-colors"
+                        onClick={e => startEditGrupo(e, capitulo)}
+                        title="Clic para renombrar grupo"
+                      >{capitulo}</span>
+                      <span className="text-xs text-muted-foreground ml-2">({acts.length} actividades)</span>
+                    </>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-center">
                   <span className="text-xs font-bold text-foreground">{pctGrupo}%</span>
