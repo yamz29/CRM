@@ -83,6 +83,24 @@ export default async function ProyectoDetailPage({
   const utilidad = ingresos != null ? ingresos - costos : null
   const margen = ingresos != null && ingresos > 0 ? (utilidad! / ingresos) * 100 : null
 
+  // Indicadores de ejecución
+  const avanceFisico: number = (proyecto as any).avanceFisico ?? 0
+  const presupuestoBase = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
+  const pctEjecucionFin = presupuestoBase && presupuestoBase > 0
+    ? Math.min((costoTotal / presupuestoBase) * 100, 999)
+    : null
+  // Forecast to Completion: si llevamos X% físico con Y costo, el total proyectado = Y / (X/100)
+  const forecastTotal = avanceFisico > 0 && costoTotal > 0
+    ? costoTotal / (avanceFisico / 100)
+    : null
+  const varianzaForecast = presupuestoBase != null && forecastTotal != null
+    ? presupuestoBase - forecastTotal
+    : null
+  // Eficiencia: avance físico vs ejecución financiera
+  const eficiencia = avanceFisico > 0 && pctEjecucionFin != null
+    ? avanceFisico - pctEjecucionFin  // positivo = bajo presupuesto, negativo = sobreejecutando
+    : null
+
   const tabs = [
     { key: 'resumen', label: 'Resumen' },
     { key: 'presupuestos', label: `Presupuestos (${proyecto.presupuestos.length})` },
@@ -191,6 +209,104 @@ export default async function ProyectoDetailPage({
                 Ir a Control →
               </Button>
             </Link>
+          </div>
+        )}
+
+        {/* ── Panel de ejecución ── */}
+        {(avanceFisico > 0 || pctEjecucionFin != null) && (
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-slate-400" />
+                Indicadores de ejecución
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-100">
+
+              {/* Avance físico */}
+              <div className="px-5 py-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Avance físico</p>
+                <p className={`text-2xl font-black tabular-nums ${
+                  avanceFisico === 100 ? 'text-green-700' : avanceFisico >= 50 ? 'text-blue-700' : 'text-amber-600'
+                }`}>{avanceFisico}%</p>
+                <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{
+                    width: `${avanceFisico}%`,
+                    backgroundColor: avanceFisico === 100 ? '#22c55e' : avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                  }} />
+                </div>
+                <p className="text-xs text-slate-400 mt-1">% obra completada</p>
+              </div>
+
+              {/* Ejecución financiera */}
+              <div className="px-5 py-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Ejecución financiera</p>
+                {pctEjecucionFin != null ? (
+                  <>
+                    <p className={`text-2xl font-black tabular-nums ${
+                      pctEjecucionFin >= 100 ? 'text-red-600' : pctEjecucionFin >= 80 ? 'text-amber-600' : 'text-slate-800'
+                    }`}>{pctEjecucionFin.toFixed(0)}%</p>
+                    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{
+                        width: `${Math.min(pctEjecucionFin, 100)}%`,
+                        backgroundColor: pctEjecucionFin >= 100 ? '#ef4444' : pctEjecucionFin >= 80 ? '#f59e0b' : '#3b82f6',
+                      }} />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">% presupuesto gastado</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400 italic">Sin presupuesto base</p>
+                )}
+              </div>
+
+              {/* Forecast to Completion */}
+              <div className="px-5 py-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Forecast de costo</p>
+                {forecastTotal != null ? (
+                  <>
+                    <p className={`text-2xl font-black ${
+                      presupuestoBase && forecastTotal > presupuestoBase ? 'text-red-600' : 'text-slate-800'
+                    }`}>{formatCurrency(forecastTotal)}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Proyección al 100% físico
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400 italic">
+                    {avanceFisico === 0 ? 'Requiere avance físico > 0' : 'Sin gastos registrados'}
+                  </p>
+                )}
+              </div>
+
+              {/* Eficiencia / Varianza */}
+              <div className="px-5 py-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  {varianzaForecast != null ? 'Varianza forecast' : 'Eficiencia'}
+                </p>
+                {varianzaForecast != null ? (
+                  <>
+                    <p className={`text-2xl font-black ${varianzaForecast >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                      {varianzaForecast < 0 ? '−' : '+'}{formatCurrency(Math.abs(varianzaForecast))}
+                    </p>
+                    <p className={`text-xs mt-1 font-medium ${varianzaForecast >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {varianzaForecast >= 0 ? 'Bajo presupuesto' : 'Sobre presupuesto'}
+                    </p>
+                  </>
+                ) : eficiencia != null ? (
+                  <>
+                    <p className={`text-2xl font-black ${eficiencia >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                      {eficiencia >= 0 ? '+' : ''}{eficiencia.toFixed(0)} pts
+                    </p>
+                    <p className={`text-xs mt-1 font-medium ${eficiencia >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {eficiencia >= 0 ? 'Físico adelanta al gasto' : 'Gasto adelanta al físico'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400 italic">—</p>
+                )}
+              </div>
+
+            </div>
           </div>
         )}
 
