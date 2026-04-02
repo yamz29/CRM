@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Eye, Pencil, Trash2, Users, Phone } from 'lucide-react'
 import { DeleteClienteButton } from './DeleteClienteButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
+import { ExportButton } from '@/components/ui/export-button'
 
 interface SearchParams {
   search?: string
@@ -58,12 +59,15 @@ export default async function ClientesPage({
           <h1 className="text-2xl font-bold text-slate-800">Clientes</h1>
           <p className="text-slate-500 mt-1">{clientes.length} clientes registrados</p>
         </div>
-        <Link href="/clientes/nuevo">
-          <Button>
-            <Plus className="w-4 h-4" />
-            Nuevo Cliente
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportButton href="/api/export/clientes" label="Exportar" />
+          <Link href="/clientes/nuevo">
+            <Button>
+              <Plus className="w-4 h-4" />
+              Nuevo Cliente
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search */}

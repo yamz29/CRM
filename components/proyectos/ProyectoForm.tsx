@@ -25,11 +25,12 @@ interface ProyectoFormData {
   descripcion: string
   responsable: string
   presupuestoEstimado: string
+  avanceFisico: number
 }
 
 interface ProyectoFormProps {
   clientes: Cliente[]
-  initialData?: Partial<ProyectoFormData> & { id?: number }
+  initialData?: Partial<ProyectoFormData> & { id?: number; avanceFisico?: number }
   mode?: 'create' | 'edit'
   defaultClienteId?: string
 }
@@ -50,13 +51,17 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
     descripcion: initialData?.descripcion || '',
     responsable: initialData?.responsable || '',
     presupuestoEstimado: initialData?.presupuestoEstimado || '',
+    avanceFisico: initialData?.avanceFisico ?? 0,
   })
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'avanceFisico' ? parseInt(value) : value,
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,6 +95,7 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
           presupuestoEstimado: formData.presupuestoEstimado
             ? parseFloat(formData.presupuestoEstimado.replace(/\./g, '').replace(',', '.'))
             : null,
+          avanceFisico: formData.avanceFisico,
         }),
       })
 
@@ -191,6 +197,32 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-3">
+                <Label htmlFor="avanceFisico">Avance físico: {formData.avanceFisico}%</Label>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <input
+                    id="avanceFisico"
+                    name="avanceFisico"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={formData.avanceFisico}
+                    onChange={handleChange}
+                    className="flex-1 accent-blue-600"
+                  />
+                  <div className="w-full max-w-[200px] h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${formData.avanceFisico}%`,
+                        backgroundColor: formData.avanceFisico === 100 ? '#22c55e' : formData.avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="estado">Estado del proyecto</Label>
                 <Select

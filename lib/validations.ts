@@ -40,6 +40,7 @@ export const ProyectoSchema = z.object({
   descripcion:         z.string().max(2000).optional().nullable(),
   responsable:         z.string().max(200).optional().nullable(),
   presupuestoEstimado: z.coerce.number().min(0).optional().nullable(),
+  avanceFisico:        z.coerce.number().int().min(0).max(100).default(0),
 })
 
 export type ProyectoInput = z.infer<typeof ProyectoSchema>

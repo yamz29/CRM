@@ -9,6 +9,7 @@ import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle } from 'l
 import { DeleteProyectoButton } from './DeleteProyectoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
+import { ExportButton } from '@/components/ui/export-button'
 
 interface SearchParams {
   estado?: string
@@ -70,6 +71,7 @@ export default async function ProyectosPage({
         </div>
         <div className="flex items-center gap-2">
           <HelpDrawer slug="proyectos" titulo="Proyectos" />
+          <ExportButton href="/api/export/proyectos" label="Exportar" />
           <Link href="/proyectos/nuevo">
             <Button>
               <Plus className="w-4 h-4" />
@@ -152,6 +154,7 @@ export default async function ProyectosPage({
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inicio</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Presupuesto</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">Avance</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
@@ -188,6 +191,24 @@ export default async function ProyectosPage({
                         {proyecto.presupuestoEstimado
                           ? formatCurrency(proyecto.presupuestoEstimado)
                           : '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {(proyecto as any).avanceFisico > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden min-w-[60px]">
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${(proyecto as any).avanceFisico}%`,
+                                  backgroundColor: (proyecto as any).avanceFisico === 100 ? '#22c55e' : (proyecto as any).avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{(proyecto as any).avanceFisico}%</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 text-sm">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">

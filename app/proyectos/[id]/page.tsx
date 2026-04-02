@@ -433,6 +433,28 @@ export default async function ProyectoDetailPage({
                     </div>
                   </div>
                 )}
+                {(proyecto as any).avanceFisico > 0 && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-4 h-4 mt-0.5 flex-shrink-0 flex items-center justify-center">
+                      <div className="w-3 h-3 rounded-full border-2 border-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-500">Avance físico</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${(proyecto as any).avanceFisico}%`,
+                              backgroundColor: (proyecto as any).avanceFisico === 100 ? '#22c55e' : (proyecto as any).avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-bold text-slate-700 tabular-nums">{(proyecto as any).avanceFisico}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-xs text-slate-500">Creado el</p>
                   <p className="text-sm text-slate-600 mt-0.5">{formatDate(proyecto.createdAt)}</p>

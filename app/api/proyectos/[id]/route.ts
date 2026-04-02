@@ -62,6 +62,7 @@ export async function PUT(
       descripcion,
       responsable,
       presupuestoEstimado,
+      avanceFisico,
     } = body
 
     if (!nombre || !clienteId) {
@@ -84,6 +85,7 @@ export async function PUT(
         descripcion: descripcion || null,
         responsable: responsable || null,
         presupuestoEstimado: presupuestoEstimado ? parseFloat(presupuestoEstimado) : null,
+        avanceFisico: avanceFisico != null ? parseInt(avanceFisico) : 0,
       },
     })
 

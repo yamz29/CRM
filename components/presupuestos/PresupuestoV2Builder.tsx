@@ -41,6 +41,7 @@ export interface Analisis {
 
 interface Partida {
   id?: number
+  _key?: string
   codigo: string; descripcion: string; unidad: string
   cantidad: number; precioUnitario: number; subtotal: number
   observaciones: string; orden: number; analisis?: Analisis
@@ -139,7 +140,7 @@ function calcAnalisisFromDetalle(detalle: DetalleAPU, indirectos: number, utilid
 }
 
 function emptyPartida(orden: number): Partida {
-  return { codigo: '', descripcion: '', unidad: 'gl', cantidad: 1, precioUnitario: 0, subtotal: 0, observaciones: '', orden }
+  return { _key: nextPK(), codigo: '', descripcion: '', unidad: 'gl', cantidad: 1, precioUnitario: 0, subtotal: 0, observaciones: '', orden }
 }
 function emptyCapitulo(codigo: string, nombre: string, orden: number, tituloIdx: number | null = null): Capitulo {
   return { codigo, nombre, orden, tituloIdx, partidas: [emptyPartida(0)] }
@@ -165,6 +166,8 @@ function evalExpr(raw: string): number {
   }
 }
 const HAS_OP = /[+\-*/()]/
+let _pk = 0
+const nextPK = () => String(++_pk)
 
 // ── NumericCell ───────────────────────────────────────────────────────────────
 
@@ -369,7 +372,12 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   const [estado, setEstado] = useState(initialData?.estado || 'Borrador')
   const [notas, setNotas] = useState(initialData?.notas || '')
   const [titulos, setTitulos] = useState<Titulo[]>(initialData?.titulos || [])
-  const [capitulos, setCapitulos] = useState<Capitulo[]>(initialData?.capitulos || [])
+  const [capitulos, setCapitulos] = useState<Capitulo[]>(
+    (initialData?.capitulos || []).map(cap => ({
+      ...cap,
+      partidas: cap.partidas.map(p => ({ ...p, _key: p._key ?? (p.id ? `db-${p.id}` : nextPK()) })),
+    }))
+  )
   const [indirectoLineas, setIndirectoLineas] = useState<IndirectoLinea[]>(
     initialData?.indirectoLineas && initialData.indirectoLineas.length > 0
       ? initialData.indirectoLineas
@@ -394,6 +402,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
       orden: ci,
       tituloIdx: cap.tituloIdx,
       partidas: cap.partidas.map((p, pi) => ({
+        _key: nextPK(),
         codigo: p.codigo,
         descripcion: p.descripcion,
         unidad: p.unidad,
@@ -510,7 +519,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
     setCapitulos(prev => {
       const next = [...prev]
       const partidas = [...next[ci].partidas]
-      const copy = { ...partidas[pi], id: undefined, orden: partidas.length }
+      const copy = { ...partidas[pi], id: undefined, _key: nextPK(), orden: partidas.length }
       partidas.splice(pi + 1, 0, copy)
       next[ci] = { ...next[ci], partidas }
       return next
@@ -532,7 +541,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
     setApuOpen(null)
   }, [])
   const insertPartidaFromApu = useCallback((ci: number, partida: Partida) => {
-    setCapitulos(prev => { const next = [...prev]; next[ci] = { ...next[ci], partidas: [...next[ci].partidas, { ...partida, orden: next[ci].partidas.length }] }; return next })
+    setCapitulos(prev => { const next = [...prev]; next[ci] = { ...next[ci], partidas: [...next[ci].partidas, { ...partida, _key: nextPK(), id: undefined, orden: next[ci].partidas.length }] }; return next })
   }, [])
 
   // ── Indirecto handlers ─────────────────────────────────────────────────────
@@ -655,7 +664,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                   {cap.partidas.map((p, pi) => {
                     const apuKey = `${ci}-${pi}`
                     return (
-                      <Fragment key={pi}>
+                      <Fragment key={p._key ?? `idx-${ci}-${pi}`}>
                         <tr className="border-b border-slate-100 hover:bg-slate-50/50 group">
                           <td className="px-2 py-1 text-center text-xs text-slate-400 select-none">{pi + 1}</td>
                           <td className="px-1 py-0.5">
