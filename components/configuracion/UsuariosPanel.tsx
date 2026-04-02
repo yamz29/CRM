@@ -180,7 +180,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">Costo/hora (RD$)</Label>
-                            <Input type="number" min="0" step="50" value={editForm.costoHora}
+                            <Input type="number" min="0" step="0.01" value={editForm.costoHora}
                               onChange={(e) => setEditForm((p) => ({ ...p, costoHora: e.target.value }))}
                               className="h-8 text-sm" placeholder="0" />
                           </div>
@@ -295,7 +295,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Costo/hora (RD$)</Label>
-                  <Input type="number" min="0" step="50" value={addForm.costoHora}
+                  <Input type="number" min="0" step="0.01" value={addForm.costoHora}
                     onChange={(e) => setAddForm((p) => ({ ...p, costoHora: e.target.value }))}
                     className="h-8 text-sm" placeholder="0" />
                 </div>
