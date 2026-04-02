@@ -21,7 +21,7 @@ export async function GET() {
     'Proyecto':    g.proyecto?.nombre ?? '',
     'Suplidor':    g.suplidor ?? '',
     'Referencia':  g.referencia ?? '',
-    'Notas':       g.notas ?? '',
+    'Notas':       g.observaciones ?? '',
     'Creado':      g.createdAt.toISOString().slice(0, 10),
   }))
 
