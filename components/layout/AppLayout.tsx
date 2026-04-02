@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { Sidebar } from './Sidebar'
+import { LayoutShell } from './LayoutShell'
 import { prisma } from '@/lib/prisma'
 import { toPermisosMap } from '@/lib/permisos'
 
@@ -39,20 +39,15 @@ export async function AppLayout({ children }: AppLayoutProps) {
   const permisos = toPermisosMap(permisosRows)
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar
-        userName={userName}
-        userEmail={userEmail}
-        logoUrl={empresa?.logoUrl ?? null}
-        nombreEmpresa={empresa?.nombre ?? 'Gonzalva Group'}
-        permisos={permisos}
-        esAdmin={esAdmin}
-      />
-      <main className="flex-1 ml-64 min-h-screen">
-        <div className="p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <LayoutShell
+      userName={userName}
+      userEmail={userEmail}
+      logoUrl={empresa?.logoUrl ?? null}
+      nombreEmpresa={empresa?.nombre ?? 'Gonzalva Group'}
+      permisos={permisos}
+      esAdmin={esAdmin}
+    >
+      {children}
+    </LayoutShell>
   )
 }
