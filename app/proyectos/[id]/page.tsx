@@ -7,10 +7,11 @@ import { EstadoProyectoBadge, EstadoPresupuestoBadge } from '@/components/ui/bad
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { GastosTab } from '@/components/gastos/GastosTab'
 import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupuestarioTab'
+import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
-  TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList,
+  TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -106,6 +107,7 @@ export default async function ProyectoDetailPage({
     { key: 'presupuestos', label: `Presupuestos (${proyecto.presupuestos.length})` },
     { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
     { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
+    { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
   ]
 
   return (
@@ -719,6 +721,14 @@ export default async function ProyectoDetailPage({
         <ControlPresupuestarioTab
           proyectoId={proyecto.id}
           presupuestoBaseId={proyecto.presupuestoBaseId ?? null}
+        />
+      )}
+
+      {/* BITÁCORA */}
+      {tab === 'bitacora' && (
+        <BitacoraTimeline
+          proyectoId={proyecto.id}
+          avanceFisicoActual={avanceFisico}
         />
       )}
     </div>

@@ -56,6 +56,7 @@ model Proyecto {
   registrosHoras  RegistroHoras[]
   oportunidades   Oportunidad[]
   cronogramas     Cronograma[]
+  bitacora        BitacoraEntrada[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -605,6 +606,7 @@ model Usuario {
   tareas         Tarea[]
   registrosHoras RegistroHoras[]
   permisos       PermisoUsuario[]
+  bitacora       BitacoraEntrada[]
 }
 
 model PermisoUsuario {
@@ -828,4 +830,40 @@ model AvanceCronograma {
 
   @@index([actividadId])
   @@map("avance_cronograma")
+}
+
+// ── BITÁCORA DE OBRA ──────────────────────────────────────────────────
+
+model BitacoraEntrada {
+  id             Int      @id @default(autoincrement())
+  proyectoId     Int
+  usuarioId      Int?
+  fecha          DateTime
+  tipo           String   @default("Avance")  // Avance | Problema | Inspección | General
+  descripcion    String
+  clima          String?  // Soleado | Nublado | Lluvia | Tormenta
+  personalEnObra Int?
+  avancePct      Int?     // si se llena, actualiza avanceFisico del proyecto
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  proyecto Proyecto  @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  usuario  Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  fotos    BitacoraFoto[]
+
+  @@index([proyectoId, fecha])
+  @@map("bitacora_entradas")
+}
+
+model BitacoraFoto {
+  id        Int      @id @default(autoincrement())
+  entradaId Int
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  entrada BitacoraEntrada @relation(fields: [entradaId], references: [id], onDelete: Cascade)
+
+  @@index([entradaId])
+  @@map("bitacora_fotos")
 }
