@@ -23,7 +23,7 @@ export function PeriodoSelector() {
   }
 
   return (
-    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-muted dark:bg-white/[0.04] dark:border dark:border-white/[0.08] rounded-lg p-1">
       {PERIODOS.map(p => (
         <button
           key={p.value}
@@ -31,7 +31,7 @@ export function PeriodoSelector() {
           className={cn(
             'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
             current === p.value
-              ? 'bg-card text-foreground shadow-sm'
+              ? 'bg-card dark:bg-white/[0.1] text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
           )}
         >

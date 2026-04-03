@@ -29,24 +29,24 @@
 
   /* ── Dark mode (premium SaaS — default) ─────────────────────────── */
   .dark {
-    --background:             224 20% 7%;
+    --background:             222 22% 6%;
     --foreground:             213 31% 91%;
-    --card:                   224 25% 10%;
+    --card:                   222 25% 9%;
     --card-foreground:        213 31% 91%;
-    --popover:                224 25% 10%;
+    --popover:                222 25% 9%;
     --popover-foreground:     213 31% 91%;
     --primary:                217 91% 60%;
     --primary-foreground:     0 0% 100%;
-    --secondary:              224 25% 15%;
+    --secondary:              222 25% 14%;
     --secondary-foreground:   213 31% 91%;
-    --muted:                  224 25% 15%;
-    --muted-foreground:       215 16% 47%;
+    --muted:                  222 25% 14%;
+    --muted-foreground:       215 20% 50%;
     --accent:                 217 91% 60%;
     --accent-foreground:      0 0% 100%;
     --destructive:            0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border:                 224 20% 18%;
-    --input:                  224 25% 13%;
+    --border:                 222 20% 16%;
+    --input:                  222 25% 11%;
     --ring:                   217 91% 60%;
     --radius:                 0.75rem;
   }
@@ -60,9 +60,18 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  /* Light mode: simple clean bg */
+  :root body {
+    background: hsl(var(--background));
+  }
+  /* Dark mode: gradient background for depth */
+  .dark body {
+    background: linear-gradient(145deg, #080b14 0%, #0d1220 40%, #0a0f1d 100%);
+    background-attachment: fixed;
   }
 
   /* Custom scrollbar for dark mode */
@@ -74,11 +83,11 @@
     background: transparent;
   }
   .dark ::-webkit-scrollbar-thumb {
-    background: hsl(224 25% 22%);
+    background: hsl(222 25% 20%);
     border-radius: 3px;
   }
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: hsl(224 25% 28%);
+    background: hsl(222 25% 28%);
   }
 }
 
@@ -120,17 +129,5 @@
   /* ── Stat card ─────────────────────────────────────────────────── */
   .stat-card {
     @apply bg-card rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-200;
-  }
-
-  /* ── Glass effect (dark mode premium) ──────────────────────────── */
-  .glass {
-    @apply bg-card/80 backdrop-blur-xl border-white/[0.06];
-  }
-  .dark .glass {
-    background: linear-gradient(
-      135deg,
-      hsl(224 25% 11% / 0.8),
-      hsl(224 25% 9% / 0.9)
-    );
   }
 }

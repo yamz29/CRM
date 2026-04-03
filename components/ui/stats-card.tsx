@@ -20,18 +20,21 @@ export function StatsCard({
 }: StatsCardProps) {
   return (
     <div className={cn(
-      'bg-card rounded-xl border border-border p-5 transition-all duration-300',
-      'hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 hover:-translate-y-0.5',
-      'dark:bg-card/80 dark:backdrop-blur-xl dark:border-white/[0.06]',
-      'dark:hover:border-primary/30 dark:hover:shadow-primary/10',
+      'rounded-xl p-5 transition-all duration-300',
+      // Light mode
+      'bg-card border border-border shadow-sm',
+      'hover:shadow-lg hover:border-primary/20 hover:-translate-y-0.5',
+      // Dark mode — glass effect
+      'dark:bg-white/[0.03] dark:border-white/[0.08] dark:backdrop-blur-sm',
+      'dark:hover:bg-white/[0.06] dark:hover:border-blue-500/30 dark:hover:shadow-xl dark:hover:shadow-blue-500/10',
       className
     )}>
       <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{title}</p>
           <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{value}</p>
           {description && (
-            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+            <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{description}</p>
           )}
         </div>
         <div className={cn('p-2.5 rounded-xl', colorClass)}>
