@@ -110,7 +110,7 @@ const NIVEL_COLORS: Record<string, { fill: string; stroke: string; badge: string
 const SNAP_MM = 50
 const CANVAS_HEIGHT_PX = 380
 const COUNTERTOP_MM = 850
-const DEFAULT_ALTURA = 1400
+const DEFAULT_ALTURA = 1500
 
 const TIPO_FILTER_MAP: Record<string, string[]> = {
   Todos: [],
@@ -217,6 +217,7 @@ function computeSegments(
 function ElevationSVG({
   wall, placements, allPlacements, alturaMm,
   selectedPlacementId, placingModule, hoverX,
+  flipped = false,
   adjacentAtStart, adjacentAtEnd,
   onCanvasClick, onCanvasMouseMove, onCanvasMouseLeave,
   onPlacementClick, onDragEnd,
@@ -228,6 +229,7 @@ function ElevationSVG({
   selectedPlacementId: number | null
   placingModule: ModuloBasic | null
   hoverX: number | null
+  flipped?: boolean
   adjacentAtStart: Wall | null
   adjacentAtEnd: Wall | null
   onCanvasClick: (xMm: number) => void
@@ -263,15 +265,17 @@ function ElevationSVG({
         onClick={(e) => {
           if (dragState) return
           const rect = e.currentTarget.getBoundingClientRect()
-          onCanvasClick((e.clientX - rect.left) / scale)
+          const rawMm = (e.clientX - rect.left) / scale
+          onCanvasClick(flipped ? wall.longitud - rawMm : rawMm)
         }}
         onMouseMove={(e) => {
           if (dragState) {
             const dMm = (e.clientX - dragState.startClientX) / scale
-            setDragState((prev) => prev ? { ...prev, currentPosicion: prev.startPosicion + dMm } : null)
+            setDragState((prev) => prev ? { ...prev, currentPosicion: prev.startPosicion + (flipped ? -dMm : dMm) } : null)
           } else {
             const rect = e.currentTarget.getBoundingClientRect()
-            onCanvasMouseMove((e.clientX - rect.left) / scale)
+            const rawMm = (e.clientX - rect.left) / scale
+            onCanvasMouseMove(flipped ? wall.longitud - rawMm : rawMm)
           }
         }}
         onMouseLeave={() => {
@@ -333,7 +337,8 @@ function ElevationSVG({
             rectY = yFloor - rectH
           }
 
-          const rectX = currentPos * scale
+          const displayPos = flipped ? (wall.longitud - currentPos - modAncho) : currentPos
+          const rectX = displayPos * scale
           const rectW = Math.max(modAncho * scale, 8)
           const isSelected = p.id === selectedPlacementId
 
@@ -385,7 +390,8 @@ function ElevationSVG({
           const hasOv = overlaps(allPlacements, wall.id, clamped, placingModule.ancho || 300, ng)
           const rectW = Math.max((placingModule.ancho || 300) * scale, 40)
           const rectH = Math.max((placingModule.alto || 720) * scale, 30)
-          const rectX = clamped * scale
+          const ghostPos = flipped ? (wall.longitud - clamped - (placingModule.ancho || 300)) : clamped
+          const rectX = ghostPos * scale
           const rectY = isAereo
             ? yFloor - (DEFAULT_ALTURA + (placingModule.alto || 720)) * scale
             : yFloor - rectH
@@ -1046,6 +1052,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   const [tipoFilter, setTipoFilter] = useState('Todos')
   const [calcResults, setCalcResults] = useState<CalcResult[] | null>(null)
   const [calculating, setCalculating] = useState(false)
+  const [elevFlipped, setElevFlipped] = useState(false)
   const [positionInput, setPositionInput] = useState('')
   const [alturaInput, setAlturaInput] = useState(String(DEFAULT_ALTURA))
   const [showPresupuestoModal, setShowPresupuestoModal] = useState(false)
@@ -1064,7 +1071,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   }
 
   const activeWall = project.paredes.find((w) => w.id === activeWallId) ?? project.paredes[0]
-  const wallPlacements = placements.filter((p) => p.wallId === activeWallId)
+  const wallPlacements = placements
+    .filter((p) => p.wallId === activeWallId)
+    .sort((a, b) => a.posicion - b.posicion)
   const adjacentWalls = getAdjacentWalls(project.paredes, activeWallId, project.layoutType)
   const totalCalcCost = calcResults?.reduce((s, r) => s + r.costoEstimado, 0) ?? 0
 
@@ -1470,6 +1479,14 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     <span className="ml-1.5 text-muted-foreground">{Math.round(wall.longitud)}mm</span>
                   </button>
                 ))}
+                <button
+                  onClick={() => setElevFlipped(!elevFlipped)}
+                  className={cn('ml-auto px-2 py-1.5 rounded-t-lg text-xs font-medium transition-colors border-t border-l border-r',
+                    elevFlipped ? 'bg-amber-900/40 border-amber-600/40 text-amber-300' : 'bg-transparent border-transparent text-muted-foreground hover:text-muted-foreground/70')}
+                  title="Invertir dirección de la vista de elevación"
+                >
+                  {elevFlipped ? '← Der a Izq' : 'Izq a Der →'}
+                </button>
               </div>
 
               {placingModule && !isIslandMode && (
@@ -1494,6 +1511,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     selectedPlacementId={selectedPlacement?.id ?? null}
                     placingModule={isIslandMode ? null : placingModule}
                     hoverX={hoverX}
+                    flipped={elevFlipped}
                     adjacentAtStart={adjacentWalls.atStart}
                     adjacentAtEnd={adjacentWalls.atEnd}
                     onCanvasClick={handleCanvasClick}

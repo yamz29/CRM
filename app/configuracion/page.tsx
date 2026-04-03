@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive } from 'lucide-react'
+import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmpresaForm } from '@/components/configuracion/EmpresaForm'
 import { VendedoresPanel } from '@/components/configuracion/VendedoresPanel'
@@ -8,6 +8,7 @@ import { CategoriasPanel } from '@/components/configuracion/CategoriasPanel'
 import { UsuariosPanel } from '@/components/configuracion/UsuariosPanel'
 import { UnidadesPanel } from '@/components/configuracion/UnidadesPanel'
 import { RespaldoPanel } from '@/components/configuracion/RespaldoPanel'
+import { TiposModuloPanel } from '@/components/configuracion/TiposModuloPanel'
 
 const tabs = [
   { key: 'empresa', label: 'Empresa', icon: Building2 },
@@ -15,6 +16,7 @@ const tabs = [
   { key: 'categorias', label: 'Categorías', icon: Tag },
   { key: 'usuarios', label: 'Usuarios', icon: Users },
   { key: 'unidades', label: 'Unidades', icon: Ruler },
+  { key: 'taller', label: 'Taller', icon: Wrench },
   { key: 'respaldo', label: 'Respaldo', icon: HardDrive },
 ]
 
@@ -45,6 +47,13 @@ export default async function ConfiguracionPage({
     activeTab === 'unidades'
       ? await prisma.unidadGlobal.findMany({ orderBy: [{ tipo: 'asc' }, { codigo: 'asc' }] })
       : []
+  const tiposModuloConfig =
+    activeTab === 'taller'
+      ? await prisma.configuracion.findUnique({ where: { clave: 'tipos_modulo_melamina' } })
+      : null
+  const tiposModulo: string[] = tiposModuloConfig
+    ? JSON.parse(tiposModuloConfig.valor)
+    : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Electrodoméstico', 'Otro']
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -94,6 +103,7 @@ export default async function ConfiguracionPage({
           {activeTab === 'categorias' && <CategoriasPanel initialData={categorias} />}
           {activeTab === 'usuarios' && <UsuariosPanel initialData={usuarios} />}
           {activeTab === 'unidades' && <UnidadesPanel initialData={unidades} />}
+          {activeTab === 'taller' && <TiposModuloPanel initialTipos={tiposModulo} />}
           {activeTab === 'respaldo' && <RespaldoPanel />}
         </div>
       </div>

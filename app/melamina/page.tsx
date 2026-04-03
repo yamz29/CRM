@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Box, Pencil, Layers, Package2, Scissors, List, LayoutGrid } from 'lucide-react'
+import { Plus, Box, Pencil, Layers, Package2, List, LayoutGrid } from 'lucide-react'
 import { DeleteModuloButton } from './DeleteModuloButton'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
 
@@ -14,6 +14,7 @@ interface SearchParams {
   msg?: string
   vista?: string
   estado?: string
+  tipo?: string
 }
 
 const ESTADOS_PRODUCCION = [
@@ -40,15 +41,31 @@ export default async function MelaminaPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { msg, vista = 'lista', estado: filtroEstado } = await searchParams
+  const { msg, vista = 'lista', estado: filtroEstado, tipo: filtroTipo } = await searchParams
 
-  const where = filtroEstado ? { estadoProduccion: filtroEstado } : {}
+  const where = {
+    ...(filtroEstado ? { estadoProduccion: filtroEstado } : {}),
+    ...(filtroTipo ? { tipoModulo: filtroTipo } : {}),
+  }
+
+  // Load configurable tipos
+  const tiposConfig = await prisma.configuracion.findUnique({ where: { clave: 'tipos_modulo_melamina' } })
+  const tiposModulo: string[] = tiposConfig
+    ? JSON.parse(tiposConfig.valor)
+    : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Electrodoméstico', 'Otro']
+
+  const conteosPorTipo = await prisma.moduloMelaminaV2.groupBy({
+    by: ['tipoModulo'],
+    _count: true,
+  })
+  const cuentaPorTipo = Object.fromEntries(
+    conteosPorTipo.map(c => [c.tipoModulo, c._count])
+  )
 
   const [modulos, totalModulos, enProduccion, instalados, conteosPorEstado] = await Promise.all([
     prisma.moduloMelaminaV2.findMany({
       where,
-      include: { proyecto: { select: { id: true, nombre: true } } },
-      orderBy: [{ estadoProduccion: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ tipoModulo: 'asc' }, { createdAt: 'desc' }],
     }),
     prisma.moduloMelaminaV2.count(),
     prisma.moduloMelaminaV2.count({
@@ -91,7 +108,7 @@ export default async function MelaminaPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Módulos Melamina</h1>
-          <p className="text-muted-foreground mt-1">{modulos.length} módulos {filtroEstado ? `en "${filtroEstado}"` : 'registrados'}</p>
+          <p className="text-muted-foreground mt-1">{modulos.length} módulos {filtroTipo ? `tipo "${filtroTipo}"` : 'registrados'}</p>
         </div>
         <div className="flex gap-2">
           <HelpDrawer slug="materiales" titulo="Módulos Melamina" />
@@ -133,31 +150,31 @@ export default async function MelaminaPage({
         />
       </div>
 
-      {/* Toolbar: filtro estado + toggle vista */}
+      {/* Toolbar: filtro tipo + toggle vista */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        {/* Filtro por estado */}
+        {/* Filtro por tipo de módulo */}
         <div className="flex gap-2 flex-wrap">
           <Link
             href={buildHref({ vista })}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-              !filtroEstado
+              !filtroTipo
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'
             }`}
           >
             Todos ({totalModulos})
           </Link>
-          {ESTADOS_PRODUCCION.map(e => (
+          {tiposModulo.map(tipo => (
             <Link
-              key={e.key}
-              href={buildHref({ vista, estado: e.key })}
+              key={tipo}
+              href={buildHref({ vista, tipo })}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                filtroEstado === e.key
+                filtroTipo === tipo
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'
               }`}
             >
-              {e.key} {cuentaPorEstado[e.key] ? `(${cuentaPorEstado[e.key]})` : '(0)'}
+              {tipo} {cuentaPorTipo[tipo] ? `(${cuentaPorTipo[tipo]})` : '(0)'}
             </Link>
           ))}
         </div>
@@ -213,9 +230,6 @@ export default async function MelaminaPage({
                         {m.codigo && (
                           <p className="text-[10px] font-mono text-muted-foreground truncate">{m.codigo}</p>
                         )}
-                        {m.proyecto && (
-                          <p className="text-[10px] text-muted-foreground mt-1 truncate">{m.proyecto.nombre}</p>
-                        )}
                         <div className="flex items-center justify-between mt-1.5">
                           <span className="text-[10px] text-muted-foreground">×{m.cantidad}</span>
                           {m.precioVenta > 0 && (
@@ -258,7 +272,6 @@ export default async function MelaminaPage({
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Código</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nombre</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyecto</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dimensiones</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Material</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
@@ -284,20 +297,6 @@ export default async function MelaminaPage({
                         <td className="px-4 py-3">
                           <Badge variant="default">{m.tipoModulo}</Badge>
                         </td>
-                        <td className="px-4 py-3">
-                          {m.proyecto ? (
-                            <Link
-                              href={`/proyectos/${m.proyecto.id}`}
-                              className="text-sm text-muted-foreground hover:text-primary"
-                            >
-                              {m.proyecto.nombre.length > 25
-                                ? m.proyecto.nombre.substring(0, 25) + '...'
-                                : m.proyecto.nombre}
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground/50 text-sm">-</span>
-                          )}
-                        </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                           {m.ancho > 0 || m.alto > 0 || m.profundidad > 0
                             ? `${m.ancho}×${m.alto}×${m.profundidad} cm`
@@ -316,13 +315,6 @@ export default async function MelaminaPage({
                                 <Layers className="w-4 h-4" />
                               </Button>
                             </Link>
-                            {m.proyecto && (
-                              <Link href={`/melamina/corte?proyecto=${m.proyecto.id}`}>
-                                <Button variant="ghost" size="sm" title="Lista de corte del proyecto">
-                                  <Scissors className="w-4 h-4" />
-                                </Button>
-                              </Link>
-                            )}
                             <Link href={`/melamina/${m.id}/editar`}>
                               <Button variant="ghost" size="sm" title="Editar">
                                 <Pencil className="w-4 h-4" />

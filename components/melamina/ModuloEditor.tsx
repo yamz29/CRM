@@ -83,17 +83,16 @@ interface ModuloData {
   })[]
 }
 
-interface Props {
-  modulo: ModuloData
-  materialesDisponibles: MaterialRef[]
-}
-
-// ── Constantes ────────────────────────────────────────────────────────────────
-
-const TIPOS_MODULO = [
+const TIPOS_MODULO_DEFAULT = [
   'Base con puertas', 'Base con cajones', 'Base mixto',
   'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro',
 ]
+
+interface Props {
+  modulo: ModuloData
+  materialesDisponibles: MaterialRef[]
+  tiposModulo?: string[]
+}
 
 const ESTADOS_PRODUCCION = [
   'Diseño', 'En corte', 'En canteado', 'En armado', 'Instalado', 'Entregado',
@@ -397,7 +396,7 @@ function generarDespiece(
 
 // ── Componente principal ──────────────────────────────────────────────────────
 
-export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
+export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPOS_MODULO_DEFAULT }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<'datos' | 'despiece' | 'materiales' | 'resumen' | 'nesting'>('despiece')
   const [loading, setLoading] = useState(false)
@@ -735,7 +734,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo</label>
               <select className={inputCls + ' bg-card'} value={tipoModulo} onChange={(e) => setTipoModulo(e.target.value)}>
-                {TIPOS_MODULO.map((t) => <option key={t}>{t}</option>)}
+                {tiposModulo.map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div className="md:col-span-2">

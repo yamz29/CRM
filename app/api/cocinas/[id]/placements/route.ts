@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       moduloId,
       posicion = 0,
       nivel = wallId ? 'base' : 'isla',
-      alturaDesdeSupelo = 1400,
+      alturaDesdeSupelo = 1500,
       posX = 0,
       posY = 0,
     } = body

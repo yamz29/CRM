@@ -11,7 +11,7 @@ export default async function ModuloDetallePage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [modulo, materialesDisponibles] = await Promise.all([
+  const [modulo, materialesDisponibles, tiposConfig] = await Promise.all([
     prisma.moduloMelaminaV2.findUnique({
       where: { id },
       include: {
@@ -28,7 +28,12 @@ export default async function ModuloDetallePage({
       where: { activo: true },
       orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
     }),
+    prisma.configuracion.findUnique({ where: { clave: 'tipos_modulo_melamina' } }),
   ])
+
+  const tiposModulo: string[] = tiposConfig
+    ? JSON.parse(tiposConfig.valor)
+    : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro']
 
   if (!modulo) notFound()
 
@@ -51,6 +56,7 @@ export default async function ModuloDetallePage({
     <ModuloEditor
       modulo={moduloData}
       materialesDisponibles={materialesDisponibles}
+      tiposModulo={tiposModulo}
     />
   )
 }

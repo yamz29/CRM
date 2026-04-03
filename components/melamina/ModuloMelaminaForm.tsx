@@ -5,8 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, X, Save } from 'lucide-react'
 
+const TIPOS_MODULO_DEFAULT = [
+  'Base con puertas', 'Base con cajones', 'Base mixto',
+  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina',
+  'Electrodoméstico', 'Otro',
+]
+
 interface Props {
   tableros: { id: number; nombre: string; codigo: string | null }[]
+  tiposModulo?: string[]
   mode?: 'create' | 'edit'
   initialData?: {
     id?: number
@@ -22,13 +29,7 @@ interface Props {
   }
 }
 
-const TIPOS_MODULO = [
-  'Base con puertas', 'Base con cajones', 'Base mixto',
-  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina',
-  'Electrodoméstico', 'Otro',
-]
-
-export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: Props) {
+export function ModuloMelaminaForm({ tableros, tiposModulo = TIPOS_MODULO_DEFAULT, mode = 'create', initialData }: Props) {
   const router = useRouter()
 
   const [codigo, setCodigo] = useState(initialData?.codigo || '')
@@ -165,7 +166,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
             }}
             className={inputCls + ' bg-card'}
           >
-            {TIPOS_MODULO.map((t) => (
+            {tiposModulo.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
