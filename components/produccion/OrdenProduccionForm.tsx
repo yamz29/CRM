@@ -5,21 +5,31 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PRIORIDADES } from '@/lib/produccion'
-import { Package, FileText, Plus, Trash2, Loader2 } from 'lucide-react'
-import { ImportarModulosModal } from './ImportarModulosModal'
+import { Package, LayoutGrid, Plus, Trash2, Loader2, CheckSquare } from 'lucide-react'
 
-interface Presupuesto {
+interface ModuloInfo {
+  placementId: number
+  moduloId: number
+  nivel: string
+  nombre: string
+  tipoModulo: string
+  ancho: number
+  alto: number
+  profundidad: number
+  cantidad: number
+}
+
+interface Espacio {
   id: number
-  numero: string
-  estado: string
-  total: number
-  cliente: { id: number; nombre: string }
-  proyecto: { id: number; nombre: string } | null
-  tieneModulosV2: boolean
+  nombre: string
+  layoutType: string
+  moduloCount: number
+  modulos: ModuloInfo[]
+  createdAt: string
 }
 
 interface Props {
-  presupuestos: Presupuesto[]
+  espacios: Espacio[]
   proyectos: { id: number; nombre: string }[]
 }
 
@@ -30,15 +40,15 @@ interface ManualItem {
   cantidad: number
 }
 
-export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
+export function OrdenProduccionForm({ espacios, proyectos }: Props) {
   const router = useRouter()
   const [modo, setModo] = useState<'importar' | 'manual'>('importar')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Import mode
-  const [selectedPresupuesto, setSelectedPresupuesto] = useState<number | ''>('')
-  const [showImportModal, setShowImportModal] = useState(false)
+  const [selectedEspacio, setSelectedEspacio] = useState<number | ''>('')
+  const [selectedModulos, setSelectedModulos] = useState<Set<number>>(new Set())
 
   // Common fields
   const [nombre, setNombre] = useState('')
@@ -49,6 +59,32 @@ export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
   const [items, setItems] = useState<ManualItem[]>([
     { nombre: '', tipo: '', dimensiones: '', cantidad: 1 },
   ])
+
+  const espacioData = selectedEspacio ? espacios.find(e => e.id === selectedEspacio) : null
+
+  function handleSelectEspacio(id: number) {
+    setSelectedEspacio(id)
+    const esp = espacios.find(e => e.id === id)
+    if (esp) {
+      setSelectedModulos(new Set(esp.modulos.map(m => m.moduloId)))
+    }
+  }
+
+  function toggleModulo(moduloId: number) {
+    const next = new Set(selectedModulos)
+    if (next.has(moduloId)) next.delete(moduloId)
+    else next.add(moduloId)
+    setSelectedModulos(next)
+  }
+
+  function toggleAllModulos() {
+    if (!espacioData) return
+    if (selectedModulos.size === espacioData.modulos.length) {
+      setSelectedModulos(new Set())
+    } else {
+      setSelectedModulos(new Set(espacioData.modulos.map(m => m.moduloId)))
+    }
+  }
 
   function addItem() {
     setItems([...items, { nombre: '', tipo: '', dimensiones: '', cantidad: 1 }])
@@ -69,18 +105,21 @@ export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
 
     try {
       if (modo === 'importar') {
-        if (!selectedPresupuesto) {
-          setError('Selecciona un presupuesto')
+        if (!selectedEspacio || selectedModulos.size === 0) {
+          setError('Selecciona un espacio y al menos un módulo')
           setSaving(false)
           return
         }
+
+        const moduloIds = Array.from(selectedModulos)
         const res = await fetch('/api/produccion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            modo: 'importar',
-            presupuestoId: selectedPresupuesto,
-            nombre,
+            modo: 'importar-espacio',
+            espacioId: selectedEspacio,
+            moduloIds,
+            nombre: nombre || `Producción - ${espacioData?.nombre || ''}`,
             proyectoId: proyectoId || null,
             prioridad,
           }),
@@ -116,8 +155,6 @@ export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
     }
   }
 
-  const presupuestosV2 = presupuestos.filter(p => p.tieneModulosV2)
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Mode selector */}
@@ -131,12 +168,12 @@ export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
               : 'border-border hover:border-primary/30'
           }`}
         >
-          <FileText className={`w-5 h-5 ${modo === 'importar' ? 'text-primary' : 'text-muted-foreground'}`} />
+          <LayoutGrid className={`w-5 h-5 ${modo === 'importar' ? 'text-primary' : 'text-muted-foreground'}`} />
           <div className="text-left">
             <p className={`text-sm font-medium ${modo === 'importar' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Importar de Presupuesto
+              Importar de Espacio
             </p>
-            <p className="text-xs text-muted-foreground">Trae módulos y calcula materiales</p>
+            <p className="text-xs text-muted-foreground">Trae módulos de un proyecto de cocina/espacio</p>
           </div>
         </button>
         <button
@@ -204,58 +241,111 @@ export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
         </CardContent>
       </Card>
 
-      {/* Import mode: select presupuesto */}
+      {/* Import mode: select espacio + modules */}
       {modo === 'importar' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Seleccionar Presupuesto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {presupuestosV2.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No hay presupuestos con módulos de melamina V2 disponibles
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {presupuestosV2.map(p => (
-                  <label
-                    key={p.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedPresupuesto === p.id
-                        ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                        : 'border-border hover:border-primary/30'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="presupuesto"
-                      value={p.id}
-                      checked={selectedPresupuesto === p.id}
-                      onChange={() => setSelectedPresupuesto(p.id)}
-                      className="accent-primary"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-foreground">{p.numero}</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          p.estado === 'Aprobado' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' :
-                          'bg-muted text-muted-foreground'
-                        }`}>{p.estado}</span>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Seleccionar Espacio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {espacios.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  No hay espacios/cocinas creados
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {espacios.map(esp => (
+                    <label
+                      key={esp.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        selectedEspacio === esp.id
+                          ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                          : 'border-border hover:border-primary/30'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="espacio"
+                        value={esp.id}
+                        checked={selectedEspacio === esp.id}
+                        onChange={() => handleSelectEspacio(esp.id)}
+                        className="accent-primary"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-foreground">{esp.nombre}</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                            {esp.layoutType}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {esp.moduloCount} módulos colocados
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {p.cliente.nombre}
-                        {p.proyecto && ` — ${p.proyecto.nombre}`}
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium text-foreground">
-                      RD${p.total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Module selection within espacio */}
+          {espacioData && espacioData.modulos.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Módulos a Producir</CardTitle>
+                  <button
+                    type="button"
+                    onClick={toggleAllModulos}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {selectedModulos.size === espacioData.modulos.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {espacioData.modulos.map(m => (
+                    <label
+                      key={m.moduloId}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        selectedModulos.has(m.moduloId)
+                          ? 'border-primary/50 bg-primary/5 dark:bg-primary/10'
+                          : 'border-border'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedModulos.has(m.moduloId)}
+                        onChange={() => toggleModulo(m.moduloId)}
+                        className="accent-primary"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">{m.nombre}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            m.nivel === 'alto' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
+                            : m.nivel === 'isla' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                          }`}>{m.nivel}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {m.tipoModulo} — {m.ancho}×{m.alto}×{m.profundidad} mm — Cant: {m.cantidad}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  <CheckSquare className="w-3 h-3 inline mr-1" />
+                  {selectedModulos.size} de {espacioData.modulos.length} módulos seleccionados
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Manual mode: add items */}
@@ -323,13 +413,6 @@ export function OrdenProduccionForm({ presupuestos, proyectos }: Props) {
           Crear Orden
         </Button>
       </div>
-
-      {showImportModal && selectedPresupuesto && (
-        <ImportarModulosModal
-          presupuestoId={selectedPresupuesto}
-          onClose={() => setShowImportModal(false)}
-        />
-      )}
     </form>
   )
 }

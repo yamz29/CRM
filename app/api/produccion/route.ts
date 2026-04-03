@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { modo } = body // 'importar' | 'manual'
+    const { modo } = body // 'importar' | 'importar-espacio' | 'manual'
 
     // Generate sequential code
     const year = new Date().getFullYear()
@@ -139,6 +139,131 @@ export async function POST(req: NextRequest) {
         }
 
         // Create purchase list
+        if (materialMap.size > 0) {
+          await tx.materialOrdenProduccion.createMany({
+            data: Array.from(materialMap.values()).map((m) => ({
+              ordenId: orden.id,
+              materialId: m.materialId,
+              nombre: m.nombre,
+              tipo: m.tipo,
+              unidad: m.unidad,
+              cantidadRequerida: m.cantidadTotal,
+              costoUnitario: m.costoUnitario,
+              costoTotal: m.cantidadTotal * m.costoUnitario,
+              proveedor: m.proveedor,
+            })),
+          })
+        }
+
+        return { ...orden, itemCount: items.length, materialCount: materialMap.size }
+      })
+
+      return NextResponse.json(result, { status: 201 })
+    }
+
+    if (modo === 'importar-espacio') {
+      const { espacioId, moduloIds, nombre, proyectoId, prioridad } = body
+
+      const result = await prisma.$transaction(async (tx) => {
+        // Fetch the kitchen project for naming
+        const espacio = await tx.kitchenProject.findUnique({
+          where: { id: parseInt(espacioId) },
+          select: { nombre: true },
+        })
+
+        // Fetch selected modules
+        const modulos = await tx.moduloMelaminaV2.findMany({
+          where: { id: { in: moduloIds.map((id: number) => id) } },
+          include: {
+            materialesModulo: { include: { material: true } },
+            materialTablero: true,
+          },
+        })
+
+        if (modulos.length === 0) {
+          throw new Error('No se encontraron módulos seleccionados')
+        }
+
+        const orden = await tx.ordenProduccion.create({
+          data: {
+            codigo,
+            nombre: nombre || `Producción - ${espacio?.nombre || 'Espacio'}`,
+            proyectoId: proyectoId ? parseInt(proyectoId) : null,
+            prioridad: prioridad || 'Media',
+          },
+        })
+
+        // Create items from modules
+        const items = await Promise.all(
+          modulos.map((mod) =>
+            tx.itemProduccion.create({
+              data: {
+                ordenId: orden.id,
+                moduloId: mod.id,
+                nombreModulo: mod.nombre,
+                tipoModulo: mod.tipoModulo,
+                dimensiones: `${mod.ancho}x${mod.alto}x${mod.profundidad} mm`,
+                cantidad: mod.cantidad,
+                checklistQCProceso: JSON.stringify(DEFAULT_QC_PROCESO),
+                checklistQCFinal: JSON.stringify(DEFAULT_QC_FINAL),
+              },
+            })
+          )
+        )
+
+        // Aggregate materials
+        const materialMap = new Map<
+          number,
+          {
+            materialId: number
+            nombre: string
+            tipo: string
+            unidad: string
+            cantidadTotal: number
+            costoUnitario: number
+            proveedor: string | null
+          }
+        >()
+
+        for (const mod of modulos) {
+          if (mod.materialTablero) {
+            const key = mod.materialTablero.id
+            const existing = materialMap.get(key)
+            if (existing) {
+              existing.cantidadTotal += mod.cantidad
+            } else {
+              materialMap.set(key, {
+                materialId: key,
+                nombre: mod.materialTablero.nombre,
+                tipo: mod.materialTablero.tipo,
+                unidad: mod.materialTablero.unidad,
+                cantidadTotal: mod.cantidad,
+                costoUnitario: mod.materialTablero.precio,
+                proveedor: mod.materialTablero.proveedor || null,
+              })
+            }
+          }
+
+          for (const mm of mod.materialesModulo) {
+            const key = mm.materialId
+            const existing = materialMap.get(key)
+            const qty = mm.cantidad * mod.cantidad
+            if (existing) {
+              existing.cantidadTotal += qty
+            } else {
+              materialMap.set(key, {
+                materialId: key,
+                nombre: mm.material.nombre,
+                tipo: mm.material.tipo,
+                unidad: mm.unidad || mm.material.unidad,
+                cantidadTotal: qty,
+                costoUnitario: mm.material.precio,
+                proveedor: mm.material.proveedor || null,
+              })
+            }
+          }
+        }
+
         if (materialMap.size > 0) {
           await tx.materialOrdenProduccion.createMany({
             data: Array.from(materialMap.values()).map((m) => ({
