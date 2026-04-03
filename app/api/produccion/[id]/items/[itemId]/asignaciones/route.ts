@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma'
 type Params = { params: Promise<{ id: string; itemId: string }> }
 
 export async function GET(_req: NextRequest, { params }: Params) {
-  const { itemId } = await params
+  const { id } = await params
 
   const asignaciones = await prisma.asignacionProduccion.findMany({
-    where: { itemId: parseInt(itemId), activo: true },
+    where: { ordenId: parseInt(id), activo: true },
     include: { usuario: { select: { id: true, nombre: true, correo: true } } },
     orderBy: { createdAt: 'desc' },
   })
@@ -16,21 +16,27 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
-  const { itemId } = await params
+  const { id } = await params
   const { usuarioId, etapa } = await req.json()
 
   try {
-    const asignacion = await prisma.asignacionProduccion.upsert({
+    // Check if already assigned
+    const existing = await prisma.asignacionProduccion.findFirst({
       where: {
-        itemId_usuarioId_etapa: {
-          itemId: parseInt(itemId),
-          usuarioId: parseInt(usuarioId),
-          etapa,
-        },
+        ordenId: parseInt(id),
+        usuarioId: parseInt(usuarioId),
+        etapa,
+        activo: true,
       },
-      update: { activo: true },
-      create: {
-        itemId: parseInt(itemId),
+    })
+
+    if (existing) {
+      return NextResponse.json(existing, { status: 200 })
+    }
+
+    const asignacion = await prisma.asignacionProduccion.create({
+      data: {
+        ordenId: parseInt(id),
         usuarioId: parseInt(usuarioId),
         etapa,
       },
@@ -44,17 +50,15 @@ export async function POST(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const { itemId } = await params
+  const { id } = await params
   const { usuarioId, etapa } = await req.json()
 
   try {
-    await prisma.asignacionProduccion.delete({
+    await prisma.asignacionProduccion.deleteMany({
       where: {
-        itemId_usuarioId_etapa: {
-          itemId: parseInt(itemId),
-          usuarioId: parseInt(usuarioId),
-          etapa,
-        },
+        ordenId: parseInt(id),
+        usuarioId: parseInt(usuarioId),
+        etapa,
       },
     })
 

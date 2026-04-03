@@ -1,14 +1,14 @@
 // ── Constantes del módulo de Producción ──────────────────────────────
 
 export const ETAPAS_PRODUCCION = [
-  { key: 'Compra de Materiales', label: 'Compra Materiales', color: 'purple'  },
-  { key: 'Recepcion',           label: 'Recepción',         color: 'indigo'  },
-  { key: 'Corte',               label: 'Corte',             color: 'blue'    },
-  { key: 'Canteo',              label: 'Canteo',            color: 'cyan'    },
-  { key: 'Mecanizacion',        label: 'Mecanización',      color: 'amber'   },
-  { key: 'QC Proceso',          label: 'QC Proceso',        color: 'orange'  },
-  { key: 'Ensamble',            label: 'Ensamble',          color: 'emerald' },
-  { key: 'QC Final',            label: 'QC Final',          color: 'green'   },
+  { key: 'Compra de Materiales', label: 'Compra',        color: 'purple',  icon: 'ShoppingCart',   scope: 'materiales' },
+  { key: 'Recepcion',           label: 'Recepción',      color: 'indigo',  icon: 'PackageCheck',   scope: 'materiales' },
+  { key: 'Corte',               label: 'Corte',          color: 'blue',    icon: 'Scissors',       scope: 'tableros'   },
+  { key: 'Canteo',              label: 'Canteo',         color: 'cyan',    icon: 'Layers',         scope: 'tableros'   },
+  { key: 'Mecanizacion',        label: 'Mecanización',   color: 'amber',   icon: 'Cog',            scope: 'tableros'   },
+  { key: 'QC Proceso',          label: 'QC Proceso',     color: 'orange',  icon: 'ClipboardCheck', scope: 'todos'      },
+  { key: 'Ensamble',            label: 'Ensamble',       color: 'emerald', icon: 'Hammer',         scope: 'todos'      },
+  { key: 'QC Final',            label: 'QC Final',       color: 'green',   icon: 'ShieldCheck',    scope: 'todos'      },
 ] as const
 
 export type EtapaProduccion = typeof ETAPAS_PRODUCCION[number]['key']
@@ -20,7 +20,7 @@ export const ETAPA_ORDER: Record<string, number> = Object.fromEntries(
 export const PRIORIDADES = ['Alta', 'Media', 'Baja'] as const
 export const ESTADOS_ORDEN = ['Pendiente', 'En Proceso', 'Completada', 'Cancelada'] as const
 
-// Colores por etapa para badges y columnas kanban
+// Colores por etapa para badges y stepper
 export const ETAPA_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   'Compra de Materiales': { bg: 'bg-purple-50 dark:bg-purple-500/10',   text: 'text-purple-700 dark:text-purple-400',   border: 'border-purple-200 dark:border-purple-500/30',   dot: 'bg-purple-500'  },
   'Recepcion':           { bg: 'bg-indigo-50 dark:bg-indigo-500/10',   text: 'text-indigo-700 dark:text-indigo-400',   border: 'border-indigo-200 dark:border-indigo-500/30',   dot: 'bg-indigo-500'  },
@@ -63,3 +63,15 @@ export const DEFAULT_QC_FINAL = [
 ]
 
 export type QCItem = { item: string; checked: boolean; checkedBy?: number; checkedAt?: string }
+
+// Descripciones por etapa para el panel de detalle
+export const ETAPA_DESCRIPCION: Record<string, string> = {
+  'Compra de Materiales': 'Lista de materiales a comprar. Genera el PDF para enviar al chofer.',
+  'Recepcion': 'Verifica que los materiales comprados llegaron completos.',
+  'Corte': 'Corta las piezas de tablero según las dimensiones de cada módulo.',
+  'Canteo': 'Aplica cantos a las piezas cortadas que lo requieren.',
+  'Mecanizacion': 'Perforaciones para bisagras, rieles y otros herrajes.',
+  'QC Proceso': 'Control de calidad de todas las piezas antes del ensamble.',
+  'Ensamble': 'Arma los módulos con las piezas mecanizadas y agrega herrajes.',
+  'QC Final': 'Inspección final antes de despachar para instalación.',
+}

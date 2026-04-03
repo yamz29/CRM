@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
-import { Plus, Factory, Clock, PlayCircle, CheckCircle, Package } from 'lucide-react'
+import { Plus, Clock, PlayCircle, CheckCircle, Package } from 'lucide-react'
 import { ProduccionPageClient } from '@/components/produccion/ProduccionPageClient'
 
 interface SearchParams { msg?: string }
@@ -11,13 +11,13 @@ interface SearchParams { msg?: string }
 export default async function ProduccionPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const { msg } = await searchParams
 
-  const [ordenes, totalPendientes, totalEnProceso, totalCompletadas, totalItems] =
+  const [ordenes, totalPendientes, totalEnProceso, totalCompletadas, totalModulos] =
     await Promise.all([
       prisma.ordenProduccion.findMany({
         include: {
           proyecto: { select: { id: true, nombre: true } },
           items: {
-            select: { id: true, etapa: true, completado: true, nombreModulo: true, cantidad: true, prioridad: true },
+            select: { id: true, nombreModulo: true, cantidad: true },
           },
           _count: { select: { items: true, materiales: true } },
         },
@@ -26,19 +26,20 @@ export default async function ProduccionPage({ searchParams }: { searchParams: P
       prisma.ordenProduccion.count({ where: { estado: 'Pendiente' } }),
       prisma.ordenProduccion.count({ where: { estado: 'En Proceso' } }),
       prisma.ordenProduccion.count({ where: { estado: 'Completada' } }),
-      prisma.itemProduccion.count({ where: { completado: false } }),
+      prisma.itemProduccion.count(),
     ])
 
   const ordenesSerial = ordenes.map((o) => ({
-    ...o,
-    fechaInicio: o.fechaInicio?.toISOString() || null,
-    fechaEstimada: o.fechaEstimada?.toISOString() || null,
-    fechaCompletada: o.fechaCompletada?.toISOString() || null,
+    id: o.id,
+    codigo: o.codigo,
+    nombre: o.nombre,
+    estado: o.estado,
+    etapaActual: o.etapaActual,
+    prioridad: o.prioridad,
+    clienteNombre: o.clienteNombre,
+    proyecto: o.proyecto,
+    _count: o._count,
     createdAt: o.createdAt.toISOString(),
-    updatedAt: o.updatedAt.toISOString(),
-    items: o.items.map((i) => ({
-      ...i,
-    })),
   }))
 
   return (
@@ -64,10 +65,9 @@ export default async function ProduccionPage({ searchParams }: { searchParams: P
         <StatsCard title="Pendientes"  value={totalPendientes}  icon={<Clock className="w-5 h-5" />}       colorClass="bg-muted text-muted-foreground" />
         <StatsCard title="En Proceso"  value={totalEnProceso}   icon={<PlayCircle className="w-5 h-5" />}  colorClass="bg-blue-500/10 text-blue-500" />
         <StatsCard title="Completadas" value={totalCompletadas} icon={<CheckCircle className="w-5 h-5" />} colorClass="bg-green-500/10 text-green-500" />
-        <StatsCard title="Items Activos" value={totalItems}     icon={<Package className="w-5 h-5" />}     colorClass="bg-purple-500/10 text-purple-500" />
+        <StatsCard title="Total Módulos" value={totalModulos}   icon={<Package className="w-5 h-5" />}     colorClass="bg-purple-500/10 text-purple-500" />
       </div>
 
-      {/* Client component: list + kanban */}
       <ProduccionPageClient ordenes={ordenesSerial} />
     </div>
   )

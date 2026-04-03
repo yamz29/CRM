@@ -880,22 +880,28 @@ model OrdenProduccion {
   proyectoId        Int?
   clienteNombre     String?
   presupuestoOrigen Int?
+  espacioOrigenId   Int?
+  etapaActual       String    @default("Compra de Materiales")
   prioridad         String    @default("Media")
   estado            String    @default("Pendiente")
   fechaInicio       DateTime?
   fechaEstimada     DateTime?
   fechaCompletada   DateTime?
   notas             String?
+  checklistQCProceso String?
+  checklistQCFinal   String?
   creadoPorId       Int?
   empresaId         Int       @default(1)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  proyecto   Proyecto?                @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
-  items      ItemProduccion[]
-  materiales MaterialOrdenProduccion[]
+  proyecto     Proyecto?                @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  items        ItemProduccion[]
+  materiales   MaterialOrdenProduccion[]
+  asignaciones AsignacionProduccion[]
 
   @@index([estado])
+  @@index([etapaActual])
   @@index([empresaId])
   @@map("orden_produccion")
 }
@@ -908,14 +914,8 @@ model ItemProduccion {
   tipoModulo         String?
   dimensiones        String?
   cantidad           Int       @default(1)
-  etapa              String    @default("Compra de Materiales")
-  prioridad          String    @default("Media")
-  fechaInicioEtapa   DateTime?
-  checklistQCProceso String?
-  checklistQCFinal   String?
   observaciones      String?
   completado         Boolean   @default(false)
-  fechaCompletado    DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -923,22 +923,23 @@ model ItemProduccion {
   asignaciones AsignacionProduccion[]
 
   @@index([ordenId])
-  @@index([etapa])
   @@map("item_produccion")
 }
 
 model AsignacionProduccion {
   id        Int      @id @default(autoincrement())
-  itemId    Int
+  itemId    Int?
+  ordenId   Int?
   usuarioId Int
   etapa     String
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  item    ItemProduccion @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  usuario Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  item    ItemProduccion?  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  orden   OrdenProduccion? @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  usuario Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@unique([itemId, usuarioId, etapa])
+  @@index([ordenId])
   @@index([usuarioId])
   @@map("asignacion_produccion")
 }

@@ -10,12 +10,6 @@ export default async function OrdenDetailPage({ params }: { params: Promise<{ id
     include: {
       proyecto: { select: { id: true, nombre: true } },
       items: {
-        include: {
-          asignaciones: {
-            where: { activo: true },
-            include: { usuario: { select: { id: true, nombre: true } } },
-          },
-        },
         orderBy: { createdAt: 'asc' },
       },
       materiales: {
@@ -33,6 +27,48 @@ export default async function OrdenDetailPage({ params }: { params: Promise<{ id
     orderBy: { nombre: 'asc' },
   })
 
+  // Fetch piezas for corte/canteo/mecanización stages
+  // Get all moduloIds from this order's items
+  const moduloIds = orden.items
+    .map(i => i.moduloId)
+    .filter((id): id is number => id !== null)
+
+  let piezas: {
+    id: number
+    nombre: string
+    etiqueta: string
+    largo: number
+    ancho: number
+    cantidad: number
+    espesor: number
+    material: string | null
+    tapacanto: string
+    moduloNombre: string
+  }[] = []
+
+  if (moduloIds.length > 0) {
+    const rawPiezas = await prisma.piezaModulo.findMany({
+      where: { moduloId: { in: moduloIds } },
+      include: {
+        modulo: { select: { nombre: true } },
+      },
+      orderBy: [{ moduloId: 'asc' }, { orden: 'asc' }],
+    })
+
+    piezas = rawPiezas.map(p => ({
+      id: p.id,
+      nombre: p.nombre,
+      etiqueta: p.etiqueta,
+      largo: p.largo,
+      ancho: p.ancho,
+      cantidad: p.cantidad,
+      espesor: p.espesor,
+      material: p.material,
+      tapacanto: p.tapacanto,
+      moduloNombre: p.modulo.nombre,
+    }))
+  }
+
   // Serialize dates
   const ordenSerial = {
     ...orden,
@@ -43,14 +79,8 @@ export default async function OrdenDetailPage({ params }: { params: Promise<{ id
     updatedAt: orden.updatedAt.toISOString(),
     items: orden.items.map(i => ({
       ...i,
-      fechaInicioEtapa: i.fechaInicioEtapa?.toISOString() || null,
-      fechaCompletado: i.fechaCompletado?.toISOString() || null,
       createdAt: i.createdAt.toISOString(),
       updatedAt: i.updatedAt.toISOString(),
-      asignaciones: i.asignaciones.map(a => ({
-        ...a,
-        createdAt: a.createdAt.toISOString(),
-      })),
     })),
     materiales: orden.materiales.map(m => ({
       ...m,
@@ -59,5 +89,5 @@ export default async function OrdenDetailPage({ params }: { params: Promise<{ id
     })),
   }
 
-  return <OrdenProduccionDetail orden={ordenSerial} usuarios={usuarios} />
+  return <OrdenProduccionDetail orden={ordenSerial} usuarios={usuarios} piezas={piezas} />
 }
