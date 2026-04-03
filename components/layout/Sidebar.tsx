@@ -29,6 +29,7 @@ import {
   GanttChart,
   PanelLeftClose,
   PanelLeftOpen,
+  Factory,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, Fragment } from 'react'
@@ -67,8 +68,9 @@ const NAV_GROUPS = [
     label: 'Taller',
     icon: Wrench,
     items: [
-      { href: '/melamina', label: 'Módulos Melamina',     icon: Box,     modulo: 'melamina' as ModuloKey },
-      { href: '/cocinas',  label: 'Espacios (Modulares)', icon: ChefHat, modulo: 'cocinas'  as ModuloKey },
+      { href: '/melamina',    label: 'Módulos Melamina',     icon: Box,     modulo: 'melamina'    as ModuloKey },
+      { href: '/cocinas',     label: 'Espacios (Modulares)', icon: ChefHat, modulo: 'cocinas'     as ModuloKey },
+      { href: '/produccion',  label: 'Producción',           icon: Factory, modulo: 'produccion'  as ModuloKey },
     ],
   },
   {

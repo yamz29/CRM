@@ -57,6 +57,7 @@ model Proyecto {
   oportunidades   Oportunidad[]
   cronogramas     Cronograma[]
   bitacora        BitacoraEntrada[]
+  ordenesProduccion OrdenProduccion[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -277,6 +278,7 @@ model MaterialMelamina {
 
   materialesModulo MaterialModuloMelamina[]
   modulosTablero   ModuloMelaminaV2[]       @relation("ModuloTableroMaterial")
+  materialesOrden  MaterialOrdenProduccion[]
 
   @@map("material_melamina")
 }
@@ -607,12 +609,13 @@ model Usuario {
   registrosHoras RegistroHoras[]
   permisos       PermisoUsuario[]
   bitacora       BitacoraEntrada[]
+  asignacionesProduccion AsignacionProduccion[]
 }
 
 model PermisoUsuario {
   id        Int    @id @default(autoincrement())
   usuarioId Int
-  modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|recursos|apus|tareas|horas|melamina|cocinas|configuracion
+  modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|recursos|apus|tareas|horas|melamina|cocinas|produccion|configuracion
   nivel     String @default("editar") // ninguno | ver | editar | admin
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -866,4 +869,101 @@ model BitacoraFoto {
 
   @@index([entradaId])
   @@map("bitacora_fotos")
+}
+
+// ── PRODUCCIÓN ───────────────────────────────────────────────────────
+
+model OrdenProduccion {
+  id                Int       @id @default(autoincrement())
+  codigo            String    @unique
+  nombre            String
+  proyectoId        Int?
+  clienteNombre     String?
+  presupuestoOrigen Int?
+  prioridad         String    @default("Media")
+  estado            String    @default("Pendiente")
+  fechaInicio       DateTime?
+  fechaEstimada     DateTime?
+  fechaCompletada   DateTime?
+  notas             String?
+  creadoPorId       Int?
+  empresaId         Int       @default(1)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  proyecto   Proyecto?                @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  items      ItemProduccion[]
+  materiales MaterialOrdenProduccion[]
+
+  @@index([estado])
+  @@index([empresaId])
+  @@map("orden_produccion")
+}
+
+model ItemProduccion {
+  id                 Int       @id @default(autoincrement())
+  ordenId            Int
+  moduloId           Int?
+  nombreModulo       String
+  tipoModulo         String?
+  dimensiones        String?
+  cantidad           Int       @default(1)
+  etapa              String    @default("Compra de Materiales")
+  prioridad          String    @default("Media")
+  fechaInicioEtapa   DateTime?
+  checklistQCProceso String?
+  checklistQCFinal   String?
+  observaciones      String?
+  completado         Boolean   @default(false)
+  fechaCompletado    DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  orden        OrdenProduccion        @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  asignaciones AsignacionProduccion[]
+
+  @@index([ordenId])
+  @@index([etapa])
+  @@map("item_produccion")
+}
+
+model AsignacionProduccion {
+  id        Int      @id @default(autoincrement())
+  itemId    Int
+  usuarioId Int
+  etapa     String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  item    ItemProduccion @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  usuario Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, usuarioId, etapa])
+  @@index([usuarioId])
+  @@map("asignacion_produccion")
+}
+
+model MaterialOrdenProduccion {
+  id                Int      @id @default(autoincrement())
+  ordenId           Int
+  materialId        Int?
+  nombre            String
+  tipo              String?
+  unidad            String   @default("ud")
+  cantidadRequerida Float    @default(0)
+  cantidadComprada  Float    @default(0)
+  cantidadRecibida  Float    @default(0)
+  costoUnitario     Float    @default(0)
+  costoTotal        Float    @default(0)
+  proveedor         String?
+  estado            String   @default("Pendiente")
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orden    OrdenProduccion   @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  material MaterialMelamina? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+
+  @@index([ordenId])
+  @@map("material_orden_produccion")
 }

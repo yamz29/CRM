@@ -14,6 +14,7 @@ export const MODULOS = [
   { key: 'horas',         label: 'Horas del equipo',       grupo: 'Gestión' },
   { key: 'melamina',      label: 'Módulos Melamina',       grupo: 'Taller' },
   { key: 'cocinas',       label: 'Espacios Modulares',     grupo: 'Taller' },
+  { key: 'produccion',    label: 'Producción',             grupo: 'Taller' },
   { key: 'configuracion', label: 'Configuración',          grupo: 'Sistema' },
 ] as const
 
