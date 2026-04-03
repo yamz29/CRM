@@ -34,7 +34,7 @@ const DESTINOS = [
   { value: 'proyecto',    label: 'Proyecto',           color: 'bg-blue-100 text-blue-700 border-blue-300' },
   { value: 'oficina',     label: 'Oficina',             color: 'bg-green-100 text-green-700 border-green-300' },
   { value: 'taller',      label: 'Taller',              color: 'bg-orange-100 text-orange-700 border-orange-300' },
-  { value: 'general',     label: 'General / Admin',     color: 'bg-slate-100 text-slate-600 border-slate-300' },
+  { value: 'general',     label: 'General / Admin',     color: 'bg-muted text-muted-foreground border-border' },
   { value: 'sin_asignar', label: 'Sin asignar',         color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
 ]
 
@@ -173,14 +173,14 @@ export function GastoForm({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 flex-shrink-0">
-          <h2 className="text-sm font-bold text-slate-800">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-shrink-0">
+          <h2 className="text-sm font-bold text-foreground">
             {isEdit ? 'Editar gasto' : 'Registrar nuevo gasto'}
           </h2>
-          <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -199,7 +199,7 @@ export function GastoForm({
                   <button key={d.value} type="button"
                     onClick={() => setForm(p => ({ ...p, destinoTipo: d.value, proyectoIdSeleccionado: d.value === 'proyecto' ? p.proyectoIdSeleccionado : null }))}
                     className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                      form.destinoTipo === d.value ? d.color : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                      form.destinoTipo === d.value ? d.color : 'bg-card text-muted-foreground border-border hover:border-border'
                     }`}
                   >
                     {d.label}
@@ -212,7 +212,7 @@ export function GastoForm({
                   <select
                     value={form.proyectoIdSeleccionado ?? ''}
                     onChange={e => setForm(p => ({ ...p, proyectoIdSeleccionado: e.target.value ? parseInt(e.target.value) : null }))}
-                    className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white"
+                    className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card"
                   >
                     <option value="">— Seleccionar proyecto —</option>
                     {proyectos.map(p => (
@@ -233,14 +233,14 @@ export function GastoForm({
             <div className="space-y-1">
               <Label className="text-xs">Tipo *</Label>
               <select value={form.tipoGasto} onChange={e => set('tipoGasto', e.target.value)}
-                className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white">
+                className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card">
                 {TIPOS_GASTO.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Método pago</Label>
               <select value={form.metodoPago} onChange={e => set('metodoPago', e.target.value)}
-                className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white">
+                className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card">
                 {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
@@ -282,7 +282,7 @@ export function GastoForm({
             <div className="space-y-1">
               <Label className="text-xs">Moneda</Label>
               <select value={form.moneda} onChange={e => set('moneda', e.target.value)}
-                className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white">
+                className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card">
                 {MONEDAS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
@@ -297,11 +297,11 @@ export function GastoForm({
           <div className="grid grid-cols-2 gap-3">
             {partidas.length > 0 && (
               <div className="space-y-1">
-                <Label className="text-xs">Partida presupuestaria <span className="text-slate-400">(opcional)</span></Label>
+                <Label className="text-xs">Partida presupuestaria <span className="text-muted-foreground">(opcional)</span></Label>
                 <select
                   value={form.partidaId ?? ''}
                   onChange={e => setForm(p => ({ ...p, partidaId: e.target.value ? parseInt(e.target.value) : null }))}
-                  className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white"
+                  className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card"
                 >
                   <option value="">— Sin asignar —</option>
                   {gruposPartidas.map(grupo => (
@@ -325,8 +325,8 @@ export function GastoForm({
 
           {/* Row 5b: recurso de inventario (opcional) */}
           {recursosStock.length > 0 && (
-            <div className="space-y-2 border border-slate-200 rounded-lg px-3 py-2.5 bg-slate-50/50">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Movimiento de inventario <span className="font-normal text-slate-400">(opcional)</span></p>
+            <div className="space-y-2 border border-border rounded-lg px-3 py-2.5 bg-muted/40/50">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Movimiento de inventario <span className="font-normal text-muted-foreground">(opcional)</span></p>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1 col-span-1">
                   <Label className="text-xs">Recurso</Label>
@@ -337,7 +337,7 @@ export function GastoForm({
                       recursoId: e.target.value ? parseInt(e.target.value) : null,
                       movimientoStock: e.target.value ? (p.movimientoStock || 'salida') : null,
                     }))}
-                    className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white"
+                    className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card"
                   >
                     <option value="">— Sin recurso —</option>
                     {recursosStock.map(r => (
@@ -359,7 +359,7 @@ export function GastoForm({
                     value={form.movimientoStock ?? 'salida'}
                     onChange={e => setForm(p => ({ ...p, movimientoStock: e.target.value || null }))}
                     disabled={!form.recursoId}
-                    className="w-full h-8 text-xs border border-slate-200 rounded-md px-2 bg-white disabled:opacity-50"
+                    className="w-full h-8 text-xs border border-border rounded-md px-2 bg-card disabled:opacity-50"
                   >
                     <option value="salida">Salida (consumo)</option>
                     <option value="entrada">Entrada (compra)</option>
@@ -377,7 +377,7 @@ export function GastoForm({
                 <button key={est} type="button"
                   onClick={() => set('estado', est)}
                   className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                    form.estado === est ? ESTADO_STYLES[est] : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                    form.estado === est ? ESTADO_STYLES[est] : 'bg-card text-muted-foreground border-border hover:border-border'
                   }`}
                 >
                   {est}
@@ -391,13 +391,13 @@ export function GastoForm({
             <div className="space-y-1">
               <Label className="text-xs">Observaciones</Label>
               <textarea value={form.observaciones} onChange={e => set('observaciones', e.target.value)} rows={2}
-                className="w-full text-xs border border-slate-200 rounded-md px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full text-xs border border-border rounded-md px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
                 placeholder="Notas adicionales..." />
             </div>
             <div className="space-y-1">
               <Label className="text-xs flex items-center gap-1"><Paperclip className="w-3 h-3" /> Soporte</Label>
               {form.archivoUrl && !archivo && (
-                <div className="flex items-center gap-1 text-xs text-slate-600 bg-slate-50 rounded px-2 py-1.5 border border-slate-200">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/40 rounded px-2 py-1.5 border border-border">
                   <Paperclip className="w-3 h-3 text-blue-500 flex-shrink-0" />
                   <a href={form.archivoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
                     Ver adjunto
@@ -408,7 +408,7 @@ export function GastoForm({
                 </div>
               )}
               {archivo ? (
-                <div className="flex items-center gap-1 text-xs text-slate-700 bg-blue-50 rounded px-2 py-1.5 border border-blue-200">
+                <div className="flex items-center gap-1 text-xs text-foreground bg-blue-50 rounded px-2 py-1.5 border border-blue-200">
                   <Paperclip className="w-3 h-3 text-blue-500 flex-shrink-0" />
                   <span className="truncate">{archivo.name}</span>
                   <button type="button" onClick={() => setArchivo(null)} className="ml-auto text-red-400 hover:text-red-600 flex-shrink-0">
@@ -417,7 +417,7 @@ export function GastoForm({
                 </div>
               ) : !form.archivoUrl && (
                 <button type="button" onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 border border-dashed border-slate-300 rounded-md px-2 py-1.5 w-full hover:border-blue-400 hover:text-blue-600 transition-colors">
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground border border-dashed border-border rounded-md px-2 py-1.5 w-full hover:border-blue-400 hover:text-primary transition-colors">
                   <Paperclip className="w-3 h-3" />
                   Adjuntar (PDF, JPG, PNG)
                 </button>
@@ -428,7 +428,7 @@ export function GastoForm({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t border-slate-100">
+          <div className="flex gap-2 pt-2 border-t border-border">
             <Button type="submit" disabled={loading} size="sm">
               {loading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Registrar gasto'}
             </Button>

@@ -11,7 +11,7 @@ interface Props {
 }
 
 const NIVEL_BG: Record<NivelPermiso, string> = {
-  ninguno: 'bg-slate-100 text-slate-500 border-slate-200',
+  ninguno: 'bg-muted text-muted-foreground border-border',
   ver:     'bg-blue-100 text-blue-700 border-blue-200',
   editar:  'bg-green-100 text-green-700 border-green-200',
   admin:   'bg-purple-100 text-purple-700 border-purple-200',

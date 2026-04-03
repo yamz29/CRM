@@ -38,7 +38,7 @@ const TIPO_CONFIG: Record<string, { icon: typeof TrendingUp; color: string; bg: 
   Avance:      { icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-100' },
   Problema:    { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-100' },
   'Inspección': { icon: ClipboardCheck, color: 'text-blue-600', bg: 'bg-blue-100' },
-  General:     { icon: FileText, color: 'text-slate-600', bg: 'bg-slate-100' },
+  General:     { icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted' },
 }
 
 const CLIMA_ICON: Record<string, typeof Sun> = {
@@ -83,8 +83,8 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-slate-400" />
+        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <FileText className="w-4 h-4 text-muted-foreground" />
           Bitácora de obra ({entradas.length} {entradas.length === 1 ? 'entrada' : 'entradas'})
         </h3>
         {!showForm && (
@@ -107,16 +107,16 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {/* Empty state */}
       {!loading && entradas.length === 0 && !showForm && (
         <div className="flex flex-col items-center py-12 text-center">
-          <FileText className="w-10 h-10 text-slate-300 mb-2" />
-          <p className="text-slate-500 text-sm">Sin entradas en la bitácora</p>
-          <p className="text-slate-400 text-xs mt-1">Registra el avance diario del proyecto desde campo</p>
+          <FileText className="w-10 h-10 text-muted-foreground/70 mb-2" />
+          <p className="text-muted-foreground text-sm">Sin entradas en la bitácora</p>
+          <p className="text-muted-foreground text-xs mt-1">Registra el avance diario del proyecto desde campo</p>
           <Button size="sm" className="mt-4" onClick={() => setShowForm(true)}>
             <Plus className="w-3.5 h-3.5" /> Primera entrada
           </Button>
@@ -127,14 +127,14 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
       {!loading && Object.entries(grouped).map(([date, items]) => (
         <div key={date} className="relative">
           {/* Date header */}
-          <div className="sticky top-0 z-10 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 mb-2">
-            <span className="text-xs font-bold text-slate-600">{formatDate(date)}</span>
-            <span className="text-xs text-slate-400 ml-2">
+          <div className="sticky top-0 z-10 bg-muted/40 border border-border rounded-lg px-3 py-1.5 mb-2">
+            <span className="text-xs font-bold text-muted-foreground">{formatDate(date)}</span>
+            <span className="text-xs text-muted-foreground ml-2">
               {items.length} {items.length === 1 ? 'entrada' : 'entradas'}
             </span>
           </div>
 
-          <div className="space-y-3 pl-4 border-l-2 border-slate-200 ml-3">
+          <div className="space-y-3 pl-4 border-l-2 border-border ml-3">
             {items.map(entry => {
               const cfg = TIPO_CONFIG[entry.tipo] || TIPO_CONFIG.General
               const Icon = cfg.icon
@@ -142,7 +142,7 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
               const ClimaIcon = entry.clima ? CLIMA_ICON[entry.clima] : null
 
               return (
-                <div key={entry.id} className="relative bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
+                <div key={entry.id} className="relative bg-card border border-border rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
                   {/* Timeline dot */}
                   <div className={`absolute -left-[25px] top-4 w-3 h-3 rounded-full border-2 border-white ${cfg.bg}`} />
 
@@ -156,9 +156,9 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                           {entry.tipo}
                         </span>
-                        {ClimaIcon && <ClimaIcon className="w-3.5 h-3.5 text-slate-400" />}
+                        {ClimaIcon && <ClimaIcon className="w-3.5 h-3.5 text-muted-foreground" />}
                         {entry.personalEnObra != null && entry.personalEnObra > 0 && (
-                          <span className="text-xs text-slate-400 flex items-center gap-0.5">
+                          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                             <Users className="w-3 h-3" /> {entry.personalEnObra}
                           </span>
                         )}
@@ -168,31 +168,31 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
                           </span>
                         )}
                         {entry.fotos.length > 0 && (
-                          <span className="text-xs text-slate-400 flex items-center gap-0.5">
+                          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                             <ImageIcon className="w-3 h-3" /> {entry.fotos.length}
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm text-slate-700 mt-1 ${!isExpanded ? 'line-clamp-2' : ''}`}>
+                      <p className={`text-sm text-foreground mt-1 ${!isExpanded ? 'line-clamp-2' : ''}`}>
                         {entry.descripcion}
                       </p>
                       {entry.usuario && (
-                        <p className="text-xs text-slate-400 mt-1">— {entry.usuario.nombre}</p>
+                        <p className="text-xs text-muted-foreground mt-1">— {entry.usuario.nombre}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                     </div>
                   </div>
 
                   {/* Expanded content */}
                   {isExpanded && (
-                    <div className="px-4 pb-3 border-t border-slate-100">
+                    <div className="px-4 pb-3 border-t border-border">
                       {/* Photos grid */}
                       {entry.fotos.length > 0 && (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
                           {entry.fotos.map(foto => (
-                            <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                            <div key={foto.id} className="relative aspect-square rounded-lg overflow-hidden border border-border cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={(e) => { e.stopPropagation(); setLightbox(foto.url) }}>
                               <img src={foto.url} alt={foto.caption || ''} className="w-full h-full object-cover" />
                               {foto.caption && (
@@ -206,7 +206,7 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
                       )}
 
                       <div className="flex items-center justify-between mt-3">
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-muted-foreground">
                           {new Date(entry.createdAt).toLocaleString('es-DO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }}

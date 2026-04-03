@@ -59,7 +59,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const inputCls = 'w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -141,7 +141,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
       {/* Código, Tipo, Nombre */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-1">Código</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Código</label>
           <input
             type="text"
             value={codigo}
@@ -151,7 +151,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           />
         </div>
         <div className="md:col-span-3">
-          <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Tipo</label>
           <select
             value={tipoModulo}
             onChange={(e) => {
@@ -163,7 +163,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
               else if (t === 'Base mixto') { setCantidadPuertas('1'); setCantidadCajones('2') }
               else { setCantidadPuertas('0'); setCantidadCajones('0') }
             }}
-            className={inputCls + ' bg-white'}
+            className={inputCls + ' bg-card'}
           >
             {TIPOS_MODULO.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -171,7 +171,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           </select>
         </div>
         <div className="md:col-span-7">
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Nombre <span className="text-red-500">*</span>
           </label>
           <input
@@ -187,7 +187,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
       {/* Dimensiones */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Ancho (mm)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Ancho (mm)</label>
           <input
             type="number"
             value={ancho}
@@ -197,7 +197,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Alto (mm)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Alto (mm)</label>
           <input
             type="number"
             value={alto}
@@ -207,7 +207,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Profundidad (mm)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Profundidad (mm)</label>
           <input
             type="number"
             value={profundidad}
@@ -223,7 +223,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
         tipoModulo === 'Base mixto' || tipoModulo === 'Aéreo con puertas') && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Cantidad de puertas</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Cantidad de puertas</label>
             <input
               type="number"
               value={cantidadPuertas}
@@ -233,7 +233,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Cantidad de cajones</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Cantidad de cajones</label>
             <input
               type="number"
               value={cantidadCajones}
@@ -248,11 +248,11 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
       {/* Material y Color */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Material (tablero)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Material (tablero)</label>
           <select
             value={recursoTableroId}
             onChange={(e) => setRecursoTableroId(e.target.value)}
-            className={inputCls + ' bg-white'}
+            className={inputCls + ' bg-card'}
           >
             <option value="">— Sin tablero —</option>
             {tableros.map((t) => (
@@ -268,7 +268,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Color / Acabado</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Color / Acabado</label>
           <input
             type="text"
             value={colorAcabado}
@@ -281,7 +281,7 @@ export function ModuloMelaminaForm({ tableros, mode = 'create', initialData }: P
 
       {/* Observaciones */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Observaciones</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Observaciones</label>
         <textarea
           value={observaciones}
           onChange={(e) => setObservaciones(e.target.value)}

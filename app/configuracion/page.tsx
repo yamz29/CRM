@@ -50,12 +50,12 @@ export default async function ConfiguracionPage({
     <div className="space-y-6 max-w-5xl">
       {/* Page Header */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-          <Settings className="w-5 h-5 text-slate-600" />
+        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+          <Settings className="w-5 h-5 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Configuración</h1>
-          <p className="text-slate-500 text-sm">Administra los datos del sistema</p>
+          <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
+          <p className="text-muted-foreground text-sm">Administra los datos del sistema</p>
         </div>
       </div>
 
@@ -73,12 +73,12 @@ export default async function ConfiguracionPage({
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
                     isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                 >
                   <Icon
-                    className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-white' : 'text-slate-400')}
+                    className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-primary-foreground' : 'text-muted-foreground')}
                   />
                   {label}
                 </Link>

@@ -351,7 +351,7 @@ export function PresupuestoBuilder({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Hammer className="w-4 h-4 text-slate-500" />
+              <Hammer className="w-4 h-4 text-muted-foreground" />
               PARTIDAS DE OBRA
             </CardTitle>
             <Button type="button" variant="secondary" size="sm" onClick={addPartida}>
@@ -363,14 +363,14 @@ export function PresupuestoBuilder({
         <CardContent className="space-y-4">
           {/* Quick add templates */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-2">Agregar rápido:</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Agregar rápido:</p>
             <div className="flex flex-wrap gap-2">
               {PARTIDAS_PREDEFINIDAS.map((template) => (
                 <button
                   key={template.descripcion}
                   type="button"
                   onClick={() => addPartidaFromTemplate(template)}
-                  className="px-2.5 py-1 text-xs rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                  className="px-2.5 py-1 text-xs rounded-md border border-border bg-muted/40 text-muted-foreground hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
                 >
                   + {template.descripcion.split(' ').slice(0, 2).join(' ')}
                 </button>
@@ -379,35 +379,35 @@ export function PresupuestoBuilder({
           </div>
 
           {/* Partidas Table */}
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[200px]">Descripción</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-20">Unidad</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-24">Cantidad</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-32">Precio Unit.</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-32">Subtotal</th>
-                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-12"></th>
+                <tr className="bg-muted/40 border-b border-border">
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase min-w-[200px]">Descripción</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-20">Unidad</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Cantidad</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-32">Precio Unit.</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-32">Subtotal</th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-12"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {partidas.map((partida, index) => (
-                  <tr key={index} className="hover:bg-slate-50/30">
+                  <tr key={index} className="hover:bg-muted/40/30">
                     <td className="px-3 py-2">
                       <input
                         type="text"
                         value={partida.descripcion}
                         onChange={(e) => updatePartida(index, 'descripcion', e.target.value)}
                         placeholder="Descripción de la partida..."
-                        className="w-full px-2 py-1.5 text-sm border border-transparent rounded hover:border-slate-200 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-transparent focus:bg-white transition-all"
+                        className="w-full px-2 py-1.5 text-sm border border-transparent rounded hover:border-border focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-transparent focus:bg-card transition-all"
                       />
                     </td>
                     <td className="px-3 py-2">
                       <select
                         value={partida.unidad}
                         onChange={(e) => updatePartida(index, 'unidad', e.target.value)}
-                        className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                        className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card"
                       >
                         <option value="m2">m²</option>
                         <option value="m">ml</option>
@@ -425,7 +425,7 @@ export function PresupuestoBuilder({
                         onChange={(e) => updatePartida(index, 'cantidad', parseFloat(e.target.value) || 0)}
                         min="0"
                         step="0.01"
-                        className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                        className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -435,11 +435,11 @@ export function PresupuestoBuilder({
                         onChange={(e) => updatePartida(index, 'precioUnitario', parseFloat(e.target.value) || 0)}
                         min="0"
                         step="1000"
-                        className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                        className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-sm font-semibold text-slate-700 block text-right pr-1">
+                      <span className="text-sm font-semibold text-foreground block text-right pr-1">
                         {formatCurrency(partida.subtotal)}
                       </span>
                     </td>
@@ -447,7 +447,7 @@ export function PresupuestoBuilder({
                       <button
                         type="button"
                         onClick={() => removePartida(index)}
-                        className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -456,7 +456,7 @@ export function PresupuestoBuilder({
                 ))}
                 {partidas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-sm">
+                    <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground text-sm">
                       No hay partidas. Haz clic en "Agregar Partida" para comenzar.
                     </td>
                   </tr>
@@ -464,12 +464,12 @@ export function PresupuestoBuilder({
               </tbody>
               {subtotalObra > 0 && (
                 <tfoot>
-                  <tr className="bg-slate-50 border-t-2 border-slate-200">
-                    <td colSpan={4} className="px-3 py-2.5 text-right text-sm font-semibold text-slate-600 uppercase">
+                  <tr className="bg-muted/40 border-t-2 border-border">
+                    <td colSpan={4} className="px-3 py-2.5 text-right text-sm font-semibold text-muted-foreground uppercase">
                       Subtotal Obra:
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <span className="text-sm font-bold text-slate-800">{formatCurrency(subtotalObra)}</span>
+                      <span className="text-sm font-bold text-foreground">{formatCurrency(subtotalObra)}</span>
                     </td>
                     <td></td>
                   </tr>
@@ -485,7 +485,7 @@ export function PresupuestoBuilder({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Box className="w-4 h-4 text-slate-500" />
+              <Box className="w-4 h-4 text-muted-foreground" />
               MÓDULOS DE MELAMINA / EBANISTERÍA
             </CardTitle>
             <Button type="button" variant="secondary" size="sm" onClick={addModulo}>
@@ -496,10 +496,10 @@ export function PresupuestoBuilder({
         </CardHeader>
         <CardContent>
           {modulos.length === 0 ? (
-            <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
-              <Box className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-slate-400 text-sm">Sin módulos de melamina</p>
-              <p className="text-slate-300 text-xs mt-1">
+            <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
+              <Box className="w-8 h-8 text-muted-foreground/70 mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">Sin módulos de melamina</p>
+              <p className="text-muted-foreground/70 text-xs mt-1">
                 Agrega módulos si el proyecto incluye fabricación de muebles en melamina
               </p>
               <button
@@ -511,30 +511,30 @@ export function PresupuestoBuilder({
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-24">Tipo</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase min-w-[160px]">Descripción</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-16">A (cm)</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-16">H (cm)</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-16">P (cm)</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-16">Cant.</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-28">C. Material</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-28">M.O.</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-32">Subtotal</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase w-12"></th>
+                  <tr className="bg-muted/40 border-b border-border">
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Tipo</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase min-w-[160px]">Descripción</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-16">A (cm)</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-16">H (cm)</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-16">P (cm)</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-16">Cant.</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-28">C. Material</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-28">M.O.</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-32">Subtotal</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase w-12"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {modulos.map((modulo, index) => (
-                    <tr key={index} className="hover:bg-slate-50/30">
+                    <tr key={index} className="hover:bg-muted/40/30">
                       <td className="px-3 py-2">
                         <select
                           value={modulo.tipoModulo}
                           onChange={(e) => updateModulo(index, 'tipoModulo', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card"
                         >
                           <option value="Base">Base</option>
                           <option value="Aéreo">Aéreo</option>
@@ -548,7 +548,7 @@ export function PresupuestoBuilder({
                           value={modulo.descripcion}
                           onChange={(e) => updateModulo(index, 'descripcion', e.target.value)}
                           placeholder="Descripción del módulo..."
-                          className="w-full px-2 py-1.5 text-sm border border-transparent rounded hover:border-slate-200 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-transparent focus:bg-white transition-all"
+                          className="w-full px-2 py-1.5 text-sm border border-transparent rounded hover:border-border focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-transparent focus:bg-card transition-all"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -557,7 +557,7 @@ export function PresupuestoBuilder({
                           value={modulo.ancho}
                           onChange={(e) => updateModulo(index, 'ancho', parseFloat(e.target.value) || 0)}
                           min="0"
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -566,7 +566,7 @@ export function PresupuestoBuilder({
                           value={modulo.alto}
                           onChange={(e) => updateModulo(index, 'alto', parseFloat(e.target.value) || 0)}
                           min="0"
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -575,7 +575,7 @@ export function PresupuestoBuilder({
                           value={modulo.profundidad}
                           onChange={(e) => updateModulo(index, 'profundidad', parseFloat(e.target.value) || 0)}
                           min="0"
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -584,7 +584,7 @@ export function PresupuestoBuilder({
                           value={modulo.cantidad}
                           onChange={(e) => updateModulo(index, 'cantidad', parseInt(e.target.value) || 1)}
                           min="1"
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -594,7 +594,7 @@ export function PresupuestoBuilder({
                           onChange={(e) => updateModulo(index, 'costoMaterial', parseFloat(e.target.value) || 0)}
                           min="0"
                           step="1000"
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -604,13 +604,13 @@ export function PresupuestoBuilder({
                           onChange={(e) => updateModulo(index, 'costoManoObra', parseFloat(e.target.value) || 0)}
                           min="0"
                           step="1000"
-                          className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white text-right"
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-card text-right"
                         />
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-right">
-                          <span className="text-xs text-slate-500 block">c/u: {formatCurrency(modulo.subtotal)}</span>
-                          <span className="text-sm font-semibold text-slate-700">
+                          <span className="text-xs text-muted-foreground block">c/u: {formatCurrency(modulo.subtotal)}</span>
+                          <span className="text-sm font-semibold text-foreground">
                             {formatCurrency(modulo.subtotal * modulo.cantidad)}
                           </span>
                         </div>
@@ -619,7 +619,7 @@ export function PresupuestoBuilder({
                         <button
                           type="button"
                           onClick={() => removeModulo(index)}
-                          className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -629,12 +629,12 @@ export function PresupuestoBuilder({
                 </tbody>
                 {subtotalMelamina > 0 && (
                   <tfoot>
-                    <tr className="bg-slate-50 border-t-2 border-slate-200">
-                      <td colSpan={8} className="px-3 py-2.5 text-right text-sm font-semibold text-slate-600 uppercase">
+                    <tr className="bg-muted/40 border-t-2 border-border">
+                      <td colSpan={8} className="px-3 py-2.5 text-right text-sm font-semibold text-muted-foreground uppercase">
                         Subtotal Melamina:
                       </td>
                       <td className="px-3 py-2.5 text-right">
-                        <span className="text-sm font-bold text-slate-800">{formatCurrency(subtotalMelamina)}</span>
+                        <span className="text-sm font-bold text-foreground">{formatCurrency(subtotalMelamina)}</span>
                       </td>
                       <td></td>
                     </tr>
@@ -654,13 +654,13 @@ export function PresupuestoBuilder({
             <CardTitle>Resumen de Costos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Subtotal Obra</span>
-              <span className="text-sm font-semibold text-slate-700">{formatCurrency(subtotalObra)}</span>
+            <div className="flex justify-between items-center py-1.5 border-b border-border">
+              <span className="text-sm text-muted-foreground">Subtotal Obra</span>
+              <span className="text-sm font-semibold text-foreground">{formatCurrency(subtotalObra)}</span>
             </div>
-            <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Subtotal Melamina</span>
-              <span className="text-sm font-semibold text-slate-700">{formatCurrency(subtotalMelamina)}</span>
+            <div className="flex justify-between items-center py-1.5 border-b border-border">
+              <span className="text-sm text-muted-foreground">Subtotal Melamina</span>
+              <span className="text-sm font-semibold text-foreground">{formatCurrency(subtotalMelamina)}</span>
             </div>
             <div className="flex justify-between items-center py-3 bg-blue-50 -mx-2 px-4 rounded-lg">
               <span className="text-base font-bold text-blue-700">TOTAL</span>

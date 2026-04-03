@@ -234,7 +234,7 @@ export function ClienteForm({ initialData, mode = 'create' }: ClienteFormProps) 
                 onChange={handleChange}
                 rows={4}
                 placeholder="Notas sobre el cliente, preferencias, historial de conversaciones..."
-                className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
+                className="flex w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
               />
             </div>
           </CardContent>

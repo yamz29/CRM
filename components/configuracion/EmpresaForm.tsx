@@ -128,7 +128,7 @@ export function EmpresaForm({ initialData }: { initialData: EmpresaData | null }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-slate-800">
+        <CardTitle className="flex items-center gap-2 text-foreground">
           <Building2 className="w-5 h-5 text-blue-600" />
           Datos de la empresa
         </CardTitle>
@@ -137,8 +137,8 @@ export function EmpresaForm({ initialData }: { initialData: EmpresaData | null }
         <form onSubmit={handleSubmit} className="space-y-5">
 
           {/* ── LOGO UPLOAD SECTION ── */}
-          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-3">
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+          <div className="border border-border rounded-xl p-4 bg-muted/40 space-y-3">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
               <ImageIcon className="w-3.5 h-3.5" />
               Logo de la empresa
             </p>
@@ -150,15 +150,15 @@ export function EmpresaForm({ initialData }: { initialData: EmpresaData | null }
                 <img
                   src={logoPreview}
                   alt="Logo"
-                  className="h-20 w-auto max-w-[160px] object-contain border border-slate-200 rounded-lg p-2 bg-white shadow-sm"
+                  className="h-20 w-auto max-w-[160px] object-contain border border-border rounded-lg p-2 bg-card shadow-sm"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
                 <div className="space-y-2">
-                  <p className="text-xs text-slate-500">Logo actual</p>
+                  <p className="text-xs text-muted-foreground">Logo actual</p>
                   <div className="flex gap-2">
                     <button type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-xs px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg font-medium text-slate-700 transition-colors">
+                      className="text-xs px-3 py-1.5 bg-card border border-border hover:bg-muted rounded-lg font-medium text-foreground transition-colors">
                       Reemplazar
                     </button>
                     <button type="button" onClick={handleRemoveLogo}
@@ -171,10 +171,10 @@ export function EmpresaForm({ initialData }: { initialData: EmpresaData | null }
             ) : (
               <button type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-slate-300 rounded-lg hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer">
-                <Upload className="w-8 h-8 text-slate-300" />
-                <span className="text-sm font-medium text-slate-500">Haz clic para subir logo</span>
-                <span className="text-xs text-slate-400">PNG, JPG, WEBP o SVG · máx. 5MB</span>
+                className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-border rounded-lg hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer">
+                <Upload className="w-8 h-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground">Haz clic para subir logo</span>
+                <span className="text-xs text-muted-foreground">PNG, JPG, WEBP o SVG · máx. 5MB</span>
               </button>
             )}
 

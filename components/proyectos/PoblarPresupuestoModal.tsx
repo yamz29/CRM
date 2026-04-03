@@ -28,25 +28,25 @@ function PresupuestoRow({ p, selected, presupuestoBaseId, onSelect }: {
       className={`w-full text-left flex items-center justify-between px-4 py-3 rounded-lg border transition-colors ${
         selected === p.id
           ? 'border-blue-500 bg-blue-50'
-          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+          : 'border-border hover:border-border hover:bg-muted'
       }`}
     >
       <div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-slate-800">{p.numero}</span>
+          <span className="text-sm font-semibold text-foreground">{p.numero}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
             p.estado === 'Aprobado' ? 'bg-green-100 text-green-700'
               : p.estado === 'Enviado' ? 'bg-blue-100 text-blue-700'
-              : 'bg-slate-100 text-slate-600'
+              : 'bg-muted text-muted-foreground'
           }`}>{p.estado}</span>
           {p.id === presupuestoBaseId && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Base actual</span>
           )}
         </div>
-        <div className="text-xs text-slate-500 mt-0.5">{formatDate(p.createdAt)}</div>
+        <div className="text-xs text-muted-foreground mt-0.5">{formatDate(p.createdAt)}</div>
       </div>
       <div className="text-right flex-shrink-0 ml-3">
-        <div className="text-sm font-bold text-slate-800">{formatCurrency(p.total)}</div>
+        <div className="text-sm font-bold text-foreground">{formatCurrency(p.total)}</div>
         <ChevronRight className={`w-4 h-4 ml-auto mt-0.5 transition-opacity ${selected === p.id ? 'text-blue-600 opacity-100' : 'opacity-0'}`} />
       </div>
     </button>
@@ -113,14 +113,14 @@ export function PoblarPresupuestoModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-lg">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
             <FileText className="w-4 h-4 text-blue-600" />
             Poblar desde presupuesto
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -137,16 +137,16 @@ export function PoblarPresupuestoModal({
             </div>
           )}
 
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Selecciona un presupuesto del proyecto para copiar su estructura de capítulos y partidas como base de comparación.
             Este proceso <strong>no modifica</strong> el presupuesto original.
           </p>
 
           {/* Presupuesto list */}
           {loadingList ? (
-            <div className="text-sm text-slate-500 text-center py-4">Cargando presupuestos...</div>
+            <div className="text-sm text-muted-foreground text-center py-4">Cargando presupuestos...</div>
           ) : presupuestos.length === 0 ? (
-            <div className="text-sm text-slate-500 text-center py-6 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            <div className="text-sm text-muted-foreground text-center py-6 bg-muted/40 rounded-lg border border-dashed border-border">
               No hay presupuestos disponibles. Crea uno primero.
             </div>
           ) : (
@@ -154,7 +154,7 @@ export function PoblarPresupuestoModal({
               {/* Group: own project */}
               {presupuestos.filter(p => p.proyectoId === proyectoId).length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-1 pt-1 pb-0.5">De este proyecto</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-1 pb-0.5">De este proyecto</p>
                   {presupuestos.filter(p => p.proyectoId === proyectoId).map(p => (
                     <PresupuestoRow key={p.id} p={p} selected={selected} presupuestoBaseId={presupuestoBaseId} onSelect={setSelected} />
                   ))}
@@ -163,7 +163,7 @@ export function PoblarPresupuestoModal({
               {/* Group: unlinked */}
               {presupuestos.filter(p => p.proyectoId == null).length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-1 pt-2 pb-0.5">Sin proyecto asignado</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-2 pb-0.5">Sin proyecto asignado</p>
                   {presupuestos.filter(p => p.proyectoId == null).map(p => (
                     <PresupuestoRow key={p.id} p={p} selected={selected} presupuestoBaseId={presupuestoBaseId} onSelect={setSelected} />
                   ))}
@@ -179,7 +179,7 @@ export function PoblarPresupuestoModal({
                 type="checkbox"
                 checked={reemplazar}
                 onChange={e => setReemplazar(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-slate-300 accent-blue-600"
+                className="mt-0.5 w-4 h-4 rounded border-border accent-blue-600"
               />
               <div>
                 <p className="text-sm font-medium text-amber-800">Reemplazar estructura existente</p>
@@ -193,7 +193,7 @@ export function PoblarPresupuestoModal({
 
           {/* Preview */}
           {selectedPres && (
-            <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 text-xs text-slate-600 space-y-1">
+            <div className="bg-muted/40 rounded-lg border border-border p-3 text-xs text-muted-foreground space-y-1">
               <p><span className="font-semibold">Presupuesto seleccionado:</span> {selectedPres.numero}</p>
               <p><span className="font-semibold">Total presupuestado:</span> {formatCurrency(selectedPres.total)}</p>
               <p><span className="font-semibold">Estado:</span> {selectedPres.estado}</p>

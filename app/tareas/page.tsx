@@ -51,8 +51,8 @@ export default async function TareasPage({ searchParams }: { searchParams: Promi
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Tareas</h1>
-          <p className="text-slate-500 mt-1">{tareas.length} tareas registradas</p>
+          <h1 className="text-2xl font-bold text-foreground">Tareas</h1>
+          <p className="text-muted-foreground mt-1">{tareas.length} tareas registradas</p>
         </div>
         <Link href="/tareas/nueva">
           <Button><Plus className="w-4 h-4" /> Nueva Tarea</Button>
@@ -61,10 +61,10 @@ export default async function TareasPage({ searchParams }: { searchParams: Promi
 
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatsCard title="Pendientes"  value={totalPendientes}  icon={<Clock className="w-5 h-5" />}         colorClass="bg-slate-100 text-slate-600" />
-        <StatsCard title="En proceso"  value={totalEnProceso}   icon={<CheckSquare className="w-5 h-5" />}   colorClass="bg-blue-50 text-blue-600" />
-        <StatsCard title="Completadas" value={totalCompletadas} icon={<CheckCircle className="w-5 h-5" />}   colorClass="bg-green-50 text-green-600" />
-        <StatsCard title="Vencidas"    value={totalVencidas}    icon={<AlertTriangle className="w-5 h-5" />} colorClass={totalVencidas > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'} />
+        <StatsCard title="Pendientes"  value={totalPendientes}  icon={<Clock className="w-5 h-5" />}         colorClass="bg-muted text-muted-foreground" />
+        <StatsCard title="En proceso"  value={totalEnProceso}   icon={<CheckSquare className="w-5 h-5" />}   colorClass="bg-blue-500/10 text-blue-500" />
+        <StatsCard title="Completadas" value={totalCompletadas} icon={<CheckCircle className="w-5 h-5" />}   colorClass="bg-green-500/10 text-green-500" />
+        <StatsCard title="Vencidas"    value={totalVencidas}    icon={<AlertTriangle className="w-5 h-5" />} colorClass={totalVencidas > 0 ? 'bg-red-500/10 text-red-500' : 'bg-muted text-muted-foreground'} />
       </div>
 
       {/* Interactive: filtros + lista/kanban */}

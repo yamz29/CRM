@@ -56,18 +56,18 @@ function BarPct({ pct, estado }: { pct: number; estado: string }) {
   const color = estado === 'excedido' ? 'bg-red-500'
     : estado === 'alerta' ? 'bg-amber-400'
     : estado === 'normal' ? 'bg-green-500'
-    : 'bg-slate-200'
+    : 'bg-muted'
   const width = Math.min(pct, 100)
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
+      <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden min-w-[60px]">
         <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${width}%` }} />
       </div>
       <span className={`text-xs font-semibold w-10 text-right tabular-nums ${
         estado === 'excedido' ? 'text-red-600'
           : estado === 'alerta' ? 'text-amber-600'
           : estado === 'normal' ? 'text-green-700'
-          : 'text-slate-400'
+          : 'text-muted-foreground'
       }`}>
         {pct >= 999 ? '∞%' : `${pct.toFixed(0)}%`}
       </span>
@@ -82,7 +82,7 @@ function Semaforo({ estado }: { estado: string }) {
     ? { bg: 'bg-amber-400', ring: 'ring-amber-200', title: 'En alerta' }
     : estado === 'normal'
     ? { bg: 'bg-green-500', ring: 'ring-green-200', title: 'Normal' }
-    : { bg: 'bg-slate-300', ring: 'ring-slate-100', title: 'Sin gasto' }
+    : { bg: 'bg-muted', ring: 'ring-muted/40', title: 'Sin gasto' }
   return (
     <span
       title={cfg.title}
@@ -108,7 +108,7 @@ function EstadoBadge({ estado }: { estado: string }) {
     </span>
   )
   return (
-    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
       <Minus className="w-3 h-3" /> Sin gasto
     </span>
   )
@@ -165,7 +165,7 @@ export function ControlPresupuestarioTab({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-slate-500 text-sm gap-2">
+      <div className="flex items-center justify-center py-16 text-muted-foreground text-sm gap-2">
         <RefreshCw className="w-4 h-4 animate-spin" /> Cargando datos de control...
       </div>
     )
@@ -175,10 +175,10 @@ export function ControlPresupuestarioTab({
   if (!data || data.capitulos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-        <BarChart2 className="w-14 h-14 text-slate-300" />
+        <BarChart2 className="w-14 h-14 text-muted-foreground/70" />
         <div>
-          <h3 className="text-slate-700 font-semibold text-base">Sin estructura presupuestaria</h3>
-          <p className="text-slate-500 text-sm mt-1 max-w-sm">
+          <h3 className="text-foreground font-semibold text-base">Sin estructura presupuestaria</h3>
+          <p className="text-muted-foreground text-sm mt-1 max-w-sm">
             Importa las partidas desde un presupuesto aprobado para activar el control presupuestario.
           </p>
         </div>
@@ -223,28 +223,28 @@ export function ControlPresupuestarioTab({
           },
           {
             label: 'No clasificados', value: formatCurrency(resumen.gastosNoClasificados),
-            icon: <Minus className="w-4 h-4 text-slate-400" />, sub: 'gastos sin partida',
+            icon: <Minus className="w-4 h-4 text-muted-foreground" />, sub: 'gastos sin partida',
           },
         ].map((card, i) => (
-          <div key={i} className="bg-white border border-slate-200 rounded-xl px-4 py-3">
+          <div key={i} className="bg-card border border-border rounded-xl px-4 py-3">
             <div className="flex items-center gap-1.5 mb-1.5">{card.icon}
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{card.label}</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</span>
             </div>
-            <p className={`text-lg font-black ${card.color ?? 'text-slate-800'}`}>{card.value}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{card.sub}</p>
+            <p className={`text-lg font-black ${card.color ?? 'text-foreground'}`}>{card.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{card.sub}</p>
           </div>
         ))}
       </div>
 
       {/* ── Barra de progreso global ── */}
-      <div className="bg-white border border-slate-200 rounded-xl px-5 py-3">
+      <div className="bg-card border border-border rounded-xl px-5 py-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-600">Ejecución presupuestaria global</span>
+          <span className="text-xs font-semibold text-muted-foreground">Ejecución presupuestaria global</span>
           <span className={`text-sm font-bold ${
             resumen.pctConsumido >= 100 ? 'text-red-600' : resumen.pctConsumido >= 80 ? 'text-amber-600' : 'text-green-700'
           }`}>{resumen.pctConsumido.toFixed(1)}%</span>
         </div>
-        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-3 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               resumen.pctConsumido >= 100 ? 'bg-red-500' : resumen.pctConsumido >= 80 ? 'bg-amber-400' : 'bg-green-500'
@@ -257,23 +257,23 @@ export function ControlPresupuestarioTab({
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input value={busqueda} onChange={e => setBusqueda(e.target.value)}
             placeholder="Buscar partida..." className="pl-8 h-8 text-sm" />
         </div>
         <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
-          className="h-8 text-sm border border-slate-200 rounded-md px-2 bg-white">
+          className="h-8 text-sm border border-border rounded-md px-2 bg-card">
           <option value="todos">Todos</option>
           <option value="excedido">Excedidos</option>
           <option value="alerta">En alerta</option>
           <option value="normal">Normal</option>
           <option value="sin_gasto">Sin gasto</option>
         </select>
-        <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+        <div className="flex rounded-lg border border-border overflow-hidden">
           {(['capitulos', 'partidas'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                vista === v ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                vista === v ? 'bg-slate-800 text-white' : 'bg-card text-muted-foreground hover:bg-muted'
               }`}>
               {v === 'capitulos' ? 'Por capítulo' : 'Todas las partidas'}
             </button>
@@ -297,7 +297,7 @@ export function ControlPresupuestarioTab({
           {filteredCapitulos.map(cap => {
             const isOpen = expanded.has(cap.id)
             return (
-              <div key={cap.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div key={cap.id} className="bg-card border border-border rounded-xl overflow-hidden">
                 {/* Capítulo header */}
                 <button
                   className="w-full flex items-center gap-3 px-5 py-3 bg-slate-800 text-white hover:bg-slate-700 transition-colors"
@@ -311,15 +311,15 @@ export function ControlPresupuestarioTab({
                   <span className="font-semibold text-sm flex-1 text-left">{cap.nombre}</span>
                   <div className="flex items-center gap-6 text-xs">
                     <div className="text-right">
-                      <div className="text-slate-400">Presupuesto</div>
+                      <div className="text-muted-foreground">Presupuesto</div>
                       <div className="font-bold">{formatCurrency(cap.totalPresupuestado)}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-slate-400">Gasto real</div>
+                      <div className="text-muted-foreground">Gasto real</div>
                       <div className="font-bold">{formatCurrency(cap.totalGastoReal)}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-slate-400">Diferencia</div>
+                      <div className="text-muted-foreground">Diferencia</div>
                       <div className={`font-bold ${cap.diferencia < 0 ? 'text-red-300' : 'text-green-300'}`}>
                         {cap.diferencia < 0 && '−'}{formatCurrency(Math.abs(cap.diferencia))}
                       </div>
@@ -336,29 +336,29 @@ export function ControlPresupuestarioTab({
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-100">
+                        <tr className="bg-muted/40 border-b border-border">
                           <th className="px-3 py-2 w-8" />
-                          <th className="px-4 py-2 text-left font-semibold text-slate-500 uppercase tracking-wide">Código</th>
-                          <th className="px-4 py-2 text-left font-semibold text-slate-500 uppercase tracking-wide">Descripción</th>
-                          <th className="px-4 py-2 text-right font-semibold text-slate-500 uppercase tracking-wide">Und</th>
-                          <th className="px-4 py-2 text-right font-semibold text-slate-500 uppercase tracking-wide">Presupuestado</th>
-                          <th className="px-4 py-2 text-right font-semibold text-slate-500 uppercase tracking-wide">Gasto real</th>
-                          <th className="px-4 py-2 text-right font-semibold text-slate-500 uppercase tracking-wide">Diferencia</th>
-                          <th className="px-4 py-2 text-left font-semibold text-slate-500 uppercase tracking-wide w-32">Avance</th>
-                          <th className="px-4 py-2 text-left font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
+                          <th className="px-4 py-2 text-left font-semibold text-muted-foreground uppercase tracking-wide">Código</th>
+                          <th className="px-4 py-2 text-left font-semibold text-muted-foreground uppercase tracking-wide">Descripción</th>
+                          <th className="px-4 py-2 text-right font-semibold text-muted-foreground uppercase tracking-wide">Und</th>
+                          <th className="px-4 py-2 text-right font-semibold text-muted-foreground uppercase tracking-wide">Presupuestado</th>
+                          <th className="px-4 py-2 text-right font-semibold text-muted-foreground uppercase tracking-wide">Gasto real</th>
+                          <th className="px-4 py-2 text-right font-semibold text-muted-foreground uppercase tracking-wide">Diferencia</th>
+                          <th className="px-4 py-2 text-left font-semibold text-muted-foreground uppercase tracking-wide w-32">Avance</th>
+                          <th className="px-4 py-2 text-left font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody className="divide-y divide-border">
                         {cap.partidas.map(p => (
-                          <tr key={p.id} className={`hover:bg-slate-50/70 ${p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
+                          <tr key={p.id} className={`hover:bg-muted/70 ${p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
                             <td className="px-3 py-2.5 text-center"><Semaforo estado={p.estado} /></td>
-                            <td className="px-4 py-2.5 text-slate-500 font-mono">{p.codigo ?? '—'}</td>
-                            <td className="px-4 py-2.5 text-slate-800 font-medium max-w-xs">{p.descripcion}</td>
-                            <td className="px-4 py-2.5 text-right text-slate-500">{p.unidad}</td>
-                            <td className="px-4 py-2.5 text-right font-semibold text-slate-800 tabular-nums">
+                            <td className="px-4 py-2.5 text-muted-foreground font-mono">{p.codigo ?? '—'}</td>
+                            <td className="px-4 py-2.5 text-foreground font-medium max-w-xs">{p.descripcion}</td>
+                            <td className="px-4 py-2.5 text-right text-muted-foreground">{p.unidad}</td>
+                            <td className="px-4 py-2.5 text-right font-semibold text-foreground tabular-nums">
                               {formatCurrency(p.subtotalPresupuestado)}
                             </td>
-                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-800">
+                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-foreground">
                               {formatCurrency(p.gastoReal)}
                             </td>
                             <td className={`px-4 py-2.5 text-right font-semibold tabular-nums ${p.diferencia < 0 ? 'text-red-600' : 'text-green-700'}`}>
@@ -384,33 +384,33 @@ export function ControlPresupuestarioTab({
 
       {/* ── Vista todas las partidas ── */}
       {vista === 'partidas' && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
+                <tr className="bg-muted/40 border-b border-border">
                   <th className="px-3 py-2.5 w-8" />
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-500 uppercase tracking-wide">Capítulo</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-500 uppercase tracking-wide">Código</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-500 uppercase tracking-wide">Descripción</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-slate-500 uppercase tracking-wide">Presupuestado</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-slate-500 uppercase tracking-wide">Gasto real</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-slate-500 uppercase tracking-wide">Diferencia</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-500 uppercase tracking-wide w-32">Avance</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">Capítulo</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">Código</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">Descripción</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground uppercase tracking-wide">Presupuestado</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground uppercase tracking-wide">Gasto real</th>
+                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground uppercase tracking-wide">Diferencia</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide w-32">Avance</th>
+                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-border">
                 {allPartidas.map(p => {
                   const cap = filteredCapitulos.find(c => c.partidas.some(pp => pp.id === p.id))
                   return (
-                    <tr key={p.id} className={`hover:bg-slate-50/70 ${p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
+                    <tr key={p.id} className={`hover:bg-muted/70 ${p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
                       <td className="px-3 py-2.5 text-center"><Semaforo estado={p.estado} /></td>
-                      <td className="px-4 py-2.5 text-slate-500 max-w-[120px] truncate">{cap?.nombre ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-slate-500 font-mono">{p.codigo ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-slate-800 font-medium max-w-xs">{p.descripcion}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-slate-800 tabular-nums">{formatCurrency(p.subtotalPresupuestado)}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-800">{formatCurrency(p.gastoReal)}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground max-w-[120px] truncate">{cap?.nombre ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground font-mono">{p.codigo ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-foreground font-medium max-w-xs">{p.descripcion}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-foreground tabular-nums">{formatCurrency(p.subtotalPresupuestado)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-foreground">{formatCurrency(p.gastoReal)}</td>
                       <td className={`px-4 py-2.5 text-right font-semibold tabular-nums ${p.diferencia < 0 ? 'text-red-600' : 'text-green-700'}`}>
                         {p.diferencia < 0 && '−'}{formatCurrency(Math.abs(p.diferencia))}
                       </td>

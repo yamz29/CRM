@@ -195,7 +195,7 @@ export default async function ProyectosPage({
                       <td className="px-4 py-3">
                         {(proyecto as any).avanceFisico > 0 ? (
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden min-w-[60px]">
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
                               <div
                                 className="h-full rounded-full"
                                 style={{
@@ -207,7 +207,7 @@ export default async function ProyectosPage({
                             <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{(proyecto as any).avanceFisico}%</span>
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-sm">—</span>
+                          <span className="text-muted-foreground/50 text-sm">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">

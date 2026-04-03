@@ -332,17 +332,17 @@ export function ImportarGastosModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
               <Upload className="w-4 h-4 text-blue-600" />
               Importar gastos
             </h2>
             {/* Step indicators */}
-            <div className="flex items-center gap-1 text-xs text-slate-400">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <span className={step === 'upload' ? 'text-blue-600 font-semibold' : step === 'preview' || step === 'done' ? 'text-green-600' : ''}>
                 1. Archivo
               </span>
@@ -356,7 +356,7 @@ export function ImportarGastosModal({
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -374,16 +374,16 @@ export function ImportarGastosModal({
                 onDrop={handleDrop}
                 onClick={() => fileRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl py-12 flex flex-col items-center gap-3 cursor-pointer transition-colors
-                  ${dragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'}`}
+                  ${dragging ? 'border-blue-500 bg-blue-50' : 'border-border hover:border-blue-400 hover:bg-muted'}`}
               >
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center ${dragging ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                  <Upload className={`w-7 h-7 ${dragging ? 'text-blue-600' : 'text-slate-400'}`} />
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center ${dragging ? 'bg-blue-100' : 'bg-muted'}`}>
+                  <Upload className={`w-7 h-7 ${dragging ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-700">
+                  <p className="text-sm font-semibold text-foreground">
                     {dragging ? 'Suelta el archivo aquí' : 'Arrastra tu archivo aquí'}
                   </p>
-                  <p className="text-xs text-slate-400 mt-1">o haz clic para seleccionar · CSV, XLSX, XLS</p>
+                  <p className="text-xs text-muted-foreground mt-1">o haz clic para seleccionar · CSV, XLSX, XLS</p>
                 </div>
               </div>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileInput} />
@@ -404,40 +404,40 @@ export function ImportarGastosModal({
 
               {/* Template + column reference */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-slate-700 mb-2">¿Primera vez importando?</p>
-                  <p className="text-xs text-slate-500 mb-3">Descarga la plantilla base con los encabezados correctos y ejemplos de datos.</p>
+                <div className="bg-muted/40 border border-border rounded-xl p-4">
+                  <p className="text-xs font-semibold text-foreground mb-2">¿Primera vez importando?</p>
+                  <p className="text-xs text-muted-foreground mb-3">Descarga la plantilla base con los encabezados correctos y ejemplos de datos.</p>
                   <Button size="sm" variant="secondary" onClick={() => window.open(`/api/proyectos/${proyectoId}/gastos/plantilla`, '_blank')}>
                     <Download className="w-3.5 h-3.5" /> Descargar plantilla CSV
                   </Button>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-slate-700 mb-2">Columnas requeridas</p>
+                <div className="bg-muted/40 border border-border rounded-xl p-4">
+                  <p className="text-xs font-semibold text-foreground mb-2">Columnas requeridas</p>
                   <div className="flex flex-wrap gap-1">
                     {REQUIRED_HEADERS.map(h => (
                       <span key={h} className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-mono">{h}</span>
                     ))}
                   </div>
-                  <p className="text-xs font-semibold text-slate-700 mt-2 mb-1">Columnas opcionales</p>
+                  <p className="text-xs font-semibold text-foreground mt-2 mb-1">Columnas opcionales</p>
                   <div className="flex flex-wrap gap-1">
                     {['tipoGasto','referencia','suplidor','categoria','subcategoria','moneda','metodoPago','cuentaOrigen','observaciones','estado'].map(h => (
-                      <span key={h} className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-mono">{h}</span>
+                      <span key={h} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded font-mono">{h}</span>
                     ))}
                   </div>
                 </div>
               </div>
 
               {/* Accepted values reference */}
-              <details className="text-xs text-slate-500 border border-slate-100 rounded-lg">
-                <summary className="cursor-pointer px-4 py-2 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
+              <details className="text-xs text-muted-foreground border border-border rounded-lg">
+                <summary className="cursor-pointer px-4 py-2 hover:bg-muted rounded-lg font-medium text-muted-foreground">
                   Ver valores aceptados por columna
                 </summary>
                 <div className="px-4 pb-3 space-y-1.5 mt-2">
-                  <p><span className="font-semibold text-slate-700">tipoGasto:</span> {TIPOS_VALIDOS.join(' · ')}</p>
-                  <p><span className="font-semibold text-slate-700">metodoPago:</span> {METODOS_VALIDOS.join(' · ')}</p>
-                  <p><span className="font-semibold text-slate-700">estado:</span> {ESTADOS_VALIDOS.join(' · ')}</p>
-                  <p><span className="font-semibold text-slate-700">moneda:</span> RD$ · USD · EUR (por defecto RD$)</p>
-                  <p><span className="font-semibold text-slate-700">fecha:</span> YYYY-MM-DD (ej: 2026-03-15)</p>
+                  <p><span className="font-semibold text-foreground">tipoGasto:</span> {TIPOS_VALIDOS.join(' · ')}</p>
+                  <p><span className="font-semibold text-foreground">metodoPago:</span> {METODOS_VALIDOS.join(' · ')}</p>
+                  <p><span className="font-semibold text-foreground">estado:</span> {ESTADOS_VALIDOS.join(' · ')}</p>
+                  <p><span className="font-semibold text-foreground">moneda:</span> RD$ · USD · EUR (por defecto RD$)</p>
+                  <p><span className="font-semibold text-foreground">fecha:</span> YYYY-MM-DD (ej: 2026-03-15)</p>
                 </div>
               </details>
             </div>
@@ -449,9 +449,9 @@ export function ImportarGastosModal({
               {/* Summary bar */}
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm font-semibold text-slate-700">{filename}</span>
-                  <span className="text-xs text-slate-400">{rows.length} filas leídas</span>
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold text-foreground">{filename}</span>
+                  <span className="text-xs text-muted-foreground">{rows.length} filas leídas</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
@@ -464,7 +464,7 @@ export function ImportarGastosModal({
                   )}
                   <button
                     onClick={reset}
-                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
                   >
                     <RotateCcw className="w-3 h-3" /> Cambiar archivo
                   </button>
@@ -476,13 +476,13 @@ export function ImportarGastosModal({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowOnlyErrors(false)}
-                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${!showOnlyErrors ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${!showOnlyErrors ? 'bg-slate-800 text-white border-slate-800' : 'bg-card text-muted-foreground border-border hover:border-border'}`}
                   >
                     Todas ({rows.length})
                   </button>
                   <button
                     onClick={() => setShowOnlyErrors(true)}
-                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${showOnlyErrors ? 'bg-red-600 text-white border-red-600' : 'bg-white text-red-500 border-red-200 hover:border-red-300'}`}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium border transition-colors ${showOnlyErrors ? 'bg-red-600 text-white border-red-600' : 'bg-card text-red-500 border-red-200 hover:border-red-300'}`}
                   >
                     Solo con errores ({invalid.length})
                   </button>
@@ -490,49 +490,49 @@ export function ImportarGastosModal({
               )}
 
               {/* Preview table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="border border-border rounded-xl overflow-hidden">
                 <div className="overflow-x-auto max-h-72">
                   <table className="w-full text-xs">
-                    <thead className="bg-slate-50 sticky top-0 z-10">
+                    <thead className="bg-muted/40 sticky top-0 z-10">
                       <tr>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-10 border-b border-slate-200">Fila</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-8 border-b border-slate-200"></th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-24 border-b border-slate-200">Fecha</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold border-b border-slate-200">Descripción</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-32 border-b border-slate-200">Tipo</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-28 border-b border-slate-200">Suplidor</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-24 border-b border-slate-200">Categoría</th>
-                        <th className="px-3 py-2 text-right text-slate-500 font-semibold w-24 border-b border-slate-200">Monto</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold w-28 border-b border-slate-200">Método pago</th>
-                        <th className="px-3 py-2 text-left text-slate-500 font-semibold border-b border-slate-200">Errores</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-10 border-b border-border">Fila</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-8 border-b border-border"></th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-24 border-b border-border">Fecha</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold border-b border-border">Descripción</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-32 border-b border-border">Tipo</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-28 border-b border-border">Suplidor</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-24 border-b border-border">Categoría</th>
+                        <th className="px-3 py-2 text-right text-muted-foreground font-semibold w-24 border-b border-border">Monto</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-28 border-b border-border">Método pago</th>
+                        <th className="px-3 py-2 text-left text-muted-foreground font-semibold border-b border-border">Errores</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-border">
                       {displayed.map(row => (
                         <tr key={row._fila} className={row._valida ? 'hover:bg-green-50/30' : 'bg-red-50 hover:bg-red-100/50'}>
-                          <td className="px-3 py-2 text-slate-400 font-mono">{row._fila}</td>
+                          <td className="px-3 py-2 text-muted-foreground font-mono">{row._fila}</td>
                           <td className="px-3 py-2 text-center">
                             {row._valida
                               ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mx-auto" />
                               : <AlertCircle className="w-3.5 h-3.5 text-red-500 mx-auto" />}
                           </td>
-                          <td className="px-3 py-2 text-slate-600 font-mono">{row.fecha || <span className="text-red-400 italic">vacío</span>}</td>
-                          <td className="px-3 py-2 text-slate-700 max-w-[180px]">
+                          <td className="px-3 py-2 text-muted-foreground font-mono">{row.fecha || <span className="text-red-400 italic">vacío</span>}</td>
+                          <td className="px-3 py-2 text-foreground max-w-[180px]">
                             <span className="truncate block" title={row.descripcion}>
                               {row.descripcion || <span className="text-red-400 italic">vacío</span>}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-slate-600">{row.tipoGasto}</td>
-                          <td className="px-3 py-2 text-slate-600 max-w-[100px]">
-                            <span className="truncate block">{row.suplidor || <span className="text-slate-300">—</span>}</span>
+                          <td className="px-3 py-2 text-muted-foreground">{row.tipoGasto}</td>
+                          <td className="px-3 py-2 text-muted-foreground max-w-[100px]">
+                            <span className="truncate block">{row.suplidor || <span className="text-muted-foreground/70">—</span>}</span>
                           </td>
-                          <td className="px-3 py-2 text-slate-500">{row.categoria || <span className="text-slate-300">—</span>}</td>
-                          <td className="px-3 py-2 text-right font-mono text-slate-700">
+                          <td className="px-3 py-2 text-muted-foreground">{row.categoria || <span className="text-muted-foreground/70">—</span>}</td>
+                          <td className="px-3 py-2 text-right font-mono text-foreground">
                             {row.monto
                               ? parseFloat(row.monto).toLocaleString('en-US', { minimumFractionDigits: 2 })
                               : <span className="text-red-400 italic">vacío</span>}
                           </td>
-                          <td className="px-3 py-2 text-slate-500">{row.metodoPago}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{row.metodoPago}</td>
                           <td className="px-3 py-2">
                             {row._errores.length > 0 && (
                               <ul className="space-y-0.5">
@@ -582,10 +582,10 @@ export function ImportarGastosModal({
                     <CheckCircle2 className="w-9 h-9 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-slate-800">
+                    <p className="text-xl font-bold text-foreground">
                       {importResult.importados} {importResult.importados === 1 ? 'gasto importado' : 'gastos importados'}
                     </p>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Se registraron correctamente en este proyecto.
                     </p>
                   </div>
@@ -595,7 +595,7 @@ export function ImportarGastosModal({
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
                     <AlertCircle className="w-9 h-9 text-red-500" />
                   </div>
-                  <p className="text-lg font-bold text-slate-700">No se importó ningún gasto</p>
+                  <p className="text-lg font-bold text-foreground">No se importó ningún gasto</p>
                 </>
               )}
 
@@ -631,8 +631,8 @@ export function ImportarGastosModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-shrink-0">
-          <div className="text-xs text-slate-400">
+        <div className="px-6 py-4 border-t border-border flex items-center justify-between flex-shrink-0">
+          <div className="text-xs text-muted-foreground">
             {step === 'preview' && rows.length > 0 && (
               <>El proyecto se asignará automáticamente a todas las filas importadas.</>
             )}

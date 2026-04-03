@@ -225,7 +225,7 @@ export function OportunidadForm({ clientes: clientesIniciales, presupuestos, usu
                               {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                             </div>
                             <span className="font-medium">{p.numero}</span>
-                            <span className={`px-1.5 py-0.5 rounded-full text-xs ${p.estado === 'Aprobado' ? 'bg-green-100 text-green-700' : p.estado === 'Enviado' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                            <span className={`px-1.5 py-0.5 rounded-full text-xs ${p.estado === 'Aprobado' ? 'bg-green-100 text-green-700' : p.estado === 'Enviado' ? 'bg-blue-100 text-blue-700' : 'bg-muted text-muted-foreground'}`}>
                               {p.estado}
                             </span>
                           </div>

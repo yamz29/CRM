@@ -18,14 +18,14 @@ export function SuccessBanner({ mensaje }: SuccessBannerProps) {
   if (!visible) return null
 
   return (
-    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-green-800 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-green-800 text-sm animate-in fade-in slide-in-from-top-2 duration-300 dark:bg-green-900/20 dark:border-green-800/50 dark:text-green-400">
       <div className="flex items-center gap-2">
-        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-500 flex-shrink-0" />
         <span className="font-medium">{mensaje}</span>
       </div>
       <button
         onClick={() => setVisible(false)}
-        className="text-green-600 hover:text-green-800 ml-4"
+        className="text-green-600 hover:text-green-800 dark:text-green-500 dark:hover:text-green-300 ml-4"
       >
         <X className="w-4 h-4" />
       </button>

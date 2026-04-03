@@ -34,52 +34,52 @@ export default async function AyudaArticlePage({ params }: Params) {
       <div className="flex items-center gap-2 mb-6 text-sm">
         <Link
           href="/ayuda"
-          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-700 transition-colors"
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Centro de Ayuda
         </Link>
         {articulo && (
           <>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-600 font-medium">{articulo.titulo}</span>
+            <span className="text-muted-foreground/70">/</span>
+            <span className="text-muted-foreground font-medium">{articulo.titulo}</span>
           </>
         )}
       </div>
 
       {/* Article */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
-        <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
+      <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border">
           <BookOpen className="w-5 h-5 text-blue-500" />
-          <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
             Documentación
           </span>
         </div>
         <div
           className="prose prose-slate max-w-none
-            prose-headings:font-semibold prose-headings:text-slate-800
+            prose-headings:font-semibold prose-headings:text-foreground
             prose-h1:text-2xl prose-h1:mb-6
-            prose-h2:text-base prose-h2:mt-8 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-100
+            prose-h2:text-base prose-h2:mt-8 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-border
             prose-h3:text-sm prose-h3:mt-5 prose-h3:mb-2
-            prose-p:text-slate-600 prose-p:leading-relaxed
-            prose-li:text-slate-600 prose-li:leading-relaxed
-            prose-strong:text-slate-800 prose-strong:font-semibold
-            prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:text-slate-700 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
+            prose-p:text-muted-foreground prose-p:leading-relaxed
+            prose-li:text-muted-foreground prose-li:leading-relaxed
+            prose-strong:text-foreground prose-strong:font-semibold
+            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:text-foreground prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
             prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:text-xs
-            prose-table:text-sm prose-th:bg-slate-50 prose-th:font-semibold prose-th:text-slate-700
+            prose-table:text-sm prose-th:bg-muted/40 prose-th:font-semibold prose-th:text-foreground
             prose-blockquote:border-blue-400 prose-blockquote:bg-blue-50 prose-blockquote:rounded-r-lg prose-blockquote:py-1
-            prose-hr:border-slate-200 prose-hr:my-6
-            [&_table]:w-full [&_table]:border [&_table]:border-slate-200 [&_table]:rounded-lg [&_table]:overflow-hidden
-            [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:border-b [&_th]:border-slate-200
-            [&_td]:px-4 [&_td]:py-2 [&_td]:border-t [&_td]:border-slate-100
-            [&_tr:hover_td]:bg-slate-50"
+            prose-hr:border-border prose-hr:my-6
+            [&_table]:w-full [&_table]:border [&_table]:border-border [&_table]:rounded-lg [&_table]:overflow-hidden
+            [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:border-b [&_th]:border-border
+            [&_td]:px-4 [&_td]:py-2 [&_td]:border-t [&_td]:border-border
+            [&_tr:hover_td]:bg-muted/40"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>
 
       {/* Navigation to other articles */}
       <div className="mt-8">
-        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide mb-3">Otros módulos</p>
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3">Otros módulos</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {articulos
             .filter((a) => a.slug !== slug)
@@ -87,7 +87,7 @@ export default async function AyudaArticlePage({ params }: Params) {
               <Link
                 key={a.slug}
                 href={`/ayuda/${a.slug}`}
-                className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors truncate"
+                className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:border-blue-400 hover:text-primary transition-colors truncate"
               >
                 {a.titulo}
               </Link>

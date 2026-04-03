@@ -465,7 +465,7 @@ function InteractivePlanSVG({
 
   if (!walls.length) {
     return (
-      <div className="flex items-center justify-center h-[340px] bg-slate-900 rounded-lg text-slate-600 text-sm">
+      <div className="flex items-center justify-center h-[340px] bg-slate-900 rounded-lg text-muted-foreground text-sm">
         Sin paredes configuradas
       </div>
     )
@@ -849,7 +849,7 @@ function NestingModal({
               <Grid2x2 className="w-4 h-4 text-blue-400" />
               Nesting — {projectName}
             </h3>
-            <p className="text-slate-500 text-xs mt-0.5">
+            <p className="text-muted-foreground text-xs mt-0.5">
               Distribución de piezas en planchas
             </p>
           </div>
@@ -860,7 +860,7 @@ function NestingModal({
             >
               <FileText className="w-3.5 h-3.5" />Imprimir
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-white ml-1">
+            <button onClick={onClose} className="text-muted-foreground hover:text-white ml-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -876,11 +876,11 @@ function NestingModal({
                 'px-3 py-1.5 rounded-t-lg text-xs font-medium transition-colors whitespace-nowrap border-t border-l border-r',
                 activeMatIdx === i
                   ? 'bg-slate-800 border-slate-600 text-white'
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300',
+                  : 'bg-transparent border-transparent text-muted-foreground hover:text-muted-foreground/70',
               )}
             >
               {r.tablero}
-              <span className="ml-1.5 text-slate-500">({r.sheets.length} pl.)</span>
+              <span className="ml-1.5 text-muted-foreground">({r.sheets.length} pl.)</span>
             </button>
           ))}
         </div>
@@ -897,7 +897,7 @@ function NestingModal({
               >
                 ← Anterior
               </button>
-              <span className="text-slate-400 text-xs flex-1 text-center">
+              <span className="text-muted-foreground text-xs flex-1 text-center">
                 Plancha {activeSheetIdx + 1} de {numSheets}
               </span>
               <button
@@ -920,7 +920,7 @@ function NestingModal({
                   si === activeSheetIdx ? 'block' : 'hidden print:block',
                 )}
               >
-                <p className="text-slate-400 text-xs mb-2 print:text-black">
+                <p className="text-muted-foreground text-xs mb-2 print:text-black">
                   <span className="font-semibold text-white print:text-black">{mat.tablero}</span>
                   {' — '}Plancha {sh.id} / {numSheets}
                   {' · '}{mat.boardW}×{mat.boardH}mm
@@ -1002,7 +1002,7 @@ function NestingModal({
           {/* Legend */}
           {mat && mat.sheets.length > 0 && (
             <div className="mt-4 pt-3 border-t border-white/5 print:hidden">
-              <p className="text-slate-500 text-xs mb-2">Leyenda — Plancha {activeSheetIdx + 1}</p>
+              <p className="text-muted-foreground text-xs mb-2">Leyenda — Plancha {activeSheetIdx + 1}</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 max-h-36 overflow-y-auto">
                 {(sheet?.piezas ?? []).map((p, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
@@ -1010,8 +1010,8 @@ function NestingModal({
                       className="w-3 h-3 rounded-sm flex-shrink-0"
                       style={{ background: NEST_COLORS[p.colorIdx % NEST_COLORS.length] }}
                     />
-                    <span className="font-mono text-slate-300 w-12 flex-shrink-0">{p.etiqueta}</span>
-                    <span className="text-slate-500 truncate">{p.nombre} ({Math.round(p.w)}×{Math.round(p.h)})</span>
+                    <span className="font-mono text-muted-foreground/70 w-12 flex-shrink-0">{p.etiqueta}</span>
+                    <span className="text-muted-foreground truncate">{p.nombre} ({Math.round(p.w)}×{Math.round(p.h)})</span>
                   </div>
                 ))}
               </div>
@@ -1350,20 +1350,20 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     <div className="flex flex-col h-screen bg-[#0b0f1a]" onKeyDown={handleKeyDown} tabIndex={-1} style={{ outline: 'none' }}>
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-slate-900 flex-shrink-0">
-        <Link href="/cocinas" className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+        <Link href="/cocinas" className="p-1.5 text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-white font-semibold text-sm truncate">{project.nombre}</h1>
-          <p className="text-slate-500 text-xs">{placements.length} módulo{placements.length !== 1 ? 's' : ''} colocado{placements.length !== 1 ? 's' : ''}</p>
+          <p className="text-muted-foreground text-xs">{placements.length} módulo{placements.length !== 1 ? 's' : ''} colocado{placements.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex bg-slate-800 rounded-lg p-0.5">
           <button onClick={() => setView('elevation')}
-            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'elevation' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white')}>
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'elevation' ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:text-white')}>
             <LayoutPanelLeft className="w-3.5 h-3.5" />Elevación
           </button>
           <button onClick={() => setView('plan')}
-            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'plan' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white')}>
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'plan' ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:text-white')}>
             <Map className="w-3.5 h-3.5" />Planta
           </button>
         </div>
@@ -1379,7 +1379,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
         <aside className="w-60 flex-shrink-0 border-r border-white/5 flex flex-col bg-slate-900/50">
           <div className="p-3 space-y-2 border-b border-white/5">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar módulos..."
                 className="w-full pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 text-xs focus:outline-none focus:border-blue-500" />
@@ -1387,7 +1387,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
             <div className="flex flex-wrap gap-1">
               {Object.keys(TIPO_FILTER_MAP).map((f) => (
                 <button key={f} onClick={() => setTipoFilter(f)}
-                  className={cn('px-2 py-0.5 rounded-full text-xs font-medium transition-colors', tipoFilter === f ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white')}>
+                  className={cn('px-2 py-0.5 rounded-full text-xs font-medium transition-colors', tipoFilter === f ? 'bg-blue-600 text-white' : 'bg-slate-700 text-muted-foreground hover:text-white')}>
                   {f}
                 </button>
               ))}
@@ -1407,7 +1407,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {filteredModules.length === 0 ? (
-              <p className="text-slate-600 text-xs text-center py-8">Sin módulos</p>
+              <p className="text-muted-foreground text-xs text-center py-8">Sin módulos</p>
             ) : (
               filteredModules.map((m) => {
                 const isWallActive = placingModule?.id === m.id && !isIslandMode
@@ -1419,9 +1419,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                       <div className="flex items-start gap-2 mb-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-xs font-medium truncate">{m.nombre}</p>
-                          <p className="text-slate-500 text-xs mt-0.5 truncate">{m.tipoModulo}</p>
+                          <p className="text-muted-foreground text-xs mt-0.5 truncate">{m.tipoModulo}</p>
                           {m.ancho > 0 && m.alto > 0 ? (
-                            <p className="text-slate-600 text-xs">{Math.round(m.ancho)}×{Math.round(m.alto)}×{Math.round(m.profundidad)} mm</p>
+                            <p className="text-muted-foreground text-xs">{Math.round(m.ancho)}×{Math.round(m.alto)}×{Math.round(m.profundidad)} mm</p>
                           ) : (
                             <p className="text-amber-500 text-xs">⚠ Sin dimensiones</p>
                           )}
@@ -1435,7 +1435,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                         <button
                           onClick={() => handleModuleSelect(m)}
                           className={cn('flex-1 py-1 rounded text-xs font-medium transition-colors',
-                            isWallActive ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600')}
+                            isWallActive ? 'bg-blue-600 text-white' : 'bg-slate-700 text-muted-foreground/70 hover:bg-slate-600')}
                           title="Colocar en pared"
                         >
                           Pared
@@ -1443,7 +1443,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                         <button
                           onClick={() => handleModuleSelectIsland(m)}
                           className={cn('flex-1 py-1 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1',
-                            isIslandActive ? 'bg-purple-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600')}
+                            isIslandActive ? 'bg-purple-600 text-white' : 'bg-slate-700 text-muted-foreground/70 hover:bg-slate-600')}
                           title="Colocar como isla / península"
                         >
                           <Layers className="w-3 h-3" />Isla
@@ -1465,9 +1465,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                 {project.paredes.map((wall) => (
                   <button key={wall.id} onClick={() => setActiveWallId(wall.id)}
                     className={cn('px-3 py-1.5 rounded-t-lg text-xs font-medium transition-colors border-t border-l border-r',
-                      activeWallId === wall.id ? 'bg-slate-800 border-slate-600 text-white' : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300')}>
+                      activeWallId === wall.id ? 'bg-slate-800 border-slate-600 text-white' : 'bg-transparent border-transparent text-muted-foreground hover:text-muted-foreground/70')}>
                     Pared {wall.nombre}
-                    <span className="ml-1.5 text-slate-600">{Math.round(wall.longitud)}mm</span>
+                    <span className="ml-1.5 text-muted-foreground">{Math.round(wall.longitud)}mm</span>
                   </button>
                 ))}
               </div>
@@ -1503,7 +1503,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     onDragEnd={handleElevDragEnd}
                   />
                 ) : (
-                  <p className="text-slate-600 text-sm">Sin paredes configuradas</p>
+                  <p className="text-muted-foreground text-sm">Sin paredes configuradas</p>
                 )}
               </div>
             </>
@@ -1549,19 +1549,19 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
             <div className="p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-white font-semibold text-sm">Módulo seleccionado</h3>
-                <button onClick={() => setSelectedPlacement(null)} className="text-slate-500 hover:text-white">
+                <button onClick={() => setSelectedPlacement(null)} className="text-muted-foreground hover:text-white">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="space-y-1">
                 <p className="text-white text-sm font-medium">{selectedPlacement.modulo.nombre}</p>
-                <p className="text-slate-400 text-xs">{selectedPlacement.modulo.tipoModulo}</p>
-                <p className="text-slate-500 text-xs">
+                <p className="text-muted-foreground text-xs">{selectedPlacement.modulo.tipoModulo}</p>
+                <p className="text-muted-foreground text-xs">
                   {Math.round(selectedPlacement.modulo.ancho)}×{Math.round(selectedPlacement.modulo.alto)}×{Math.round(selectedPlacement.modulo.profundidad)} mm
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs font-medium mb-1">Ubicación</p>
+                <p className="text-muted-foreground text-xs font-medium mb-1">Ubicación</p>
                 <p className="text-white text-sm">
                   {selectedPlacement.nivel === 'isla'
                     ? 'Isla / Península'
@@ -1571,25 +1571,25 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
 
               {selectedPlacement.nivel !== 'isla' && (
                 <div>
-                  <label className="block text-slate-400 text-xs font-medium mb-1">Posición (mm desde inicio)</label>
+                  <label className="block text-muted-foreground text-xs font-medium mb-1">Posición (mm desde inicio)</label>
                   <input type="number" value={positionInput} onChange={(e) => handlePositionChange(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
                 </div>
               )}
 
               <div>
-                <p className="text-slate-400 text-xs font-medium mb-1">Nivel</p>
+                <p className="text-muted-foreground text-xs font-medium mb-1">Nivel</p>
                 <div className="flex gap-1 flex-wrap">
                   {(['base', 'alto', 'torre'] as const).map((n) => (
                     <button key={n} onClick={() => handleNivelChange(n)}
                       className={cn('flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize min-w-0',
-                        selectedPlacement.nivel === n ? NIVEL_COLORS[n].badge : 'bg-slate-700 text-slate-400 hover:text-white')}>
+                        selectedPlacement.nivel === n ? NIVEL_COLORS[n].badge : 'bg-slate-700 text-muted-foreground hover:text-white')}>
                       {n}
                     </button>
                   ))}
                   <button onClick={() => handleNivelChange('isla')}
                     className={cn('flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors min-w-0',
-                      selectedPlacement.nivel === 'isla' ? NIVEL_COLORS.isla.badge : 'bg-slate-700 text-slate-400 hover:text-white')}>
+                      selectedPlacement.nivel === 'isla' ? NIVEL_COLORS.isla.badge : 'bg-slate-700 text-muted-foreground hover:text-white')}>
                     isla
                   </button>
                 </div>
@@ -1597,11 +1597,11 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
 
               {selectedPlacement.nivel === 'alto' && (
                 <div>
-                  <label className="block text-slate-400 text-xs font-medium mb-1">Altura desde el suelo (mm)</label>
+                  <label className="block text-muted-foreground text-xs font-medium mb-1">Altura desde el suelo (mm)</label>
                   <input type="number" value={alturaInput} onChange={(e) => handleAlturaChange(e.target.value)}
                     placeholder="1400"
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-green-500" />
-                  <p className="text-slate-600 text-xs mt-1">Parte inferior del módulo aéreo</p>
+                  <p className="text-muted-foreground text-xs mt-1">Parte inferior del módulo aéreo</p>
                 </div>
               )}
 
@@ -1619,22 +1619,22 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {calcResults.length === 0 ? (
-                  <p className="text-slate-500 text-xs">Sin piezas para calcular.</p>
+                  <p className="text-muted-foreground text-xs">Sin piezas para calcular.</p>
                 ) : calcResults.map((r, i) => {
                   const totalPiezas = r.piezas.reduce((s, p) => s + p.cantidad, 0)
                   return (
                     <div key={i} className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 space-y-1.5">
                       <p className="text-white text-xs font-semibold truncate">{r.tablero}</p>
                       <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-                        <span className="text-slate-500 text-xs">Plancha</span>
+                        <span className="text-muted-foreground text-xs">Plancha</span>
                         <span className="text-white text-xs font-medium">{r.boardW}×{r.boardH}mm</span>
-                        <span className="text-slate-500 text-xs">Cantidad</span>
+                        <span className="text-muted-foreground text-xs">Cantidad</span>
                         <span className="text-white text-xs font-medium">{r.numPlanchas} plancha{r.numPlanchas !== 1 ? 's' : ''}</span>
-                        <span className="text-slate-500 text-xs">Aprovech.</span>
+                        <span className="text-muted-foreground text-xs">Aprovech.</span>
                         <span className={cn('text-xs font-medium', r.aprovechamiento >= 70 ? 'text-emerald-400' : r.aprovechamiento >= 50 ? 'text-amber-400' : 'text-red-400')}>
                           {r.aprovechamiento.toFixed(1)}%
                         </span>
-                        <span className="text-slate-500 text-xs">Piezas</span>
+                        <span className="text-muted-foreground text-xs">Piezas</span>
                         <span className="text-white text-xs font-medium">{totalPiezas} cortes</span>
                       </div>
                     </div>
@@ -1643,13 +1643,13 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                 {calcResults.length > 0 && (
                   <div className="border-t border-white/5 pt-2 space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-slate-400 text-xs">Total piezas</span>
+                      <span className="text-muted-foreground text-xs">Total piezas</span>
                       <span className="text-white text-xs font-medium">
                         {calcResults.reduce((s, r) => s + r.piezas.reduce((ss, p) => ss + p.cantidad, 0), 0)} cortes
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400 text-xs">Costo estimado</span>
+                      <span className="text-muted-foreground text-xs">Costo estimado</span>
                       <span className="text-emerald-400 text-xs font-bold">{formatCurrency(totalCalcCost)}</span>
                     </div>
                   </div>
@@ -1666,7 +1666,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     <Grid2x2 className="w-4 h-4" />Ver nesting
                   </button>
                   <button onClick={() => setShowPresupuestoModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 text-muted-foreground/70 rounded-lg text-sm font-medium transition-colors">
                     <FileText className="w-4 h-4" />Generar Presupuesto
                   </button>
                 </div>
@@ -1674,10 +1674,10 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-              <LayoutPanelLeft className="w-10 h-10 text-slate-700 mb-3" />
-              <p className="text-slate-500 text-sm font-medium">Panel de propiedades</p>
-              <p className="text-slate-600 text-xs mt-1">
-                Selecciona un módulo → botón <strong className="text-slate-500">Pared</strong> o <strong className="text-slate-500">Isla</strong> para colocarlo.
+              <LayoutPanelLeft className="w-10 h-10 text-foreground mb-3" />
+              <p className="text-muted-foreground text-sm font-medium">Panel de propiedades</p>
+              <p className="text-muted-foreground text-xs mt-1">
+                Selecciona un módulo → botón <strong className="text-muted-foreground">Pared</strong> o <strong className="text-muted-foreground">Isla</strong> para colocarlo.
               </p>
               {placements.length > 0 && (
                 <button onClick={handleCalcular} disabled={calculating}
@@ -1702,13 +1702,13 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                   <ClipboardList className="w-4 h-4 text-emerald-400" />
                   Orden de cortes — {project.nombre}
                 </h3>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-muted-foreground text-xs mt-0.5">
                   {calcResults.reduce((s, r) => s + r.piezas.reduce((ss, p) => ss + p.cantidad, 0), 0)} piezas en {calcResults.reduce((s, r) => s + r.numPlanchas, 0)} plancha{calcResults.reduce((s, r) => s + r.numPlanchas, 0) !== 1 ? 's' : ''}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={handleCopyText}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs font-medium transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-muted-foreground/70 rounded-lg text-xs font-medium transition-colors">
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copiado' : 'Copiar'}
                 </button>
@@ -1716,7 +1716,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors">
                   <FileText className="w-3.5 h-3.5" />Descargar .txt
                 </button>
-                <button onClick={() => setShowCutListModal(false)} className="text-slate-400 hover:text-white ml-1">
+                <button onClick={() => setShowCutListModal(false)} className="text-muted-foreground hover:text-white ml-1">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -1730,7 +1730,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-1">
                       <p className="text-white font-semibold text-sm">{r.tablero}</p>
-                      <p className="text-slate-400 text-xs">
+                      <p className="text-muted-foreground text-xs">
                         {r.numPlanchas} plancha{r.numPlanchas !== 1 ? 's' : ''} {r.boardW}×{r.boardH}mm
                         {' · '}
                         <span className={cn(r.aprovechamiento >= 70 ? 'text-emerald-400' : r.aprovechamiento >= 50 ? 'text-amber-400' : 'text-red-400')}>
@@ -1744,37 +1744,37 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
 
                   {/* Cut table */}
                   {r.piezas.length === 0 ? (
-                    <p className="text-slate-600 text-xs italic">Sin piezas definidas en los módulos de este material.</p>
+                    <p className="text-muted-foreground text-xs italic">Sin piezas definidas en los módulos de este material.</p>
                   ) : (
                     <div className="overflow-x-auto rounded-lg border border-slate-700">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="bg-slate-800 text-slate-400">
+                          <tr className="bg-slate-800 text-muted-foreground">
                             <th className="px-3 py-2 text-left font-medium">#</th>
                             <th className="px-3 py-2 text-left font-medium">Etiqueta</th>
                             <th className="px-3 py-2 text-left font-medium">Nombre</th>
                             <th className="px-3 py-2 text-right font-medium">Largo</th>
                             <th className="px-3 py-2 text-right font-medium">Ancho</th>
                             <th className="px-3 py-2 text-right font-medium">Cant.</th>
-                            <th className="px-3 py-2 text-left font-medium text-slate-500">Módulo</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Módulo</th>
                           </tr>
                         </thead>
                         <tbody>
                           {r.piezas.map((p, pi) => (
                             <tr key={pi} className={cn('border-t border-slate-700/50', pi % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800/30')}>
-                              <td className="px-3 py-1.5 text-slate-500">{pi + 1}</td>
+                              <td className="px-3 py-1.5 text-muted-foreground">{pi + 1}</td>
                               <td className="px-3 py-1.5 font-mono text-emerald-400">{p.etiqueta}</td>
                               <td className="px-3 py-1.5 text-white">{p.nombre}</td>
-                              <td className="px-3 py-1.5 text-right text-slate-200 font-mono">{Math.round(p.largo)}</td>
-                              <td className="px-3 py-1.5 text-right text-slate-200 font-mono">{Math.round(p.ancho)}</td>
+                              <td className="px-3 py-1.5 text-right text-foreground font-mono">{Math.round(p.largo)}</td>
+                              <td className="px-3 py-1.5 text-right text-foreground font-mono">{Math.round(p.ancho)}</td>
                               <td className="px-3 py-1.5 text-right text-white font-semibold">{p.cantidad}</td>
-                              <td className="px-3 py-1.5 text-slate-500 text-xs truncate max-w-[120px]">{p.modulo}</td>
+                              <td className="px-3 py-1.5 text-muted-foreground text-xs truncate max-w-[120px]">{p.modulo}</td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
                           <tr className="border-t border-slate-600 bg-slate-800">
-                            <td colSpan={5} className="px-3 py-2 text-slate-400 text-xs font-medium">Total</td>
+                            <td colSpan={5} className="px-3 py-2 text-muted-foreground text-xs font-medium">Total</td>
                             <td className="px-3 py-2 text-right text-white font-bold">
                               {r.piezas.reduce((s, p) => s + p.cantidad, 0)}
                             </td>
@@ -1806,20 +1806,20 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
           <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-white font-semibold">Generar Presupuesto</h3>
-              <button onClick={() => setShowPresupuestoModal(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
+              <button onClick={() => setShowPresupuestoModal(false)} className="text-muted-foreground hover:text-white"><X className="w-4 h-4" /></button>
             </div>
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-1">Nombre del presupuesto</label>
+              <label className="block text-muted-foreground/70 text-sm font-medium mb-1">Nombre del presupuesto</label>
               <input type="text" value={presupuestoNombre} onChange={(e) => setPresupuestoNombre(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Total estimado</span>
+              <span className="text-muted-foreground">Total estimado</span>
               <span className="text-emerald-400 font-bold">{formatCurrency(totalCalcCost)}</span>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowPresupuestoModal(false)}
-                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">Cancelar</button>
+                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-muted-foreground/70 rounded-lg text-sm font-medium transition-colors">Cancelar</button>
               <button onClick={handleGenerarPresupuesto} disabled={generatingPresupuesto}
                 className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
                 {generatingPresupuesto ? 'Generando...' : 'Crear presupuesto'}

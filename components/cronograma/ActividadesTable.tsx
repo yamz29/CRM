@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import type { Actividad } from './CronogramaClient'
 
 const ESTADO_COLORS: Record<string, string> = {
-  'Pendiente':    'bg-slate-100 text-slate-700 border-slate-200',
+  'Pendiente':    'bg-muted text-foreground border-border',
   'En Ejecución': 'bg-blue-100 text-blue-700 border-blue-200',
   'Completado':   'bg-green-100 text-green-700 border-green-200',
   'Atrasado':     'bg-red-100 text-red-700 border-red-200',
@@ -284,7 +284,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
     }
     return (
       <div onClick={() => startEdit(a, 'estado')} className="cursor-pointer" title="Clic para cambiar estado">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border hover:opacity-80 ${ESTADO_COLORS[a.estado] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border hover:opacity-80 ${ESTADO_COLORS[a.estado] ?? 'bg-muted text-muted-foreground border-border'}`}>
           {a.estado}
         </span>
       </div>
@@ -410,7 +410,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
         {/* Acciones */}
         <td className="px-3 py-2">
           <div className="flex justify-end gap-1">
-            <button onClick={() => onAbrirAvance(a)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded" title="Registrar avance">
+            <button onClick={() => onAbrirAvance(a)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-blue-50 rounded" title="Registrar avance">
               <TrendingUp className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => onEliminar(a.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">

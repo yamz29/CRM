@@ -118,7 +118,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-slate-800">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <Users className="w-5 h-5 text-blue-600" />
             Usuarios con acceso al sistema
           </CardTitle>
@@ -126,7 +126,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
             <Plus className="w-4 h-4" /> Nuevo usuario
           </Button>
         </div>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Los usuarios con contraseña pueden iniciar sesión. Los que no tienen contraseña son solo registros internos.
         </p>
       </CardHeader>
@@ -139,20 +139,20 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Nombre</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Correo</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Rol</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Costo/Hora</th>
-                <th className="px-4 py-2.5 text-center text-xs font-semibold text-slate-500 uppercase">Login</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+              <tr className="bg-muted/40 border-b border-border">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Nombre</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Correo</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Rol</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase">Costo/Hora</th>
+                <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase">Login</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {usuarios.length === 0 && !showAddForm && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     No hay usuarios. Crea el primer administrador.
                   </td>
                 </tr>
@@ -174,7 +174,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                           <div className="space-y-1">
                             <Label className="text-xs">Rol</Label>
                             <select value={editForm.rol} onChange={(e) => setEditForm((p) => ({ ...p, rol: e.target.value }))}
-                              className="w-full h-8 text-sm border border-slate-200 rounded-md px-2 bg-white">
+                              className="w-full h-8 text-sm border border-border rounded-md px-2 bg-card">
                               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                             </select>
                           </div>
@@ -196,7 +196,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                             <input type="checkbox" checked={editForm.changePassword}
                               onChange={(e) => setEditForm((p) => ({ ...p, changePassword: e.target.checked, password: '', confirmPassword: '' }))}
                               className="w-4 h-4" />
-                            <span className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                               <KeyRound className="w-3 h-3" /> Cambiar contraseña
                             </span>
                           </label>
@@ -225,24 +225,24 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                     </td>
                   </tr>
                 ) : (
-                  <tr key={u.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-800">{u.nombre}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{u.correo}</td>
+                  <tr key={u.id} className="hover:bg-muted">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{u.nombre}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{u.correo}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${ROL_COLORS[u.rol] || 'bg-slate-100 text-slate-600'}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${ROL_COLORS[u.rol] || 'bg-muted text-muted-foreground'}`}>
                         {u.rol}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-slate-600 tabular-nums">
-                      {u.costoHora > 0 ? `RD$ ${u.costoHora.toLocaleString('es-DO')}` : <span className="text-slate-300">—</span>}
+                    <td className="px-4 py-3 text-right text-sm text-muted-foreground tabular-nums">
+                      {u.costoHora > 0 ? `RD$ ${u.costoHora.toLocaleString('es-DO')}` : <span className="text-muted-foreground/70">—</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {u.hasPassword
                         ? <span title="Puede iniciar sesión"><ShieldCheck className="w-4 h-4 text-green-500 mx-auto" /></span>
-                        : <span title="Sin contraseña configurada"><ShieldOff className="w-4 h-4 text-slate-300 mx-auto" /></span>}
+                        : <span title="Sin contraseña configurada"><ShieldOff className="w-4 h-4 text-muted-foreground/70 mx-auto" /></span>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${u.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${u.activo ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
                         {u.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
@@ -250,15 +250,15 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => setPermisosUsuario({ id: u.id, nombre: u.nombre, rol: u.rol })}
-                          className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
                           title="Gestionar permisos"
                         >
                           <Shield className="w-4 h-4" />
                         </button>
-                        <button onClick={() => startEdit(u)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                        <button onClick={() => startEdit(u)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(u.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
+                        <button onClick={() => handleDelete(u.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -272,8 +272,8 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
 
         {/* Add form */}
         {showAddForm && (
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-5 space-y-4">
-            <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <div className="border-t border-border bg-muted/40 px-4 py-5 space-y-4">
+            <p className="text-sm font-bold text-foreground flex items-center gap-2">
               <Plus className="w-4 h-4 text-blue-600" /> Nuevo usuario
             </p>
             <form onSubmit={handleAdd} className="space-y-3">
@@ -289,7 +289,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                 <div className="space-y-1">
                   <Label className="text-xs">Rol</Label>
                   <select value={addForm.rol} onChange={(e) => setAddForm((p) => ({ ...p, rol: e.target.value }))}
-                    className="w-full h-8 text-sm border border-slate-200 rounded-md px-2 bg-white">
+                    className="w-full h-8 text-sm border border-border rounded-md px-2 bg-card">
                     {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
@@ -314,7 +314,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                   <Input type="password" value={addForm.confirmPassword} onChange={(e) => setAddForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="h-8 text-sm" placeholder="••••••" />
                 </div>
               </div>
-              <p className="text-xs text-slate-400">Si no ingresa contraseña, el usuario no podrá iniciar sesión.</p>
+              <p className="text-xs text-muted-foreground">Si no ingresa contraseña, el usuario no podrá iniciar sesión.</p>
               <div className="flex gap-2">
                 <Button type="submit" size="sm" disabled={loading}><Check className="w-3 h-3" /> Crear usuario</Button>
                 <Button type="button" variant="secondary" size="sm" onClick={() => { setShowAddForm(false); setAddForm(emptyForm); setError(null) }}><X className="w-3 h-3" /> Cancelar</Button>

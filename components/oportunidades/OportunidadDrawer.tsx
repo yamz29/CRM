@@ -36,7 +36,7 @@ const TIPO_ACTIVIDAD_ICONS: Record<string, React.ReactNode> = {
 }
 
 const ESTADO_PRES_COLORS: Record<string, string> = {
-  Borrador: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  Borrador: 'bg-muted text-muted-foreground',
   Enviado:  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   Aprobado: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   Rechazado:'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',

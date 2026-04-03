@@ -38,8 +38,8 @@ export default async function RecursosPage({ searchParams }: { searchParams: Pro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Catálogo de Recursos</h1>
-          <p className="text-slate-500 mt-1">{recursos.length} recursos · base de datos maestra de costos</p>
+          <h1 className="text-2xl font-bold text-foreground">Catálogo de Recursos</h1>
+          <p className="text-muted-foreground mt-1">{recursos.length} recursos · base de datos maestra de costos</p>
         </div>
         <div className="flex items-center gap-2">
           <RecursosPageClient />

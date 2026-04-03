@@ -13,13 +13,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20',
+        'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30',
       secondary:
         'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border',
       ghost:
         'bg-transparent text-foreground hover:bg-muted focus:ring-muted-foreground',
       danger:
-        'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm',
+        'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md shadow-destructive/25',
       outline:
         'bg-transparent border border-border text-foreground hover:bg-muted focus:ring-muted-foreground',
     }

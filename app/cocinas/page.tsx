@@ -31,7 +31,7 @@ export default async function CocinasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Espacios (Modulares)</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Diseña y presupuesta espacios modulares colocando módulos sobre paredes
           </p>
         </div>

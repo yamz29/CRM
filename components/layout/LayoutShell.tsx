@@ -68,7 +68,7 @@ export function LayoutShell({
 
   return (
     <SidebarContext.Provider value={{ collapsed, mobileOpen, setMobileOpen }}>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen bg-background dark:bg-[#0a0e17]">
 
         {/* ── Mobile overlay ── */}
         {mobileOpen && (

@@ -20,18 +20,21 @@ export function StatsCard({
 }: StatsCardProps) {
   return (
     <div className={cn(
-      'bg-card text-card-foreground rounded-xl border border-border p-6 shadow-sm hover:shadow-md hover:border-border/80 transition-all duration-200',
+      'bg-card rounded-xl border border-border p-5 transition-all duration-300',
+      'hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 hover:-translate-y-0.5',
+      'dark:bg-card/80 dark:backdrop-blur-xl dark:border-white/[0.06]',
+      'dark:hover:border-primary/30 dark:hover:shadow-primary/10',
       className
     )}>
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-foreground tabular-nums">{value}</p>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{value}</p>
           {description && (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
           )}
         </div>
-        <div className={cn('p-3 rounded-xl', colorClass)}>
+        <div className={cn('p-2.5 rounded-xl', colorClass)}>
           {icon}
         </div>
       </div>

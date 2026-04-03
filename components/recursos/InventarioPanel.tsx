@@ -36,7 +36,7 @@ export function InventarioPanel({ recursos }: { recursos: RecursoStock[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-slate-800 text-base">
+        <CardTitle className="flex items-center gap-2 text-foreground text-base">
           <Package className="w-5 h-5 text-blue-600" />
           Inventario
           {criticos > 0 && (
@@ -55,23 +55,23 @@ export function InventarioPanel({ recursos }: { recursos: RecursoStock[] }) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Recurso</th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-28">Tipo</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-slate-500 uppercase w-32">Stock actual</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-slate-500 uppercase w-28">Mínimo</th>
-                <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase w-32">Último costo</th>
-                <th className="px-4 py-2 text-center text-xs font-semibold text-slate-500 uppercase w-24">Estado</th>
+              <tr className="bg-muted/40 border-b border-border">
+                <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Recurso</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase w-28">Tipo</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-muted-foreground uppercase w-32">Stock actual</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-muted-foreground uppercase w-28">Mínimo</th>
+                <th className="px-4 py-2 text-right text-xs font-semibold text-muted-foreground uppercase w-32">Último costo</th>
+                <th className="px-4 py-2 text-center text-xs font-semibold text-muted-foreground uppercase w-24">Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {recursos.map(r => (
-                <tr key={r.id} className="hover:bg-slate-50/50">
+                <tr key={r.id} className="hover:bg-muted/50">
                   <td className="px-4 py-2.5">
-                    <span className="text-sm font-medium text-slate-800">{r.nombre}</span>
-                    {r.codigo && <span className="ml-2 text-xs font-mono text-slate-400">{r.codigo}</span>}
+                    <span className="text-sm font-medium text-foreground">{r.nombre}</span>
+                    {r.codigo && <span className="ml-2 text-xs font-mono text-muted-foreground">{r.codigo}</span>}
                   </td>
-                  <td className="px-4 py-2.5 text-xs text-slate-500">{TIPO_LABELS[r.tipo] || r.tipo}</td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{TIPO_LABELS[r.tipo] || r.tipo}</td>
                   <td className="px-4 py-2.5 text-center">
                     <span className={`text-sm font-semibold ${
                       r.alerta === 'critico' ? 'text-red-600' :
@@ -80,10 +80,10 @@ export function InventarioPanel({ recursos }: { recursos: RecursoStock[] }) {
                       {r.stock} {r.unidad}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-center text-sm text-slate-500">
+                  <td className="px-4 py-2.5 text-center text-sm text-muted-foreground">
                     {r.stockMinimo > 0 ? `${r.stockMinimo} ${r.unidad}` : '—'}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-sm text-slate-700">
+                  <td className="px-4 py-2.5 text-right text-sm text-foreground">
                     {r.ultimoCosto > 0 ? formatCurrency(r.ultimoCosto) : '—'}
                   </td>
                   <td className="px-4 py-2.5 text-center">

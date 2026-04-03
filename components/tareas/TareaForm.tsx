@@ -122,7 +122,7 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
 
       {/* Título */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           Título <span className="text-red-500">*</span>
         </label>
         <input
@@ -130,33 +130,33 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
           placeholder="Ej: Enviar presupuesto al cliente..."
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       {/* Descripción */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Descripción</label>
         <textarea
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           placeholder="Detalles adicionales de la tarea..."
           rows={3}
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
         />
       </div>
 
       {/* Cliente / Proyecto */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Cliente</label>
           <select
             value={clienteId}
             onChange={(e) => {
               setClienteId(e.target.value)
               setProyectoId('')
             }}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card"
           >
             <option value="">Sin cliente</option>
             {clientes.map((c) => (
@@ -168,12 +168,12 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Proyecto</label>
           <select
             value={proyectoId}
             onChange={(e) => setProyectoId(e.target.value)}
             disabled={!clienteId}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card disabled:opacity-50"
           >
             <option value="">Sin proyecto</option>
             {filteredProyectos.map((p) => (
@@ -188,22 +188,22 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
       {/* Fecha / Prioridad / Estado */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Fecha límite</label>
           <input
             type="date"
             value={fechaLimite}
             onChange={(e) => setFechaLimite(e.target.value)}
             min={mode === 'create' ? new Date().toISOString().split('T')[0] : undefined}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Prioridad</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Prioridad</label>
           <select
             value={prioridad}
             onChange={(e) => setPrioridad(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card"
           >
             {PRIORIDADES.map((p) => (
               <option key={p} value={p}>
@@ -214,11 +214,11 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Estado</label>
           <select
             value={estado}
             onChange={(e) => setEstado(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card"
           >
             {ESTADOS.map((s) => (
               <option key={s} value={s}>
@@ -231,8 +231,8 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
 
       {/* Avance */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Avance <span className="text-slate-400 font-normal ml-1">{avance}%</span>
+        <label className="block text-sm font-medium text-foreground mb-1">
+          Avance <span className="text-muted-foreground font-normal ml-1">{avance}%</span>
         </label>
         <input
           type="range"
@@ -243,18 +243,18 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
           onChange={(e) => setAvance(parseInt(e.target.value))}
           className="w-full accent-blue-600"
         />
-        <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+        <div className="flex justify-between text-xs text-muted-foreground mt-0.5">
           <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
         </div>
       </div>
 
       {/* Asignado a */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Asignado a</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Asignado a</label>
         <select
           value={asignadoId}
           onChange={(e) => setAsignadoId(e.target.value)}
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card"
         >
           <option value="">Sin asignar</option>
           {usuarios.map((u) => (

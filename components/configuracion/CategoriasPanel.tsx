@@ -93,7 +93,7 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-slate-800">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <Tag className="w-5 h-5 text-blue-600" />
             Categorías
           </CardTitle>
@@ -113,18 +113,18 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Nombre</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Tipo</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Color</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Descripción</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+              <tr className="bg-muted/40 border-b border-border">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Nombre</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Color</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Descripción</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {categorias.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No hay categorías registradas
                   </td>
                 </tr>
@@ -148,7 +148,7 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
                           <select
                             value={editForm.tipo}
                             onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))}
-                            className="w-full h-8 text-sm border border-slate-200 rounded-md px-2 bg-white"
+                            className="w-full h-8 text-sm border border-border rounded-md px-2 bg-card"
                           >
                             {TIPOS.map((t) => (
                               <option key={t} value={t}>{t}</option>
@@ -170,9 +170,9 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
                               type="color"
                               value={editForm.color}
                               onChange={(e) => setEditForm((p) => ({ ...p, color: e.target.value }))}
-                              className="w-8 h-8 rounded cursor-pointer border border-slate-200"
+                              className="w-8 h-8 rounded cursor-pointer border border-border"
                             />
-                            <span className="text-xs text-slate-500">{editForm.color}</span>
+                            <span className="text-xs text-muted-foreground">{editForm.color}</span>
                           </div>
                         </div>
                         <div className="flex items-end gap-2 col-span-2 md:col-span-4">
@@ -189,35 +189,35 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
                     </td>
                   </tr>
                 ) : (
-                  <tr key={c.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-800">{c.nombre}</td>
+                  <tr key={c.id} className="hover:bg-muted">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{c.nombre}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                         {c.tipo}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-4 h-4 rounded-full border border-slate-200"
+                          className="w-4 h-4 rounded-full border border-border"
                           style={{ backgroundColor: c.color }}
                         />
-                        <span className="text-xs text-slate-500">{c.color}</span>
+                        <span className="text-xs text-muted-foreground">{c.color}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{c.descripcion || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{c.descripcion || '-'}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => startEdit(c)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(c.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Eliminar"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -232,8 +232,8 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
         </div>
 
         {showAddForm && (
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-sm font-semibold text-slate-700 mb-3">Nueva categoría</p>
+          <div className="border-t border-border bg-muted/40 px-4 py-4">
+            <p className="text-sm font-semibold text-foreground mb-3">Nueva categoría</p>
             <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Nombre *</Label>
@@ -250,7 +250,7 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
                 <select
                   value={addForm.tipo}
                   onChange={(e) => setAddForm((p) => ({ ...p, tipo: e.target.value }))}
-                  className="w-full h-8 text-sm border border-slate-200 rounded-md px-2 bg-white"
+                  className="w-full h-8 text-sm border border-border rounded-md px-2 bg-card"
                 >
                   {TIPOS.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -273,9 +273,9 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
                     type="color"
                     value={addForm.color}
                     onChange={(e) => setAddForm((p) => ({ ...p, color: e.target.value }))}
-                    className="w-8 h-8 rounded cursor-pointer border border-slate-200"
+                    className="w-8 h-8 rounded cursor-pointer border border-border"
                   />
-                  <span className="text-xs text-slate-500">{addForm.color}</span>
+                  <span className="text-xs text-muted-foreground">{addForm.color}</span>
                 </div>
               </div>
               <div className="flex items-end gap-2 col-span-2 md:col-span-4">

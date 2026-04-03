@@ -172,28 +172,28 @@ function BlockPopup({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+        className="bg-card rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 max-h-[90vh] overflow-y-auto border border-border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+            <p className="font-semibold text-foreground text-sm">
               {state.mode === 'create' ? 'Agregar bloque' : 'Editar bloque'}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               {fmtDayShort(state.date).weekday} {fmtDayShort(state.date).day}{' '}
               {fmtDayShort(state.date).month} · {fmtH(horaInicio)}–{fmtH(horaFin)}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Hora inicio */}
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Hora inicio</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Hora inicio</p>
           <div className="flex gap-1.5 flex-wrap">
             {HOURS.map((h) => (
               <button
@@ -202,8 +202,8 @@ function BlockPopup({
                 className={cn(
                   'px-2 py-1 rounded-lg text-xs font-medium border transition-all',
                   horaInicio === h
-                    ? 'bg-slate-800 border-slate-800 text-white'
-                    : 'border-slate-200 text-slate-500 hover:border-slate-400'
+                    ? 'bg-foreground border-foreground text-background'
+                    : 'border-border text-muted-foreground hover:border-muted-foreground'
                 )}
               >
                 {h}h
@@ -214,7 +214,7 @@ function BlockPopup({
 
         {/* Duración */}
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Duración</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Duración</p>
           <div className="flex gap-1.5">
             {durOptions.map((h) => (
               <button
@@ -223,8 +223,8 @@ function BlockPopup({
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-sm font-bold border transition-all',
                   horas === h
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+                    ? 'bg-primary border-primary text-primary-foreground'
+                    : 'border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5'
                 )}
               >
                 {h}h
@@ -235,11 +235,11 @@ function BlockPopup({
 
         {/* Tipo agrupado */}
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Actividad</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Actividad</p>
           <div className="space-y-2">
             {GRUPOS_TIPOS.map(({ grupo, tipos }) => (
               <div key={grupo}>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1">{grupo}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">{grupo}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {tipos.map(({ label, Icon, bg, text }) => (
                     <button
@@ -253,7 +253,7 @@ function BlockPopup({
                         'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border-2 transition-all',
                         tipo === label
                           ? `${bg} ${text} border-transparent`
-                          : 'border-slate-200 text-slate-500 hover:border-slate-300 bg-white dark:bg-slate-800'
+                          : 'border-border text-muted-foreground hover:border-muted-foreground bg-card'
                       )}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -269,11 +269,11 @@ function BlockPopup({
         {/* Proyecto (solo si tipo = Proyecto) */}
         {tipo === 'Proyecto' && (
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Proyecto *</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Proyecto *</p>
             <select
               value={proyectoId}
               onChange={(e) => setProyectoId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">— Seleccionar —</option>
               {proyectos.map((p) => (
@@ -286,11 +286,11 @@ function BlockPopup({
         {/* Cliente (solo si tipo es Comercial) */}
         {esComercial && (
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Cliente (opcional)</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Cliente (opcional)</p>
             <select
               value={clienteId}
               onChange={(e) => setClienteId(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="">— Sin cliente específico —</option>
               {clientes.map((c) => (
@@ -302,14 +302,14 @@ function BlockPopup({
 
         {/* Nota */}
         <div>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Nota (opcional)</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Nota (opcional)</p>
           <input
             type="text"
             value={nota}
             onChange={(e) => setNota(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             placeholder="Descripción breve..."
-            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -325,7 +325,7 @@ function BlockPopup({
           )}
           <button
             onClick={onClose}
-            className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex-1 px-3 py-2 text-sm rounded-xl border border-border text-muted-foreground hover:bg-muted transition-colors"
           >
             Cancelar
           </button>
@@ -485,7 +485,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit mb-6">
+      <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-6">
         {(['grid', 'reportes'] as const).map((t) => (
           <button
             key={t}
@@ -493,8 +493,8 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
             className={cn(
               'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
               tab === t
-                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {t === 'grid'
@@ -513,18 +513,18 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
             <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">
               <button
                 onClick={() => setMonday(shiftDate(monday, -7))}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="p-1 rounded-lg hover:bg-muted"
               >
-                <ChevronLeft className="w-4 h-4 text-slate-500" />
+                <ChevronLeft className="w-4 h-4 text-muted-foreground" />
               </button>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-[160px] text-center">
+              <span className="text-sm font-medium text-foreground min-w-[160px] text-center">
                 {fmtWeekRange(monday)}
               </span>
               <button
                 onClick={() => setMonday(shiftDate(monday, 7))}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="p-1 rounded-lg hover:bg-muted"
               >
-                <ChevronRight className="w-4 h-4 text-slate-500" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
@@ -543,7 +543,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
               <select
                 value={filterUsr}
                 onChange={(e) => setFilterUsr(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 text-sm border border-border rounded-xl bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos los empleados</option>
                 {usuarios.map((u) => (
@@ -552,7 +552,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
               </select>
             )}
 
-            <p className="text-xs text-slate-400 ml-auto hidden md:block">
+            <p className="text-xs text-muted-foreground ml-auto hidden md:block">
               Clic en una celda para agregar un bloque
             </p>
           </div>
@@ -563,18 +563,18 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
               <div style={{ minWidth: '900px' }}>
 
                 {/* Hour header */}
-                <div className="flex border-b border-border bg-slate-50 dark:bg-slate-800/50">
-                  <div className="w-40 flex-shrink-0 border-r border-border px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="flex border-b border-border bg-muted/40">
+                  <div className="w-40 flex-shrink-0 border-r border-border px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Empleado
                   </div>
-                  <div className="w-28 flex-shrink-0 border-r border-border px-3 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <div className="w-28 flex-shrink-0 border-r border-border px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Fecha
                   </div>
                   <div className="flex flex-1">
                     {HOURS.map((h) => (
                       <div
                         key={h}
-                        className="flex-1 text-center py-2.5 text-xs font-medium text-slate-400 border-r border-border last:border-r-0"
+                        className="flex-1 text-center py-2.5 text-xs font-medium text-muted-foreground border-r border-border last:border-r-0"
                       >
                         {h}h
                       </div>
@@ -607,7 +607,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
                           {/* Employee name — only on first day of group */}
                           <div className="w-40 flex-shrink-0 border-r border-border px-3 py-3 flex items-center">
                             {di === 0 ? (
-                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              <span className="text-sm font-semibold text-foreground">
                                 {group.nombre}
                               </span>
                             ) : null}
@@ -620,8 +620,8 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
                               isToday && 'font-semibold'
                             )}
                           >
-                            <span className="text-xs text-slate-400 capitalize">{weekday}</span>
-                            <span className={cn('text-sm', isToday ? 'text-blue-600 font-bold' : 'text-slate-700 dark:text-slate-300')}>
+                            <span className="text-xs text-muted-foreground capitalize">{weekday}</span>
+                            <span className={cn('text-sm', isToday ? 'text-blue-600 font-bold' : 'text-foreground')}>
                               {day} {month}
                             </span>
                             {isToday && (
@@ -644,7 +644,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
                                     key={h}
                                     onClick={() => !occupied && openCreate(group.usuarioId, date, h)}
                                     className={cn(
-                                      'flex-1 border-r border-slate-100 dark:border-slate-700/50 last:border-r-0 transition-colors',
+                                      'flex-1 border-r border-border/50 last:border-r-0 transition-colors',
                                       occupied
                                         ? 'cursor-default'
                                         : 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 group'
@@ -721,7 +721,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
       {tab === 'reportes' && (
         <div className="space-y-6">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-slate-500">Período:</span>
+            <span className="text-sm text-muted-foreground">Período:</span>
             {[7, 30, 90].map((d) => (
               <button
                 key={d}
@@ -729,15 +729,15 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
                   periodo === d
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                    : 'border-border text-muted-foreground hover:bg-muted'
                 )}
               >
                 {d} días
               </button>
             ))}
-            <span className="ml-auto text-sm text-slate-500">
-              Total: <strong className="text-slate-800 dark:text-white">
+            <span className="ml-auto text-sm text-muted-foreground">
+              Total: <strong className="text-foreground">
                 {totalPeriodo % 1 === 0 ? totalPeriodo : totalPeriodo.toFixed(1)}h
               </strong>
             </span>
@@ -746,19 +746,19 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Por proyecto */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2 text-sm">
                 <FolderOpen className="w-4 h-4 text-blue-500" /> Horas por proyecto
               </h3>
               {horasPorProyecto.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
+                ? <p className="text-sm text-muted-foreground text-center py-6">Sin registros</p>
                 : <div className="space-y-3">
                     {horasPorProyecto.map(([nombre, h]) => (
                       <div key={nombre}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-slate-700 dark:text-slate-300 truncate">{nombre}</span>
+                          <span className="text-foreground truncate">{nombre}</span>
                           <span className="font-bold ml-2 tabular-nums">{h % 1 === 0 ? h : h.toFixed(1)}h</span>
                         </div>
-                        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(h / (horasPorProyecto[0]?.[1] || 1)) * 100}%` }} />
                         </div>
                       </div>
@@ -769,11 +769,11 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
 
             {/* Por actividad */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2 text-sm">
                 <BarChart3 className="w-4 h-4 text-purple-500" /> Por tipo de actividad
               </h3>
               {horasPorActividad.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
+                ? <p className="text-sm text-muted-foreground text-center py-6">Sin registros</p>
                 : <div className="space-y-3">
                     {horasPorActividad.map(([tipoLabel, h]) => {
                       const cfg = tc(tipoLabel)
@@ -784,11 +784,11 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
                             <span className={cn('flex items-center gap-1 text-xs font-medium', cfg.light.split(' ')[1])}>
                               <cfg.Icon className="w-3 h-3" /> {tipoLabel}
                             </span>
-                            <span className="text-xs text-slate-500 tabular-nums">
-                              {h % 1 === 0 ? h : h.toFixed(1)}h <span className="text-slate-400">({pct.toFixed(0)}%)</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {h % 1 === 0 ? h : h.toFixed(1)}h <span className="text-muted-foreground">({pct.toFixed(0)}%)</span>
                             </span>
                           </div>
-                          <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                             <div className={cn('h-full rounded-full', cfg.bar)} style={{ width: `${pct}%` }} />
                           </div>
                         </div>
@@ -800,19 +800,19 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
 
             {/* Por persona */}
             <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 text-sm">
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2 text-sm">
                 <Users className="w-4 h-4 text-green-500" /> Horas por persona
               </h3>
               {horasPorUsuario.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-6">Sin registros</p>
+                ? <p className="text-sm text-muted-foreground text-center py-6">Sin registros</p>
                 : <div className="space-y-3">
                     {horasPorUsuario.map(([nombre, h]) => (
                       <div key={nombre}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-slate-700 dark:text-slate-300 truncate">{nombre}</span>
+                          <span className="text-foreground truncate">{nombre}</span>
                           <span className="font-bold ml-2 tabular-nums">{h % 1 === 0 ? h : h.toFixed(1)}h</span>
                         </div>
-                        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className="h-full bg-green-500 rounded-full" style={{ width: `${(h / (horasPorUsuario[0]?.[1] || 1)) * 100}%` }} />
                         </div>
                       </div>

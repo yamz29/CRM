@@ -291,7 +291,7 @@ function NestingSVG({ sheet, boardW, boardH }: { sheet: NestSheet; boardW: numbe
   const scale = displayW / boardW
   const displayH = Math.round(boardH * scale)
   return (
-    <svg width={displayW} height={displayH} className="border border-slate-200 rounded-lg bg-slate-50" style={{ maxWidth: '100%' }}>
+    <svg width={displayW} height={displayH} className="border border-border rounded-lg bg-muted/40" style={{ maxWidth: '100%' }}>
       <rect x={0} y={0} width={displayW} height={displayH} fill="#f8fafc" />
       {sheet.piezas.map((p) => {
         const x = Math.round(p.x * scale)
@@ -669,8 +669,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
   // ── UI ───────────────────────────────────────────────────────────────────
 
-  const inputCls = 'w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-  const thCls = 'px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide bg-slate-50'
+  const inputCls = 'w-full border border-border rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
+  const thCls = 'px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/40'
 
   return (
     <div className="space-y-4 pb-32 print:pb-0">
@@ -679,13 +679,13 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href="/melamina"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">{nombre || 'Módulo sin nombre'}</h1>
-            <p className="text-sm text-slate-500">{codigo && <span className="font-mono mr-2">{codigo}</span>}{tipoModulo}</p>
+            <h1 className="text-xl font-bold text-foreground">{nombre || 'Módulo sin nombre'}</h1>
+            <p className="text-sm text-muted-foreground">{codigo && <span className="font-mono mr-2">{codigo}</span>}{tipoModulo}</p>
           </div>
         </div>
         <Button onClick={handleSave} disabled={loading}>
@@ -702,7 +702,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200 print:hidden">
+      <div className="flex gap-1 border-b border-border print:hidden">
         {([
           { key: 'datos', label: 'Datos', icon: <Settings2 className="w-3.5 h-3.5" /> },
           { key: 'despiece', label: 'Despiece', icon: <Layers className="w-3.5 h-3.5" /> },
@@ -716,7 +716,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t.key
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.icon} {t.label}
@@ -726,56 +726,56 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
       {/* ── TAB: DATOS ──────────────────────────────────────────────────────── */}
       {tab === 'datos' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 print:hidden">
+        <div className="bg-card rounded-xl border border-border p-5 space-y-4 print:hidden">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Código</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Código</label>
               <input className={inputCls} value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="B90-Fre" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label>
-              <select className={inputCls + ' bg-white'} value={tipoModulo} onChange={(e) => setTipoModulo(e.target.value)}>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo</label>
+              <select className={inputCls + ' bg-card'} value={tipoModulo} onChange={(e) => setTipoModulo(e.target.value)}>
                 {TIPOS_MODULO.map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Nombre *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label>
               <input className={inputCls} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Base 90 con puertas" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Ancho (mm)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Ancho (mm)</label>
               <input type="number" className={inputCls} value={ancho} onChange={(e) => setAncho(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Alto (mm)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Alto (mm)</label>
               <input type="number" className={inputCls} value={alto} onChange={(e) => setAlto(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Prof. (mm)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Prof. (mm)</label>
               <input type="number" className={inputCls} value={prof} onChange={(e) => setProf(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Puertas</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Puertas</label>
               <input type="number" className={inputCls} value={cantPuertas} onChange={(e) => setCantPuertas(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Cajones</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Cajones</label>
               <input type="number" className={inputCls} value={cantCajones} onChange={(e) => setCantCajones(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Cantidad</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad</label>
               <input type="number" className={inputCls} value={cantidad} onChange={(e) => setCantidad(e.target.value)} min="1" step="1" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Tablero principal</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Tablero principal</label>
               <select
-                className={inputCls + ' bg-white'}
+                className={inputCls + ' bg-card'}
                 value={materialTableroId}
                 onChange={(e) => setMaterialTableroId(e.target.value)}
               >
@@ -788,8 +788,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 ))}
               </select>
               {materialTablero ? (
-                <p className="text-xs text-slate-400 mt-1">
-                  Espesor: <span className="font-semibold text-slate-600">{materialTablero.espesorMm ?? 18}mm</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Espesor: <span className="font-semibold text-muted-foreground">{materialTablero.espesorMm ?? 18}mm</span>
                   {!materialTablero.espesorMm && <span className="text-amber-500"> (sin espesor en catálogo — usando 18mm)</span>}
                   {' · '}Área: {(((materialTablero.anchoMm ?? 0) * (materialTablero.largoMm ?? 0)) / 1_000_000).toFixed(4)} m² / plancha
                   {materialTablero.precio > 0 && ` · ${formatCurrency(materialTablero.precio)} / plancha`}
@@ -802,12 +802,12 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Color/Acabado</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Color/Acabado</label>
               <input className={inputCls} value={colorAcabado} onChange={(e) => setColorAcabado(e.target.value)} placeholder="Blanco Alpino" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Estado producción</label>
-              <select className={inputCls + ' bg-white'} value={estadoProduccion} onChange={(e) => setEstadoProduccion(e.target.value)}>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Estado producción</label>
+              <select className={inputCls + ' bg-card'} value={estadoProduccion} onChange={(e) => setEstadoProduccion(e.target.value)}>
                 {ESTADOS_PRODUCCION.map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
@@ -815,11 +815,11 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Precio de venta</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Precio de venta</label>
               <input type="number" className={inputCls} value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} min="0" step="1" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Observaciones</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Observaciones</label>
               <input className={inputCls} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Notas del módulo" />
             </div>
           </div>
@@ -852,11 +852,11 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
           </div>
 
           {/* Tabla de piezas */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200">
+                  <tr className="border-b border-border">
                     <th className={thCls} style={{ width: 110 }}>Etiqueta</th>
                     <th className={thCls}>Nombre</th>
                     <th className={thCls} style={{ width: 80 }}>Largo (mm)</th>
@@ -870,7 +870,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     <th className={thCls} style={{ width: 40 }}></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {piezas.map((p) => {
                     const area = calcAreaM2(p)
                     const tc = calcTapacantoMl(p)
@@ -879,10 +879,10 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     const fitsLargo = materialTablero?.largoMm ? p.largo <= materialTablero.largoMm : null
                     const noFit = fitsAncho === false || fitsLargo === false
                     return (
-                      <tr key={p._key} className={`hover:bg-slate-50/50 ${noFit ? 'bg-red-50/40' : ''}`}>
+                      <tr key={p._key} className={`hover:bg-muted/40/50 ${noFit ? 'bg-red-50/40' : ''}`}>
                         <td className="px-2 py-1.5">
                           <select
-                            className="border border-slate-200 rounded-md px-1.5 py-1 text-xs bg-white w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border border-border rounded-md px-1.5 py-1 text-xs bg-card w-full focus:outline-none focus:ring-1 focus:ring-ring"
                             value={p.etiqueta}
                             onChange={(e) => updatePieza(p._key, 'etiqueta', e.target.value)}
                           >
@@ -893,7 +893,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         </td>
                         <td className="px-2 py-1.5">
                           <input
-                            className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border border-border rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-ring"
                             value={p.nombre}
                             onChange={(e) => updatePieza(p._key, 'nombre', e.target.value)}
                           />
@@ -901,7 +901,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         <td className="px-2 py-1.5">
                           <input
                             type="number" min="0" step="0.1"
-                            className={`border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${fitsLargo === false ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
+                            className={`border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-ring ${fitsLargo === false ? 'border-red-400 bg-red-50' : 'border-border'}`}
                             value={p.largo}
                             onChange={(e) => updatePieza(p._key, 'largo', parseFloat(e.target.value) || 0)}
                           />
@@ -909,7 +909,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         <td className="px-2 py-1.5">
                           <input
                             type="number" min="0" step="0.1"
-                            className={`border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${fitsAncho === false ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
+                            className={`border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-ring ${fitsAncho === false ? 'border-red-400 bg-red-50' : 'border-border'}`}
                             value={p.ancho}
                             onChange={(e) => updatePieza(p._key, 'ancho', parseFloat(e.target.value) || 0)}
                           />
@@ -917,7 +917,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         <td className="px-2 py-1.5">
                           <input
                             type="number" min="1" step="1"
-                            className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border border-border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-ring"
                             value={p.cantidad}
                             onChange={(e) => updatePieza(p._key, 'cantidad', parseInt(e.target.value) || 1)}
                           />
@@ -925,14 +925,14 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         <td className="px-2 py-1.5">
                           <input
                             type="number" min="0" step="1"
-                            className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border border-border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-ring"
                             value={p.espesor}
                             onChange={(e) => updatePieza(p._key, 'espesor', parseFloat(e.target.value) || 0)}
                           />
                         </td>
                         <td className="px-2 py-1.5">
                           <select
-                            className="border border-slate-200 rounded-md px-1.5 py-1 text-xs bg-white w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border border-border rounded-md px-1.5 py-1 text-xs bg-card w-full focus:outline-none focus:ring-1 focus:ring-ring"
                             value={p.material}
                             onChange={(e) => updatePieza(p._key, 'material', e.target.value)}
                           >
@@ -953,7 +953,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                                   className={`w-6 h-6 rounded text-xs font-bold transition-colors ${
                                     p.tapacanto.includes(l.key)
                                       ? 'bg-amber-500 text-white'
-                                      : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                      : 'bg-muted text-muted-foreground hover:bg-muted'
                                   }`}
                                 >
                                   {l.label}
@@ -965,7 +965,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                                 value={p.tapacantoColor}
                                 onChange={(e) => updatePieza(p._key, 'tapacantoColor', e.target.value)}
                                 title="Canto / color del tapacanto"
-                                className="border border-amber-200 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 text-amber-800 w-full"
+                                className="border border-amber-200 rounded px-1 py-0.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-amber-400 text-amber-800 w-full"
                               >
                                 <option value="">— Sin canto —</option>
                                 {cantos.length > 0
@@ -982,10 +982,10 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                             )}
                           </div>
                         </td>
-                        <td className="px-2 py-1.5 text-right text-xs text-slate-600 font-mono">{area.toFixed(4)}</td>
+                        <td className="px-2 py-1.5 text-right text-xs text-muted-foreground font-mono">{area.toFixed(4)}</td>
                         <td className="px-2 py-1.5 text-right text-xs text-amber-700 font-mono">{tc.toFixed(2)}</td>
                         <td className="px-2 py-1.5">
-                          <button onClick={() => removePieza(p._key)} className="text-slate-300 hover:text-red-500 transition-colors">
+                          <button onClick={() => removePieza(p._key)} className="text-muted-foreground/70 hover:text-red-500 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
@@ -995,9 +995,9 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 </tbody>
                 {piezas.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-slate-200 bg-slate-50">
-                      <td colSpan={8} className="px-3 py-2 text-xs font-semibold text-slate-600">Totales</td>
-                      <td className="px-2 py-2 text-right text-xs font-bold text-slate-800 font-mono">{totalAreaM2.toFixed(4)} m²</td>
+                    <tr className="border-t-2 border-border bg-muted/40">
+                      <td colSpan={8} className="px-3 py-2 text-xs font-semibold text-muted-foreground">Totales</td>
+                      <td className="px-2 py-2 text-right text-xs font-bold text-foreground font-mono">{totalAreaM2.toFixed(4)} m²</td>
                       <td className="px-2 py-2 text-right text-xs font-bold text-amber-700 font-mono">{totalTapacantoMl.toFixed(2)} ml</td>
                       <td />
                     </tr>
@@ -1005,7 +1005,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 )}
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-slate-100">
+            <div className="px-4 py-3 border-t border-border">
               <Button variant="secondary" size="sm" onClick={addPieza}>
                 <Plus className="w-3.5 h-3.5" /> Agregar pieza
               </Button>
@@ -1014,10 +1014,10 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
           {/* Consumo de tablero — agrupado por tipo */}
           {piezas.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+            <div className="bg-card rounded-xl border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Consumo de tablero</p>
-                <span className="text-xs text-slate-400">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Consumo de tablero</p>
+                <span className="text-xs text-muted-foreground">
                 {totalAreaM2.toFixed(3)} m² · {totalTapacantoMl.toFixed(2)} ml canto
                 {Object.entries(calcTapacantoByColor(piezas)).map(([color, ml]) => (
                   <span key={color} className="ml-2 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px]">
@@ -1028,34 +1028,34 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
               </div>
               <div className="space-y-2">
                 {tableroGroups.map((g) => (
-                  <div key={g.nombre} className="border border-slate-100 rounded-lg p-3">
+                  <div key={g.nombre} className="border border-border rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-slate-700">{g.nombre}</span>
-                      <span className="text-xs text-slate-400">{g.boardW}×{g.boardH} mm</span>
+                      <span className="text-xs font-semibold text-foreground">{g.nombre}</span>
+                      <span className="text-xs text-muted-foreground">{g.boardW}×{g.boardH} mm</span>
                     </div>
                     <div className="grid grid-cols-4 gap-3">
                       <div>
-                        <p className="text-xs text-slate-500">Área piezas</p>
-                        <p className="text-sm font-bold text-slate-800">{g.areaM2.toFixed(3)} m²</p>
+                        <p className="text-xs text-muted-foreground">Área piezas</p>
+                        <p className="text-sm font-bold text-foreground">{g.areaM2.toFixed(3)} m²</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500">Planchas (+15%)</p>
+                        <p className="text-xs text-muted-foreground">Planchas (+15%)</p>
                         <p className="text-sm font-bold text-blue-700">{g.planchas}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500">% uso plancha</p>
+                        <p className="text-xs text-muted-foreground">% uso plancha</p>
                         <p className={`text-sm font-bold ${g.pctUso >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
                           {g.pctUso.toFixed(1)}%
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500">Tapacanto</p>
+                        <p className="text-xs text-muted-foreground">Tapacanto</p>
                         <p className="text-sm font-bold text-amber-700">{g.tapacantoMl.toFixed(2)} ml</p>
                       </div>
                     </div>
                     {/* Barra de uso */}
                     <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 bg-slate-100 rounded-full h-1.5">
+                      <div className="flex-1 bg-muted rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full ${g.pctUso >= 70 ? 'bg-green-500' : 'bg-amber-400'}`}
                           style={{ width: `${Math.min(100, g.pctUso)}%` }}
@@ -1080,56 +1080,56 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       {tab === 'nesting' && (
         <div className="space-y-4 print:hidden">
           {/* Configuración */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Configuración de optimización</p>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Configuración de optimización</p>
             <div className="flex flex-wrap items-center gap-5">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Kerf (espesor de corte)</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Kerf (espesor de corte)</label>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="number" min="0" max="10" step="0.5"
                     value={nestKerf}
                     onChange={(e) => setNestKerf(parseFloat(e.target.value) || 0)}
-                    className="border border-slate-200 rounded-md px-2.5 py-1.5 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border border-border rounded-md px-2.5 py-1.5 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-ring"
                   />
-                  <span className="text-xs text-slate-400">mm</span>
+                  <span className="text-xs text-muted-foreground">mm</span>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Rotación de piezas</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Rotación de piezas</label>
                 <button
                   onClick={() => setNestRotation((v) => !v)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
                     nestRotation
                       ? 'bg-blue-50 border-blue-300 text-blue-700'
-                      : 'bg-slate-50 border-slate-200 text-slate-500'
+                      : 'bg-muted/40 border-border text-muted-foreground'
                   }`}
                 >
                   <span>{nestRotation ? '✓ Permitida' : 'Desactivada'}</span>
                 </button>
               </div>
-              <div className="text-xs text-slate-400 max-w-xs">
+              <div className="text-xs text-muted-foreground max-w-xs">
                 Algoritmo Shelf — ordena piezas de mayor a menor, empaqueta en filas dentro de cada plancha.
               </div>
             </div>
           </div>
 
           {piezas.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
+            <div className="bg-card rounded-xl border border-border p-10 text-center text-muted-foreground text-sm">
               Agrega piezas en el tab Despiece para ver la optimización de corte.
             </div>
           ) : nestingGroups.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
+            <div className="bg-card rounded-xl border border-border p-10 text-center text-muted-foreground text-sm">
               Calculando…
             </div>
           ) : (
             nestingGroups.map((ng) => (
-              <div key={ng.tablero} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div key={ng.tablero} className="bg-card rounded-xl border border-border overflow-hidden">
                 {/* Tablero header */}
-                <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div className="px-5 py-3 bg-muted/40 border-b border-border flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{ng.tablero}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-sm font-semibold text-foreground">{ng.tablero}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Plancha {ng.boardW}×{ng.boardH} mm ·
                       <span className="text-blue-700 font-semibold ml-1">{ng.sheets.length} plancha{ng.sheets.length !== 1 ? 's' : ''}</span>
                     </p>
@@ -1138,22 +1138,22 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     <p className={`text-lg font-bold ${ng.aprovechamiento >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
                       {ng.aprovechamiento.toFixed(1)}%
                     </p>
-                    <p className="text-xs text-slate-400">aprovechamiento</p>
+                    <p className="text-xs text-muted-foreground">aprovechamiento</p>
                   </div>
                 </div>
 
                 {/* Resumen */}
-                <div className="grid grid-cols-3 gap-4 px-5 py-3 border-b border-slate-100">
+                <div className="grid grid-cols-3 gap-4 px-5 py-3 border-b border-border">
                   <div>
-                    <p className="text-xs text-slate-500">Área total piezas</p>
-                    <p className="text-sm font-bold text-slate-800">{(ng.totalPiezaAreaMm2 / 1_000_000).toFixed(3)} m²</p>
+                    <p className="text-xs text-muted-foreground">Área total piezas</p>
+                    <p className="text-sm font-bold text-foreground">{(ng.totalPiezaAreaMm2 / 1_000_000).toFixed(3)} m²</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Área total planchas</p>
-                    <p className="text-sm font-bold text-slate-800">{(ng.totalSheetAreaMm2 / 1_000_000).toFixed(3)} m²</p>
+                    <p className="text-xs text-muted-foreground">Área total planchas</p>
+                    <p className="text-sm font-bold text-foreground">{(ng.totalSheetAreaMm2 / 1_000_000).toFixed(3)} m²</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Desperdicio</p>
+                    <p className="text-xs text-muted-foreground">Desperdicio</p>
                     <p className="text-sm font-bold text-red-600">
                       {((ng.totalSheetAreaMm2 - ng.totalPiezaAreaMm2) / 1_000_000).toFixed(3)} m²
                     </p>
@@ -1164,7 +1164,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 <div className="p-4 space-y-4">
                   {ng.sheets.map((sheet) => (
                     <div key={sheet.id}>
-                      <p className="text-xs text-slate-500 mb-1.5 font-medium">
+                      <p className="text-xs text-muted-foreground mb-1.5 font-medium">
                         Plancha {sheet.id} — {sheet.piezas.length} pieza{sheet.piezas.length !== 1 ? 's' : ''}
                       </p>
                       <NestingSVG sheet={sheet} boardW={ng.boardW} boardH={ng.boardH} />
@@ -1173,7 +1173,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                         {Array.from(new Set(sheet.piezas.map((p) => p.etiqueta))).map((et) => {
                           const p = sheet.piezas.find((x) => x.etiqueta === et)!
                           return (
-                            <span key={et} className="flex items-center gap-1 text-xs text-slate-600 px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200">
+                            <span key={et} className="flex items-center gap-1 text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40 border border-border">
                               <span className="w-3 h-3 rounded-sm inline-block" style={{ background: NEST_COLORS[p.colorIdx] }} />
                               {et} — {p.nombre}
                             </span>
@@ -1191,7 +1191,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
 
       {/* ── TAB: MATERIALES ─────────────────────────────────────────────────── */}
       {tab === 'materiales' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden print:hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden print:hidden">
           {cantosYHerrajes.length === 0 && (
             <div className="px-5 pt-4 pb-0">
               <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
@@ -1203,7 +1203,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-border">
                   <th className={thCls}>Canto / Herraje (buscar)</th>
                   <th className={thCls} style={{ width: 70 }}>Tipo</th>
                   <th className={thCls} style={{ width: 80 }}>Unidad</th>
@@ -1214,13 +1214,13 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                   <th className={thCls} style={{ width: 40 }}></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {materialesModulo.map((r) => (
-                  <tr key={r._key} className="hover:bg-slate-50/50">
+                  <tr key={r._key} className="hover:bg-muted/40/50">
                     <td className="px-2 py-1.5">
                       <input
                         list={`mats-${r._key}`}
-                        className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border border-border rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-ring"
                         placeholder="Buscar canto o herraje..."
                         value={r.search}
                         onChange={(e) => {
@@ -1250,14 +1250,14 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     </td>
                     <td className="px-2 py-1.5">
                       <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
-                        r.tipo === 'canto' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                        r.tipo === 'canto' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'
                       }`}>
                         {r.tipo || '—'}
                       </span>
                     </td>
                     <td className="px-2 py-1.5">
                       <input
-                        className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border border-border rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-ring"
                         value={r.unidad}
                         onChange={(e) => updateMaterial(r._key, 'unidad', e.target.value)}
                       />
@@ -1265,7 +1265,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     <td className="px-2 py-1.5">
                       <input
                         type="number" min="0" step="0.01"
-                        className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border border-border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-ring"
                         value={r.cantidad}
                         onChange={(e) => updateMaterial(r._key, 'cantidad', parseFloat(e.target.value) || 0)}
                       />
@@ -1293,24 +1293,24 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                     <td className="px-2 py-1.5">
                       <input
                         type="number" min="0" step="0.01"
-                        className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border border-border rounded-md px-2 py-1 text-xs w-full text-right focus:outline-none focus:ring-1 focus:ring-ring"
                         value={r.costoSnapshot}
                         onChange={(e) => updateMaterial(r._key, 'costoSnapshot', parseFloat(e.target.value) || 0)}
                       />
                     </td>
-                    <td className="px-2 py-1.5 text-right text-xs font-bold text-slate-800 pr-4 font-mono">
+                    <td className="px-2 py-1.5 text-right text-xs font-bold text-foreground pr-4 font-mono">
                       {formatCurrency(r.subtotal)}
                     </td>
                     <td className="px-2 py-1.5">
                       <input
-                        className="border border-slate-200 rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border border-border rounded-md px-2 py-1 text-xs w-full focus:outline-none focus:ring-1 focus:ring-ring"
                         value={r.observaciones}
                         onChange={(e) => updateMaterial(r._key, 'observaciones', e.target.value)}
                         placeholder="Nota..."
                       />
                     </td>
                     <td className="px-2 py-1.5">
-                      <button onClick={() => removeMaterial(r._key)} className="text-slate-300 hover:text-red-500 transition-colors">
+                      <button onClick={() => removeMaterial(r._key)} className="text-muted-foreground/70 hover:text-red-500 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -1318,7 +1318,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 ))}
                 {materialesModulo.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-slate-400 text-sm">
+                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-sm">
                       No hay cantos ni herrajes. Usa el botón para agregar.
                     </td>
                   </tr>
@@ -1326,9 +1326,9 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
               </tbody>
               {materialesModulo.length > 0 && (
                 <tfoot>
-                  <tr className="border-t-2 border-slate-200 bg-slate-50">
-                    <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-slate-600">Total cantos + herrajes</td>
-                    <td className="px-2 py-2 text-right text-sm font-bold text-slate-800 pr-4 font-mono">
+                  <tr className="border-t-2 border-border bg-muted/40">
+                    <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-muted-foreground">Total cantos + herrajes</td>
+                    <td className="px-2 py-2 text-right text-sm font-bold text-foreground pr-4 font-mono">
                       {formatCurrency(totalMateriales)}
                     </td>
                     <td colSpan={2} />
@@ -1337,7 +1337,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
               )}
             </table>
           </div>
-          <div className="px-4 py-3 border-t border-slate-100">
+          <div className="px-4 py-3 border-t border-border">
             <Button variant="secondary" size="sm" onClick={addMaterial}>
               <Plus className="w-3.5 h-3.5" /> Agregar material
             </Button>
@@ -1349,57 +1349,57 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       {tab === 'resumen' && (
         <div className="space-y-4 print:hidden">
           {/* Tablero — distribución por tipo */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-card rounded-xl border border-border p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Distribución de tableros</p>
-              <span className="text-xs text-slate-400">{piezas.length} piezas · {totalAreaM2.toFixed(3)} m² total</span>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Distribución de tableros</p>
+              <span className="text-xs text-muted-foreground">{piezas.length} piezas · {totalAreaM2.toFixed(3)} m² total</span>
             </div>
             {tableroGroups.length === 0 ? (
-              <p className="text-sm text-slate-400">Sin piezas definidas.</p>
+              <p className="text-sm text-muted-foreground">Sin piezas definidas.</p>
             ) : (
               <div className="space-y-3">
                 {tableroGroups.map((g) => {
                   const costoG = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * (g.mat?.precio || 0) : 0
                   const pctPlancha = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * 100 : 0
                   return (
-                    <div key={g.nombre} className="border border-slate-100 rounded-lg p-3 space-y-2">
+                    <div key={g.nombre} className="border border-border rounded-lg p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-700">{g.nombre}</span>
-                        <span className="text-sm font-bold text-slate-800">{formatCurrency(costoG)}</span>
+                        <span className="text-sm font-semibold text-foreground">{g.nombre}</span>
+                        <span className="text-sm font-bold text-foreground">{formatCurrency(costoG)}</span>
                       </div>
                       <div className="grid grid-cols-4 gap-2 text-xs">
                         <div>
-                          <p className="text-slate-400">Área usada</p>
-                          <p className="font-semibold text-slate-700">{g.areaM2.toFixed(3)} m²</p>
+                          <p className="text-muted-foreground">Área usada</p>
+                          <p className="font-semibold text-foreground">{g.areaM2.toFixed(3)} m²</p>
                         </div>
                         <div>
-                          <p className="text-slate-400">Plancha ({g.boardW}×{g.boardH})</p>
-                          <p className="font-semibold text-slate-700">{g.boardAreaM2.toFixed(3)} m²</p>
+                          <p className="text-muted-foreground">Plancha ({g.boardW}×{g.boardH})</p>
+                          <p className="font-semibold text-foreground">{g.boardAreaM2.toFixed(3)} m²</p>
                         </div>
                         <div>
-                          <p className="text-slate-400">% plancha consumida</p>
+                          <p className="text-muted-foreground">% plancha consumida</p>
                           <p className={`font-bold ${pctPlancha >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
                             {pctPlancha.toFixed(1)}%
                           </p>
                         </div>
                         <div>
-                          <p className="text-slate-400">Precio plancha</p>
-                          <p className="font-semibold text-slate-700">{g.mat?.precio ? formatCurrency(g.mat.precio) : '—'}</p>
+                          <p className="text-muted-foreground">Precio plancha</p>
+                          <p className="font-semibold text-foreground">{g.mat?.precio ? formatCurrency(g.mat.precio) : '—'}</p>
                         </div>
                       </div>
                       {/* Barra visual de uso */}
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-100 rounded-full h-2">
+                        <div className="flex-1 bg-muted rounded-full h-2">
                           <div
                             className={`h-2 rounded-full transition-all ${pctPlancha >= 70 ? 'bg-green-500' : 'bg-amber-400'}`}
                             style={{ width: `${Math.min(100, pctPlancha)}%` }}
                           />
                         </div>
-                        <span className="text-xs text-slate-400 w-20 text-right">
+                        <span className="text-xs text-muted-foreground w-20 text-right">
                           {pctPlancha.toFixed(1)}% × {formatCurrency(g.mat?.precio || 0)}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-muted-foreground">
                         Tapacanto: {g.tapacantoMl.toFixed(2)} ml
                         {Object.entries(calcTapacantoByColor(piezas.filter((p) =>
                           (p.material || materialTablero?.nombre || 'Sin tablero') === g.nombre
@@ -1417,42 +1417,42 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
           </div>
 
           {/* Cantos y Herrajes */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          <div className="bg-card rounded-xl border border-border p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Cantos y Herrajes ({materialesModulo.length})
             </p>
             {materialesModulo.length === 0 ? (
-              <p className="text-sm text-slate-400">Sin cantos ni herrajes agregados.</p>
+              <p className="text-sm text-muted-foreground">Sin cantos ni herrajes agregados.</p>
             ) : (
               <div className="space-y-1.5">
                 {materialesModulo.map((r) => {
                   const mat = materialesDisponibles.find((x) => x.id === r.materialId)
                   return (
                     <div key={r._key} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">
+                      <span className="text-muted-foreground">
                         {mat?.nombre || r.search || 'Material'}
                         {r.tipo === 'canto'
-                          ? <span className="text-xs text-slate-500 ml-1">— {r.cantidad} {r.unidad} × {formatCurrency(r.costoSnapshot)}/{r.unidad}</span>
-                          : <span className="text-xs text-slate-500 ml-1">— {r.cantidad} {r.unidad}</span>
+                          ? <span className="text-xs text-muted-foreground ml-1">— {r.cantidad} {r.unidad} × {formatCurrency(r.costoSnapshot)}/{r.unidad}</span>
+                          : <span className="text-xs text-muted-foreground ml-1">— {r.cantidad} {r.unidad}</span>
                         }
                         {r.tipo && (
-                          <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${r.tipo === 'canto' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${r.tipo === 'canto' ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'}`}>
                             {r.tipo}
                           </span>
                         )}
                       </span>
-                      <span className="font-medium text-slate-800">{formatCurrency(r.subtotal)}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(r.subtotal)}</span>
                     </div>
                   )
                 })}
-                <div className="flex items-center justify-between text-sm font-bold border-t border-slate-100 pt-1.5 mt-2">
-                  <span className="text-slate-700">Total cantos + herrajes</span>
-                  <span className="text-slate-800">{formatCurrency(totalMateriales)}</span>
+                <div className="flex items-center justify-between text-sm font-bold border-t border-border pt-1.5 mt-2">
+                  <span className="text-foreground">Total cantos + herrajes</span>
+                  <span className="text-foreground">{formatCurrency(totalMateriales)}</span>
                 </div>
                 {costoTotal > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                     <span className="w-4 h-2 rounded-full bg-amber-500 shrink-0" />
-                    <div className="flex-1 bg-slate-100 rounded-full h-2">
+                    <div className="flex-1 bg-muted rounded-full h-2">
                       <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${Math.min(100, (totalMateriales / costoTotal) * 100)}%` }} />
                     </div>
                     <span className="w-10 text-right shrink-0">{((totalMateriales / costoTotal) * 100).toFixed(1)}%</span>
@@ -1463,8 +1463,8 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
           </div>
 
           {/* Resumen de costos */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Resumen de costos</p>
+          <div className="bg-card rounded-xl border border-border p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">Resumen de costos</p>
             <div className="space-y-2">
               {/* Tablero: una línea por cada tipo con su costo proporcional */}
               {tableroGroups.map((g) => {
@@ -1472,33 +1472,33 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
                 const pctG   = g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * 100 : 0
                 return (
                   <div key={g.nombre} className="flex justify-between text-sm">
-                    <span className="text-slate-600">
+                    <span className="text-muted-foreground">
                       {g.nombre}
-                      <span className="text-xs text-slate-400 ml-1">({pctG.toFixed(1)}% plancha)</span>
+                      <span className="text-xs text-muted-foreground ml-1">({pctG.toFixed(1)}% plancha)</span>
                     </span>
                     <span className="font-medium">{formatCurrency(costoG)}</span>
                   </div>
                 )
               })}
               {tableroGroups.length > 1 && (
-                <div className="flex justify-between text-xs text-slate-500 border-t border-dashed border-slate-200 pt-1">
+                <div className="flex justify-between text-xs text-muted-foreground border-t border-dashed border-border pt-1">
                   <span>Subtotal tableros</span>
                   <span className="font-semibold">{formatCurrency(costoTablero)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Cantos y Herrajes</span>
+                <span className="text-muted-foreground">Cantos y Herrajes</span>
                 <span className="font-medium">{formatCurrency(totalMateriales)}</span>
               </div>
-              <div className="flex justify-between text-sm font-bold border-t border-slate-200 pt-2 mt-2">
-                <span className="text-slate-800">Costo estimado total</span>
-                <span className="text-slate-800">{formatCurrency(costoTotal)}</span>
+              <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-2">
+                <span className="text-foreground">Costo estimado total</span>
+                <span className="text-foreground">{formatCurrency(costoTotal)}</span>
               </div>
               <div className="flex justify-between text-sm items-center">
-                <span className="text-slate-600">Precio de venta</span>
+                <span className="text-muted-foreground">Precio de venta</span>
                 <input
                   type="number" min="0" step="1"
-                  className="border border-slate-200 rounded-md px-2 py-0.5 text-sm text-right w-36 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="border border-border rounded-md px-2 py-0.5 text-sm text-right w-36 focus:outline-none focus:ring-1 focus:ring-ring"
                   value={precioVenta}
                   onChange={(e) => setPrecioVenta(e.target.value)}
                 />
@@ -1524,7 +1524,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
       <div className="hidden print:block text-black text-sm">
         <div className="mb-4">
           <h1 className="text-lg font-bold">{nombre || 'Módulo'} — Lista de Corte</h1>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             {tipoModulo} · {ancho}×{alto}×{prof} mm
             {materialTablero && ` · Tablero: ${materialTablero.nombre} (${materialTablero.espesorMm ?? 18}mm)`}
             {` · ${numPlanchas} plancha${numPlanchas !== 1 ? 's' : ''} necesaria${numPlanchas !== 1 ? 's' : ''} (incl. 15% merma)`}
@@ -1546,7 +1546,7 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
           </thead>
           <tbody>
             {piezas.map((p) => (
-              <tr key={p._key} className="border-b border-gray-300">
+              <tr key={p._key} className="border-b border-border">
                 <td className="py-0.5 pr-2 font-mono">{p.etiqueta}</td>
                 <td className="py-0.5 pr-2">{p.nombre}</td>
                 <td className="py-0.5 pr-2 text-right">{p.largo}</td>
@@ -1566,31 +1566,31 @@ export function ModuloEditor({ modulo, materialesDisponibles }: Props) {
             </tr>
           </tfoot>
         </table>
-        <p className="mt-3 text-xs text-gray-500">Tapacanto total: {totalTapacantoMl.toFixed(2)} ml</p>
+        <p className="mt-3 text-xs text-muted-foreground">Tapacanto total: {totalTapacantoMl.toFixed(2)} ml</p>
       </div>
 
       {/* Barra fija inferior */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between z-20 shadow-lg print:hidden">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-6 py-3 flex items-center justify-between z-20 shadow-lg print:hidden">
         <div className="flex items-center gap-6 text-sm">
           <div>
-            <span className="text-slate-500 text-xs">Área</span>
-            <p className="font-bold text-slate-800">{totalAreaM2.toFixed(3)} m²</p>
+            <span className="text-muted-foreground text-xs">Área</span>
+            <p className="font-bold text-foreground">{totalAreaM2.toFixed(3)} m²</p>
           </div>
           <div>
-            <span className="text-slate-500 text-xs">Planchas</span>
+            <span className="text-muted-foreground text-xs">Planchas</span>
             <p className="font-bold text-blue-700">{numPlanchas}</p>
           </div>
           <div>
-            <span className="text-slate-500 text-xs">Tapacanto</span>
+            <span className="text-muted-foreground text-xs">Tapacanto</span>
             <p className="font-bold text-amber-700">{totalTapacantoMl.toFixed(2)} ml</p>
           </div>
           <div>
-            <span className="text-slate-500 text-xs">Costo est.</span>
-            <p className="font-bold text-slate-800">{formatCurrency(costoTotal)}</p>
+            <span className="text-muted-foreground text-xs">Costo est.</span>
+            <p className="font-bold text-foreground">{formatCurrency(costoTotal)}</p>
           </div>
           {pv > 0 && (
             <div>
-              <span className="text-slate-500 text-xs">Margen</span>
+              <span className="text-muted-foreground text-xs">Margen</span>
               <p className={`font-bold ${margen >= 0 ? 'text-green-600' : 'text-red-600'}`}>{margen.toFixed(1)}%</p>
             </div>
           )}

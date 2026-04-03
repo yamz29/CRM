@@ -38,13 +38,13 @@ export default async function EditarTareaPage({
       <div className="flex items-center gap-4">
         <Link
           href="/tareas"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Editar Tarea</h1>
-          <p className="text-slate-500 text-sm mt-0.5 line-clamp-1">{tarea.titulo}</p>
+          <h1 className="text-2xl font-bold text-foreground">Editar Tarea</h1>
+          <p className="text-muted-foreground text-sm mt-0.5 line-clamp-1">{tarea.titulo}</p>
         </div>
       </div>
 

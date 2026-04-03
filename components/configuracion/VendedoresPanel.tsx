@@ -92,7 +92,7 @@ export function VendedoresPanel({ initialData }: VendedoresPanelProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-slate-800">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <UserCheck className="w-5 h-5 text-blue-600" />
             Vendedores
           </CardTitle>
@@ -112,19 +112,19 @@ export function VendedoresPanel({ initialData }: VendedoresPanelProps) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Nombre</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Cargo</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Teléfono</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Correo</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+              <tr className="bg-muted/40 border-b border-border">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Nombre</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Cargo</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Teléfono</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Correo</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {vendedores.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No hay vendedores registrados
                   </td>
                 </tr>
@@ -191,17 +191,17 @@ export function VendedoresPanel({ initialData }: VendedoresPanelProps) {
                     </td>
                   </tr>
                 ) : (
-                  <tr key={v.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-800">{v.nombre}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{v.cargo || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{v.telefono || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{v.correo || '-'}</td>
+                  <tr key={v.id} className="hover:bg-muted">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{v.nombre}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{v.cargo || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{v.telefono || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{v.correo || '-'}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           v.activo
                             ? 'bg-green-100 text-green-700'
-                            : 'bg-slate-100 text-slate-500'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {v.activo ? 'Activo' : 'Inactivo'}
@@ -211,14 +211,14 @@ export function VendedoresPanel({ initialData }: VendedoresPanelProps) {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => startEdit(v)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(v.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Eliminar"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -233,8 +233,8 @@ export function VendedoresPanel({ initialData }: VendedoresPanelProps) {
         </div>
 
         {showAddForm && (
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-sm font-semibold text-slate-700 mb-3">Nuevo vendedor</p>
+          <div className="border-t border-border bg-muted/40 px-4 py-4">
+            <p className="text-sm font-semibold text-foreground mb-3">Nuevo vendedor</p>
             <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Nombre *</Label>

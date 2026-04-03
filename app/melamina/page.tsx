@@ -17,7 +17,7 @@ interface SearchParams {
 }
 
 const ESTADOS_PRODUCCION = [
-  { key: 'Diseño',       color: 'bg-slate-100 text-slate-700 border-slate-200',      dot: 'bg-slate-400' },
+  { key: 'Diseño',       color: 'bg-muted text-foreground border-border',      dot: 'bg-muted-foreground' },
   { key: 'En corte',     color: 'bg-blue-100 text-blue-700 border-blue-200',          dot: 'bg-blue-500' },
   { key: 'En canteado',  color: 'bg-amber-100 text-amber-700 border-amber-200',       dot: 'bg-amber-500' },
   { key: 'En armado',    color: 'bg-orange-100 text-orange-700 border-orange-200',    dot: 'bg-orange-500' },
@@ -27,7 +27,7 @@ const ESTADOS_PRODUCCION = [
 
 function getEstadoBadge(estado: string) {
   const cfg = ESTADOS_PRODUCCION.find(e => e.key === estado)
-  const cls = cfg?.color || 'bg-gray-100 text-gray-700 border-gray-200'
+  const cls = cfg?.color || 'bg-muted text-foreground border-border'
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
       {estado}
@@ -116,7 +116,7 @@ export default async function MelaminaPage({
           title="Total Módulos"
           value={totalModulos}
           icon={<Box className="w-5 h-5" />}
-          colorClass="bg-slate-100 text-slate-600"
+          colorClass="bg-muted text-muted-foreground"
         />
         <StatsCard
           title="En Producción"

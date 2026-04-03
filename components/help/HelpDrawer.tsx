@@ -39,7 +39,7 @@ export function HelpDrawer({ slug, titulo }: Props) {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
         title="Ayuda"
         aria-label="Abrir ayuda"
       >
@@ -58,15 +58,15 @@ export function HelpDrawer({ slug, titulo }: Props) {
       {/* Drawer */}
       <div
         className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col transition-transform duration-300',
+          'fixed inset-y-0 right-0 z-50 w-full max-w-md bg-card shadow-2xl flex flex-col transition-transform duration-300',
           open ? 'translate-x-0' : 'translate-x-full',
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0 bg-slate-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0 bg-muted/40">
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-blue-600" />
-            <h2 className="font-semibold text-slate-800 text-sm">
+            <h2 className="font-semibold text-foreground text-sm">
               {titulo ?? 'Ayuda'}
             </h2>
           </div>
@@ -82,7 +82,7 @@ export function HelpDrawer({ slug, titulo }: Props) {
             </Link>
             <button
               onClick={() => setOpen(false)}
-              className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+              className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -92,15 +92,15 @@ export function HelpDrawer({ slug, titulo }: Props) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-5">
           {loading && (
-            <div className="flex items-center justify-center py-16 gap-2 text-slate-400">
+            <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin" />
               <span className="text-sm">Cargando...</span>
             </div>
           )}
           {error && !loading && (
             <div className="text-center py-16">
-              <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm">Artículo no disponible.</p>
+              <BookOpen className="w-10 h-10 text-muted-foreground/70 mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">Artículo no disponible.</p>
               <Link href="/ayuda" className="text-blue-600 text-sm underline mt-2 inline-block">
                 Ver todos los artículos
               </Link>
@@ -109,25 +109,25 @@ export function HelpDrawer({ slug, titulo }: Props) {
           {!loading && !error && html && (
             <div
               className="prose prose-sm prose-slate max-w-none
-                prose-headings:font-semibold prose-headings:text-slate-800
+                prose-headings:font-semibold prose-headings:text-foreground
                 prose-h1:text-lg prose-h2:text-base prose-h2:mt-6 prose-h2:mb-2
-                prose-p:text-slate-600 prose-p:leading-relaxed
-                prose-li:text-slate-600
-                prose-strong:text-slate-800
-                prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded prose-code:text-xs prose-code:text-slate-700 prose-code:font-mono
-                prose-table:text-xs prose-th:bg-slate-100 prose-th:font-semibold
-                prose-blockquote:border-blue-400 prose-blockquote:text-slate-500
-                prose-hr:border-slate-200
+                prose-p:text-muted-foreground prose-p:leading-relaxed
+                prose-li:text-muted-foreground
+                prose-strong:text-foreground
+                prose-code:bg-muted prose-code:px-1 prose-code:rounded prose-code:text-xs prose-code:text-foreground prose-code:font-mono
+                prose-table:text-xs prose-th:bg-muted prose-th:font-semibold
+                prose-blockquote:border-blue-400 prose-blockquote:text-muted-foreground
+                prose-hr:border-border
                 [&_table]:w-full [&_th]:px-3 [&_th]:py-2 [&_th]:text-left
-                [&_td]:px-3 [&_td]:py-1.5 [&_td]:border-t [&_td]:border-slate-100"
+                [&_td]:px-3 [&_td]:py-1.5 [&_td]:border-t [&_td]:border-border"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-between flex-shrink-0 bg-slate-50">
-          <span className="text-xs text-slate-400">Gonzalva ERP · Ayuda</span>
+        <div className="px-5 py-3 border-t border-border flex items-center justify-between flex-shrink-0 bg-muted/40">
+          <span className="text-xs text-muted-foreground">Gonzalva ERP · Ayuda</span>
           <Link
             href="/ayuda"
             className="text-xs text-blue-600 hover:text-blue-800 font-medium"

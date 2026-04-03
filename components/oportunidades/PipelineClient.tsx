@@ -54,7 +54,7 @@ interface Props {
 // ── Etapas config ─────────────────────────────────────────────────────────────
 
 export const ETAPAS = [
-  { key: 'Lead',          label: 'Lead',          color: 'bg-slate-500',  light: 'bg-slate-100 text-slate-700',  border: 'border-slate-200 dark:border-slate-700' },
+  { key: 'Lead',          label: 'Lead',          color: 'bg-slate-500',  light: 'bg-muted text-foreground',  border: 'border-border' },
   { key: 'Levantamiento', label: 'Levantamiento', color: 'bg-blue-500',   light: 'bg-blue-100 text-blue-700',    border: 'border-blue-200 dark:border-blue-800' },
   { key: 'Cotización',    label: 'Cotización',    color: 'bg-yellow-500', light: 'bg-yellow-100 text-yellow-700',border: 'border-yellow-200 dark:border-yellow-800' },
   { key: 'Negociación',   label: 'Negociación',   color: 'bg-orange-500', light: 'bg-orange-100 text-orange-700',border: 'border-orange-200 dark:border-orange-800' },

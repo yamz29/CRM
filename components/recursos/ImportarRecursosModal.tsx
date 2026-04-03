@@ -96,15 +96,15 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Upload className="w-5 h-5 text-blue-600" />
             Importar recursos desde Excel
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -118,8 +118,8 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
 
               {/* Modo selector */}
               <div className="space-y-2">
-                <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                  <Settings2 className="w-4 h-4 text-slate-400" />
+                <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <Settings2 className="w-4 h-4 text-muted-foreground" />
                   Modo de importación
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -130,13 +130,13 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
                       className={`text-left p-3 rounded-lg border-2 transition-colors ${
                         modo === m.value
                           ? 'border-blue-500 bg-blue-50'
-                          : 'border-slate-200 hover:border-slate-300'
+                          : 'border-border hover:border-border'
                       }`}
                     >
-                      <p className={`text-xs font-semibold ${modo === m.value ? 'text-blue-700' : 'text-slate-700'}`}>
+                      <p className={`text-xs font-semibold ${modo === m.value ? 'text-blue-700' : 'text-foreground'}`}>
                         {m.label}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5 leading-snug">{m.desc}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -161,16 +161,16 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
                 onDrop={handleDrop}
                 onDragOver={e => e.preventDefault()}
                 onClick={() => fileRef.current?.click()}
-                className="cursor-pointer border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center gap-3 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                className="cursor-pointer border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center gap-3 hover:border-blue-400 hover:bg-blue-50 transition-colors"
               >
                 {loading ? (
-                  <p className="text-slate-500 text-sm">Procesando archivo...</p>
+                  <p className="text-muted-foreground text-sm">Procesando archivo...</p>
                 ) : (
                   <>
-                    <Upload className="w-10 h-10 text-slate-300" />
-                    <p className="text-slate-600 font-medium">Arrastra tu archivo aquí</p>
-                    <p className="text-slate-400 text-sm">o haz clic para seleccionarlo</p>
-                    <p className="text-slate-400 text-xs">.xlsx, .xls</p>
+                    <Upload className="w-10 h-10 text-muted-foreground/70" />
+                    <p className="text-muted-foreground font-medium">Arrastra tu archivo aquí</p>
+                    <p className="text-muted-foreground text-sm">o haz clic para seleccionarlo</p>
+                    <p className="text-muted-foreground text-xs">.xlsx, .xls</p>
                   </>
                 )}
                 <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden"
@@ -184,18 +184,18 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
             <div className="space-y-4">
 
               {/* Modo badge */}
-              <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <Settings2 className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-600">Modo: <strong className="text-slate-800">{modoActual.label}</strong></span>
-                <span className="text-xs text-slate-400 ml-1">— {modoActual.desc}</span>
+              <div className="flex items-center gap-2 p-3 bg-muted/40 border border-border rounded-lg">
+                <Settings2 className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Modo: <strong className="text-foreground">{modoActual.label}</strong></span>
+                <span className="text-xs text-muted-foreground ml-1">— {modoActual.desc}</span>
               </div>
 
               {/* Summary pills */}
               <div className="flex flex-wrap gap-2 text-sm">
-                <span className="px-3 py-1 bg-slate-100 rounded-full text-slate-700">
+                <span className="px-3 py-1 bg-muted rounded-full text-foreground">
                   Archivo: <strong>{fileName}</strong>
                 </span>
-                <span className="px-3 py-1 bg-slate-100 rounded-full text-slate-700">
+                <span className="px-3 py-1 bg-muted rounded-full text-foreground">
                   Filas leídas: <strong>{parseResult.totalRows}</strong>
                 </span>
                 <span className="px-3 py-1 bg-green-100 rounded-full text-green-700">
@@ -228,36 +228,36 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
 
               {/* Preview table */}
               {parseResult.recursos.length > 0 ? (
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Vista previa — {parseResult.recursos.length} recurso{parseResult.recursos.length !== 1 ? 's' : ''} a procesar
                   </div>
                   <div className="overflow-x-auto max-h-64">
                     <table className="w-full text-xs">
-                      <thead className="sticky top-0 bg-white border-b border-slate-200">
+                      <thead className="sticky top-0 bg-card border-b border-border">
                         <tr>
-                          <th className="px-3 py-2 text-left font-semibold text-slate-500">Código</th>
-                          <th className="px-3 py-2 text-left font-semibold text-slate-500">Nombre</th>
-                          <th className="px-3 py-2 text-left font-semibold text-slate-500">Tipo</th>
-                          <th className="px-3 py-2 text-left font-semibold text-slate-500">Categoría</th>
-                          <th className="px-3 py-2 text-left font-semibold text-slate-500">Unidad</th>
-                          <th className="px-3 py-2 text-right font-semibold text-slate-500">Costo Unit.</th>
-                          <th className="px-3 py-2 text-center font-semibold text-slate-500">Activo</th>
+                          <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Código</th>
+                          <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Nombre</th>
+                          <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Tipo</th>
+                          <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Categoría</th>
+                          <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Unidad</th>
+                          <th className="px-3 py-2 text-right font-semibold text-muted-foreground">Costo Unit.</th>
+                          <th className="px-3 py-2 text-center font-semibold text-muted-foreground">Activo</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-border">
                         {parseResult.recursos.map((r, i) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="px-3 py-1.5 font-mono text-slate-400">{r.codigo || '—'}</td>
-                            <td className="px-3 py-1.5 font-medium text-slate-800">{r.nombre}</td>
-                            <td className="px-3 py-1.5 text-slate-500">{TIPO_LABELS[r.tipo] || r.tipo}</td>
-                            <td className="px-3 py-1.5 text-slate-500">{r.categoria || '—'}</td>
-                            <td className="px-3 py-1.5 text-slate-600">{r.unidad}</td>
-                            <td className="px-3 py-1.5 text-right font-mono text-slate-700">
+                          <tr key={i} className="hover:bg-muted">
+                            <td className="px-3 py-1.5 font-mono text-muted-foreground">{r.codigo || '—'}</td>
+                            <td className="px-3 py-1.5 font-medium text-foreground">{r.nombre}</td>
+                            <td className="px-3 py-1.5 text-muted-foreground">{TIPO_LABELS[r.tipo] || r.tipo}</td>
+                            <td className="px-3 py-1.5 text-muted-foreground">{r.categoria || '—'}</td>
+                            <td className="px-3 py-1.5 text-muted-foreground">{r.unidad}</td>
+                            <td className="px-3 py-1.5 text-right font-mono text-foreground">
                               {r.costoUnitario > 0 ? `RD$ ${r.costoUnitario.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'}
                             </td>
                             <td className="px-3 py-1.5 text-center">
-                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${r.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${r.activo ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
                                 {r.activo ? 'Sí' : 'No'}
                               </span>
                             </td>
@@ -268,7 +268,7 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-slate-400 text-sm">
+                <div className="text-center py-8 text-muted-foreground text-sm">
                   No hay filas válidas para importar.
                 </div>
               )}
@@ -279,7 +279,7 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
           {step === 'done' && summary && (
             <div className="flex flex-col items-center gap-5 py-6">
               <CheckCircle className="w-14 h-14 text-green-500" />
-              <h3 className="text-lg font-bold text-slate-800">Importación completada</h3>
+              <h3 className="text-lg font-bold text-foreground">Importación completada</h3>
 
               <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
                 {summary.creados > 0 && (
@@ -310,18 +310,18 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
                   </div>
                 )}
                 {summary.omitidos > 0 && (
-                  <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <X className="w-4 h-4 text-slate-400" />
+                  <div className="flex items-center gap-2 px-4 py-3 bg-muted/40 border border-border rounded-lg">
+                    <X className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <p className="text-xs text-slate-500">Omitidos</p>
-                      <p className="text-lg font-bold text-slate-600">{summary.omitidos}</p>
+                      <p className="text-xs text-muted-foreground">Omitidos</p>
+                      <p className="text-lg font-bold text-muted-foreground">{summary.omitidos}</p>
                     </div>
                   </div>
                 )}
               </div>
 
               {summary.loteId && (
-                <p className="text-xs text-slate-400">Lote de importación #{summary.loteId} registrado</p>
+                <p className="text-xs text-muted-foreground">Lote de importación #{summary.loteId} registrado</p>
               )}
 
               {summary.errores.length > 0 && (
@@ -335,10 +335,10 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-between items-center">
+        <div className="px-6 py-4 border-t border-border flex justify-between items-center">
           <button
             onClick={() => { if (step === 'preview') setStep('upload'); else onClose() }}
-            className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-muted-foreground bg-muted hover:bg-muted rounded-lg transition-colors"
           >
             {step === 'preview' ? 'Volver' : 'Cerrar'}
           </button>

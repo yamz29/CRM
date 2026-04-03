@@ -59,18 +59,18 @@ export default async function ClienteDetailPage({
         <div className="flex items-center gap-4">
           <Link
             href="/clientes"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-800">{cliente.nombre}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{cliente.nombre}</h1>
               <Badge variant={tipoClienteVariant[cliente.tipoCliente] || 'default'}>
                 {cliente.tipoCliente}
               </Badge>
             </div>
-            <p className="text-slate-500 mt-0.5">Cliente registrado el {formatDate(cliente.createdAt)}</p>
+            <p className="text-muted-foreground mt-0.5">Cliente registrado el {formatDate(cliente.createdAt)}</p>
           </div>
         </div>
         <Link href={`/clientes/${cliente.id}/editar`}>
@@ -88,17 +88,17 @@ export default async function ClienteDetailPage({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="w-4 h-4 text-slate-500" />
+                <User className="w-4 h-4 text-muted-foreground" />
                 Información de Contacto
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {cliente.telefono && (
                 <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-slate-500">Teléfono</p>
-                    <p className="text-sm font-medium text-slate-700">{cliente.telefono}</p>
+                    <p className="text-xs text-muted-foreground">Teléfono</p>
+                    <p className="text-sm font-medium text-foreground">{cliente.telefono}</p>
                   </div>
                 </div>
               )}
@@ -106,31 +106,31 @@ export default async function ClienteDetailPage({
                 <div className="flex items-center gap-3">
                   <MessageCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-slate-500">WhatsApp</p>
-                    <p className="text-sm font-medium text-slate-700">{cliente.whatsapp}</p>
+                    <p className="text-xs text-muted-foreground">WhatsApp</p>
+                    <p className="text-sm font-medium text-foreground">{cliente.whatsapp}</p>
                   </div>
                 </div>
               )}
               {cliente.correo && (
                 <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-slate-500">Correo</p>
-                    <p className="text-sm font-medium text-slate-700 break-all">{cliente.correo}</p>
+                    <p className="text-xs text-muted-foreground">Correo</p>
+                    <p className="text-sm font-medium text-foreground break-all">{cliente.correo}</p>
                   </div>
                 </div>
               )}
               {cliente.direccion && (
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-slate-500">Dirección</p>
-                    <p className="text-sm font-medium text-slate-700">{cliente.direccion}</p>
+                    <p className="text-xs text-muted-foreground">Dirección</p>
+                    <p className="text-sm font-medium text-foreground">{cliente.direccion}</p>
                   </div>
                 </div>
               )}
               {!cliente.telefono && !cliente.whatsapp && !cliente.correo && !cliente.direccion && (
-                <p className="text-sm text-slate-400">Sin datos de contacto</p>
+                <p className="text-sm text-muted-foreground">Sin datos de contacto</p>
               )}
             </CardContent>
           </Card>
@@ -142,20 +142,20 @@ export default async function ClienteDetailPage({
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-xs text-slate-500">Tipo de cliente</p>
-                <p className="text-sm font-medium text-slate-700 mt-0.5">{cliente.tipoCliente}</p>
+                <p className="text-xs text-muted-foreground">Tipo de cliente</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{cliente.tipoCliente}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Fuente de captación</p>
-                <p className="text-sm font-medium text-slate-700 mt-0.5">{cliente.fuente}</p>
+                <p className="text-xs text-muted-foreground">Fuente de captación</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{cliente.fuente}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Proyectos</p>
-                <p className="text-sm font-bold text-slate-700 mt-0.5">{cliente.proyectos.length}</p>
+                <p className="text-xs text-muted-foreground">Proyectos</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{cliente.proyectos.length}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Presupuestos</p>
-                <p className="text-sm font-bold text-slate-700 mt-0.5">{cliente.presupuestos.length}</p>
+                <p className="text-xs text-muted-foreground">Presupuestos</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{cliente.presupuestos.length}</p>
               </div>
             </CardContent>
           </Card>
@@ -167,7 +167,7 @@ export default async function ClienteDetailPage({
                 <CardTitle>Notas</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-600 leading-relaxed">{cliente.notas}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{cliente.notas}</p>
               </CardContent>
             </Card>
           )}
@@ -180,7 +180,7 @@ export default async function ClienteDetailPage({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-slate-500" />
+                  <FolderOpen className="w-4 h-4 text-muted-foreground" />
                   Proyectos ({cliente.proyectos.length})
                 </CardTitle>
                 <Link href={`/proyectos/nuevo?clienteId=${cliente.id}`}>
@@ -193,33 +193,33 @@ export default async function ClienteDetailPage({
             </CardHeader>
             <CardContent className="p-0">
               {cliente.proyectos.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-6">Sin proyectos registrados</p>
+                <p className="text-muted-foreground text-sm text-center py-6">Sin proyectos registrados</p>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Proyecto</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Tipo</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Presupuesto</th>
+                    <tr className="bg-muted/40 border-b border-border">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Presupuesto</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-border">
                     {cliente.proyectos.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/50">
+                      <tr key={p.id} className="hover:bg-muted/50">
                         <td className="px-4 py-3">
                           <Link
                             href={`/proyectos/${p.id}`}
-                            className="text-sm font-medium text-slate-800 hover:text-blue-600"
+                            className="text-sm font-medium text-foreground hover:text-primary"
                           >
                             {p.nombre}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{p.tipoProyecto}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{p.tipoProyecto}</td>
                         <td className="px-4 py-3">
                           <EstadoProyectoBadge estado={p.estado} />
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                        <td className="px-4 py-3 text-sm font-medium text-foreground">
                           {p.presupuestoEstimado ? formatCurrency(p.presupuestoEstimado) : '-'}
                         </td>
                       </tr>
@@ -235,7 +235,7 @@ export default async function ClienteDetailPage({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-slate-500" />
+                  <FileText className="w-4 h-4 text-muted-foreground" />
                   Presupuestos ({cliente.presupuestos.length})
                 </CardTitle>
                 <Link href={`/presupuestos/nuevo?clienteId=${cliente.id}`}>
@@ -248,33 +248,33 @@ export default async function ClienteDetailPage({
             </CardHeader>
             <CardContent className="p-0">
               {cliente.presupuestos.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-6">Sin presupuestos registrados</p>
+                <p className="text-muted-foreground text-sm text-center py-6">Sin presupuestos registrados</p>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Número</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Proyecto</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Total</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                    <tr className="bg-muted/40 border-b border-border">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Número</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Total</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-border">
                     {cliente.presupuestos.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/50">
+                      <tr key={p.id} className="hover:bg-muted/50">
                         <td className="px-4 py-3">
                           <Link
                             href={`/presupuestos/${p.id}`}
-                            className="text-sm font-medium text-slate-800 hover:text-blue-600"
+                            className="text-sm font-medium text-foreground hover:text-primary"
                           >
                             {p.numero}
                           </Link>
-                          <p className="text-xs text-slate-500">{formatDate(p.createdAt)}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</p>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
                           {p.proyecto?.nombre || '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-slate-800">
+                        <td className="px-4 py-3 text-sm font-semibold text-foreground">
                           {formatCurrency(p.total)}
                         </td>
                         <td className="px-4 py-3">

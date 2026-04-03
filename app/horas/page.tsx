@@ -70,8 +70,8 @@ export default async function HorasPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Horas del Equipo</h1>
-          <p className="text-slate-500 mt-1">Registro y análisis de tiempo del equipo</p>
+          <h1 className="text-2xl font-bold text-foreground">Horas del Equipo</h1>
+          <p className="text-muted-foreground mt-1">Registro y análisis de tiempo del equipo</p>
         </div>
         <HelpDrawer slug="horas" titulo="Control de Horas" />
       </div>
@@ -81,25 +81,25 @@ export default async function HorasPage() {
           title="Horas hoy"
           value={horasHoy % 1 === 0 ? horasHoy : horasHoy.toFixed(1)}
           icon={<Clock className="w-5 h-5" />}
-          colorClass="bg-blue-50 text-blue-600"
+          colorClass="bg-blue-500/10 text-blue-500"
         />
         <StatsCard
           title="Últimos 7 días"
           value={horas7d % 1 === 0 ? horas7d : horas7d.toFixed(1)}
           icon={<TrendingUp className="w-5 h-5" />}
-          colorClass="bg-green-50 text-green-600"
+          colorClass="bg-green-500/10 text-green-500"
         />
         <StatsCard
           title="Últimos 30 días"
           value={horas30d % 1 === 0 ? horas30d : horas30d.toFixed(1)}
           icon={<Calendar className="w-5 h-5" />}
-          colorClass="bg-purple-50 text-purple-600"
+          colorClass="bg-purple-500/10 text-purple-500"
         />
         <StatsCard
           title="Registros (90d)"
           value={totalRegs}
           icon={<Users className="w-5 h-5" />}
-          colorClass="bg-slate-100 text-slate-600"
+          colorClass="bg-muted text-muted-foreground"
         />
       </div>
 

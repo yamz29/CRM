@@ -6,14 +6,14 @@ import { formatDate } from '@/lib/utils'
 import { Plus, CalendarRange, FolderOpen, CheckCircle2, Clock, AlertCircle, PauseCircle } from 'lucide-react'
 
 const ESTADO_CFG: Record<string, { color: string; icon: React.ElementType }> = {
-  'Planificado':   { color: 'bg-slate-100 text-slate-700 border-slate-200',   icon: Clock },
+  'Planificado':   { color: 'bg-muted text-foreground border-border',   icon: Clock },
   'En Ejecución':  { color: 'bg-blue-100 text-blue-700 border-blue-200',       icon: CalendarRange },
   'Terminado':     { color: 'bg-green-100 text-green-700 border-green-200',    icon: CheckCircle2 },
   'Pausado':       { color: 'bg-amber-100 text-amber-700 border-amber-200',    icon: PauseCircle },
 }
 
 function EstadoBadge({ estado }: { estado: string }) {
-  const cfg = ESTADO_CFG[estado] || { color: 'bg-gray-100 text-gray-700 border-gray-200', icon: AlertCircle }
+  const cfg = ESTADO_CFG[estado] || { color: 'bg-muted text-foreground border-border', icon: AlertCircle }
   const Icon = cfg.icon
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
@@ -57,9 +57,9 @@ export default async function CronogramaPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total', value: stats.total, color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200' },
+          { label: 'Total', value: stats.total, color: 'text-foreground', bg: 'bg-muted/40 border-border' },
           { label: 'En Ejecución', value: stats.enEjecucion, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-          { label: 'Planificados', value: stats.planificados, color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200' },
+          { label: 'Planificados', value: stats.planificados, color: 'text-muted-foreground', bg: 'bg-muted/40 border-border' },
           { label: 'Terminados', value: stats.terminados, color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
         ].map(s => (
           <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>

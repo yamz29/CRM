@@ -146,7 +146,7 @@ export function KitchenListClient({ initialProjects }: Props) {
   return (
     <>
       <div className="flex items-center justify-between">
-        <p className="text-slate-400 text-sm">{projects.length} proyecto{projects.length !== 1 ? 's' : ''}</p>
+        <p className="text-muted-foreground text-sm">{projects.length} proyecto{projects.length !== 1 ? 's' : ''}</p>
         <button
           onClick={openModal}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
@@ -158,9 +158,9 @@ export function KitchenListClient({ initialProjects }: Props) {
 
       {projects.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-slate-700 rounded-xl">
-          <ChefHat className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 font-medium">No hay proyectos de cocina</p>
-          <p className="text-slate-600 text-sm mt-1">Crea tu primer proyecto para empezar</p>
+          <ChefHat className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">No hay proyectos de cocina</p>
+          <p className="text-muted-foreground text-sm mt-1">Crea tu primer proyecto para empezar</p>
           <button
             onClick={openModal}
             className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
@@ -182,17 +182,17 @@ export function KitchenListClient({ initialProjects }: Props) {
                     <h3 className="text-white font-semibold truncate">{p.nombre}</h3>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span className="text-xs px-2 py-0.5 bg-slate-700 text-slate-300 rounded-full">
+                    <span className="text-xs px-2 py-0.5 bg-slate-700 text-muted-foreground/70 rounded-full">
                       {LAYOUT_LABELS[p.layoutType] ?? p.layoutType}
                     </span>
-                    <span className="text-xs text-slate-500">{p.paredesCount} pared{p.paredesCount !== 1 ? 'es' : ''}</span>
-                    <span className="text-xs text-slate-500">{p.placementsCount} módulo{p.placementsCount !== 1 ? 's' : ''}</span>
+                    <span className="text-xs text-muted-foreground">{p.paredesCount} pared{p.paredesCount !== 1 ? 'es' : ''}</span>
+                    <span className="text-xs text-muted-foreground">{p.placementsCount} módulo{p.placementsCount !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
                 <button
                   onClick={() => handleDelete(p.id)}
                   disabled={deleting === p.id}
-                  className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
+                  className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
                   title="Eliminar proyecto"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -218,7 +218,7 @@ export function KitchenListClient({ initialProjects }: Props) {
               <h2 className="text-white font-semibold text-lg">Nuevo proyecto de cocina</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white transition-colors text-xl leading-none"
+                className="text-muted-foreground hover:text-white transition-colors text-xl leading-none"
               >
                 ×
               </button>
@@ -226,7 +226,7 @@ export function KitchenListClient({ initialProjects }: Props) {
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-1">Nombre del proyecto</label>
+                <label className="block text-muted-foreground/70 text-sm font-medium mb-1">Nombre del proyecto</label>
                 <input
                   type="text"
                   value={nombre}
@@ -237,7 +237,7 @@ export function KitchenListClient({ initialProjects }: Props) {
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-1">Distribución</label>
+                <label className="block text-muted-foreground/70 text-sm font-medium mb-1">Distribución</label>
                 <div className="flex gap-2">
                   {(['lineal', 'L', 'U'] as const).map((lt) => (
                     <button
@@ -247,7 +247,7 @@ export function KitchenListClient({ initialProjects }: Props) {
                         'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                         layoutType === lt
                           ? 'bg-blue-600 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                          : 'bg-slate-800 text-muted-foreground hover:text-white hover:bg-slate-700'
                       )}
                     >
                       {LAYOUT_LABELS[lt]}
@@ -257,7 +257,7 @@ export function KitchenListClient({ initialProjects }: Props) {
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-1">Altura de cocina (mm)</label>
+                <label className="block text-muted-foreground/70 text-sm font-medium mb-1">Altura de cocina (mm)</label>
                 <input
                   type="number"
                   value={alturaMm}
@@ -268,7 +268,7 @@ export function KitchenListClient({ initialProjects }: Props) {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-slate-300 text-sm font-medium">Paredes</label>
+                  <label className="text-muted-foreground/70 text-sm font-medium">Paredes</label>
                   <button
                     onClick={addWall}
                     className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
@@ -293,11 +293,11 @@ export function KitchenListClient({ initialProjects }: Props) {
                         placeholder="3000"
                         className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                       />
-                      <span className="text-slate-500 text-xs">mm</span>
+                      <span className="text-muted-foreground text-xs">mm</span>
                       <button
                         onClick={() => removeWall(i)}
                         disabled={walls.length <= 1}
-                        className="text-slate-600 hover:text-red-400 disabled:opacity-30 transition-colors"
+                        className="text-muted-foreground hover:text-red-400 disabled:opacity-30 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -314,7 +314,7 @@ export function KitchenListClient({ initialProjects }: Props) {
             <div className="px-6 py-4 border-t border-slate-700 flex gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-muted-foreground/70 rounded-lg text-sm font-medium transition-colors"
               >
                 Cancelar
               </button>

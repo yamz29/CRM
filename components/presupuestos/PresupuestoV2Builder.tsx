@@ -193,7 +193,7 @@ function NumericCell({
 
   const focusCls = isExpr
     ? 'focus:border-violet-400 focus:ring-violet-300 bg-violet-50'
-    : 'focus:border-blue-400 focus:ring-blue-300 focus:bg-white'
+    : 'focus:border-blue-400 focus:ring-blue-300 focus:bg-card'
 
   return (
     <input
@@ -210,7 +210,7 @@ function NumericCell({
       }}
       placeholder="0"
       title={isExpr ? `= ${evalExpr(raw!)}` : undefined}
-      className={`w-full px-2 py-1.5 text-right text-sm border border-transparent rounded focus:outline-none focus:ring-1 hover:border-slate-300 bg-transparent transition-colors ${focusCls} ${className}`}
+      className={`w-full px-2 py-1.5 text-right text-sm border border-transparent rounded focus:outline-none focus:ring-1 hover:border-border bg-transparent transition-colors ${focusCls} ${className}`}
     />
   )
 }
@@ -231,7 +231,7 @@ function NumericCellSimple({ value, onChange, step: _step = '0.0001' }: { value:
 
   const focusCls = isExpr
     ? 'focus:border-violet-400 bg-violet-50'
-    : 'focus:border-blue-400 focus:bg-white'
+    : 'focus:border-blue-400 focus:bg-card'
 
   return (
     <input
@@ -244,7 +244,7 @@ function NumericCellSimple({ value, onChange, step: _step = '0.0001' }: { value:
       onKeyDown={(e) => { if (e.key === 'Enter') commit((e.target as HTMLInputElement).value) }}
       placeholder="0"
       title={isExpr ? `= ${evalExpr(raw!)}` : undefined}
-      className={`w-full px-2 py-1 text-right text-sm border border-transparent rounded focus:outline-none hover:border-slate-300 bg-transparent transition-colors ${focusCls}`}
+      className={`w-full px-2 py-1 text-right text-sm border border-transparent rounded focus:outline-none hover:border-border bg-transparent transition-colors ${focusCls}`}
     />
   )
 }
@@ -270,42 +270,42 @@ function SeccionLineas({ seccion, lineas, onChange, unidades }: { seccion: { key
         />
       )}
       <div className="flex items-center justify-between px-3 py-1.5">
-        <span className="text-xs font-bold uppercase tracking-wide text-slate-600">{seccion.label}</span>
-        {total > 0 && <span className="text-xs font-semibold text-slate-700">{formatCurrency(total)}</span>}
+        <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{seccion.label}</span>
+        {total > 0 && <span className="text-xs font-semibold text-foreground">{formatCurrency(total)}</span>}
       </div>
       {lineas.length > 0 && (
-        <table className="w-full border-t border-slate-200/60">
+        <table className="w-full border-t border-border/60">
           <thead><tr className="bg-white/60">
-            <th className="px-2 py-1 text-left text-xs text-slate-400 font-medium w-6">#</th>
-            <th className="px-2 py-1 text-left text-xs text-slate-500 font-semibold">Descripción</th>
-            <th className="px-2 py-1 text-center text-xs text-slate-500 font-semibold w-20">Unidad</th>
-            <th className="px-2 py-1 text-right text-xs text-slate-500 font-semibold w-20">Cantidad</th>
-            <th className="px-2 py-1 text-right text-xs text-slate-500 font-semibold w-28">P. Unitario</th>
-            <th className="px-2 py-1 text-right text-xs text-slate-500 font-semibold w-28">Subtotal</th>
+            <th className="px-2 py-1 text-left text-xs text-muted-foreground font-medium w-6">#</th>
+            <th className="px-2 py-1 text-left text-xs text-muted-foreground font-semibold">Descripción</th>
+            <th className="px-2 py-1 text-center text-xs text-muted-foreground font-semibold w-20">Unidad</th>
+            <th className="px-2 py-1 text-right text-xs text-muted-foreground font-semibold w-20">Cantidad</th>
+            <th className="px-2 py-1 text-right text-xs text-muted-foreground font-semibold w-28">P. Unitario</th>
+            <th className="px-2 py-1 text-right text-xs text-muted-foreground font-semibold w-28">Subtotal</th>
             <th className="w-8" />
           </tr></thead>
           <tbody>
             {lineas.map((linea, i) => (
-              <tr key={i} className="border-t border-slate-200/40 hover:bg-white/70 group">
-                <td className="px-2 py-1 text-xs text-slate-400 text-center select-none">{i + 1}</td>
+              <tr key={i} className="border-t border-border/40 hover:bg-white/70 group">
+                <td className="px-2 py-1 text-xs text-muted-foreground text-center select-none">{i + 1}</td>
                 <td className="px-1 py-0.5">
                   <div className="flex items-center gap-0.5">
-                    <input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="flex-1 min-w-0 px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent transition-colors" />
-                    <button onClick={() => setPickerRow(i)} title="Buscar en catálogo" className="p-1 rounded text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Search className="w-3 h-3" /></button>
+                    <input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="flex-1 min-w-0 px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card hover:border-border bg-transparent transition-colors" />
+                    <button onClick={() => setPickerRow(i)} title="Buscar en catálogo" className="p-1 rounded text-muted-foreground/70 hover:text-blue-500 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Search className="w-3 h-3" /></button>
                   </div>
                 </td>
-                <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">{unidades.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
+                <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card hover:border-border bg-transparent text-center transition-colors">{unidades.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.cantidad} onChange={(v) => updateLinea(i, 'cantidad', v)} step="0.0001" /></td>
                 <td className="px-1 py-0.5"><NumericCellSimple value={linea.precioUnitario} onChange={(v) => updateLinea(i, 'precioUnitario', v)} /></td>
-                <td className="px-2 py-1 text-right text-sm font-semibold text-slate-700 whitespace-nowrap">{lineaSubtotal(linea) > 0 ? formatCurrency(lineaSubtotal(linea)) : <span className="text-slate-300 font-normal">—</span>}</td>
-                <td className="px-1 py-0.5"><button onClick={() => removeLinea(i)} className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button></td>
+                <td className="px-2 py-1 text-right text-sm font-semibold text-foreground whitespace-nowrap">{lineaSubtotal(linea) > 0 ? formatCurrency(lineaSubtotal(linea)) : <span className="text-muted-foreground/70 font-normal">—</span>}</td>
+                <td className="px-1 py-0.5"><button onClick={() => removeLinea(i)} className="p-1 rounded text-muted-foreground/70 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button></td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      <div className="px-3 py-1.5 border-t border-slate-200/40">
-        <button onClick={addLinea} className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 font-medium transition-colors"><Plus className="w-3 h-3" /> Agregar {seccion.label.toLowerCase()}</button>
+      <div className="px-3 py-1.5 border-t border-border/40">
+        <button onClick={addLinea} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary font-medium transition-colors"><Plus className="w-3 h-3" /> Agregar {seccion.label.toLowerCase()}</button>
       </div>
     </div>
   )
@@ -320,37 +320,37 @@ function ApuPanel({ partida, onClose, onUpdate, onApply, unidades }: { partida: 
   const updateDetalle = useCallback((key: SeccionAPU, lines: LineaAPU[]) => { onUpdate(calcAnalisisFromDetalle({ ...detalle, [key]: lines }, indirectos, utilidad)) }, [detalle, indirectos, utilidad, onUpdate])
   const updatePct = useCallback((field: 'indirectos' | 'utilidad', val: number) => { onUpdate(calcAnalisisFromDetalle(detalle, field === 'indirectos' ? val : indirectos, field === 'utilidad' ? val : utilidad)) }, [detalle, indirectos, utilidad, onUpdate])
   return (
-    <div className="bg-slate-50 border-y border-blue-200">
-      <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200">
-        <div className="flex items-center gap-2"><BarChart2 className="w-4 h-4 text-blue-600" /><span className="text-sm font-bold text-slate-700">Análisis de Precio Unitario</span>{partida.descripcion && <span className="text-sm text-slate-400">— {partida.descripcion}</span>}</div>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X className="w-4 h-4" /></button>
+    <div className="bg-muted/40 border-y border-blue-200">
+      <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
+        <div className="flex items-center gap-2"><BarChart2 className="w-4 h-4 text-blue-600" /><span className="text-sm font-bold text-foreground">Análisis de Precio Unitario</span>{partida.descripcion && <span className="text-sm text-muted-foreground">— {partida.descripcion}</span>}</div>
+        <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground transition-colors"><X className="w-4 h-4" /></button>
       </div>
       <div className="px-6 py-4 space-y-3">
         {SECCIONES_APU.map((sec) => <SeccionLineas key={sec.key} seccion={sec} lineas={detalle[sec.key]} onChange={(lines) => updateDetalle(sec.key, lines)} unidades={unidades} />)}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">Porcentajes</p>
+          <div className="bg-card rounded-lg border border-border p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Porcentajes</p>
             <div className="space-y-2">
               {(['indirectos', 'utilidad'] as const).map(field => (
                 <div key={field} className="flex items-center justify-between gap-3">
-                  <label className="text-sm text-slate-600 whitespace-nowrap">{field === 'indirectos' ? 'Gastos indirectos' : 'Utilidad'}</label>
-                  <div className="flex items-center gap-1"><NumericCellSimple value={field === 'indirectos' ? indirectos : utilidad} onChange={(v) => updatePct(field, v)} step="0.5" /><span className="text-sm text-slate-500 flex-shrink-0">%</span></div>
+                  <label className="text-sm text-muted-foreground whitespace-nowrap">{field === 'indirectos' ? 'Gastos indirectos' : 'Utilidad'}</label>
+                  <div className="flex items-center gap-1"><NumericCellSimple value={field === 'indirectos' ? indirectos : utilidad} onChange={(v) => updatePct(field, v)} step="0.5" /><span className="text-sm text-muted-foreground flex-shrink-0">%</span></div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">Resumen</p>
+          <div className="bg-card rounded-lg border border-border p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Resumen</p>
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {SECCIONES_APU.filter(s => (calc[s.key as keyof Analisis] as number) > 0).map(s => (
-                  <tr key={s.key}><td className="py-1 text-slate-500">{s.label}</td><td className="py-1 text-right font-medium text-slate-700">{formatCurrency(calc[s.key as keyof Analisis] as number)}</td></tr>
+                  <tr key={s.key}><td className="py-1 text-muted-foreground">{s.label}</td><td className="py-1 text-right font-medium text-foreground">{formatCurrency(calc[s.key as keyof Analisis] as number)}</td></tr>
                 ))}
-                <tr className="border-t-2 border-slate-300"><td className="py-1.5 text-slate-600 font-semibold">Costo Directo</td><td className="py-1.5 text-right font-bold text-slate-800">{formatCurrency(calc.costoDirecto)}</td></tr>
-                {indirectos > 0 && <tr><td className="py-1 text-slate-500">Indirectos ({indirectos}%)</td><td className="py-1 text-right text-slate-600">+{formatCurrency(calc.costoTotal - calc.costoDirecto)}</td></tr>}
-                {utilidad > 0 && <tr><td className="py-1 text-slate-500">Utilidad ({utilidad}%)</td><td className="py-1 text-right text-slate-600">+{formatCurrency(calc.precioSugerido - calc.costoTotal)}</td></tr>}
+                <tr className="border-t-2 border-border"><td className="py-1.5 text-muted-foreground font-semibold">Costo Directo</td><td className="py-1.5 text-right font-bold text-foreground">{formatCurrency(calc.costoDirecto)}</td></tr>
+                {indirectos > 0 && <tr><td className="py-1 text-muted-foreground">Indirectos ({indirectos}%)</td><td className="py-1 text-right text-muted-foreground">+{formatCurrency(calc.costoTotal - calc.costoDirecto)}</td></tr>}
+                {utilidad > 0 && <tr><td className="py-1 text-muted-foreground">Utilidad ({utilidad}%)</td><td className="py-1 text-right text-muted-foreground">+{formatCurrency(calc.precioSugerido - calc.costoTotal)}</td></tr>}
                 <tr className="bg-blue-50"><td className="py-2 px-1 font-bold text-blue-700 rounded-l">Precio sugerido</td><td className="py-2 px-1 text-right font-bold text-blue-700 text-base rounded-r">{formatCurrency(calc.precioSugerido)}</td></tr>
-                <tr><td className="py-1 text-slate-500">Margen</td><td className="py-1 text-right font-semibold text-green-600">{calc.margen.toFixed(1)}%</td></tr>
+                <tr><td className="py-1 text-muted-foreground">Margen</td><td className="py-1 text-right font-semibold text-green-600">{calc.margen.toFixed(1)}%</td></tr>
               </tbody>
             </table>
             <button onClick={onApply} className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"><CheckCircle className="w-4 h-4" />Aplicar {formatCurrency(calc.precioSugerido)} al presupuesto</button>
@@ -607,7 +607,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
     const isCollapsed = collapsed.has(ci)
     const pct = subtotalBase > 0 ? (capTotal / subtotalBase) * 100 : 0
     return (
-      <div key={ci} className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+      <div key={ci} className="border border-border rounded-lg overflow-hidden shadow-sm">
         {/* Chapter Header */}
         <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 text-white select-none">
           <button onClick={() => toggleCollapse(ci)} className="p-0.5 rounded hover:bg-slate-700 transition-colors flex-shrink-0">
@@ -634,7 +634,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
           {capTotal > 0 && (
             <div className="text-right flex-shrink-0">
               <div className="text-xs font-bold text-white">{formatCurrency(capTotal)}</div>
-              {pct > 0 && <div className="text-xs text-slate-400">{pct.toFixed(1)}%</div>}
+              {pct > 0 && <div className="text-xs text-muted-foreground">{pct.toFixed(1)}%</div>}
             </div>
           )}
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -650,14 +650,14 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
             {/* Partidas */}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px]">
-                <thead><tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-8">#</th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-slate-500 uppercase w-24">Código</th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Descripción</th>
-                  <th className="px-2 py-2 text-center text-xs font-semibold text-slate-500 uppercase w-20">Und</th>
-                  <th className="px-2 py-2 text-right text-xs font-semibold text-slate-500 uppercase w-24">Cantidad</th>
-                  <th className="px-2 py-2 text-right text-xs font-semibold text-slate-500 uppercase w-28">P. Unitario</th>
-                  <th className="px-2 py-2 text-right text-xs font-semibold text-slate-500 uppercase w-28">Subtotal</th>
+                <thead><tr className="bg-muted/40 border-b border-border">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground uppercase w-8">#</th>
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Código</th>
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Descripción</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-muted-foreground uppercase w-20">Und</th>
+                  <th className="px-2 py-2 text-right text-xs font-semibold text-muted-foreground uppercase w-24">Cantidad</th>
+                  <th className="px-2 py-2 text-right text-xs font-semibold text-muted-foreground uppercase w-28">P. Unitario</th>
+                  <th className="px-2 py-2 text-right text-xs font-semibold text-muted-foreground uppercase w-28">Subtotal</th>
                   <th className="w-16" />
                 </tr></thead>
                 <tbody>
@@ -665,26 +665,26 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                     const apuKey = `${ci}-${pi}`
                     return (
                       <Fragment key={p._key ?? `idx-${ci}-${pi}`}>
-                        <tr className="border-b border-slate-100 hover:bg-slate-50/50 group">
-                          <td className="px-2 py-1 text-center text-xs text-slate-400 select-none">{pi + 1}</td>
+                        <tr className="border-b border-border hover:bg-muted/40/50 group">
+                          <td className="px-2 py-1 text-center text-xs text-muted-foreground select-none">{pi + 1}</td>
                           <td className="px-1 py-0.5">
                             <NumericCell value={0} onChange={() => {}} cellkey={cellKey(ci, pi, 'codigo')} onKeyDown={(e) => handleCellKeyDown(e, ci, pi, 0)}
                               step="1" className="hidden" />
                             <input type="text" value={p.codigo} onChange={(e) => updatePartida(ci, pi, 'codigo', e.target.value)}
                               data-cellkey={cellKey(ci, pi, 'codigo')}
                               onKeyDown={(e) => { if (e.key === 'Tab') { e.preventDefault(); focusCell(ci, pi, TAB_FIELDS[1]) } }}
-                              placeholder="APU-001" className="w-full px-2 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-1 focus:ring-blue-300 hover:border-slate-300 bg-transparent transition-colors" />
+                              placeholder="APU-001" className="w-full px-2 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card focus:ring-1 focus:ring-blue-300 hover:border-border bg-transparent transition-colors" />
                           </td>
                           <td className="px-1 py-0.5">
                             <input type="text" value={p.descripcion} onChange={(e) => updatePartida(ci, pi, 'descripcion', e.target.value)}
                               data-cellkey={cellKey(ci, pi, 'descripcion')}
                               onKeyDown={(e) => { if (e.key === 'Tab') { e.preventDefault(); focusCell(ci, pi, TAB_FIELDS[2]) } }}
-                              placeholder="Descripción de la partida..." className="w-full px-2 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-1 focus:ring-blue-300 hover:border-slate-300 bg-transparent transition-colors" />
+                              placeholder="Descripción de la partida..." className="w-full px-2 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card focus:ring-1 focus:ring-blue-300 hover:border-border bg-transparent transition-colors" />
                           </td>
                           <td className="px-1 py-0.5">
                             <select value={p.unidad} onChange={(e) => updatePartida(ci, pi, 'unidad', e.target.value)}
                               data-cellkey={cellKey(ci, pi, 'unidad')}
-                              className="w-full px-1 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-white hover:border-slate-300 bg-transparent text-center transition-colors">
+                              className="w-full px-1 py-1.5 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card hover:border-border bg-transparent text-center transition-colors">
                               {UNIDADES_LIST.map((u) => <option key={u} value={u}>{u}</option>)}
                             </select>
                           </td>
@@ -696,14 +696,14 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                             <NumericCell value={p.precioUnitario} onChange={(v) => updatePartida(ci, pi, 'precioUnitario', v)}
                               cellkey={cellKey(ci, pi, 'precioUnitario')} onKeyDown={(e) => handleCellKeyDown(e, ci, pi, 4)} step="0.0001" />
                           </td>
-                          <td className="px-2 py-1 text-right text-sm font-bold text-slate-800 whitespace-nowrap">
-                            {p.subtotal > 0 ? formatCurrency(p.subtotal) : <span className="text-slate-300 font-normal">—</span>}
+                          <td className="px-2 py-1 text-right text-sm font-bold text-foreground whitespace-nowrap">
+                            {p.subtotal > 0 ? formatCurrency(p.subtotal) : <span className="text-muted-foreground/70 font-normal">—</span>}
                           </td>
                           <td className="px-1 py-0.5">
                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => toggleApu(apuKey)} title="APU" className={`p-1 rounded transition-colors ${apuOpen === apuKey ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'}`}><BarChart2 className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => duplicatePartida(ci, pi)} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"><Copy className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => removePartida(ci, pi)} className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => toggleApu(apuKey)} title="APU" className={`p-1 rounded transition-colors ${apuOpen === apuKey ? 'bg-blue-100 text-blue-600' : 'hover:bg-muted text-muted-foreground hover:text-primary'}`}><BarChart2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => duplicatePartida(ci, pi)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-muted-foreground transition-colors"><Copy className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => removePartida(ci, pi)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           </td>
                         </tr>
@@ -717,9 +717,9 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-slate-50 border-t border-slate-200">
-                    <td colSpan={6} className="px-3 py-2 text-xs text-slate-500 text-right">Subtotal {cap.nombre}</td>
-                    <td className="px-2 py-2 text-right text-sm font-bold text-slate-800">{formatCurrency(capTotal)}</td>
+                  <tr className="bg-muted/40 border-t border-border">
+                    <td colSpan={6} className="px-3 py-2 text-xs text-muted-foreground text-right">Subtotal {cap.nombre}</td>
+                    <td className="px-2 py-2 text-right text-sm font-bold text-foreground">{formatCurrency(capTotal)}</td>
                     <td />
                   </tr>
                 </tfoot>
@@ -727,11 +727,11 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
             </div>
 
             {/* Add partida / APU search */}
-            <div className="flex items-center gap-3 px-3 py-2 bg-slate-50 border-t border-slate-100">
+            <div className="flex items-center gap-3 px-3 py-2 bg-muted/40 border-t border-border">
               <button onClick={() => addPartida(ci)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Agregar partida
               </button>
-              <button onClick={() => setApuSearchOpen(ci)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 font-medium transition-colors">
+              <button onClick={() => setApuSearchOpen(ci)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors">
                 <FileSpreadsheet className="w-3.5 h-3.5" /> Insertar desde catálogo APU
               </button>
             </div>
@@ -778,63 +778,63 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
         <CardContent className="pt-4 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Cliente <span className="text-red-500">*</span></label>
-              <select value={clienteId} onChange={(e) => { setClienteId(e.target.value); setProyectoId('') }} className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Cliente <span className="text-red-500">*</span></label>
+              <select value={clienteId} onChange={(e) => { setClienteId(e.target.value); setProyectoId('') }} className="w-full border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card">
                 <option value="">Seleccionar cliente...</option>
                 {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Proyecto</label>
-              <select value={proyectoId} onChange={(e) => setProyectoId(e.target.value)} disabled={!clienteId} className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Proyecto</label>
+              <select value={proyectoId} onChange={(e) => setProyectoId(e.target.value)} disabled={!clienteId} className="w-full border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card disabled:opacity-50">
                 <option value="">Sin proyecto</option>
                 {filteredProyectos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Estado</label>
-              <select value={estado} onChange={(e) => setEstado(e.target.value)} className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Estado</label>
+              <select value={estado} onChange={(e) => setEstado(e.target.value)} className="w-full border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card">
                 {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div className="mt-3">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Notas / Observaciones</label>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notas / Observaciones</label>
             <textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder="Condiciones del presupuesto, alcances, notas para el cliente..."
               rows={3}
-              className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Add toolbar */}
-      <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-lg px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 bg-card border border-border rounded-lg px-4 py-3">
         {/* Add Titulo */}
         <div className="flex items-center gap-1.5 mr-2">
           <Layers className="w-3.5 h-3.5 text-amber-500" />
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">+ Título:</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">+ Título:</span>
         </div>
         <button onClick={() => addTitulo()} className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-dashed border-amber-300 text-amber-600 hover:bg-amber-50 transition-colors"><Plus className="w-3 h-3" /> Vacío</button>
         {TITLE_TEMPLATES.map(t => (
-          <button key={t} onClick={() => addTitulo(t)} className="px-2.5 py-1 text-xs font-medium rounded border border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors truncate max-w-[140px]">{t}</button>
+          <button key={t} onClick={() => addTitulo(t)} className="px-2.5 py-1 text-xs font-medium rounded border border-border text-muted-foreground hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors truncate max-w-[140px]">{t}</button>
         ))}
 
-        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <div className="w-px h-4 bg-muted mx-1" />
 
         {/* Add Capitulo */}
         <div className="flex items-center gap-1.5 mr-1">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">+ Cap:</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">+ Cap:</span>
         </div>
         <button onClick={() => addCapitulo(null)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors"><Plus className="w-3 h-3" /> Vacío</button>
         {CHAPTER_TEMPLATES.map(t => (
-          <button key={t.codigo} onClick={() => addCapituloFromTemplate(t, null)} className="px-2.5 py-1 text-xs font-medium rounded border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors">{t.codigo}·{t.nombre}</button>
+          <button key={t.codigo} onClick={() => addCapituloFromTemplate(t, null)} className="px-2.5 py-1 text-xs font-medium rounded border border-border text-muted-foreground hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors">{t.codigo}·{t.nombre}</button>
         ))}
 
-        <div className="w-px h-4 bg-slate-200 mx-1" />
+        <div className="w-px h-4 bg-muted mx-1" />
 
         {/* Import from Excel */}
         <button
@@ -848,17 +848,17 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
 
       {/* Keyboard hint */}
       {capitulos.length > 0 && (
-        <p className="text-xs text-slate-400 px-1">
-          Navega con <kbd className="bg-slate-100 border border-slate-200 rounded px-1 py-0.5 text-xs font-mono">Tab</kbd> · <kbd className="bg-slate-100 border border-slate-200 rounded px-1 py-0.5 text-xs font-mono">Enter</kbd> siguiente fila · Cantidades admiten hasta 4 decimales (ej: 0.0025)
+        <p className="text-xs text-muted-foreground px-1">
+          Navega con <kbd className="bg-muted border border-border rounded px-1 py-0.5 text-xs font-mono">Tab</kbd> · <kbd className="bg-muted border border-border rounded px-1 py-0.5 text-xs font-mono">Enter</kbd> siguiente fila · Cantidades admiten hasta 4 decimales (ej: 0.0025)
         </p>
       )}
 
       {/* Empty state */}
       {capitulos.length === 0 && titulos.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
-          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-3"><Plus className="w-7 h-7 text-slate-400" /></div>
-          <p className="text-lg font-semibold text-slate-500 mb-1">Agrega tu primer título o capítulo</p>
-          <p className="text-sm text-slate-400 mb-5">Usa la barra de arriba para agregar títulos (grupos) y capítulos</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-xl bg-muted/40">
+          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3"><Plus className="w-7 h-7 text-muted-foreground" /></div>
+          <p className="text-lg font-semibold text-muted-foreground mb-1">Agrega tu primer título o capítulo</p>
+          <p className="text-sm text-muted-foreground mb-5">Usa la barra de arriba para agregar títulos (grupos) y capítulos</p>
         </div>
       )}
 
@@ -904,62 +904,62 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
       {floatingChapters.length > 0 && (
         <div className="space-y-3">
           {titulos.length > 0 && (
-            <p className="text-xs text-slate-400 font-medium px-1">Capítulos sin título asignado:</p>
+            <p className="text-xs text-muted-foreground font-medium px-1">Capítulos sin título asignado:</p>
           )}
           {floatingChapters.map(({ cap, ci }) => renderCapitulo(cap, ci))}
         </div>
       )}
 
       {/* ══ GASTOS INDIRECTOS ══ */}
-      <div className="border-2 border-slate-300 rounded-xl overflow-hidden">
+      <div className="border-2 border-border rounded-xl overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 bg-slate-700 text-white">
           <button onClick={() => setShowIndirecto(p => !p)} className="p-0.5 rounded hover:bg-slate-600 transition-colors flex-shrink-0">
             <ChevronRight className={`w-4 h-4 transition-transform ${showIndirecto ? 'rotate-90' : ''}`} />
           </button>
-          <Percent className="w-4 h-4 text-slate-300 flex-shrink-0" />
+          <Percent className="w-4 h-4 text-muted-foreground/70 flex-shrink-0" />
           <span className="flex-1 text-sm font-bold uppercase tracking-wide">Gastos Indirectos</span>
           <div className="text-right text-sm flex-shrink-0">
-            <span className="text-slate-400 text-xs mr-2">Base: {formatCurrency(subtotalBase)}</span>
+            <span className="text-muted-foreground text-xs mr-2">Base: {formatCurrency(subtotalBase)}</span>
             <span className="font-bold">{formatCurrency(subtotalIndirecto)}</span>
           </div>
         </div>
 
         {showIndirecto && (
-          <div className="bg-slate-50 p-4 space-y-3">
-            <p className="text-xs text-slate-500">
+          <div className="bg-muted/40 p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
               Cada línea se calcula automáticamente sobre el subtotal de las partidas normales ({formatCurrency(subtotalBase)}).
             </p>
             <table className="w-full">
-              <thead><tr className="border-b border-slate-200">
-                <th className="text-left pb-2 text-xs font-semibold text-slate-500 uppercase">Concepto</th>
-                <th className="text-right pb-2 text-xs font-semibold text-slate-500 uppercase w-24">% sobre base</th>
-                <th className="text-right pb-2 text-xs font-semibold text-slate-500 uppercase w-32">Monto calculado</th>
+              <thead><tr className="border-b border-border">
+                <th className="text-left pb-2 text-xs font-semibold text-muted-foreground uppercase">Concepto</th>
+                <th className="text-right pb-2 text-xs font-semibold text-muted-foreground uppercase w-24">% sobre base</th>
+                <th className="text-right pb-2 text-xs font-semibold text-muted-foreground uppercase w-32">Monto calculado</th>
                 <th className="pb-2 w-16" />
               </tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {indirectoLineas.map((linea, li) => {
                   const monto = subtotalBase * linea.porcentaje / 100
                   return (
                     <tr key={li} className={`${linea.activo ? '' : 'opacity-40'}`}>
                       <td className="py-2 pr-3">
                         <input type="text" value={linea.nombre} onChange={e => updateIndirectoLinea(li, 'nombre', e.target.value)}
-                          className="w-full text-sm text-slate-700 bg-transparent border border-transparent rounded px-2 py-0.5 focus:outline-none focus:border-slate-300 focus:bg-white hover:border-slate-200" />
+                          className="w-full text-sm text-foreground bg-transparent border border-transparent rounded px-2 py-0.5 focus:outline-none focus:border-border focus:bg-card hover:border-border" />
                       </td>
                       <td className="py-2 pr-3">
                         <div className="flex items-center justify-end gap-1">
                           <input type="number" value={linea.porcentaje} step="0.5" min="0" max="100"
                             onChange={e => updateIndirectoLinea(li, 'porcentaje', parseFloat(e.target.value) || 0)}
-                            className="w-16 text-right text-sm text-slate-700 bg-white border border-slate-200 rounded px-2 py-0.5 focus:outline-none focus:border-blue-400" />
-                          <span className="text-sm text-slate-500">%</span>
+                            className="w-16 text-right text-sm text-foreground bg-card border border-border rounded px-2 py-0.5 focus:outline-none focus:border-blue-400" />
+                          <span className="text-sm text-muted-foreground">%</span>
                         </div>
                       </td>
-                      <td className="py-2 text-right text-sm font-semibold text-slate-800 tabular-nums">{formatCurrency(monto)}</td>
+                      <td className="py-2 text-right text-sm font-semibold text-foreground tabular-nums">{formatCurrency(monto)}</td>
                       <td className="py-2 text-center">
                         <div className="flex items-center gap-1 justify-center">
-                          <button onClick={() => updateIndirectoLinea(li, 'activo', !linea.activo)} className={`p-1 rounded transition-colors ${linea.activo ? 'text-green-500 hover:bg-green-50' : 'text-slate-300 hover:bg-slate-100'}`} title={linea.activo ? 'Desactivar' : 'Activar'}>
+                          <button onClick={() => updateIndirectoLinea(li, 'activo', !linea.activo)} className={`p-1 rounded transition-colors ${linea.activo ? 'text-green-500 hover:bg-green-50' : 'text-muted-foreground/70 hover:bg-muted'}`} title={linea.activo ? 'Desactivar' : 'Activar'}>
                             <CheckCircle className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => removeIndirectoLinea(li)} className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => removeIndirectoLinea(li)} className="p-1 rounded text-muted-foreground/70 hover:text-red-500 hover:bg-red-50 transition-colors"><X className="w-3.5 h-3.5" /></button>
                         </div>
                       </td>
                     </tr>
@@ -967,14 +967,14 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-300">
-                  <td colSpan={2} className="pt-3 text-sm font-bold text-slate-700 text-right pr-3">Total Gastos Indirectos</td>
-                  <td className="pt-3 text-right text-sm font-bold text-slate-800 tabular-nums">{formatCurrency(subtotalIndirecto)}</td>
+                <tr className="border-t-2 border-border">
+                  <td colSpan={2} className="pt-3 text-sm font-bold text-foreground text-right pr-3">Total Gastos Indirectos</td>
+                  <td className="pt-3 text-right text-sm font-bold text-foreground tabular-nums">{formatCurrency(subtotalIndirecto)}</td>
                   <td />
                 </tr>
               </tfoot>
             </table>
-            <button onClick={addIndirectoLinea} className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 font-medium transition-colors">
+            <button onClick={addIndirectoLinea} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary font-medium transition-colors">
               <Plus className="w-3.5 h-3.5" /> Agregar línea
             </button>
           </div>
@@ -983,25 +983,25 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
 
       {/* ── Grand Total + Save ── */}
       <div className="sticky bottom-4 z-10">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-5 py-4 flex items-center justify-between">
+        <div className="bg-card border border-border rounded-xl shadow-lg px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Subtotal Partidas</p>
-              <p className="text-lg font-bold text-slate-700">{formatCurrency(subtotalBase)}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Subtotal Partidas</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(subtotalBase)}</p>
             </div>
             {subtotalIndirecto > 0 && (
               <>
-                <div className="text-slate-300">+</div>
+                <div className="text-muted-foreground/70">+</div>
                 <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Gastos Indirectos</p>
-                  <p className="text-lg font-bold text-slate-700">{formatCurrency(subtotalIndirecto)}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Gastos Indirectos</p>
+                  <p className="text-lg font-bold text-foreground">{formatCurrency(subtotalIndirecto)}</p>
                 </div>
-                <div className="text-slate-300">=</div>
+                <div className="text-muted-foreground/70">=</div>
               </>
             )}
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Total General</p>
-              <p className="text-2xl font-black text-slate-900">{formatCurrency(grandTotal)}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total General</p>
+              <p className="text-2xl font-black text-foreground">{formatCurrency(grandTotal)}</p>
             </div>
           </div>
           <Button onClick={handleSave} disabled={loading} size="lg" className="gap-2">

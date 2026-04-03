@@ -211,7 +211,7 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
                     onChange={handleChange}
                     className="flex-1 accent-blue-600"
                   />
-                  <div className="w-full max-w-[200px] h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div className="w-full max-w-[200px] h-2 rounded-full bg-muted overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -304,7 +304,7 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
                   onChange={handleChange}
                   rows={4}
                   placeholder="Describe el alcance del proyecto, materiales, requisitos especiales..."
-                  className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
+                  className="flex w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
                 />
               </div>
             </div>
