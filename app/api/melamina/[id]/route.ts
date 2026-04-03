@@ -96,6 +96,8 @@ export async function PUT(
               espesor: parseFloat(String(p.espesor)) || 18,
               material: p.material || null,
               tapacanto: Array.isArray(p.tapacanto) ? JSON.stringify(p.tapacanto) : '[]',
+              llevaMecanizado: p.llevaMecanizado === true,
+              tipoMecanizado: p.tipoMecanizado || null,
               observaciones: p.observaciones || null,
               orden: i,
             })),

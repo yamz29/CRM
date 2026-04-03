@@ -64,6 +64,24 @@ export const DEFAULT_QC_FINAL = [
 
 export type QCItem = { item: string; checked: boolean; checkedBy?: number; checkedAt?: string }
 
+// Horas estimadas por defecto para cada etapa
+export const HORAS_ESTIMADAS: Record<string, number> = {
+  'Compra de Materiales': 8,
+  'Recepcion': 4,
+  'Corte': 8,
+  'Canteo': 6,
+  'Mecanizacion': 6,
+  'QC Proceso': 2,
+  'Ensamble': 16,
+  'QC Final': 2,
+}
+
+export type EtapaLog = { etapa: string; inicio: string; fin: string | null }
+export type PiezaProgreso = { canteado: boolean; mecanizado: boolean }
+
+// Tipos de mecanizado disponibles
+export const TIPOS_MECANIZADO = ['Bisagras', 'Ranuras', 'Minifix', 'Otro'] as const
+
 // Descripciones por etapa para el panel de detalle
 export const ETAPA_DESCRIPCION: Record<string, string> = {
   'Compra de Materiales': 'Lista de materiales a comprar. Genera el PDF para enviar al chofer.',

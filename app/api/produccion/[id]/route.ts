@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ETAPAS_PRODUCCION, ETAPA_ORDER } from '@/lib/produccion'
+import type { EtapaLog } from '@/lib/produccion'
 
 type Params = { params: Promise<{ id: string }> }
+
+// Helper: update etapasLog when stage changes
+function updateEtapasLog(currentLog: string | null, fromEtapa: string, toEtapa: string): string {
+  let log: EtapaLog[] = []
+  try { log = currentLog ? JSON.parse(currentLog) : [] } catch { log = [] }
+
+  const now = new Date().toISOString()
+
+  // Close current stage
+  const currentEntry = log.find(e => e.etapa === fromEtapa && !e.fin)
+  if (currentEntry) {
+    currentEntry.fin = now
+  }
+
+  // Open new stage (if not already in log)
+  const existingNew = log.find(e => e.etapa === toEtapa && !e.fin)
+  if (!existingNew) {
+    log.push({ etapa: toEtapa, inicio: now, fin: null })
+  }
+
+  return JSON.stringify(log)
+}
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const { id } = await params
@@ -12,12 +35,6 @@ export async function GET(_req: NextRequest, { params }: Params) {
     include: {
       proyecto: { select: { id: true, nombre: true } },
       items: {
-        include: {
-          asignaciones: {
-            where: { activo: true },
-            include: { usuario: { select: { id: true, nombre: true } } },
-          },
-        },
         orderBy: { createdAt: 'asc' },
       },
       materiales: {
@@ -43,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const body = await req.json()
 
   try {
-    // Stage advancement
+    // ── Advance stage forward ──
     if (body._avanzarEtapa) {
       const orden = await prisma.ordenProduccion.findUnique({
         where: { id: parseInt(id) },
@@ -80,25 +97,49 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
 
       const nextEtapa = ETAPAS_PRODUCCION[nextIdx].key
-      const isLastStage = nextIdx === ETAPAS_PRODUCCION.length - 1
+      const etapasLog = updateEtapasLog(orden.etapasLog, orden.etapaActual, nextEtapa)
 
       const updated = await prisma.ordenProduccion.update({
         where: { id: parseInt(id) },
         data: {
           etapaActual: nextEtapa,
           estado: 'En Proceso',
-          ...(orden.etapaActual === 'Compra de Materiales' && !orden.fechaInicio && { fechaInicio: new Date() }),
-          ...(isLastStage && orden.etapaActual === 'QC Final' && {
-            estado: 'Completada',
-            fechaCompletada: new Date(),
-          }),
+          etapasLog,
+          ...(!orden.fechaInicio && { fechaInicio: new Date() }),
         },
       })
 
       return NextResponse.json(updated)
     }
 
-    // Complete order (from QC Final)
+    // ── Go back one stage ──
+    if (body._retrocederEtapa) {
+      const orden = await prisma.ordenProduccion.findUnique({
+        where: { id: parseInt(id) },
+      })
+      if (!orden) return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 })
+
+      const currentIdx = ETAPA_ORDER[orden.etapaActual] ?? 0
+      if (currentIdx === 0) {
+        return NextResponse.json({ error: 'Ya está en la primera etapa' }, { status: 400 })
+      }
+
+      const prevEtapa = ETAPAS_PRODUCCION[currentIdx - 1].key
+      const etapasLog = updateEtapasLog(orden.etapasLog, orden.etapaActual, prevEtapa)
+
+      const updated = await prisma.ordenProduccion.update({
+        where: { id: parseInt(id) },
+        data: {
+          etapaActual: prevEtapa,
+          etapasLog,
+          estado: currentIdx - 1 === 0 ? 'Pendiente' : 'En Proceso',
+        },
+      })
+
+      return NextResponse.json(updated)
+    }
+
+    // ── Complete order (from QC Final) ──
     if (body._completar) {
       const orden = await prisma.ordenProduccion.findUnique({
         where: { id: parseInt(id) },
@@ -112,21 +153,24 @@ export async function PUT(req: NextRequest, { params }: Params) {
       const checklist = orden.checklistQCFinal ? JSON.parse(orden.checklistQCFinal) : []
       const allChecked = checklist.length > 0 && checklist.every((c: { checked: boolean }) => c.checked)
       if (!allChecked) {
-        return NextResponse.json(
-          { error: 'Debe completar el checklist de QC Final' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Debe completar el checklist de QC Final' }, { status: 400 })
       }
+
+      // Close QC Final in log
+      let log: EtapaLog[] = []
+      try { log = orden.etapasLog ? JSON.parse(orden.etapasLog) : [] } catch { log = [] }
+      const qcEntry = log.find(e => e.etapa === 'QC Final' && !e.fin)
+      if (qcEntry) qcEntry.fin = new Date().toISOString()
 
       const updated = await prisma.ordenProduccion.update({
         where: { id: parseInt(id) },
         data: {
           estado: 'Completada',
           fechaCompletada: new Date(),
+          etapasLog: JSON.stringify(log),
         },
       })
 
-      // Mark all items as completed
       await prisma.itemProduccion.updateMany({
         where: { ordenId: parseInt(id) },
         data: { completado: true },
@@ -135,7 +179,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return NextResponse.json(updated)
     }
 
-    // General update
+    // ── Update piece progress (canteo/mecanizado checkboxes) ──
+    if (body._progresoPiezas !== undefined) {
+      const updated = await prisma.ordenProduccion.update({
+        where: { id: parseInt(id) },
+        data: { progresoPiezas: JSON.stringify(body._progresoPiezas) },
+      })
+      return NextResponse.json(updated)
+    }
+
+    // ── General update ──
     const orden = await prisma.ordenProduccion.update({
       where: { id: parseInt(id) },
       data: {
@@ -156,6 +209,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
             ? body.checklistQCFinal
             : JSON.stringify(body.checklistQCFinal),
         }),
+        ...(body.notasQCProceso !== undefined && { notasQCProceso: body.notasQCProceso }),
+        ...(body.notasQCFinal !== undefined && { notasQCFinal: body.notasQCFinal }),
         ...(body.estado === 'Completada' && { fechaCompletada: new Date() }),
       },
     })

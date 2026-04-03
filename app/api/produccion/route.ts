@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
             estado: 'Pendiente',
             checklistQCProceso: JSON.stringify(DEFAULT_QC_PROCESO),
             checklistQCFinal: JSON.stringify(DEFAULT_QC_FINAL),
+            etapasLog: JSON.stringify([{ etapa: 'Compra de Materiales', inicio: new Date().toISOString(), fin: null }]),
           },
         })
 
@@ -176,6 +177,7 @@ export async function POST(req: NextRequest) {
           estado: 'Pendiente',
           checklistQCProceso: JSON.stringify(DEFAULT_QC_PROCESO),
           checklistQCFinal: JSON.stringify(DEFAULT_QC_FINAL),
+          etapasLog: JSON.stringify([{ etapa: 'Compra de Materiales', inicio: new Date().toISOString(), fin: null }]),
         },
       })
 

@@ -43,6 +43,8 @@ export default async function OrdenDetailPage({ params }: { params: Promise<{ id
     espesor: number
     material: string | null
     tapacanto: string
+    llevaMecanizado: boolean
+    tipoMecanizado: string | null
     moduloNombre: string
   }[] = []
 
@@ -65,6 +67,8 @@ export default async function OrdenDetailPage({ params }: { params: Promise<{ id
       espesor: p.espesor,
       material: p.material,
       tapacanto: p.tapacanto,
+      llevaMecanizado: p.llevaMecanizado,
+      tipoMecanizado: p.tipoMecanizado,
       moduloNombre: p.modulo.nombre,
     }))
   }

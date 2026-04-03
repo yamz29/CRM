@@ -342,20 +342,22 @@ model ModuloMelaminaV2 {
 }
 
 model PiezaModulo {
-  id            Int      @id @default(autoincrement())
-  moduloId      Int
-  etiqueta      String   @default("Otro")
-  nombre        String
-  tipoPieza     String   @default("otro")
-  largo         Float    @default(0)
-  ancho         Float    @default(0)
-  cantidad      Int      @default(1)
-  espesor       Float    @default(18)
-  material      String?
-  tapacanto     String   @default("[]")
-  observaciones String?
-  orden         Int      @default(0)
-  createdAt     DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  moduloId         Int
+  etiqueta         String   @default("Otro")
+  nombre           String
+  tipoPieza        String   @default("otro")
+  largo            Float    @default(0)
+  ancho            Float    @default(0)
+  cantidad         Int      @default(1)
+  espesor          Float    @default(18)
+  material         String?
+  tapacanto        String   @default("[]")
+  llevaMecanizado  Boolean  @default(false)
+  tipoMecanizado   String?  // bisagras, ranuras, minifix, otro (comma-separated)
+  observaciones    String?
+  orden            Int      @default(0)
+  createdAt        DateTime @default(now())
 
   modulo ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
 
@@ -887,10 +889,14 @@ model OrdenProduccion {
   fechaInicio       DateTime?
   fechaEstimada     DateTime?
   fechaCompletada   DateTime?
-  notas             String?
+  notas              String?
   checklistQCProceso String?
   checklistQCFinal   String?
-  creadoPorId       Int?
+  notasQCProceso     String?
+  notasQCFinal       String?
+  etapasLog          String?    // JSON: [{etapa, inicio, fin}]
+  progresoPiezas     String?    // JSON: {piezaId: {canteado, mecanizado}}
+  creadoPorId        Int?
   empresaId         Int       @default(1)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

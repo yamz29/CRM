@@ -24,6 +24,8 @@ interface PiezaLine {
   material: string
   tapacanto: string[]
   tapacantoColor: string
+  llevaMecanizado: boolean
+  tipoMecanizado: string | null
   observaciones: string
 }
 
@@ -332,22 +334,22 @@ function generarDespiece(
     {
       _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
       largo: alto, ancho: prof, cantidad: 2, espesor: esp, material: '',
-      tapacanto: ['izquierdo'], tapacantoColor: '', observaciones: '',
+      tapacanto: ['izquierdo'], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Piso', nombre: 'Piso', tipoPieza: 'piso',
       largo: anchoInt, ancho: prof, cantidad: 1, espesor: esp, material: '',
-      tapacanto: ['izquierdo'], tapacantoColor: '', observaciones: '',
+      tapacanto: ['izquierdo'], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Fondo', nombre: 'Fondo', tipoPieza: 'fondo',
       largo: alto - esp, ancho: anchoInt, cantidad: 1, espesor: 6, material: 'HDF 6mm',
-      tapacanto: [], tapacantoColor: '', observaciones: '',
+      tapacanto: [], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
     },
     {
       _key: newKey(), etiqueta: 'Sop', nombre: 'Soporte', tipoPieza: 'soporte',
       largo: anchoInt, ancho: 100, cantidad: 2, espesor: esp, material: '',
-      tapacanto: ['superior'], tapacantoColor: '', observaciones: '',
+      tapacanto: ['superior'], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
     },
   )
 
@@ -360,7 +362,7 @@ function generarDespiece(
     piezas.push({
       _key: newKey(), etiqueta: 'Puerta', nombre: 'Puerta', tipoPieza: 'puerta',
       largo: altoPuerta, ancho: anchoPuerta, cantidad: cantPuertas, espesor: esp, material: '',
-      tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '', observaciones: '',
+      tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '', llevaMecanizado: true, tipoMecanizado: 'bisagras', observaciones: '',
     })
   }
 
@@ -376,17 +378,17 @@ function generarDespiece(
       {
         _key: newKey(), etiqueta: 'F-Caj', nombre: 'Frente de Cajón', tipoPieza: 'frente_cajon',
         largo: altoCajonFrente, ancho: anchoCajon, cantidad: cantCajones, espesor: esp, material: '',
-        tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '', observaciones: '',
+        tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '', llevaMecanizado: true, tipoMecanizado: 'minifix', observaciones: '',
       },
       {
         _key: newKey(), etiqueta: 'T-Caj', nombre: 'Trasero de Cajón', tipoPieza: 'trasero_cajon',
         largo: altoCajonInt, ancho: anchoCajonInt, cantidad: cantCajones, espesor: esp, material: '',
-        tapacanto: [], tapacantoColor: '', observaciones: '',
+        tapacanto: [], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
       },
       {
         _key: newKey(), etiqueta: 'Fd-Caj', nombre: 'Fondo de Cajón', tipoPieza: 'fondo_cajon',
         largo: profFondo, ancho: anchoCajonInt, cantidad: cantCajones, espesor: 6, material: 'HDF 6mm',
-        tapacanto: [], tapacantoColor: '', observaciones: '',
+        tapacanto: [], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
       },
     )
   }
@@ -439,7 +441,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
     modulo.piezas.map((p) => {
       const arr = Array.isArray(p.tapacanto) ? p.tapacanto : []
       const { lados, color } = extractTapacantoColor(arr)
-      return { ...p, _key: newKey(), tapacanto: lados, tapacantoColor: color }
+      return { ...p, _key: newKey(), tapacanto: lados, tapacantoColor: color, llevaMecanizado: p.llevaMecanizado ?? false, tipoMecanizado: p.tipoMecanizado || '' }
     })
   )
 
@@ -529,7 +531,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
       {
         _key: newKey(), etiqueta: 'Lat', nombre: 'Lateral', tipoPieza: 'lateral',
         largo: 0, ancho: 0, cantidad: 1, espesor: materialTablero?.espesorMm ?? 18,
-        material: '', tapacanto: [], tapacantoColor: '', observaciones: '',
+        material: '', tapacanto: [], tapacantoColor: '', llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
       },
     ])
   }
@@ -641,6 +643,8 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
         piezas: piezas.map(({ _key, id: _id, tapacantoColor, tapacanto, ...p }) => ({
           ...p,
           tapacanto: packTapacantoColor(tapacanto, tapacantoColor),
+          llevaMecanizado: p.llevaMecanizado,
+          tipoMecanizado: p.tipoMecanizado || null,
         })),
         materialesModulo: materialesModulo.map(({ _key, id: _id, search: _s, ...r }) => r),
       }
@@ -864,6 +868,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
                     <th className={thCls} style={{ width: 70 }}>Esp. (mm)</th>
                     <th className={thCls} style={{ width: 160 }}>Tablero</th>
                     <th className={thCls} style={{ width: 100 }}>Tapacanto</th>
+                    <th className={thCls} style={{ width: 110 }}>Mecanizado</th>
                     <th className={thCls} style={{ width: 80 }}>Área m²</th>
                     <th className={thCls} style={{ width: 70 }}>TC ml</th>
                     <th className={thCls} style={{ width: 40 }}></th>
@@ -981,6 +986,33 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
                             )}
                           </div>
                         </td>
+                        <td className="px-2 py-1.5">
+                          <div className="flex flex-col gap-1">
+                            <label className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={p.llevaMecanizado}
+                                onChange={(e) => updatePieza(p._key, 'llevaMecanizado', e.target.checked)}
+                                className="w-3.5 h-3.5 rounded border-gray-300"
+                              />
+                              <span className="text-xs text-muted-foreground">Sí</span>
+                            </label>
+                            {p.llevaMecanizado && (
+                              <select
+                                value={p.tipoMecanizado || ''}
+                                onChange={(e) => updatePieza(p._key, 'tipoMecanizado', e.target.value)}
+                                className="border border-amber-200 rounded px-1 py-0.5 text-xs bg-card focus:outline-none focus:ring-1 focus:ring-amber-400 w-full"
+                              >
+                                <option value="">— Tipo —</option>
+                                <option value="bisagras">Bisagras</option>
+                                <option value="ranuras">Ranuras</option>
+                                <option value="minifix">Minifix</option>
+                                <option value="bisagras,minifix">Bisagras+Minifix</option>
+                                <option value="otro">Otro</option>
+                              </select>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-2 py-1.5 text-right text-xs text-muted-foreground font-mono">{area.toFixed(4)}</td>
                         <td className="px-2 py-1.5 text-right text-xs text-amber-700 font-mono">{tc.toFixed(2)}</td>
                         <td className="px-2 py-1.5">
@@ -995,7 +1027,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
                 {piezas.length > 0 && (
                   <tfoot>
                     <tr className="border-t-2 border-border bg-muted/40">
-                      <td colSpan={8} className="px-3 py-2 text-xs font-semibold text-muted-foreground">Totales</td>
+                      <td colSpan={9} className="px-3 py-2 text-xs font-semibold text-muted-foreground">Totales</td>
                       <td className="px-2 py-2 text-right text-xs font-bold text-foreground font-mono">{totalAreaM2.toFixed(4)} m²</td>
                       <td className="px-2 py-2 text-right text-xs font-bold text-amber-700 font-mono">{totalTapacantoMl.toFixed(2)} ml</td>
                       <td />
