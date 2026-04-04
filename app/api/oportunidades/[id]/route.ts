@@ -28,6 +28,43 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json()
   const { nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, motivoPerdida, notas } = body
 
+  // Check if stage is changing to auto-create tasks
+  let etapaAnterior: string | null = null
+  if (etapa !== undefined) {
+    const current = await prisma.oportunidad.findUnique({
+      where: { id: numId },
+      select: { etapa: true, clienteId: true, responsable: true },
+    })
+    if (current && current.etapa !== etapa) {
+      etapaAnterior = current.etapa
+
+      // Auto-create tasks from templates for the new stage
+      if (!['Ganado', 'Perdido'].includes(etapa)) {
+        const plantillas = await prisma.plantillaTareaEtapa.findMany({
+          where: { etapa, activa: true },
+          orderBy: { orden: 'asc' },
+        })
+        if (plantillas.length > 0) {
+          const now = new Date()
+          await prisma.tarea.createMany({
+            data: plantillas.map(p => ({
+              titulo: p.titulo,
+              descripcion: p.descripcion,
+              prioridad: p.prioridad,
+              oportunidadId: numId,
+              clienteId: current.clienteId,
+              etapaPipeline: etapa,
+              responsable: current.responsable || null,
+              fechaLimite: p.diasLimite
+                ? new Date(now.getTime() + p.diasLimite * 24 * 60 * 60 * 1000)
+                : null,
+            })),
+          })
+        }
+      }
+    }
+  }
+
   const oportunidad = await prisma.oportunidad.update({
     where: { id: numId },
     data: {

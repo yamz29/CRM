@@ -36,11 +36,12 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, avance, responsable, _patch, _archivar } = body
+    const { titulo, descripcion, clienteId, proyectoId, oportunidadId, asignadoId, fechaLimite, prioridad, estado, avance, responsable, _patch, _archivar } = body
 
     const tareaIncludes = {
       cliente: { select: { id: true, nombre: true } },
       proyecto: { select: { id: true, nombre: true } },
+      oportunidad: { select: { id: true, nombre: true, etapa: true } },
       asignado: { select: { id: true, nombre: true } },
     } as const
 
@@ -95,6 +96,7 @@ export async function PUT(
         descripcion: descripcion || null,
         clienteId: clienteId ? parseInt(String(clienteId)) : null,
         proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+        oportunidadId: oportunidadId ? parseInt(String(oportunidadId)) : null,
         asignadoId: asignadoId ? parseInt(String(asignadoId)) : null,
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         prioridad: prioridad || 'Media',

@@ -40,6 +40,7 @@ export default async function TareasPage({ searchParams }: { searchParams: Promi
         include: {
           cliente: { select: { id: true, nombre: true } },
           proyecto: { select: { id: true, nombre: true } },
+          oportunidad: { select: { id: true, nombre: true } },
           asignado: { select: { id: true, nombre: true } },
         },
         orderBy: [{ prioridad: 'asc' }, { fechaLimite: 'asc' }],

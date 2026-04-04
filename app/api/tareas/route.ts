@@ -27,6 +27,7 @@ export async function GET() {
       include: {
         cliente: { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        oportunidad: { select: { id: true, nombre: true, etapa: true } },
         asignado: { select: { id: true, nombre: true } },
       },
       orderBy: [{ prioridad: 'asc' }, { fechaLimite: 'asc' }],
@@ -41,7 +42,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { titulo, descripcion, clienteId, proyectoId, asignadoId, fechaLimite, prioridad, estado, avance, responsable } = body
+    const { titulo, descripcion, clienteId, proyectoId, oportunidadId, asignadoId, fechaLimite, prioridad, estado, avance, responsable } = body
 
     if (!titulo?.trim()) {
       return NextResponse.json({ error: 'El título es requerido' }, { status: 400 })
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
         descripcion: descripcion || null,
         clienteId: clienteId ? parseInt(String(clienteId)) : null,
         proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+        oportunidadId: oportunidadId ? parseInt(String(oportunidadId)) : null,
         asignadoId: asignadoId ? parseInt(String(asignadoId)) : null,
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         prioridad: prioridad || 'Media',
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest) {
       include: {
         cliente: { select: { id: true, nombre: true } },
         proyecto: { select: { id: true, nombre: true } },
+        oportunidad: { select: { id: true, nombre: true, etapa: true } },
         asignado: { select: { id: true, nombre: true } },
       },
     })

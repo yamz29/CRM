@@ -386,26 +386,31 @@ model RecursoModulo {
 // ── TAREAS ────────────────────────────────────────────────────────────
 
 model Tarea {
-  id          Int       @id @default(autoincrement())
-  titulo      String
-  descripcion String?
-  clienteId   Int?
-  proyectoId  Int?
-  asignadoId  Int?
-  fechaLimite DateTime?
-  prioridad   String    @default("Media")
+  id              Int       @id @default(autoincrement())
+  titulo          String
+  descripcion     String?
+  clienteId       Int?
+  proyectoId      Int?
+  oportunidadId   Int?
+  asignadoId      Int?
+  fechaLimite     DateTime?
+  prioridad       String    @default("Media")
   estado          String    @default("Pendiente")
   avance          Int       @default(0)
   responsable     String?
+  etapaPipeline   String?   // etapa de la oportunidad que originó esta tarea
   archivada       Boolean   @default(false)
   fechaArchivada  DateTime?
   fechaCompletada DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  cliente   Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  proyecto  Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
-  asignado  Usuario?  @relation(fields: [asignadoId], references: [id], onDelete: SetNull)
+  cliente     Cliente?      @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  proyecto    Proyecto?     @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  oportunidad Oportunidad?  @relation(fields: [oportunidadId], references: [id], onDelete: SetNull)
+  asignado    Usuario?      @relation(fields: [asignadoId], references: [id], onDelete: SetNull)
+
+  @@index([oportunidadId])
 }
 
 // ── LEGACY (se mantienen para compatibilidad) ─────────────────────────
@@ -749,6 +754,7 @@ model Oportunidad {
   proyecto     Proyecto?     @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   actividades  ActividadCRM[]
   presupuestos Presupuesto[]
+  tareas       Tarea[]
 
   @@index([etapa])
   @@index([clienteId, etapa])
@@ -766,6 +772,20 @@ model ActividadCRM {
   oportunidad Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
 
   @@map("actividad_crm")
+}
+
+model PlantillaTareaEtapa {
+  id          Int     @id @default(autoincrement())
+  etapa       String  // Lead | Levantamiento | Cotización | Negociación
+  titulo      String
+  descripcion String?
+  prioridad   String  @default("Media")
+  diasLimite  Int?    // días desde que entra a la etapa para calcular fechaLimite
+  orden       Int     @default(0)
+  activa      Boolean @default(true)
+
+  @@index([etapa])
+  @@map("plantilla_tarea_etapa")
 }
 
 // ── CRONOGRAMA DE OBRA ────────────────────────────────────────────────

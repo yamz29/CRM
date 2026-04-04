@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
-  Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2
+  Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2,
+  ListTodo, Square, CheckSquare, Clock, AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -16,6 +17,15 @@ interface ActividadCRM {
   descripcion: string
   fecha: string
   createdAt: string
+}
+
+interface TareaOportunidad {
+  id: number
+  titulo: string
+  estado: string
+  prioridad: string
+  etapaPipeline: string | null
+  fechaLimite: string | null
 }
 
 interface Props {
@@ -115,6 +125,10 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
   const router = useRouter()
   const [actividades, setActividades] = useState<ActividadCRM[]>([])
   const [actLoaded, setActLoaded]     = useState(false)
+  const [tareas, setTareas]           = useState<TareaOportunidad[]>([])
+  const [tareasLoaded, setTareasLoaded] = useState(false)
+  const [newTareaTitle, setNewTareaTitle] = useState('')
+  const [addingTarea, setAddingTarea] = useState(false)
   const [newTipo, setNewTipo]         = useState('Nota')
   const [newDesc, setNewDesc]         = useState('')
   const [saving, setSaving]           = useState(false)
@@ -127,11 +141,14 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
 
   const etapaCfg = ETAPAS.find((e) => e.key === oportunidad.etapa)
 
-  // Load activities on mount
+  // Load activities and tasks on mount
   useEffect(() => {
     fetch(`/api/oportunidades/${oportunidad.id}/actividades`)
       .then((r) => r.json())
       .then((data) => { setActividades(data); setActLoaded(true) })
+    fetch(`/api/oportunidades/${oportunidad.id}/tareas`)
+      .then((r) => r.json())
+      .then((data) => { setTareas(data); setTareasLoaded(true) })
   }, [oportunidad.id])
 
   async function addActividad() {
@@ -172,6 +189,34 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
       body: JSON.stringify({ presupuestoId }),
     })
     onSaved()
+  }
+
+  async function addTareaRapida() {
+    if (!newTareaTitle.trim()) return
+    setAddingTarea(true)
+    const res = await fetch(`/api/oportunidades/${oportunidad.id}/tareas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo: newTareaTitle.trim() }),
+    })
+    if (res.ok) {
+      const tarea = await res.json()
+      setTareas(prev => [...prev, tarea])
+      setNewTareaTitle('')
+    }
+    setAddingTarea(false)
+  }
+
+  async function toggleTarea(tareaId: number, completar: boolean) {
+    const nuevoEstado = completar ? 'Completada' : 'Pendiente'
+    await fetch(`/api/tareas/${tareaId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: nuevoEstado, _patch: true }),
+    })
+    setTareas(prev => prev.map(t =>
+      t.id === tareaId ? { ...t, estado: nuevoEstado } : t
+    ))
   }
 
   async function marcarPerdida() {
@@ -365,6 +410,91 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Tareas del pipeline */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tareas</p>
+              {tareasLoaded && tareas.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {tareas.filter(t => t.estado === 'Completada').length}/{tareas.length} completadas
+                </span>
+              )}
+            </div>
+
+            {!tareasLoaded ? (
+              <p className="text-xs text-muted-foreground">Cargando...</p>
+            ) : (
+              <>
+                {tareas.length > 0 && (
+                  <div className="space-y-1 mb-2">
+                    {tareas.map((t) => {
+                      const done = t.estado === 'Completada'
+                      const vencida = t.fechaLimite && new Date(t.fechaLimite) < new Date() && !done
+                      return (
+                        <div key={t.id} className={`flex items-start gap-2 px-2 py-1.5 rounded-lg transition-colors ${done ? 'opacity-60' : 'hover:bg-muted/30'}`}>
+                          <button
+                            onClick={() => toggleTarea(t.id, !done)}
+                            className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            {done
+                              ? <CheckSquare className="w-4 h-4 text-green-500" />
+                              : <Square className="w-4 h-4" />}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs leading-tight ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                              {t.titulo}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {t.etapaPipeline && (
+                                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                  {t.etapaPipeline}
+                                </span>
+                              )}
+                              {t.prioridad === 'Alta' && (
+                                <span className="text-[10px] text-red-500 font-medium">Alta</span>
+                              )}
+                              {t.fechaLimite && (
+                                <span className={`text-[10px] flex items-center gap-0.5 ${vencida ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                                  {vencida && <AlertTriangle className="w-2.5 h-2.5" />}
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {new Date(t.fechaLimite).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Add task inline */}
+                {isActive && (
+                  <div className="flex gap-2">
+                    <input
+                      value={newTareaTitle}
+                      onChange={(e) => setNewTareaTitle(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addTareaRapida()}
+                      placeholder="Agregar tarea..."
+                      className="flex-1 px-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      onClick={addTareaRapida}
+                      disabled={addingTarea || !newTareaTitle.trim()}
+                      className="h-8 w-8 flex items-center justify-center bg-primary text-primary-foreground rounded-lg disabled:opacity-50 hover:bg-primary/90 transition-colors shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {tareas.length === 0 && !isActive && (
+                  <p className="text-xs text-muted-foreground">Sin tareas registradas.</p>
+                )}
+              </>
             )}
           </div>
 

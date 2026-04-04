@@ -43,6 +43,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: { proyectoId: nuevoProyecto.id },
     })
 
+    // Migrar tareas pendientes/en proceso de la oportunidad al proyecto
+    await tx.tarea.updateMany({
+      where: {
+        oportunidadId: numId,
+        estado: { in: ['Pendiente', 'En proceso'] },
+      },
+      data: { proyectoId: nuevoProyecto.id },
+    })
+
     return nuevoProyecto
   })
 

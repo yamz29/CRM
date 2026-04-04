@@ -28,7 +28,7 @@ export interface Oportunidad {
   cliente: { id: number; nombre: string }
   proyecto: { id: number; nombre: string } | null
   presupuestos: { id: number; numero: string; estado: string; total: number }[]
-  _count: { actividades: number }
+  _count: { actividades: number; tareas: number }
 }
 
 export interface PresupuestoOpcion {
@@ -100,6 +100,9 @@ function KanbanCard({
             <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-medium">
               {op.presupuestos.length} cot.
             </span>
+          )}
+          {op._count.tareas > 0 && (
+            <span className="text-xs text-muted-foreground">{op._count.tareas} tareas</span>
           )}
           {op._count.actividades > 0 && (
             <span className="text-xs text-muted-foreground">{op._count.actividades} act.</span>

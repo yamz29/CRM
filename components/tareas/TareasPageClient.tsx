@@ -24,6 +24,7 @@ interface Tarea {
   fechaCompletada: string | null
   cliente: { id: number; nombre: string } | null
   proyecto: { id: number; nombre: string } | null
+  oportunidad: { id: number; nombre: string } | null
   asignado: { id: number; nombre: string } | null
 }
 
@@ -329,11 +330,16 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                               </Link>
                             )}
                             {tarea.proyecto && (
-                              <Link href={`/proyectos/${tarea.proyecto.id}`} className="text-xs text-muted-foreground/70 hover:text-primary">
+                              <Link href={`/proyectos/${tarea.proyecto.id}`} className="text-xs text-muted-foreground/70 hover:text-primary block">
                                 {tarea.proyecto.nombre.length > 30 ? tarea.proyecto.nombre.substring(0, 30) + '...' : tarea.proyecto.nombre}
                               </Link>
                             )}
-                            {!tarea.cliente && !tarea.proyecto && <span className="text-muted-foreground/50 text-sm">-</span>}
+                            {tarea.oportunidad && (
+                              <span className="text-xs text-amber-600 dark:text-amber-400 block">
+                                Pipeline: {tarea.oportunidad.nombre.length > 25 ? tarea.oportunidad.nombre.substring(0, 25) + '...' : tarea.oportunidad.nombre}
+                              </span>
+                            )}
+                            {!tarea.cliente && !tarea.proyecto && !tarea.oportunidad && <span className="text-muted-foreground/50 text-sm">-</span>}
                           </td>
                           <td className="px-4 py-3">
                             {tarea.fechaLimite ? (
