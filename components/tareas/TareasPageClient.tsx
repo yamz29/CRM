@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, Pencil, List, Columns, X } from 'lucide-react'
+import { AlertTriangle, Pencil, List, Columns, X, Archive, ArchiveRestore } from 'lucide-react'
 import { DeleteTareaButton } from '@/app/tareas/DeleteTareaButton'
 
 interface Tarea {
@@ -19,6 +19,9 @@ interface Tarea {
   avance: number
   fechaLimite: string | Date | null
   responsable: string | null
+  archivada: boolean
+  fechaArchivada: string | null
+  fechaCompletada: string | null
   cliente: { id: number; nombre: string } | null
   proyecto: { id: number; nombre: string } | null
   asignado: { id: number; nombre: string } | null
@@ -57,12 +60,19 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroAsignado, setFiltroAsignado] = useState('')
   const [filtroPrioridad, setFiltroPrioridad] = useState('')
+  const [verArchivadas, setVerArchivadas] = useState(false)
 
   // DnD state
   const draggingId = useRef<number | null>(null)
   const [dragOver, setDragOver] = useState<string | null>(null)
 
   const filtered = tareas.filter((t) => {
+    // Filter by archive state
+    if (verArchivadas) {
+      if (!t.archivada) return false
+    } else {
+      if (t.archivada) return false
+    }
     if (filtroTexto) {
       const q = filtroTexto.toLowerCase()
       const match = t.titulo.toLowerCase().includes(q) ||
@@ -82,7 +92,17 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
     new Date(t.fechaLimite) < today &&
     !['Completada', 'Cancelada'].includes(t.estado)
 
-  const hasFilters = filtroTexto || filtroEstado || filtroAsignado || filtroPrioridad
+  const hasFilters = filtroTexto || filtroEstado || filtroAsignado || filtroPrioridad || verArchivadas
+
+  // ── Archivar / Desarchivar ───────────────────────────────────────
+  async function handleArchivar(id: number, archivar: boolean) {
+    await fetch(`/api/tareas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _archivar: archivar }),
+    })
+    router.refresh()
+  }
 
   // ── Drag & Drop ──────────────────────────────────────────────────────
   async function handleDrop(nuevoEstado: string) {
@@ -142,6 +162,17 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
               <Pencil className="w-3 h-3" />
             </Button>
           </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            title={tarea.archivada ? 'Desarchivar' : 'Archivar'}
+            onClick={() => handleArchivar(tarea.id, !tarea.archivada)}
+          >
+            {tarea.archivada
+              ? <ArchiveRestore className="w-3 h-3 text-amber-500" />
+              : <Archive className="w-3 h-3" />}
+          </Button>
           <DeleteTareaButton id={tarea.id} titulo={tarea.titulo} />
         </div>
       </div>
@@ -215,9 +246,23 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
               {['Alta', 'Media', 'Baja'].map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
 
+            <div className="w-px h-6 bg-border" />
+
+            {/* Toggle archivadas */}
+            <button
+              onClick={() => setVerArchivadas(!verArchivadas)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors
+                ${verArchivadas
+                  ? 'bg-amber-500/10 text-amber-600 border-amber-300 dark:border-amber-800'
+                  : 'bg-card text-muted-foreground border-border hover:bg-muted'}`}
+            >
+              <Archive className="w-3.5 h-3.5" />
+              Archivadas
+            </button>
+
             {hasFilters && (
               <button
-                onClick={() => { setFiltroTexto(''); setFiltroEstado(''); setFiltroAsignado(''); setFiltroPrioridad('') }}
+                onClick={() => { setFiltroTexto(''); setFiltroEstado(''); setFiltroAsignado(''); setFiltroPrioridad(''); setVerArchivadas(false) }}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> Limpiar
@@ -309,6 +354,16 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                                   <Pencil className="w-4 h-4" />
                                 </Button>
                               </Link>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title={tarea.archivada ? 'Desarchivar' : 'Archivar'}
+                                onClick={() => handleArchivar(tarea.id, !tarea.archivada)}
+                              >
+                                {tarea.archivada
+                                  ? <ArchiveRestore className="w-4 h-4 text-amber-500" />
+                                  : <Archive className="w-4 h-4" />}
+                              </Button>
                               <DeleteTareaButton id={tarea.id} titulo={tarea.titulo} />
                             </div>
                           </td>

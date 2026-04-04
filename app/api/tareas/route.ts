@@ -3,6 +3,26 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
+    // Auto-archive: completadas hace más de 7 días sin cambios
+    const sieteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    await prisma.tarea.updateMany({
+      where: {
+        estado: 'Completada',
+        archivada: false,
+        fechaCompletada: { lt: sieteDiasAtras },
+      },
+      data: { archivada: true, fechaArchivada: new Date() },
+    })
+
+    // Auto-delete: archivadas hace más de 6 meses
+    const seisMesesAtras = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
+    await prisma.tarea.deleteMany({
+      where: {
+        archivada: true,
+        fechaArchivada: { lt: seisMesesAtras },
+      },
+    })
+
     const tareas = await prisma.tarea.findMany({
       include: {
         cliente: { select: { id: true, nombre: true } },

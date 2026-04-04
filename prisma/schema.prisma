@@ -394,11 +394,14 @@ model Tarea {
   asignadoId  Int?
   fechaLimite DateTime?
   prioridad   String    @default("Media")
-  estado      String    @default("Pendiente")
-  avance      Int       @default(0)
-  responsable String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  estado          String    @default("Pendiente")
+  avance          Int       @default(0)
+  responsable     String?
+  archivada       Boolean   @default(false)
+  fechaArchivada  DateTime?
+  fechaCompletada DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   cliente   Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   proyecto  Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
