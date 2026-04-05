@@ -26,55 +26,6 @@ interface Props {
   factura?: FacturaData
 }
 
-// ── OCR text extraction for Dominican invoices ──
-function extractInvoiceData(text: string) {
-  const result: any = { ncf: null, rncProveedor: null, numero: null, subtotal: null, impuesto: null, total: null, fecha: null }
-
-  // NCF: B01, B02, E31, etc.
-  const ncfMatch = text.match(/\b[BE]\d{10,13}\b/i)
-  if (ncfMatch) result.ncf = ncfMatch[0].toUpperCase()
-
-  // RNC: 9-11 digits, possibly with dashes
-  const rncRegex = /\b(?:RNC[:\s]*)?(\d[\d-]{7,12}\d)\b/g
-  let m
-  while ((m = rncRegex.exec(text)) !== null) {
-    const cleaned = m[1].replace(/-/g, '')
-    if (cleaned.length >= 9 && cleaned.length <= 11) { result.rncProveedor = cleaned; break }
-  }
-
-  // Total
-  const totalRegex = /(?:total|monto\s*total|total\s*general|total\s*a\s*pagar)[:\s]*(?:RD\$?|DOP)?\s*([\d,]+\.?\d*)/gi
-  const totals: number[] = []
-  while ((m = totalRegex.exec(text)) !== null) totals.push(parseFloat(m[1].replace(/,/g, '')) || 0)
-  if (totals.length > 0) result.total = totals[totals.length - 1]
-
-  // Subtotal
-  const subRegex = /(?:sub\s*total|subtotal|base\s*imponible)[:\s]*(?:RD\$?|DOP)?\s*([\d,]+\.?\d*)/gi
-  while ((m = subRegex.exec(text)) !== null) result.subtotal = parseFloat(m[1].replace(/,/g, '')) || 0
-
-  // ITBIS
-  const itbisRegex = /(?:itbis|i\.t\.b\.i\.s|impuesto)[:\s]*(?:RD\$?|DOP)?\s*([\d,]+\.?\d*)/gi
-  while ((m = itbisRegex.exec(text)) !== null) result.impuesto = parseFloat(m[1].replace(/,/g, '')) || 0
-
-  if (result.total && !result.subtotal && result.impuesto) result.subtotal = result.total - result.impuesto
-
-  // Invoice number
-  const factRegex = /(?:factura|fact|invoice|no\.|nro|número)[:\s#]*(\S+)/gi
-  while ((m = factRegex.exec(text)) !== null) { if (!result.numero) result.numero = m[1].replace(/[:#]/g, '').trim() }
-
-  // Date DD/MM/YYYY
-  const fechaMatch = text.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/)
-  if (fechaMatch) {
-    const [, d, mo, y] = fechaMatch
-    let year = parseInt(y); if (year < 100) year += 2000
-    const month = parseInt(mo), day = parseInt(d)
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      result.fecha = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    }
-  }
-
-  return result
-}
 
 const DESTINOS = [
   { value: 'general', label: 'General' },
@@ -118,7 +69,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
   const itbisNum = parseFloat(itbis) || 0
   const total = subtotalNum + itbisNum
 
-  // ── OCR on file upload (client-side with tesseract.js) ──
+  // ── OCR via Gemini Vision API (server-side) ──
   const runOCR = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setOcrResult('OCR solo funciona con imágenes, no PDFs')
@@ -129,15 +80,18 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     setOcrResult(null)
 
     try {
-      // Dynamic import — runs in browser, downloads lang data from CDN
-      const { recognize } = await import('tesseract.js')
-      const imageUrl = URL.createObjectURL(file)
-      const { data } = await recognize(imageUrl, 'spa')
-      URL.revokeObjectURL(imageUrl)
+      const formData = new FormData()
+      formData.append('archivo', file)
 
-      const text = data.text
-      // Extract data using regex patterns for Dominican invoices
-      const ext = extractInvoiceData(text)
+      const res = await fetch('/api/contabilidad/ocr', { method: 'POST', body: formData })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setOcrResult(`Error OCR: ${data.error}`)
+        return
+      }
+
+      const ext = data.extracted
       let filled = 0
 
       if (ext.ncf && !ncf) { setNcf(ext.ncf); filled++ }
@@ -146,22 +100,21 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
         searchRNC(ext.rncProveedor)
         filled++
       }
+      if (ext.proveedor && !proveedor) { setProveedor(ext.proveedor); filled++ }
       if (ext.numero && !numero) { setNumero(ext.numero); filled++ }
       if (ext.fecha && !fecha) { setFecha(ext.fecha); filled++ }
+      if (ext.descripcion && !descripcion) { setDescripcion(ext.descripcion); filled++ }
       if (ext.subtotal && !subtotal) { setSubtotal(ext.subtotal.toString()); filled++ }
       if (ext.impuesto && !itbis) { setItbis(ext.impuesto.toString()); filled++ }
-      if (ext.total) {
-        if (!subtotal && !ext.subtotal && ext.impuesto) {
-          setSubtotal((ext.total - ext.impuesto).toString())
-          filled++
-        }
+      if (ext.total && !subtotal && !ext.subtotal && ext.impuesto) {
+        setSubtotal((ext.total - ext.impuesto).toString())
+        filled++
       }
 
-      const confidence = Math.round(data.confidence || 0)
       setOcrResult(
         filled > 0
-          ? `OCR completado (${confidence}% confianza) — ${filled} campo${filled > 1 ? 's' : ''} autocompletado${filled > 1 ? 's' : ''}. Verifica los datos.`
-          : `OCR completado (${confidence}% confianza) — no se detectaron datos nuevos.`
+          ? `OCR completado — ${filled} campo${filled > 1 ? 's' : ''} autocompletado${filled > 1 ? 's' : ''}. Verifica los datos.`
+          : 'OCR completado — no se detectaron datos nuevos.'
       )
     } catch (err: any) {
       console.error('OCR error:', err)
@@ -169,7 +122,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     } finally {
       setOcrLoading(false)
     }
-  }, [ncf, rncProveedor, numero, fecha, subtotal, itbis])
+  }, [ncf, rncProveedor, proveedor, numero, fecha, descripcion, subtotal, itbis])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
