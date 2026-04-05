@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer, Grid3x3,
+  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer, Grid3x3, Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -670,6 +670,24 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
     }
   }
 
+  const handleDuplicate = async () => {
+    if (!confirm('¿Duplicar este módulo con todas sus piezas y materiales?')) return
+    setLoading(true); setError(null)
+    try {
+      const res = await fetch(`/api/melamina/${modulo.id}/duplicar`, { method: 'POST' })
+      if (!res.ok) {
+        const d = await res.json()
+        throw new Error(d.error || 'Error al duplicar')
+      }
+      const { id: newId } = await res.json()
+      router.push(`/melamina/${newId}`)
+    } catch (err: any) {
+      setError(err.message || 'Error inesperado')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // ── UI ───────────────────────────────────────────────────────────────────
 
   const inputCls = 'w-full border border-border rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring'
@@ -691,10 +709,16 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
             <p className="text-sm text-muted-foreground">{codigo && <span className="font-mono mr-2">{codigo}</span>}{tipoModulo}</p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={loading}>
-          <Save className="w-4 h-4" />
-          {loading ? 'Guardando...' : 'Guardar'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleDuplicate} disabled={loading}>
+            <Copy className="w-4 h-4" />
+            Duplicar
+          </Button>
+          <Button onClick={handleSave} disabled={loading}>
+            <Save className="w-4 h-4" />
+            {loading ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
       </div>
 
       {error && (
