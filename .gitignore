@@ -24,6 +24,9 @@ data/
 # Archivos subidos por usuarios
 public/uploads/
 
+# Google service account credentials
+google-sa.json
+
 # Backups
 backups/
 

@@ -1,8 +1,12 @@
 import crypto from 'crypto'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 /**
  * Google Drive upload using REST API + Service Account JWT.
  * No heavy SDK — just fetch calls.
+ * Reads credentials from GOOGLE_SERVICE_ACCOUNT_KEY env var (JSON string)
+ * or from google-sa.json file in project root.
  */
 
 function base64url(data: string | Buffer): string {
@@ -10,17 +14,31 @@ function base64url(data: string | Buffer): string {
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-async function getAccessToken(): Promise<string | null> {
+function loadServiceAccountKey(): any | null {
+  // Try env var first
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-  if (!keyJson) return null
+  if (keyJson) {
+    try {
+      return JSON.parse(keyJson)
+    } catch {
+      console.error('Error parsing GOOGLE_SERVICE_ACCOUNT_KEY env var')
+    }
+  }
 
-  let key: any
+  // Fallback: read from google-sa.json file
   try {
-    key = JSON.parse(keyJson)
+    const filePath = path.join(process.cwd(), 'google-sa.json')
+    const content = readFileSync(filePath, 'utf8')
+    return JSON.parse(content)
   } catch {
-    console.error('Error parsing GOOGLE_SERVICE_ACCOUNT_KEY')
+    // File doesn't exist or invalid — Drive not configured
     return null
   }
+}
+
+async function getAccessToken(): Promise<string | null> {
+  const key = loadServiceAccountKey()
+  if (!key) return null
 
   const now = Math.floor(Date.now() / 1000)
   const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
