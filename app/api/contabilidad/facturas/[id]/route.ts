@@ -8,13 +8,11 @@ const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024
 const ALLOWED_EXT = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
 
-async function saveFile(file: File): Promise<string> {
-  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+async function saveFileBuffer(buffer: Buffer, originalName: string): Promise<string> {
+  const ext = originalName.split('.').pop()?.toLowerCase() || ''
   if (!ALLOWED_EXT.includes(ext)) throw new Error('Formato no permitido')
-  if (file.size > MAX_SIZE) throw new Error('Archivo supera 10 MB')
   await mkdir(UPLOAD_DIR, { recursive: true })
   const filename = `factura-${Date.now()}.${ext}`
-  const buffer = Buffer.from(await file.arrayBuffer())
   await writeFile(path.join(UPLOAD_DIR, filename), buffer)
   return `/uploads/facturas/${filename}`
 }
@@ -62,14 +60,16 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       const formData = await request.formData()
       const file = formData.get('archivo') as File | null
       if (file && file.size > 0) {
+        if (file.size > MAX_SIZE) throw new Error('Archivo supera 10 MB')
         // Delete old file
         if (existing.archivoUrl) {
           try { await unlink(path.join(process.cwd(), 'public', existing.archivoUrl)) } catch {}
         }
-        archivoUrl = await saveFile(file)
+        // Read buffer once
+        const buffer = Buffer.from(await file.arrayBuffer())
+        archivoUrl = await saveFileBuffer(buffer, file.name)
         // Upload to Google Drive (best-effort)
         try {
-          const buffer = Buffer.from(await file.arrayBuffer())
           driveUrl = (await uploadToDrive(buffer, file.name, file.type)) || undefined
         } catch (err) {
           console.error('Drive upload failed (continuing):', err)
