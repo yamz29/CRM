@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -517,7 +517,11 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   const [movimientos, setMovimientos] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importResult, setImportResult] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
   const [facturasDisponibles, setFacturasDisponibles] = useState<any[]>([])
+  const importRef = useRef<HTMLInputElement>(null)
 
   const fetchMovimientos = useCallback(async () => {
     if (!cuentaId) return
@@ -544,14 +548,39 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
     if (res.ok) fetchMovimientos()
   }
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !cuentaId) return
+    setImporting(true)
+    setImportResult(null)
+
+    const formData = new FormData()
+    formData.append('archivo', file)
+    formData.append('cuentaId', cuentaId)
+
+    try {
+      const res = await fetch('/api/contabilidad/importar-extracto', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (res.ok) {
+        setImportResult(`${data.importados} importados, ${data.duplicados} duplicados de ${data.total} líneas`)
+        fetchMovimientos()
+      } else {
+        setImportResult(`Error: ${data.error}`)
+      }
+    } catch (err: any) {
+      setImportResult(`Error: ${err.message}`)
+    } finally {
+      setImporting(false)
+      if (importRef.current) importRef.current.value = ''
+    }
+  }
+
   // Load on mount and when account changes
   useState(() => { if (cuentaId) { fetchMovimientos(); fetchFacturas() } })
 
-  const inputCls = 'w-full border border-border rounded-md px-2.5 py-1.5 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring'
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <select value={cuentaId} onChange={(e) => { setCuentaId(e.target.value) }}
           className="px-3 py-2 text-sm border border-border rounded-lg bg-card min-w-[250px]">
           <option value="">Seleccionar cuenta</option>
@@ -563,7 +592,17 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
         <Button onClick={() => setShowAddForm(!showAddForm)} disabled={!cuentaId}>
           <Plus className="w-4 h-4" /> Movimiento
         </Button>
+        <Button variant="outline" onClick={() => importRef.current?.click()} disabled={!cuentaId || importing}>
+          <Upload className="w-4 h-4" /> {importing ? 'Importando...' : 'Importar Extracto'}
+        </Button>
+        <input ref={importRef} type="file" accept=".txt,.csv" onChange={handleImport} className="hidden" />
       </div>
+
+      {importResult && (
+        <div className={`p-3 rounded-lg text-sm ${importResult.startsWith('Error') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'}`}>
+          {importResult}
+        </div>
+      )}
 
       {showAddForm && cuentaId && (
         <MovimientoForm
@@ -576,6 +615,25 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
       {loading && <p className="text-muted-foreground text-sm">Cargando...</p>}
 
       {!loading && movimientos.length > 0 && (
+        <>
+        <div className="grid grid-cols-4 gap-3">
+          <div className="bg-card border border-border rounded-lg p-3 text-center">
+            <p className="text-xs text-muted-foreground">Movimientos</p>
+            <p className="text-lg font-bold">{movimientos.length}</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center">
+            <p className="text-xs text-muted-foreground">Créditos</p>
+            <p className="text-lg font-bold text-green-600">{formatCurrency(movimientos.filter((m: any) => m.tipo === 'credito').reduce((s: number, m: any) => s + m.monto, 0))}</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center">
+            <p className="text-xs text-muted-foreground">Débitos</p>
+            <p className="text-lg font-bold text-red-600">{formatCurrency(movimientos.filter((m: any) => m.tipo === 'debito').reduce((s: number, m: any) => s + m.monto, 0))}</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-3 text-center">
+            <p className="text-xs text-muted-foreground">Sin conciliar</p>
+            <p className="text-lg font-bold text-yellow-600">{movimientos.filter((m: any) => !m.conciliado).length}</p>
+          </div>
+        </div>
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -635,6 +693,7 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {!loading && movimientos.length === 0 && cuentaId && (
