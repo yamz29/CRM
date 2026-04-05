@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, LayoutGrid, List, Search, TrendingUp, DollarSign, Target } from 'lucide-react'
+import { Plus, LayoutGrid, List, Search, TrendingUp, DollarSign, Target, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { OportunidadForm } from './OportunidadForm'
@@ -23,6 +23,8 @@ export interface Oportunidad {
   motivoPerdida: string | null
   notas: string | null
   proyectoId: number | null
+  archivada: boolean
+  fechaArchivada: string | null
   createdAt: string
   updatedAt: string
   cliente: { id: number; nombre: string }
@@ -182,9 +184,15 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
   const [editing, setEditing] = useState<Oportunidad | null>(null)
   const [drawerOp, setDrawerOp] = useState<Oportunidad | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
+  const [verArchivadas, setVerArchivadas] = useState(false)
 
   const filtered = useMemo(() => {
     return oportunidades.filter((o) => {
+      if (verArchivadas) {
+        if (!o.archivada) return false
+      } else {
+        if (o.archivada) return false
+      }
       if (filtroEtapa && o.etapa !== filtroEtapa) return false
       if (filtroResponsable && o.responsable !== filtroResponsable) return false
       if (q) {
@@ -193,14 +201,16 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
       }
       return true
     })
-  }, [oportunidades, q, filtroEtapa, filtroResponsable])
+  }, [oportunidades, q, filtroEtapa, filtroResponsable, verArchivadas])
 
-  // Stats
-  const activas = oportunidades.filter((o) => !['Ganado', 'Perdido'].includes(o.etapa))
+  // Stats (solo no archivadas)
+  const noArchivadas = oportunidades.filter((o) => !o.archivada)
+  const activas = noArchivadas.filter((o) => !['Ganado', 'Perdido'].includes(o.etapa))
   const valorPipeline = activas.reduce((s, o) => s + (o.valor ?? 0), 0)
-  const ganadas = oportunidades.filter((o) => o.etapa === 'Ganado').length
-  const cerradas = ganadas + oportunidades.filter((o) => o.etapa === 'Perdido').length
+  const ganadas = noArchivadas.filter((o) => o.etapa === 'Ganado').length
+  const cerradas = ganadas + noArchivadas.filter((o) => o.etapa === 'Perdido').length
   const tasaCierre = cerradas > 0 ? Math.round((ganadas / cerradas) * 100) : null
+  const totalArchivadas = oportunidades.filter((o) => o.archivada).length
 
   async function reload() {
     const res = await fetch('/api/oportunidades')
@@ -319,6 +329,16 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
           <option value="">Todos los responsables</option>
           {usuarios.map((u) => <option key={u.id} value={u.nombre}>{u.nombre}</option>)}
         </select>
+        <button
+          onClick={() => setVerArchivadas(!verArchivadas)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
+            ${verArchivadas
+              ? 'bg-amber-500/10 text-amber-600 border-amber-300 dark:border-amber-800'
+              : 'bg-card text-muted-foreground border-border hover:bg-muted'}`}
+        >
+          <Archive className="w-3.5 h-3.5" />
+          Archivadas{totalArchivadas > 0 ? ` (${totalArchivadas})` : ''}
+        </button>
         <div className="flex items-center border border-border rounded-lg overflow-hidden">
           <button
             onClick={() => setView('kanban')}

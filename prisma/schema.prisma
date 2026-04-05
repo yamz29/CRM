@@ -747,6 +747,8 @@ model Oportunidad {
   motivoPerdida  String?
   notas          String?
   proyectoId     Int?
+  archivada      Boolean   @default(false)
+  fechaArchivada DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

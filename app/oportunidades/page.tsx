@@ -5,6 +5,26 @@ import { HelpDrawer } from '@/components/help/HelpDrawer'
 export const dynamic = 'force-dynamic'
 
 export default async function OportunidadesPage() {
+  // Auto-archive: Ganadas/Perdidas hace más de 30 días
+  const treintaDiasAtras = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  await prisma.oportunidad.updateMany({
+    where: {
+      etapa: { in: ['Ganado', 'Perdido'] },
+      archivada: false,
+      updatedAt: { lt: treintaDiasAtras },
+    },
+    data: { archivada: true, fechaArchivada: new Date() },
+  })
+
+  // Auto-delete: archivadas hace más de 6 meses
+  const seisMesesAtras = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
+  await prisma.oportunidad.deleteMany({
+    where: {
+      archivada: true,
+      fechaArchivada: { lt: seisMesesAtras },
+    },
+  })
+
   const [oportunidades, clientes, presupuestos, usuarios] = await Promise.all([
     prisma.oportunidad.findMany({
       include: {
@@ -36,6 +56,7 @@ export default async function OportunidadesPage() {
     createdAt: o.createdAt.toISOString(),
     updatedAt: o.updatedAt.toISOString(),
     fechaCierreEst: o.fechaCierreEst?.toISOString() ?? null,
+    fechaArchivada: o.fechaArchivada?.toISOString() ?? null,
   }))
 
   return (

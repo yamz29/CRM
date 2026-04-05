@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
   Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2,
-  ListTodo, Square, CheckSquare, Clock, AlertTriangle
+  ListTodo, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -217,6 +217,16 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
     setTareas(prev => prev.map(t =>
       t.id === tareaId ? { ...t, estado: nuevoEstado } : t
     ))
+  }
+
+  async function handleArchivar(archivar: boolean) {
+    await fetch(`/api/oportunidades/${oportunidad.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _archivar: archivar }),
+    })
+    onSaved()
+    onClose()
   }
 
   async function marcarPerdida() {
@@ -561,6 +571,16 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
         <div className="border-t border-border px-5 py-3 flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => onEdit(oportunidad)} className="gap-1.5">
             <Pencil className="w-3.5 h-3.5" /> Editar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleArchivar(!oportunidad.archivada)}
+            className="gap-1.5 text-muted-foreground"
+          >
+            {oportunidad.archivada
+              ? <><ArchiveRestore className="w-3.5 h-3.5 text-amber-500" /> Desarchivar</>
+              : <><Archive className="w-3.5 h-3.5" /> Archivar</>}
           </Button>
           <div className="flex-1" />
           {isActive && (

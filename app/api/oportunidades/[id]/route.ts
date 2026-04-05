@@ -26,7 +26,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   const body = await req.json()
-  const { nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, motivoPerdida, notas } = body
+  const { nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, motivoPerdida, notas, _archivar } = body
+
+  // Archivar / desarchivar
+  if (typeof _archivar === 'boolean') {
+    const oportunidad = await prisma.oportunidad.update({
+      where: { id: numId },
+      data: {
+        archivada: _archivar,
+        fechaArchivada: _archivar ? new Date() : null,
+      },
+      include: { cliente: { select: { id: true, nombre: true } } },
+    })
+    return NextResponse.json(oportunidad)
+  }
 
   // Check if stage is changing to auto-create tasks
   let etapaAnterior: string | null = null
