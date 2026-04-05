@@ -1,28 +1,39 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle, Image,
+  ArrowLeft, Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle,
+  Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Cliente { id: number; nombre: string }
+interface Proyecto { id: number; nombre: string }
 interface FacturaData {
   id?: number; numero: string; ncf: string; tipo: string
   fecha: string; fechaVencimiento: string; proveedor: string
-  clienteId: string; descripcion: string
-  subtotal: number; impuesto: number; total: number
+  rncProveedor: string; clienteId: string
+  destinoTipo: string; proyectoId: string
+  descripcion: string; subtotal: number; impuesto: number; total: number
   observaciones: string; archivoUrl: string | null
 }
 
 interface Props {
   clientes: Cliente[]
+  proyectos: Proyecto[]
   factura?: FacturaData
 }
 
-export function FacturaForm({ clientes, factura }: Props) {
+const DESTINOS = [
+  { value: 'general', label: 'General' },
+  { value: 'proyecto', label: 'Proyecto' },
+  { value: 'oficina', label: 'Oficina' },
+  { value: 'taller', label: 'Taller' },
+]
+
+export function FacturaForm({ clientes, proyectos, factura }: Props) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const isEdit = !!factura?.id
@@ -33,7 +44,10 @@ export function FacturaForm({ clientes, factura }: Props) {
   const [fecha, setFecha] = useState(factura?.fecha || new Date().toISOString().slice(0, 10))
   const [fechaVencimiento, setFechaVencimiento] = useState(factura?.fechaVencimiento || '')
   const [proveedor, setProveedor] = useState(factura?.proveedor || '')
+  const [rncProveedor, setRncProveedor] = useState(factura?.rncProveedor || '')
   const [clienteId, setClienteId] = useState(factura?.clienteId || '')
+  const [destinoTipo, setDestinoTipo] = useState(factura?.destinoTipo || 'general')
+  const [proyectoId, setProyectoId] = useState(factura?.proyectoId || '')
   const [descripcion, setDescripcion] = useState(factura?.descripcion || '')
   const [subtotal, setSubtotal] = useState(factura?.subtotal?.toString() || '')
   const [itbis, setItbis] = useState(factura?.impuesto?.toString() || '')
@@ -43,9 +57,69 @@ export function FacturaForm({ clientes, factura }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // OCR state
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrResult, setOcrResult] = useState<string | null>(null)
+  // RNC match state
+  const [rncMatch, setRncMatch] = useState<string | null>(null)
+  const [rncSearching, setRncSearching] = useState(false)
+
   const subtotalNum = parseFloat(subtotal) || 0
   const itbisNum = parseFloat(itbis) || 0
   const total = subtotalNum + itbisNum
+
+  // ── OCR on file upload ──
+  const runOCR = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setOcrResult('OCR solo funciona con imágenes, no PDFs')
+      return
+    }
+
+    setOcrLoading(true)
+    setOcrResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('archivo', file)
+      const res = await fetch('/api/contabilidad/ocr', { method: 'POST', body: formData })
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error)
+
+      const ext = data.extracted
+      let filled = 0
+
+      if (ext.ncf && !ncf) { setNcf(ext.ncf); filled++ }
+      if (ext.rncProveedor && !rncProveedor) {
+        setRncProveedor(ext.rncProveedor)
+        searchRNC(ext.rncProveedor)
+        filled++
+      }
+      if (ext.numero && !numero) { setNumero(ext.numero); filled++ }
+      if (ext.fecha && !fecha) { setFecha(ext.fecha); filled++ }
+      if (ext.subtotal && !subtotal) { setSubtotal(ext.subtotal.toString()); filled++ }
+      if (ext.impuesto && !itbis) { setItbis(ext.impuesto.toString()); filled++ }
+      if (ext.total) {
+        // If total was detected, and we didn't have subtotal, derive
+        const detectedTotal = ext.total
+        if (!subtotal && !ext.subtotal && ext.impuesto) {
+          setSubtotal((detectedTotal - ext.impuesto).toString())
+          filled++
+        }
+      }
+
+      const confidence = Math.round(data.confidence || 0)
+      setOcrResult(
+        filled > 0
+          ? `OCR completado (${confidence}% confianza) — ${filled} campo${filled > 1 ? 's' : ''} autocompletado${filled > 1 ? 's' : ''}. Verifica los datos.`
+          : `OCR completado (${confidence}% confianza) — no se detectaron datos nuevos.`
+      )
+    } catch (err: any) {
+      setOcrResult(`Error OCR: ${err.message}`)
+    } finally {
+      setOcrLoading(false)
+    }
+  }, [ncf, rncProveedor, numero, fecha, subtotal, itbis])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -53,15 +127,44 @@ export function FacturaForm({ clientes, factura }: Props) {
       setArchivo(file)
       if (file.type.startsWith('image/')) {
         setArchivoPreview(URL.createObjectURL(file))
+        // Auto-run OCR
+        runOCR(file)
       } else {
         setArchivoPreview(file.name)
       }
     }
   }
 
+  // ── RNC search ──
+  const searchRNC = useCallback(async (rnc: string) => {
+    if (rnc.length < 9) { setRncMatch(null); return }
+    setRncSearching(true)
+    try {
+      const res = await fetch(`/api/contabilidad/rnc-search?rnc=${encodeURIComponent(rnc)}`)
+      const data = await res.json()
+
+      if (data.cliente) {
+        setRncMatch(`Cliente encontrado: ${data.cliente.nombre}`)
+        if (!proveedor) setProveedor(data.cliente.nombre)
+      } else if (data.proveedorPrevio) {
+        setRncMatch(`Proveedor previo: ${data.proveedorPrevio.nombre}`)
+        if (!proveedor) setProveedor(data.proveedorPrevio.nombre)
+      } else {
+        setRncMatch('RNC no encontrado en el sistema')
+      }
+    } catch {
+      setRncMatch(null)
+    } finally {
+      setRncSearching(false)
+    }
+  }, [proveedor])
+
+  const handleRncBlur = () => {
+    if (rncProveedor.length >= 9) searchRNC(rncProveedor)
+  }
+
   const calcITBIS = () => {
-    const rate = 0.18
-    setItbis((subtotalNum * rate).toFixed(2))
+    setItbis((subtotalNum * 0.18).toFixed(2))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,8 +178,13 @@ export function FacturaForm({ clientes, factura }: Props) {
     formData.append('tipo', tipo)
     formData.append('fecha', fecha)
     if (fechaVencimiento) formData.append('fechaVencimiento', fechaVencimiento)
-    if (tipo === 'egreso') formData.append('proveedor', proveedor)
+    if (tipo === 'egreso') {
+      formData.append('proveedor', proveedor)
+      formData.append('rncProveedor', rncProveedor)
+    }
     if (tipo === 'ingreso' && clienteId) formData.append('clienteId', clienteId)
+    formData.append('destinoTipo', destinoTipo)
+    if (destinoTipo === 'proyecto' && proyectoId) formData.append('proyectoId', proyectoId)
     formData.append('descripcion', descripcion)
     formData.append('subtotal', subtotalNum.toString())
     formData.append('impuesto', itbisNum.toString())
@@ -84,7 +192,7 @@ export function FacturaForm({ clientes, factura }: Props) {
     formData.append('observaciones', observaciones)
     if (archivo) formData.append('archivo', archivo)
 
-    const url = isEdit ? `/api/contabilidad/facturas/${factura.id}` : '/api/contabilidad/facturas'
+    const url = isEdit ? `/api/contabilidad/facturas/${factura!.id}` : '/api/contabilidad/facturas'
     const method = isEdit ? 'PUT' : 'POST'
 
     try {
@@ -121,7 +229,73 @@ export function FacturaForm({ clientes, factura }: Props) {
       {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-800 text-sm dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Tipo */}
+
+        {/* ── Upload + OCR ── */}
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <ScanLine className="w-4 h-4" /> Foto / Archivo de Factura
+          </h3>
+          <p className="text-xs text-muted-foreground">Sube una foto y el sistema intentará leer los datos automáticamente (OCR)</p>
+
+          <div
+            onClick={() => fileRef.current?.click()}
+            className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-muted/20 transition-colors relative"
+          >
+            {ocrLoading && (
+              <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
+                <div className="flex items-center gap-2 text-primary">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm font-medium">Procesando OCR...</span>
+                </div>
+              </div>
+            )}
+            {archivoPreview && (archivoPreview.startsWith('blob:') || archivoPreview.startsWith('/uploads')) ? (
+              <div className="space-y-2">
+                {archivoPreview.match(/\.(jpg|jpeg|png|webp)$/i) || archivoPreview.startsWith('blob:') ? (
+                  <img src={archivoPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                ) : (
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
+                )}
+                <p className="text-xs text-muted-foreground">{archivo?.name || 'Archivo actual'}</p>
+              </div>
+            ) : (
+              <div>
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Click para subir foto o PDF</p>
+                <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP, PDF — Máx. 10MB</p>
+              </div>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" />
+
+          {(archivo || archivoPreview) && (
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); if (fileRef.current) fileRef.current.value = ''; setOcrResult(null) }}>
+                <X className="w-3.5 h-3.5" /> Quitar archivo
+              </Button>
+              {archivo && archivo.type.startsWith('image/') && !ocrLoading && (
+                <Button type="button" variant="outline" size="sm" onClick={() => runOCR(archivo)}>
+                  <ScanLine className="w-3.5 h-3.5" /> Re-procesar OCR
+                </Button>
+              )}
+            </div>
+          )}
+
+          {ocrResult && (
+            <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+              ocrResult.includes('Error') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
+              ocrResult.includes('autocompletado') ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
+              'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+            }`}>
+              {ocrResult.includes('Error') ? <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> :
+               ocrResult.includes('autocompletado') ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> :
+               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}
+              <span>{ocrResult}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Tipo ── */}
         <div className="flex gap-3">
           <button type="button" onClick={() => setTipo('egreso')}
             className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-colors ${
@@ -141,7 +315,7 @@ export function FacturaForm({ clientes, factura }: Props) {
           </button>
         </div>
 
-        {/* Main fields */}
+        {/* ── Main fields ── */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -165,11 +339,31 @@ export function FacturaForm({ clientes, factura }: Props) {
             </div>
           </div>
 
-          {/* Proveedor or Cliente */}
+          {/* Proveedor / Cliente */}
           {tipo === 'egreso' ? (
-            <div>
-              <label className={labelCls}>Proveedor / Suplidor</label>
-              <input value={proveedor} onChange={(e) => setProveedor(e.target.value)} className={inputCls} placeholder="Nombre del proveedor" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>RNC Proveedor</label>
+                <div className="relative">
+                  <input
+                    value={rncProveedor}
+                    onChange={(e) => setRncProveedor(e.target.value)}
+                    onBlur={handleRncBlur}
+                    className={inputCls}
+                    placeholder="123456789"
+                  />
+                  {rncSearching && <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                </div>
+                {rncMatch && (
+                  <p className={`text-xs mt-1 ${rncMatch.includes('encontrado') || rncMatch.includes('previo') ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {rncMatch}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className={labelCls}>Proveedor / Suplidor</label>
+                <input value={proveedor} onChange={(e) => setProveedor(e.target.value)} className={inputCls} placeholder="Nombre del proveedor" />
+              </div>
             </div>
           ) : (
             <div>
@@ -187,7 +381,31 @@ export function FacturaForm({ clientes, factura }: Props) {
           </div>
         </div>
 
-        {/* Montos */}
+        {/* ── Destino / Proyecto ── */}
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <FolderOpen className="w-4 h-4" /> Asignar a
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Destino</label>
+              <select value={destinoTipo} onChange={(e) => setDestinoTipo(e.target.value)} className={inputCls}>
+                {DESTINOS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </div>
+            {destinoTipo === 'proyecto' && (
+              <div>
+                <label className={labelCls}>Proyecto</label>
+                <select value={proyectoId} onChange={(e) => setProyectoId(e.target.value)} className={inputCls}>
+                  <option value="">Seleccionar proyecto...</option>
+                  {proyectos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Montos ── */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <h3 className="font-semibold text-foreground">Montos</h3>
           <div className="grid grid-cols-3 gap-4">
@@ -211,57 +429,13 @@ export function FacturaForm({ clientes, factura }: Props) {
           </div>
         </div>
 
-        {/* Archivo */}
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-foreground flex items-center gap-2">
-            <Image className="w-4 h-4" /> Foto / Archivo de Factura
-          </h3>
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 hover:bg-muted/20 transition-colors"
-          >
-            {archivoPreview && archivoPreview.startsWith('blob:') ? (
-              <div className="space-y-2">
-                <img src={archivoPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
-                <p className="text-xs text-muted-foreground">{archivo?.name}</p>
-              </div>
-            ) : archivoPreview && archivoPreview.startsWith('/uploads') ? (
-              <div className="space-y-2">
-                {archivoPreview.match(/\.(jpg|jpeg|png|webp)$/i) ? (
-                  <img src={archivoPreview} alt="Factura" className="max-h-48 mx-auto rounded-lg" />
-                ) : (
-                  <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
-                )}
-                <p className="text-xs text-muted-foreground">Archivo actual</p>
-              </div>
-            ) : archivoPreview ? (
-              <div className="space-y-2">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">{archivoPreview}</p>
-              </div>
-            ) : (
-              <div>
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Click para subir foto o PDF</p>
-                <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP, PDF — Máx. 10MB</p>
-              </div>
-            )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" />
-          {(archivo || archivoPreview) && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); if (fileRef.current) fileRef.current.value = '' }}>
-              <X className="w-3.5 h-3.5" /> Quitar archivo
-            </Button>
-          )}
-        </div>
-
-        {/* Observaciones */}
+        {/* ── Observaciones ── */}
         <div className="bg-card border border-border rounded-xl p-5">
           <label className={labelCls}>Observaciones</label>
           <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className={inputCls} rows={2} />
         </div>
 
-        {/* Submit */}
+        {/* ── Submit ── */}
         <div className="flex justify-end gap-3">
           <Link href="/contabilidad"><Button type="button" variant="outline">Cancelar</Button></Link>
           <Button type="submit" disabled={loading}>

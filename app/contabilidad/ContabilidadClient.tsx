@@ -15,11 +15,14 @@ import { formatCurrency } from '@/lib/utils'
 // ── Types ────────────────────────────────────────────────────────────────
 
 interface Cliente { id: number; nombre: string }
+interface Proyecto { id: number; nombre: string }
 interface Factura {
   id: number; numero: string; ncf: string | null; tipo: string
   fecha: string; fechaVencimiento: string | null
-  proveedor: string | null; clienteId: number | null
-  cliente: Cliente | null; descripcion: string | null
+  proveedor: string | null; rncProveedor: string | null
+  clienteId: number | null; cliente: Cliente | null
+  destinoTipo: string; proyectoId: number | null; proyecto: Proyecto | null
+  descripcion: string | null
   subtotal: number; impuesto: number; total: number; montoPagado: number
   estado: string; archivoUrl: string | null; observaciones: string | null
   _count: { pagos: number }
@@ -309,6 +312,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Cliente/Proveedor</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">NCF</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Destino</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Total</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Pagado</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Estado</th>
@@ -331,6 +335,13 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                         <td className="px-4 py-3 text-muted-foreground">{new Date(f.fecha).toLocaleDateString('es-DO')}</td>
                         <td className="px-4 py-3">{f.tipo === 'ingreso' ? f.cliente?.nombre || '—' : f.proveedor || '—'}</td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{f.ncf || '—'}</td>
+                        <td className="px-4 py-3 text-xs">
+                          {f.proyecto ? (
+                            <span className="text-primary">{f.proyecto.nombre}</span>
+                          ) : (
+                            <span className="capitalize text-muted-foreground">{f.destinoTipo}</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-right font-semibold tabular-nums">{formatCurrency(f.total)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(f.montoPagado)}</td>
                         <td className="px-4 py-3 text-center">
@@ -352,7 +363,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                     )
                   })}
                   {facturasFiltradas.length === 0 && (
-                    <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">No se encontraron facturas</td></tr>
+                    <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">No se encontraron facturas</td></tr>
                   )}
                 </tbody>
               </table>

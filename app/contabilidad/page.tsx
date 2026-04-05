@@ -7,6 +7,7 @@ export default async function ContabilidadPage() {
       orderBy: { fecha: 'desc' },
       include: {
         cliente: { select: { id: true, nombre: true } },
+        proyecto: { select: { id: true, nombre: true } },
         _count: { select: { pagos: true } },
       },
     }),

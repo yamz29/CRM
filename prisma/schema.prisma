@@ -59,6 +59,7 @@ model Proyecto {
   cronogramas     Cronograma[]
   bitacora        BitacoraEntrada[]
   ordenesProduccion OrdenProduccion[]
+  facturas          Factura[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -1028,11 +1029,17 @@ model Factura {
   fecha            DateTime
   fechaVencimiento DateTime?
 
-  // Egreso → proveedor (texto libre)
+  // Egreso → proveedor
   proveedor        String?
+  rncProveedor     String?                            // RNC del proveedor
   // Ingreso → cliente existente
   clienteId        Int?
   cliente          Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  // Destino del gasto
+  destinoTipo      String    @default("general")      // proyecto | oficina | taller | general
+  proyectoId       Int?
+  proyecto         Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
 
   descripcion      String?
   subtotal         Float     @default(0)
@@ -1053,6 +1060,7 @@ model Factura {
   @@index([tipo])
   @@index([estado])
   @@index([clienteId])
+  @@index([proyectoId])
   @@index([fecha])
   @@map("factura")
 }

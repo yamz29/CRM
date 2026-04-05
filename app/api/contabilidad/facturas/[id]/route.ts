@@ -29,6 +29,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
       where: { id },
       include: {
         cliente: { select: { id: true, nombre: true } },
+        proyecto: { select: { id: true, nombre: true } },
         pagos: {
           include: { cuentaBancaria: { select: { id: true, nombre: true, banco: true } } },
           orderBy: { fecha: 'desc' },
@@ -71,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       data = await request.json()
     }
 
-    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, clienteId, descripcion, subtotal, impuesto, total, estado, observaciones } = data
+    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, impuesto, total, estado, observaciones } = data
 
     const updateData: any = {}
     if (numero !== undefined) updateData.numero = numero.toString().trim()
@@ -80,7 +81,10 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     if (fecha !== undefined) updateData.fecha = new Date(fecha)
     if (fechaVencimiento !== undefined) updateData.fechaVencimiento = fechaVencimiento ? new Date(fechaVencimiento) : null
     if (proveedor !== undefined) updateData.proveedor = proveedor || null
+    if (rncProveedor !== undefined) updateData.rncProveedor = rncProveedor || null
     if (clienteId !== undefined) updateData.clienteId = clienteId ? parseInt(String(clienteId)) : null
+    if (destinoTipo !== undefined) updateData.destinoTipo = destinoTipo || 'general'
+    if (proyectoId !== undefined) updateData.proyectoId = proyectoId ? parseInt(String(proyectoId)) : null
     if (descripcion !== undefined) updateData.descripcion = descripcion || null
     if (subtotal !== undefined) updateData.subtotal = parseFloat(String(subtotal)) || 0
     if (impuesto !== undefined) updateData.impuesto = parseFloat(String(impuesto)) || 0
@@ -92,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     const factura = await prisma.factura.update({
       where: { id },
       data: updateData,
-      include: { cliente: { select: { id: true, nombre: true } } },
+      include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
 
     return NextResponse.json(factura)

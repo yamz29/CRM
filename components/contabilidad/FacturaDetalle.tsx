@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, ArrowUpCircle, ArrowDownCircle, Plus, FileText,
   CheckCircle2, Clock, XCircle, ArrowRightLeft, CreditCard,
-  ExternalLink, Trash2, Ban,
+  ExternalLink, Trash2, Ban, Pencil, FolderOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -20,8 +20,10 @@ interface Pago {
 interface Factura {
   id: number; numero: string; ncf: string | null; tipo: string
   fecha: string; fechaVencimiento: string | null
-  proveedor: string | null; clienteId: number | null
-  cliente: { id: number; nombre: string } | null
+  proveedor: string | null; rncProveedor: string | null
+  clienteId: number | null; cliente: { id: number; nombre: string } | null
+  destinoTipo: string; proyectoId: number | null
+  proyecto: { id: number; nombre: string } | null
   descripcion: string | null; subtotal: number; impuesto: number
   total: number; montoPagado: number; estado: string
   archivoUrl: string | null; observaciones: string | null
@@ -88,6 +90,9 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
           </div>
         </div>
         <div className="flex gap-2">
+          <Link href={`/contabilidad/facturas/${factura.id}/editar`}>
+            <Button variant="outline"><Pencil className="w-4 h-4" /> Editar</Button>
+          </Link>
           {factura.estado !== 'anulada' && factura.estado !== 'pagada' && (
             <Button variant="outline" onClick={handleAnular}>
               <Ban className="w-4 h-4" /> Anular
@@ -121,10 +126,29 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
                   {factura.tipo === 'ingreso' ? (factura.cliente?.nombre || 'Sin cliente') : (factura.proveedor || 'Sin proveedor')}
                 </p>
               </div>
+              {factura.rncProveedor && (
+                <div>
+                  <p className="text-xs text-muted-foreground">RNC Proveedor</p>
+                  <p className="font-medium font-mono">{factura.rncProveedor}</p>
+                </div>
+              )}
               {factura.fechaVencimiento && (
                 <div>
                   <p className="text-xs text-muted-foreground">Vencimiento</p>
                   <p className="font-medium">{new Date(factura.fechaVencimiento).toLocaleDateString('es-DO')}</p>
+                </div>
+              )}
+              {(factura.destinoTipo !== 'general' || factura.proyecto) && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Asignado a</p>
+                  <p className="flex items-center gap-1 font-medium">
+                    <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                    {factura.proyecto ? (
+                      <Link href={`/proyectos/${factura.proyecto.id}`} className="text-primary hover:underline">{factura.proyecto.nombre}</Link>
+                    ) : (
+                      <span className="capitalize">{factura.destinoTipo}</span>
+                    )}
+                  </p>
                 </div>
               )}
             </div>

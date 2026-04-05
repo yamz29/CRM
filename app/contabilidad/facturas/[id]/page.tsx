@@ -16,6 +16,7 @@ export default async function FacturaDetallePage({
       where: { id },
       include: {
         cliente: { select: { id: true, nombre: true } },
+        proyecto: { select: { id: true, nombre: true } },
         pagos: {
           include: { cuentaBancaria: { select: { id: true, nombre: true, banco: true } } },
           orderBy: { fecha: 'desc' },

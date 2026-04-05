@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       { proveedor: { contains: q, mode: 'insensitive' } },
       { descripcion: { contains: q, mode: 'insensitive' } },
       { cliente: { nombre: { contains: q, mode: 'insensitive' } } },
+      { rncProveedor: { contains: q, mode: 'insensitive' } },
     ]
   }
 
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           cliente: { select: { id: true, nombre: true } },
+          proyecto: { select: { id: true, nombre: true } },
           _count: { select: { pagos: true } },
         },
         orderBy: { fecha: 'desc' },
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
       data = await request.json()
     }
 
-    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, clienteId, descripcion, subtotal, impuesto, total, observaciones } = data
+    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, impuesto, total, observaciones } = data
 
     if (!numero?.toString().trim()) {
       return NextResponse.json({ error: 'El número de factura es requerido' }, { status: 400 })
@@ -122,7 +124,10 @@ export async function POST(request: NextRequest) {
         fecha: new Date(fecha || Date.now()),
         fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : null,
         proveedor: proveedor || null,
+        rncProveedor: rncProveedor || null,
         clienteId: clienteId ? parseInt(String(clienteId)) : null,
+        destinoTipo: destinoTipo || 'general',
+        proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
         descripcion: descripcion || null,
         subtotal: parseFloat(String(subtotal)) || 0,
         impuesto: parseFloat(String(impuesto)) || 0,
@@ -130,7 +135,7 @@ export async function POST(request: NextRequest) {
         observaciones: observaciones || null,
         archivoUrl,
       },
-      include: { cliente: { select: { id: true, nombre: true } } },
+      include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
 
     return NextResponse.json(factura, { status: 201 })
