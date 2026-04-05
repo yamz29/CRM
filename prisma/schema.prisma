@@ -27,6 +27,7 @@ model Cliente {
   tareas         Tarea[]
   registrosHoras RegistroHoras[]
   oportunidades  Oportunidad[]
+  facturas       Factura[]
 }
 
 model Proyecto {
@@ -998,4 +999,103 @@ model MaterialOrdenProduccion {
 
   @@index([ordenId])
   @@map("material_orden_produccion")
+}
+
+// ── CONTABILIDAD ─────────────────────────────────────────────────────────
+
+model CuentaBancaria {
+  id            Int      @id @default(autoincrement())
+  nombre        String                             // ej: "Cuenta Principal BHD"
+  banco         String                             // ej: "Banco BHD"
+  numeroCuenta  String?                            // parcial o enmascarado
+  tipoCuenta    String   @default("corriente")     // corriente | ahorro
+  moneda        String   @default("RD$")
+  saldoInicial  Float    @default(0)
+  activa        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+
+  movimientos MovimientoBancario[]
+  pagos       PagoFactura[]
+
+  @@map("cuenta_bancaria")
+}
+
+model Factura {
+  id               Int       @id @default(autoincrement())
+  numero           String                            // número de factura
+  ncf              String?                            // NCF / e-CF (comprobante fiscal)
+  tipo             String                             // ingreso | egreso
+  fecha            DateTime
+  fechaVencimiento DateTime?
+
+  // Egreso → proveedor (texto libre)
+  proveedor        String?
+  // Ingreso → cliente existente
+  clienteId        Int?
+  cliente          Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  descripcion      String?
+  subtotal         Float     @default(0)
+  impuesto         Float     @default(0)              // ITBIS
+  total            Float     @default(0)
+  montoPagado      Float     @default(0)              // sum of pagos
+
+  estado           String    @default("pendiente")    // pendiente | parcial | pagada | anulada
+  archivoUrl       String?                            // foto o scan
+  observaciones    String?
+
+  creadoEn         DateTime  @default(now())
+  actualizadoEn    DateTime  @updatedAt
+
+  pagos            PagoFactura[]
+  movimientos      MovimientoBancario[]
+
+  @@index([tipo])
+  @@index([estado])
+  @@index([clienteId])
+  @@index([fecha])
+  @@map("factura")
+}
+
+model PagoFactura {
+  id               Int       @id @default(autoincrement())
+  facturaId        Int
+  factura          Factura   @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  fecha            DateTime
+  monto            Float
+  metodoPago       String    @default("Transferencia") // Efectivo | Transferencia | Cheque | Tarjeta
+  referencia       String?                              // nro. cheque, ref transferencia
+
+  cuentaBancariaId Int?
+  cuentaBancaria   CuentaBancaria? @relation(fields: [cuentaBancariaId], references: [id], onDelete: SetNull)
+
+  observaciones    String?
+  creadoEn         DateTime  @default(now())
+
+  @@index([facturaId])
+  @@index([cuentaBancariaId])
+  @@map("pago_factura")
+}
+
+model MovimientoBancario {
+  id               Int       @id @default(autoincrement())
+  cuentaBancariaId Int
+  cuentaBancaria   CuentaBancaria @relation(fields: [cuentaBancariaId], references: [id], onDelete: Cascade)
+
+  fecha            DateTime
+  tipo             String                              // debito | credito
+  monto            Float
+  descripcion      String
+  referencia       String?
+
+  conciliado       Boolean   @default(false)
+  facturaId        Int?
+  factura          Factura?  @relation(fields: [facturaId], references: [id], onDelete: SetNull)
+
+  creadoEn         DateTime  @default(now())
+
+  @@index([cuentaBancariaId])
+  @@index([conciliado])
+  @@map("movimiento_bancario")
 }
