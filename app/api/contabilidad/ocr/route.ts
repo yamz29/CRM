@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const base64 = buffer.toString('base64')
 
     // Call Gemini Vision API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
 
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
