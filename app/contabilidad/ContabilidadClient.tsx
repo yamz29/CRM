@@ -384,23 +384,28 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cuentas.map((c) => (
+            {cuentas.map((c) => {
+              const esTarjeta = c.tipoCuenta === 'tarjeta_credito'
+              return (
               <div key={c.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold text-foreground">{c.nombre}</h3>
                     <p className="text-sm text-muted-foreground">{c.banco}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
-                    <Building2 className="w-4 h-4" />
+                  <div className={`p-2 rounded-lg ${esTarjeta ? 'bg-purple-500/10 text-purple-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                    {esTarjeta ? <CreditCard className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   </div>
                 </div>
-                {c.numeroCuenta && (
-                  <p className="text-xs font-mono text-muted-foreground">Cuenta: {c.numeroCuenta}</p>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${esTarjeta ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                    {esTarjeta ? 'Tarjeta de Crédito' : c.tipoCuenta === 'ahorro' ? 'Ahorro' : 'Corriente'}
+                  </span>
+                  {c.numeroCuenta && <span className="text-xs font-mono text-muted-foreground">{c.numeroCuenta}</span>}
+                </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div>
-                    <p className="text-xs text-muted-foreground">Saldo inicial</p>
+                    <p className="text-xs text-muted-foreground">{esTarjeta ? 'Límite' : 'Saldo inicial'}</p>
                     <p className="text-lg font-bold tabular-nums">{formatCurrency(c.saldoInicial)}</p>
                   </div>
                   <div className="flex gap-1">
@@ -411,7 +416,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
             {cuentas.length === 0 && (
               <div className="col-span-full text-center py-12 text-muted-foreground">
                 <Building2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
@@ -488,6 +493,7 @@ function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria
           <select value={tipoCuenta} onChange={(e) => setTipoCuenta(e.target.value)} className={inputCls}>
             <option value="corriente">Corriente</option>
             <option value="ahorro">Ahorro</option>
+            <option value="tarjeta_credito">Tarjeta de Crédito</option>
           </select>
         </div>
         <div>
@@ -498,7 +504,7 @@ function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria
           </select>
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground">Saldo inicial</label>
+          <label className="text-xs font-medium text-muted-foreground">{tipoCuenta === 'tarjeta_credito' ? 'Límite de crédito' : 'Saldo inicial'}</label>
           <input type="number" step="0.01" value={saldoInicial} onChange={(e) => setSaldoInicial(e.target.value)} className={inputCls} />
         </div>
         <div className="col-span-full flex justify-end gap-2 mt-2">
