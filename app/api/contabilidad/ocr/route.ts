@@ -34,11 +34,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 })
     }
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    // Validate file type (images + PDF)
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Solo se aceptan imágenes (JPG, PNG, WebP)' },
+        { error: 'Solo se aceptan imágenes (JPG, PNG, WebP) o PDF' },
         { status: 400 }
       )
     }

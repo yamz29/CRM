@@ -71,8 +71,9 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
   // ── OCR via Gemini Vision API (server-side) ──
   const runOCR = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setOcrResult('OCR solo funciona con imágenes, no PDFs')
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      setOcrResult('OCR solo funciona con imágenes o PDF')
       return
     }
 
@@ -130,11 +131,11 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       setArchivo(file)
       if (file.type.startsWith('image/')) {
         setArchivoPreview(URL.createObjectURL(file))
-        // Auto-run OCR
-        runOCR(file)
       } else {
         setArchivoPreview(file.name)
       }
+      // Auto-run OCR for images and PDFs
+      runOCR(file)
     }
   }
 
@@ -276,7 +277,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
               <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); if (fileRef.current) fileRef.current.value = ''; setOcrResult(null) }}>
                 <X className="w-3.5 h-3.5" /> Quitar archivo
               </Button>
-              {archivo && archivo.type.startsWith('image/') && !ocrLoading && (
+              {archivo && !ocrLoading && (
                 <Button type="button" variant="outline" size="sm" onClick={() => runOCR(archivo)}>
                   <ScanLine className="w-3.5 h-3.5" /> Re-procesar OCR
                 </Button>
