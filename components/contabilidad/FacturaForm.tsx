@@ -134,8 +134,8 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       } else {
         setArchivoPreview(file.name)
       }
-      // Auto-run OCR for images and PDFs
-      runOCR(file)
+      // OCR disabled — manual entry preferred
+      // runOCR(file)
     }
   }
 
@@ -234,25 +234,17 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* ── Upload + OCR ── */}
+        {/* ── Upload ── */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <h3 className="font-semibold text-foreground flex items-center gap-2">
-            <ScanLine className="w-4 h-4" /> Foto / Archivo de Factura
+            <Upload className="w-4 h-4" /> Foto / Archivo de Factura
           </h3>
-          <p className="text-xs text-muted-foreground">Sube una foto y el sistema intentará leer los datos automáticamente (OCR)</p>
+          <p className="text-xs text-muted-foreground">Sube una foto o PDF de la factura</p>
 
           <div
             onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-muted/20 transition-colors relative"
+            className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-muted/20 transition-colors"
           >
-            {ocrLoading && (
-              <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
-                <div className="flex items-center gap-2 text-primary">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-sm font-medium">Procesando OCR...</span>
-                </div>
-              </div>
-            )}
             {archivoPreview && (archivoPreview.startsWith('blob:') || archivoPreview.startsWith('/uploads')) ? (
               <div className="space-y-2">
                 {archivoPreview.match(/\.(jpg|jpeg|png|webp)$/i) || archivoPreview.startsWith('blob:') ? (
@@ -274,29 +266,12 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
           {(archivo || archivoPreview) && (
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); if (fileRef.current) fileRef.current.value = ''; setOcrResult(null) }}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); if (fileRef.current) fileRef.current.value = ''; }}>
                 <X className="w-3.5 h-3.5" /> Quitar archivo
               </Button>
-              {archivo && !ocrLoading && (
-                <Button type="button" variant="outline" size="sm" onClick={() => runOCR(archivo)}>
-                  <ScanLine className="w-3.5 h-3.5" /> Re-procesar OCR
-                </Button>
-              )}
             </div>
           )}
 
-          {ocrResult && (
-            <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
-              ocrResult.includes('Error') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
-              ocrResult.includes('autocompletado') ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
-              'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-            }`}>
-              {ocrResult.includes('Error') ? <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> :
-               ocrResult.includes('autocompletado') ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> :
-               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}
-              <span>{ocrResult}</span>
-            </div>
-          )}
         </div>
 
         {/* ── Tipo ── */}
