@@ -252,7 +252,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
             {archivoPreview && (archivoPreview.startsWith('blob:') || archivoPreview.startsWith('/uploads')) ? (
               <div className="space-y-2">
                 {archivoPreview.match(/\.(jpg|jpeg|png|webp)$/i) || archivoPreview.startsWith('blob:') ? (
-                  <img src={archivoPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                  <img src={archivoPreview.startsWith('/uploads') ? `/api${archivoPreview}` : archivoPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
                 ) : (
                   <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
                 )}

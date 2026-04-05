@@ -37,6 +37,12 @@ const ESTADOS_BADGE: Record<string, { color: string; icon: any; label: string }>
   anulada: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle, label: 'Anulada' },
 }
 
+function fileUrl(archivoUrl: string | null) {
+  if (!archivoUrl) return ''
+  // Serve via API route to handle dynamic uploads in production
+  return archivoUrl.startsWith('/uploads/') ? `/api${archivoUrl}` : archivoUrl
+}
+
 export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: Factura; cuentas: Cuenta[] }) {
   const router = useRouter()
   const [factura, setFactura] = useState(initialFactura)
@@ -260,11 +266,11 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
                 <FileText className="w-4 h-4" /> Documento adjunto
               </h3>
               {factura.archivoUrl.match(/\.(jpg|jpeg|png|webp)$/i) ? (
-                <a href={factura.archivoUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={factura.archivoUrl} alt="Factura" className="rounded-lg border border-border max-h-64 w-full object-contain" />
+                <a href={fileUrl(factura.archivoUrl)} target="_blank" rel="noopener noreferrer">
+                  <img src={fileUrl(factura.archivoUrl)} alt="Factura" className="rounded-lg border border-border max-h-64 w-full object-contain" />
                 </a>
               ) : (
-                <a href={factura.archivoUrl} target="_blank" rel="noopener noreferrer"
+                <a href={fileUrl(factura.archivoUrl)} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 p-3 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
                 >
                   <FileText className="w-5 h-5 text-primary" />

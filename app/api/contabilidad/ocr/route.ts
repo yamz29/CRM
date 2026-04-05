@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Tesseract from 'tesseract.js'
+import { recognize } from 'tesseract.js'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 
@@ -7,19 +7,12 @@ const TMP_DIR = path.join(process.cwd(), 'tmp')
 
 // Dominican invoice patterns
 const PATTERNS = {
-  // NCF: B01, B02, B14, B15, E31, E32, E33, E34, E41, E43, E44, E45, E46, E47
-  ncf: /\b([BE]\d{2})\d{8,11}\b/i,
   ncfFull: /\b[BE]\d{10,13}\b/gi,
-  // RNC: 9 digits (sometimes with dashes 1-01-12345-6)
   rnc: /\b(?:RNC[:\s]*)?(\d[\d-]{7,12}\d)\b/gi,
-  rncClean: /\d{9,11}/,
-  // Amounts: look for common patterns
   total: /(?:total|monto\s*total|total\s*general|total\s*a\s*pagar)[:\s]*(?:RD\$?|DOP)?\s*([\d,]+\.?\d*)/gi,
   subtotal: /(?:sub\s*total|subtotal|base\s*imponible)[:\s]*(?:RD\$?|DOP)?\s*([\d,]+\.?\d*)/gi,
   itbis: /(?:itbis|i\.t\.b\.i\.s|impuesto)[:\s]*(?:RD\$?|DOP)?\s*([\d,]+\.?\d*)/gi,
-  // Invoice number
   factura: /(?:factura|fact|invoice|no\.|nro|número)[:\s#]*(\S+)/gi,
-  // Date patterns
   fecha: /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/g,
 }
 
@@ -36,7 +29,7 @@ function extractData(text: string) {
     impuesto: null,
     total: null,
     fecha: null,
-    rawText: text.substring(0, 2000), // first 2000 chars for debugging
+    rawText: text.substring(0, 2000),
   }
 
   // NCF
@@ -45,7 +38,7 @@ function extractData(text: string) {
     result.ncf = ncfMatches[0].toUpperCase()
   }
 
-  // RNC — find all, first is usually the emisor (proveedor)
+  // RNC
   const rncMatches: string[] = []
   let m
   while ((m = PATTERNS.rnc.exec(text)) !== null) {
@@ -58,7 +51,7 @@ function extractData(text: string) {
     result.rncProveedor = rncMatches[0]
   }
 
-  // Total (take last match as it's usually the final total)
+  // Total
   const totals: number[] = []
   while ((m = PATTERNS.total.exec(text)) !== null) {
     totals.push(parseAmount(m[1]))
@@ -75,7 +68,6 @@ function extractData(text: string) {
     result.impuesto = parseAmount(m[1])
   }
 
-  // If we have total but not subtotal, and we have itbis, derive it
   if (result.total && !result.subtotal && result.impuesto) {
     result.subtotal = result.total - result.impuesto
   }
@@ -122,10 +114,8 @@ export async function POST(request: NextRequest) {
     await writeFile(tmpPath, buffer)
 
     try {
-      // Run OCR
-      const { data } = await Tesseract.recognize(tmpPath, 'spa', {
-        logger: () => {},
-      })
+      // Run OCR with tesseract.js v7
+      const { data } = await recognize(tmpPath, 'spa')
 
       const extracted = extractData(data.text)
 
@@ -135,11 +125,10 @@ export async function POST(request: NextRequest) {
         extracted,
       })
     } finally {
-      // Cleanup tmp file
       try { await unlink(tmpPath) } catch {}
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error OCR:', error)
-    return NextResponse.json({ error: 'Error al procesar imagen' }, { status: 500 })
+    return NextResponse.json({ error: `Error al procesar imagen: ${error.message || 'desconocido'}` }, { status: 500 })
   }
 }
