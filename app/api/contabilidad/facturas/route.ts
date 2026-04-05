@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { uploadToDrive } from '@/lib/google-drive'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -95,11 +96,20 @@ export async function POST(request: NextRequest) {
     let data: any
     let archivoUrl: string | null = null
 
+    let driveUrl: string | null = null
+
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
       const file = formData.get('archivo') as File | null
       if (file && file.size > 0) {
         archivoUrl = await saveFile(file)
+        // Upload to Google Drive (non-blocking, best-effort)
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer())
+          driveUrl = await uploadToDrive(buffer, file.name, file.type)
+        } catch (err) {
+          console.error('Drive upload failed (continuing):', err)
+        }
       }
       data = Object.fromEntries(formData.entries())
       delete data.archivo
@@ -134,6 +144,7 @@ export async function POST(request: NextRequest) {
         total: parseFloat(String(total)) || 0,
         observaciones: observaciones || null,
         archivoUrl,
+        driveUrl,
       },
       include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })

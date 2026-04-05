@@ -22,6 +22,8 @@ module.exports = {
         DATABASE_URL: 'postgresql://gonzalva_user:CONTRASEÑA_PROD@localhost:5432/gonzalva_prod',
         JWT_SECRET: 'REEMPLAZAR_CON_64_CARACTERES_ALEATORIOS_PROD',
         GEMINI_API_KEY: '',  // Obtener en https://aistudio.google.com/apikey
+        GOOGLE_SERVICE_ACCOUNT_KEY: '',  // JSON de la cuenta de servicio
+        GOOGLE_DRIVE_FOLDER_ID: '',  // ID de la carpeta en Drive
       },
     },
 
@@ -41,6 +43,8 @@ module.exports = {
         DATABASE_URL: 'postgresql://gonzalva_user:CONTRASEÑA_TEST@localhost:5432/gonzalva_test',
         JWT_SECRET: 'REEMPLAZAR_CON_64_CARACTERES_ALEATORIOS_TEST',
         GEMINI_API_KEY: '',  // Obtener en https://aistudio.google.com/apikey
+        GOOGLE_SERVICE_ACCOUNT_KEY: '',  // JSON de la cuenta de servicio
+        GOOGLE_DRIVE_FOLDER_ID: '',  // ID de la carpeta en Drive
       },
     },
   ],

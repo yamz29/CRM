@@ -1048,7 +1048,8 @@ model Factura {
   montoPagado      Float     @default(0)              // sum of pagos
 
   estado           String    @default("pendiente")    // pendiente | parcial | pagada | anulada
-  archivoUrl       String?                            // foto o scan
+  archivoUrl       String?                            // foto o scan (local)
+  driveUrl         String?                            // Google Drive link
   observaciones    String?
 
   creadoEn         DateTime  @default(now())

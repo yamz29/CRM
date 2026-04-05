@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
+import { uploadToDrive } from '@/lib/google-drive'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024
@@ -55,6 +56,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     const contentType = request.headers.get('content-type') || ''
     let data: any
     let archivoUrl: string | undefined
+    let driveUrl: string | undefined
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
@@ -65,6 +67,13 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
           try { await unlink(path.join(process.cwd(), 'public', existing.archivoUrl)) } catch {}
         }
         archivoUrl = await saveFile(file)
+        // Upload to Google Drive (best-effort)
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer())
+          driveUrl = (await uploadToDrive(buffer, file.name, file.type)) || undefined
+        } catch (err) {
+          console.error('Drive upload failed (continuing):', err)
+        }
       }
       data = Object.fromEntries(formData.entries())
       delete data.archivo
@@ -92,6 +101,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     if (estado !== undefined) updateData.estado = estado
     if (observaciones !== undefined) updateData.observaciones = observaciones || null
     if (archivoUrl !== undefined) updateData.archivoUrl = archivoUrl
+    if (driveUrl !== undefined) updateData.driveUrl = driveUrl
 
     const factura = await prisma.factura.update({
       where: { id },

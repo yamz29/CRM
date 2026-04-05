@@ -26,7 +26,8 @@ interface Factura {
   proyecto: { id: number; nombre: string } | null
   descripcion: string | null; subtotal: number; impuesto: number
   total: number; montoPagado: number; estado: string
-  archivoUrl: string | null; observaciones: string | null
+  archivoUrl: string | null; driveUrl: string | null
+  observaciones: string | null
   pagos: Pago[]
 }
 
@@ -260,22 +261,38 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
           </div>
 
           {/* File */}
-          {factura.archivoUrl && (
+          {(factura.archivoUrl || factura.driveUrl) && (
             <div className="bg-card border border-border rounded-xl p-5 space-y-3">
               <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
                 <FileText className="w-4 h-4" /> Documento adjunto
               </h3>
-              {factura.archivoUrl.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+              {factura.archivoUrl?.match(/\.(jpg|jpeg|png|webp)$/i) ? (
                 <a href={fileUrl(factura.archivoUrl)} target="_blank" rel="noopener noreferrer">
                   <img src={fileUrl(factura.archivoUrl)} alt="Factura" className="rounded-lg border border-border max-h-64 w-full object-contain" />
                 </a>
-              ) : (
+              ) : factura.archivoUrl ? (
                 <a href={fileUrl(factura.archivoUrl)} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 p-3 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
                 >
                   <FileText className="w-5 h-5 text-primary" />
                   <span className="text-sm text-primary">Ver documento</span>
                   <ExternalLink className="w-3.5 h-3.5 ml-auto" />
+                </a>
+              ) : null}
+              {factura.driveUrl && (
+                <a href={factura.driveUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-20.4 35.3c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 13.4z" fill="#ea4335"/>
+                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                    <path d="m73.4 26.5-10.1-17.5c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 23.5h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                  </svg>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Ver en Google Drive</span>
+                  <ExternalLink className="w-3.5 h-3.5 ml-auto text-blue-500" />
                 </a>
               )}
             </div>
