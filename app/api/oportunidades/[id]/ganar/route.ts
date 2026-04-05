@@ -12,6 +12,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   })
   if (!oportunidad) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
 
+  // Idempotencia: si ya fue ganada y tiene proyecto, retornar el existente
+  if (oportunidad.etapa === 'Ganado' && oportunidad.proyectoId) {
+    return NextResponse.json({ proyectoId: oportunidad.proyectoId, mensaje: 'Oportunidad ya fue ganada anteriormente' })
+  }
+
   const body = await req.json()
   const { nombreProyecto, tipoProyecto, fechaInicio } = body
 

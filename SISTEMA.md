@@ -398,8 +398,8 @@ Melamina:
 ## 12. Variables de entorno
 
 ```env
-DATABASE_URL="file:./dev.db"
-JWT_SECRET="gonzalva-group-crm-jwt-secret-2025-xK9mP2qL"
+DATABASE_URL="file:./dev.db"      # Dev local (SQLite). En prod se usa PostgreSQL via .env.server
+JWT_SECRET="<secret-en-.env>"     # NUNCA commitear el valor real. Ver .env.server en el VPS
 ```
 
 ---
