@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkPermiso } from '@/lib/permisos'
 
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(_req, 'contabilidad', 'ver')
+  if (denied) return denied
+
   const facturaId = parseInt((await params).id)
   if (isNaN(facturaId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -21,6 +25,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 }
 
 export async function POST(request: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(request, 'contabilidad', 'editar')
+  if (denied) return denied
+
   const facturaId = parseInt((await params).id)
   if (isNaN(facturaId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -61,8 +68,13 @@ export async function POST(request: NextRequest, { params }: Ctx) {
         include: { cuentaBancaria: { select: { id: true, nombre: true, banco: true } } },
       })
 
-      const nuevoMontoPagado = factura.montoPagado + montoNum
-      const nuevoEstado = nuevoMontoPagado >= factura.total - 0.01 ? 'pagada' : 'parcial'
+      // Recalculate from SUM to avoid race conditions
+      const agg = await tx.pagoFactura.aggregate({
+        where: { facturaId },
+        _sum: { monto: true },
+      })
+      const nuevoMontoPagado = agg._sum.monto || 0
+      const nuevoEstado = nuevoMontoPagado >= factura.total - 0.01 ? 'pagada' : nuevoMontoPagado > 0 ? 'parcial' : 'pendiente'
 
       await tx.factura.update({
         where: { id: facturaId },

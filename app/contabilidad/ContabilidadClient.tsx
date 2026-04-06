@@ -30,6 +30,7 @@ interface Factura {
 interface CuentaBancaria {
   id: number; nombre: string; banco: string; numeroCuenta: string | null
   tipoCuenta: string; moneda: string; saldoInicial: number; activa: boolean
+  saldoActual?: number
 }
 interface Resumen {
   totalIngresos: number; totalEgresos: number
@@ -405,8 +406,13 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div>
-                    <p className="text-xs text-muted-foreground">{esTarjeta ? 'Límite' : 'Saldo inicial'}</p>
-                    <p className="text-lg font-bold tabular-nums">{formatCurrency(c.saldoInicial)}</p>
+                    <p className="text-xs text-muted-foreground">{esTarjeta ? 'Deuda actual' : 'Saldo actual'}</p>
+                    <p className={`text-lg font-bold tabular-nums ${esTarjeta && (c.saldoActual ?? 0) > 0 ? 'text-red-500' : ''}`}>
+                      {formatCurrency(c.saldoActual ?? c.saldoInicial)}
+                    </p>
+                    {esTarjeta && (
+                      <p className="text-[10px] text-muted-foreground">Límite: {formatCurrency(c.saldoInicial)}</p>
+                    )}
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => { setEditingCuenta(c); setShowCuentaForm(true) }}>Editar</Button>

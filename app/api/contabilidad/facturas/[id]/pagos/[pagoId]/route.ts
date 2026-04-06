@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkPermiso } from '@/lib/permisos'
 
 type Ctx = { params: Promise<{ id: string; pagoId: string }> }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(_req, 'contabilidad', 'editar')
+  if (denied) return denied
+
   const { id, pagoId } = await params
   const facturaId = parseInt(id)
   const pagoIdNum = parseInt(pagoId)

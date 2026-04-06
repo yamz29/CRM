@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkPermiso } from '@/lib/permisos'
 
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function GET(request: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(request, 'contabilidad', 'ver')
+  if (denied) return denied
+
   const cuentaId = parseInt((await params).id)
   if (isNaN(cuentaId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -35,6 +39,9 @@ export async function GET(request: NextRequest, { params }: Ctx) {
 }
 
 export async function POST(request: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(request, 'contabilidad', 'editar')
+  if (denied) return denied
+
   const cuentaId = parseInt((await params).id)
   if (isNaN(cuentaId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 

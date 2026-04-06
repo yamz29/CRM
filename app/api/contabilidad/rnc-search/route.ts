@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkPermiso } from '@/lib/permisos'
 
 export async function GET(request: NextRequest) {
+  const denied = await checkPermiso(request, 'contabilidad', 'ver')
+  if (denied) return denied
+
   const rnc = request.nextUrl.searchParams.get('rnc')
   if (!rnc) return NextResponse.json({ error: 'RNC requerido' }, { status: 400 })
 

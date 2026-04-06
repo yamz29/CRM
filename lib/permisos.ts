@@ -63,3 +63,52 @@ export function toPermisosMap(
   }
   return map
 }
+
+// ── API route permission check ────────────────────────────────────────────────
+
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+/**
+ * Verifica que el usuario autenticado tenga el nivel mínimo de permiso
+ * para un módulo. Usa los headers inyectados por middleware.
+ *
+ * Retorna null si el acceso es permitido, o un NextResponse 403 si no.
+ *
+ * Uso: const denied = await checkPermiso(req, 'contabilidad', 'ver')
+ *      if (denied) return denied
+ */
+export async function checkPermiso(
+  req: NextRequest,
+  modulo: ModuloKey,
+  requerido: NivelPermiso
+): Promise<NextResponse | null> {
+  const userId = req.headers.get('x-user-id')
+  const rol = req.headers.get('x-user-rol') || ''
+
+  if (!userId) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
+
+  // Admin siempre tiene acceso
+  if (rol === 'Admin') return null
+
+  // Lazy import to avoid circular deps
+  const { prisma } = await import('@/lib/prisma')
+
+  const permiso = await prisma.permisoUsuario.findUnique({
+    where: { usuarioId_modulo: { usuarioId: parseInt(userId), modulo } },
+  })
+
+  // Si no hay registro, default = 'editar' (compatibilidad)
+  const nivel: NivelPermiso = (permiso?.nivel as NivelPermiso) ?? 'editar'
+
+  if (!nivelSuficiente(nivel, requerido)) {
+    return NextResponse.json(
+      { error: `Sin permiso para ${modulo} (requiere: ${requerido})` },
+      { status: 403 }
+    )
+  }
+
+  return null
+}

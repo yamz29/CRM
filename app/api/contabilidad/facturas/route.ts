@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { uploadToDrive } from '@/lib/google-drive'
+import { checkPermiso } from '@/lib/permisos'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -19,6 +20,9 @@ async function saveFileBuffer(buffer: Buffer, originalName: string): Promise<str
 }
 
 export async function GET(request: NextRequest) {
+  const denied = await checkPermiso(request, 'contabilidad', 'ver')
+  if (denied) return denied
+
   const sp = request.nextUrl.searchParams
   const tipo = sp.get('tipo')
   const estado = sp.get('estado')
@@ -95,6 +99,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await checkPermiso(request, 'contabilidad', 'editar')
+  if (denied) return denied
+
   try {
     const contentType = request.headers.get('content-type') || ''
     let data: any

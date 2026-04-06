@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkPermiso } from '@/lib/permisos'
 
 // Banco Popular TXT format:
 // cuenta,DD/MM/YYYY,referencia,000monto.00,DB|CR,descripcion,codigo,extra
@@ -49,6 +50,9 @@ function parseLine(line: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await checkPermiso(request, 'contabilidad', 'editar')
+  if (denied) return denied
+
   try {
     const formData = await request.formData()
     const file = formData.get('archivo') as File | null
@@ -56,6 +60,9 @@ export async function POST(request: NextRequest) {
 
     if (!file || file.size === 0) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 })
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Archivo demasiado grande (máx 2 MB)' }, { status: 400 })
     }
     if (!cuentaId) {
       return NextResponse.json({ error: 'Seleccione una cuenta bancaria' }, { status: 400 })
@@ -86,16 +93,16 @@ export async function POST(request: NextRequest) {
         cuentaBancariaId,
         fecha: { gte: fechaMin, lte: fechaMax },
       },
-      select: { fecha: true, monto: true, descripcion: true },
+      select: { fecha: true, monto: true, descripcion: true, referencia: true },
     })
 
-    // Build set for duplicate detection
+    // Build set for duplicate detection using referencia (unique per bank txn) + fecha + monto + descripcion
     const existSet = new Set(
-      existentes.map(e => `${e.fecha.toISOString().slice(0, 10)}|${e.monto}|${e.descripcion}`)
+      existentes.map(e => `${e.fecha.toISOString().slice(0, 10)}|${e.monto}|${e.referencia || ''}|${e.descripcion}`)
     )
 
     const nuevos = parsed.filter(p => {
-      const key = `${p.fecha.toISOString().slice(0, 10)}|${p.monto}|${p.descripcion}`
+      const key = `${p.fecha.toISOString().slice(0, 10)}|${p.monto}|${p.referencia || ''}|${p.descripcion}`
       return !existSet.has(key)
     })
 

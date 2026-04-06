@@ -627,7 +627,7 @@ model Usuario {
 model PermisoUsuario {
   id        Int    @id @default(autoincrement())
   usuarioId Int
-  modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|recursos|apus|tareas|horas|melamina|cocinas|produccion|configuracion
+  modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|contabilidad|recursos|apus|tareas|horas|melamina|cocinas|produccion|configuracion
   nivel     String @default("editar") // ninguno | ver | editar | admin
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)

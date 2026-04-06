@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkPermiso } from '@/lib/permisos'
 
 export async function POST(request: NextRequest) {
+  const denied = await checkPermiso(request, 'contabilidad', 'editar')
+  if (denied) return denied
+
   try {
     const { cuentaOrigenId, cuentaDestinoId, monto, fecha, descripcion, referencia } = await request.json()
 

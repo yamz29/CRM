@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { uploadToDrive } from '@/lib/google-drive'
+import { checkPermiso } from '@/lib/permisos'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024
@@ -20,6 +21,9 @@ async function saveFileBuffer(buffer: Buffer, originalName: string): Promise<str
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(_req, 'contabilidad', 'ver')
+  if (denied) return denied
+
   const id = parseInt((await params).id)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -44,6 +48,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 }
 
 export async function PUT(request: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(request, 'contabilidad', 'editar')
+  if (denied) return denied
+
   const id = parseInt((await params).id)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -117,12 +124,32 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
+  const denied = await checkPermiso(_req, 'contabilidad', 'admin')
+  if (denied) return denied
+
   const id = parseInt((await params).id)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
-    const existing = await prisma.factura.findUnique({ where: { id } })
+    const existing = await prisma.factura.findUnique({
+      where: { id },
+      include: { _count: { select: { pagos: true } } },
+    })
     if (!existing) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
+
+    // Block deletion if factura has payments
+    if (existing._count.pagos > 0) {
+      return NextResponse.json(
+        { error: 'No se puede eliminar una factura con pagos registrados. Anúlela en su lugar.' },
+        { status: 409 }
+      )
+    }
+
+    // Clean up associated bank movements (orphan prevention)
+    await prisma.movimientoBancario.updateMany({
+      where: { facturaId: id },
+      data: { conciliado: false, facturaId: null },
+    })
 
     // Delete file if exists
     if (existing.archivoUrl) {
