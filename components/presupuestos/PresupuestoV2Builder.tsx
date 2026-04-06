@@ -76,6 +76,8 @@ interface Props {
     capitulos?: Capitulo[]
     titulos?: Titulo[]
     indirectoLineas?: IndirectoLinea[]
+    descuentoTipo?: string; descuentoValor?: number
+    itbisActivo?: boolean; itbisPorcentaje?: number
   }
   defaultClienteId?: number
   defaultProyectoId?: number
@@ -371,6 +373,10 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   const [proyectoId, setProyectoId] = useState<string>(String(initialData?.proyectoId || defaultProyectoId || ''))
   const [estado, setEstado] = useState(initialData?.estado || 'Borrador')
   const [notas, setNotas] = useState(initialData?.notas || '')
+  const [descuentoTipo, setDescuentoTipo] = useState(initialData?.descuentoTipo || 'ninguno')
+  const [descuentoValor, setDescuentoValor] = useState(initialData?.descuentoValor || 0)
+  const [itbisActivo, setItbisActivo] = useState(initialData?.itbisActivo || false)
+  const [itbisPorcentaje, setItbisPorcentaje] = useState(initialData?.itbisPorcentaje ?? 18)
   const [titulos, setTitulos] = useState<Titulo[]>(initialData?.titulos || [])
   const [capitulos, setCapitulos] = useState<Capitulo[]>(
     (initialData?.capitulos || []).map(cap => ({
@@ -433,7 +439,13 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   const filteredProyectos = clienteId ? proyectos.filter((p) => p.clienteId === parseInt(clienteId)) : proyectos
   const subtotalBase = capitulos.reduce((acc, cap) => acc + cap.partidas.reduce((a, p) => a + p.subtotal, 0), 0)
   const subtotalIndirecto = indirectoLineas.filter(l => l.activo).reduce((s, l) => s + subtotalBase * l.porcentaje / 100, 0)
-  const grandTotal = subtotalBase + subtotalIndirecto
+  const subtotalAntesDescuento = subtotalBase + subtotalIndirecto
+  const montoDescuento = descuentoTipo === 'porcentaje'
+    ? subtotalAntesDescuento * descuentoValor / 100
+    : descuentoTipo === 'fijo' ? descuentoValor : 0
+  const subtotalConDescuento = subtotalAntesDescuento - montoDescuento
+  const montoItbis = itbisActivo ? subtotalConDescuento * itbisPorcentaje / 100 : 0
+  const grandTotal = subtotalConDescuento + montoItbis
 
   // ── Titulo handlers ────────────────────────────────────────────────────────
 
@@ -588,7 +600,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
     if (!clienteId) { setError('Selecciona un cliente antes de guardar.'); return }
     setLoading(true)
     try {
-      const payload = { clienteId: parseInt(clienteId), proyectoId: proyectoId ? parseInt(proyectoId) : null, estado, notas, titulos, capitulos, indirectoLineas }
+      const payload = { clienteId: parseInt(clienteId), proyectoId: proyectoId ? parseInt(proyectoId) : null, estado, notas, titulos, capitulos, indirectoLineas, descuentoTipo, descuentoValor, itbisActivo, itbisPorcentaje }
       const response = await fetch(
         mode === 'create' ? '/api/presupuestos-v2' : `/api/presupuestos-v2/${initialData?.id}`,
         { method: mode === 'create' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
@@ -981,10 +993,63 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
         )}
       </div>
 
+      {/* ── Descuento + ITBIS ── */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Descuento */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Descuento</label>
+            <div className="flex items-center gap-2">
+              <select value={descuentoTipo} onChange={(e) => { setDescuentoTipo(e.target.value); if (e.target.value === 'ninguno') setDescuentoValor(0) }}
+                className="px-2 py-1.5 text-sm border border-border rounded-lg bg-background">
+                <option value="ninguno">Sin descuento</option>
+                <option value="porcentaje">Porcentaje (%)</option>
+                <option value="fijo">Monto fijo (RD$)</option>
+              </select>
+              {descuentoTipo !== 'ninguno' && (
+                <div className="flex items-center gap-1">
+                  <input type="number" min="0" step="0.01" value={descuentoValor || ''} onChange={(e) => setDescuentoValor(parseFloat(e.target.value) || 0)}
+                    className="w-24 px-2 py-1.5 text-sm border border-border rounded-lg bg-background text-right tabular-nums" />
+                  <span className="text-sm text-muted-foreground">{descuentoTipo === 'porcentaje' ? '%' : 'RD$'}</span>
+                </div>
+              )}
+              {montoDescuento > 0 && (
+                <span className="text-sm font-semibold text-red-500">-{formatCurrency(montoDescuento)}</span>
+              )}
+            </div>
+          </div>
+
+          {/* ITBIS */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">ITBIS</label>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={itbisActivo} onChange={(e) => setItbisActivo(e.target.checked)}
+                  className="rounded border-border" />
+                <span className="text-sm text-foreground">Aplicar ITBIS</span>
+              </label>
+              {itbisActivo && (
+                <>
+                  <select value={itbisPorcentaje} onChange={(e) => setItbisPorcentaje(parseFloat(e.target.value))}
+                    className="px-2 py-1.5 text-sm border border-border rounded-lg bg-background">
+                    <option value={18}>18% — Normal</option>
+                    <option value={1.8}>1.8% — Norma 07-07</option>
+                  </select>
+                  <span className="text-sm font-semibold text-blue-600">+{formatCurrency(montoItbis)}</span>
+                </>
+              )}
+            </div>
+            {itbisActivo && itbisPorcentaje === 1.8 && (
+              <p className="text-[10px] text-muted-foreground">Norma 07-07 DGII: retención reducida al 1.8%</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ── Grand Total + Save ── */}
       <div className="sticky bottom-4 z-10">
         <div className="bg-card border border-border rounded-xl shadow-lg px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 flex-wrap">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Subtotal Partidas</p>
               <p className="text-lg font-bold text-foreground">{formatCurrency(subtotalBase)}</p>
@@ -993,12 +1058,30 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
               <>
                 <div className="text-muted-foreground/70">+</div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Gastos Indirectos</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Indirectos</p>
                   <p className="text-lg font-bold text-foreground">{formatCurrency(subtotalIndirecto)}</p>
                 </div>
-                <div className="text-muted-foreground/70">=</div>
               </>
             )}
+            {montoDescuento > 0 && (
+              <>
+                <div className="text-muted-foreground/70">−</div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Descuento</p>
+                  <p className="text-lg font-bold text-red-500">{formatCurrency(montoDescuento)}</p>
+                </div>
+              </>
+            )}
+            {montoItbis > 0 && (
+              <>
+                <div className="text-muted-foreground/70">+</div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">ITBIS {itbisPorcentaje}%</p>
+                  <p className="text-lg font-bold text-foreground">{formatCurrency(montoItbis)}</p>
+                </div>
+              </>
+            )}
+            <div className="text-muted-foreground/70">=</div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total General</p>
               <p className="text-2xl font-black text-foreground">{formatCurrency(grandTotal)}</p>

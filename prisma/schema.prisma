@@ -152,6 +152,10 @@ model Presupuesto {
   oportunidadId  Int?
   estado         String   @default("Borrador")
   subtotal       Float    @default(0)
+  descuentoTipo  String   @default("ninguno")    // ninguno | porcentaje | fijo
+  descuentoValor Float    @default(0)
+  itbisActivo    Boolean  @default(false)
+  itbisPorcentaje Float   @default(18)           // 18% normal o 1.8% norma 07-07
   total          Float    @default(0)
   notas          String?
   createdAt      DateTime @default(now())

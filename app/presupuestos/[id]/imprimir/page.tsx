@@ -50,6 +50,14 @@ export default async function ImprimirPresupuestoPage({
   const subtotalObra = presupuesto.partidas.reduce((acc, p) => acc + p.subtotal, 0)
   const subtotalMelamina = presupuesto.modulosMelamina.reduce((acc, m) => acc + m.subtotal * m.cantidad, 0)
 
+  // Descuento + ITBIS
+  const subtotalAntesDescuento = subtotalBase + subtotalIndirecto
+  const montoDescuento = presupuesto.descuentoTipo === 'porcentaje'
+    ? subtotalAntesDescuento * presupuesto.descuentoValor / 100
+    : presupuesto.descuentoTipo === 'fijo' ? presupuesto.descuentoValor : 0
+  const subtotalConDescuento = subtotalAntesDescuento - montoDescuento
+  const montoItbis = presupuesto.itbisActivo ? subtotalConDescuento * presupuesto.itbisPorcentaje / 100 : 0
+
   // Build titulo → capitulos map
   const tituloMap: Record<number, typeof presupuesto.capitulos> = {}
   const floating: typeof presupuesto.capitulos = []
@@ -357,6 +365,18 @@ export default async function ImprimirPresupuestoPage({
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8' }}>
                 <span>Subtotal melamina</span>
                 <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#e2e8f0' }}>{formatCurrency(subtotalMelamina)}</span>
+              </div>
+            )}
+            {montoDescuento > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#f87171' }}>
+                <span>Descuento{presupuesto.descuentoTipo === 'porcentaje' ? ` (${presupuesto.descuentoValor}%)` : ''}</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>-{formatCurrency(montoDescuento)}</span>
+              </div>
+            )}
+            {montoItbis > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8' }}>
+                <span>ITBIS ({presupuesto.itbisPorcentaje}%){presupuesto.itbisPorcentaje === 1.8 ? ' — Norma 07-07' : ''}</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#e2e8f0' }}>{formatCurrency(montoItbis)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #334155', paddingTop: 10, marginTop: 4 }}>

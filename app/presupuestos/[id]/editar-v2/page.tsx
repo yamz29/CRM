@@ -57,6 +57,10 @@ export default async function EditarPresupuestoV2Page({
     proyectoId: presupuesto.proyectoId,
     estado: presupuesto.estado,
     notas: presupuesto.notas || '',
+    descuentoTipo: presupuesto.descuentoTipo,
+    descuentoValor: presupuesto.descuentoValor,
+    itbisActivo: presupuesto.itbisActivo,
+    itbisPorcentaje: presupuesto.itbisPorcentaje,
     titulos: presupuesto.titulos.map((t) => ({
       id: t.id,
       nombre: t.nombre,

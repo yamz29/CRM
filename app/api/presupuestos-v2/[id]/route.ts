@@ -9,7 +9,7 @@ function safeNum(v: unknown, max = Infinity): number {
   return isNaN(n) ? 0 : Math.min(max, Math.max(0, n))
 }
 
-function calcTotals(capitulos: any[], indirectoLineas: any[]) {
+function calcTotals(capitulos: any[], indirectoLineas: any[], descuentoTipo = 'ninguno', descuentoValor = 0, itbisActivo = false, itbisPorcentaje = 18) {
   let subtotalBase = 0
   for (const cap of capitulos) {
     for (const p of cap.partidas || []) {
@@ -19,7 +19,13 @@ function calcTotals(capitulos: any[], indirectoLineas: any[]) {
   const subtotalIndirecto = indirectoLineas
     .filter((l: any) => l.activo !== false)
     .reduce((s: number, l: any) => s + subtotalBase * safeNum(l.porcentaje, 100) / 100, 0)
-  return { subtotalBase, subtotalIndirecto, total: subtotalBase + subtotalIndirecto }
+  const subtotalAntesDescuento = subtotalBase + subtotalIndirecto
+  const montoDescuento = descuentoTipo === 'porcentaje'
+    ? subtotalAntesDescuento * safeNum(descuentoValor, 100) / 100
+    : descuentoTipo === 'fijo' ? safeNum(descuentoValor) : 0
+  const subtotalConDescuento = subtotalAntesDescuento - montoDescuento
+  const montoItbis = itbisActivo ? subtotalConDescuento * safeNum(itbisPorcentaje, 100) / 100 : 0
+  return { subtotalBase, subtotalIndirecto, total: subtotalConDescuento + montoItbis }
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -62,9 +68,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   try {
     const body = await request.json()
-    const { clienteId, proyectoId, estado, notas, capitulos = [], titulos = [], indirectoLineas = [] } = body
+    const { clienteId, proyectoId, estado, notas, capitulos = [], titulos = [], indirectoLineas = [], descuentoTipo = 'ninguno', descuentoValor = 0, itbisActivo = false, itbisPorcentaje = 18 } = body
 
-    const { subtotalBase, total } = calcTotals(capitulos, indirectoLineas)
+    const { subtotalBase, total } = calcTotals(capitulos, indirectoLineas, descuentoTipo, descuentoValor, itbisActivo, itbisPorcentaje)
 
     // All delete + recreate runs inside a single transaction.
     // If any step fails, the entire operation is rolled back — no data loss.
@@ -83,6 +89,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
           estado: estado || 'Borrador',
           notas: notas || null,
           subtotal: subtotalBase,
+          descuentoTipo: descuentoTipo || 'ninguno',
+          descuentoValor: safeNum(descuentoValor),
+          itbisActivo: !!itbisActivo,
+          itbisPorcentaje: safeNum(itbisPorcentaje, 100) || 18,
           total,
         },
       })
