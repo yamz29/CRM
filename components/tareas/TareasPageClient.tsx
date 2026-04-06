@@ -136,6 +136,12 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
         {tarea.descripcion && (
           <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{tarea.descripcion}</p>
         )}
+        {(tarea.cliente || tarea.proyecto) && (
+          <div className="text-xs text-muted-foreground mb-1.5 space-y-0.5">
+            {tarea.cliente && <p className="truncate font-medium text-foreground/70">{tarea.cliente.nombre}</p>}
+            {tarea.proyecto && <p className="truncate">{tarea.proyecto.nombre}</p>}
+          </div>
+        )}
         {tarea.avance > 0 && (
           <div className="flex items-center gap-1.5 mb-2">
             <div className="flex-1 bg-muted rounded-full h-1.5">

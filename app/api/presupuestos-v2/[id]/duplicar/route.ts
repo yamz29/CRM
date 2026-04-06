@@ -48,6 +48,10 @@ export async function POST(
         estado: 'Borrador',
         notas: source.notas,
         subtotal: source.subtotal,
+        descuentoTipo: source.descuentoTipo,
+        descuentoValor: source.descuentoValor,
+        itbisActivo: source.itbisActivo,
+        itbisPorcentaje: source.itbisPorcentaje,
         total: source.total,
       },
     })
