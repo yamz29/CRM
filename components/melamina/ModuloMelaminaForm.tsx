@@ -7,7 +7,7 @@ import { AlertCircle, X, Save } from 'lucide-react'
 
 const TIPOS_MODULO_DEFAULT = [
   'Base con puertas', 'Base con cajones', 'Base mixto',
-  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina',
+  'Aéreo con puertas', 'Repisa', 'Columna', 'Closet', 'Baño', 'Oficina',
   'Electrodoméstico', 'Otro',
 ]
 

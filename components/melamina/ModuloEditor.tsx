@@ -87,7 +87,7 @@ interface ModuloData {
 
 const TIPOS_MODULO_DEFAULT = [
   'Base con puertas', 'Base con cajones', 'Base mixto',
-  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro',
+  'Aéreo con puertas', 'Repisa', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro',
 ]
 
 interface Props {
@@ -328,6 +328,18 @@ function generarDespiece(
   esp: number = 18,
 ): PiezaLine[] {
   const piezas: PiezaLine[] = []
+
+  // Repisa: solo una tabla (módulo aéreo simple, sin laterales/fondo/soporte)
+  if (tipo === 'Repisa') {
+    piezas.push({
+      _key: newKey(), etiqueta: 'Rep', nombre: 'Repisa', tipoPieza: 'repisa',
+      largo: ancho, ancho: prof, cantidad: 1, espesor: esp, material: '',
+      tapacanto: ['superior', 'inferior', 'izquierdo', 'derecho'], tapacantoColor: '',
+      llevaMecanizado: false, tipoMecanizado: '', observaciones: '',
+    })
+    return piezas
+  }
+
   const anchoInt = ancho - 2 * esp
 
   piezas.push(

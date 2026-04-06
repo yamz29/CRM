@@ -115,7 +115,7 @@ const DEFAULT_ALTURA = 1500
 const TIPO_FILTER_MAP: Record<string, string[]> = {
   Todos: [],
   Base:  ['Base con puertas', 'Base con cajones', 'Base mixto'],
-  Aéreo: ['Aéreo con puertas'],
+  Aéreo: ['Aéreo con puertas', 'Repisa'],
   Torre: ['Columna', 'Torre'],
   'Electrod.': ['Electrodoméstico'],
   Otro:  ['Closet', 'Baño', 'Oficina', 'Otro'],
@@ -124,7 +124,9 @@ const TIPO_FILTER_MAP: Record<string, string[]> = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Wall placements only collide within the same nivel group.
- *  base+torre collide with each other; alto only collides with alto. */
+ *  base+torre collide with each other; alto only collides with alto.
+ *  Repisas (tablas delgadas) son exentas: no chocan con nada y nada choca con ellas,
+ *  ya que pueden coexistir a diferentes alturas en la misma pared. */
 function overlaps(
   existingPlacements: Placement[],
   wallId: number,
@@ -132,10 +134,13 @@ function overlaps(
   newWidth: number,
   nivelGroup: 'floor' | 'wall', // floor = base|torre, wall = alto
   excludeId?: number,
+  placingTipo?: string,
 ): boolean {
+  if (placingTipo === 'Repisa') return false
   return existingPlacements
     .filter((p) => {
       if (p.wallId !== wallId || p.id === excludeId) return false
+      if (p.modulo.tipoModulo === 'Repisa') return false
       if (nivelGroup === 'wall') return p.nivel === 'alto'
       return p.nivel === 'base' || p.nivel === 'torre'
     })
@@ -150,7 +155,7 @@ function nivelGroup(nivel: string): 'floor' | 'wall' {
   return nivel === 'alto' ? 'wall' : 'floor'
 }
 
-const TIPOS_AEREO = ['Aéreo con puertas', 'Aéreo']
+const TIPOS_AEREO = ['Aéreo con puertas', 'Aéreo', 'Repisa']
 
 function nivelForTipo(tipoModulo: string): string {
   return TIPOS_AEREO.some((t) => tipoModulo.includes(t)) ? 'alto' : 'base'
@@ -219,6 +224,7 @@ function ElevationSVG({
   selectedPlacementId, placingModule, hoverX,
   flipped = false,
   adjacentAtStart, adjacentAtEnd,
+  zoom = 1,
   onCanvasClick, onCanvasMouseMove, onCanvasMouseLeave,
   onPlacementClick, onDragEnd,
 }: {
@@ -232,15 +238,17 @@ function ElevationSVG({
   flipped?: boolean
   adjacentAtStart: Wall | null
   adjacentAtEnd: Wall | null
+  zoom?: number
   onCanvasClick: (xMm: number) => void
   onCanvasMouseMove: (xMm: number) => void
   onCanvasMouseLeave: () => void
   onPlacementClick: (p: Placement) => void
   onDragEnd: (id: number, newPos: number, targetWall?: Wall) => void
 }) {
-  const scale = CANVAS_HEIGHT_PX / alturaMm
+  const canvasH = CANVAS_HEIGHT_PX * zoom
+  const scale = canvasH / alturaMm
   const svgWidth = Math.max(wall.longitud * scale, 400)
-  const yFloor = CANVAS_HEIGHT_PX
+  const yFloor = canvasH
   const yCountertop = yFloor - COUNTERTOP_MM * scale
 
   const [dragState, setDragState] = useState<{
@@ -258,7 +266,7 @@ function ElevationSVG({
     <div className="overflow-x-auto">
       <svg
         width={svgWidth}
-        height={CANVAS_HEIGHT_PX + 24}
+        height={canvasH + 24}
         className={cn('block select-none',
           placingModule ? 'cursor-crosshair' : dragState ? 'cursor-grabbing' : 'cursor-default',
         )}
@@ -300,7 +308,7 @@ function ElevationSVG({
             } else {
               const snapped = Math.round(raw / SNAP_MM) * SNAP_MM
               finalPos = Math.max(0, Math.min(snapped, wall.longitud - modAncho))
-              if (overlaps(allPlacements, wall.id, finalPos, modAncho, nivelGroup(p.nivel), dragState.id))
+              if (overlaps(allPlacements, wall.id, finalPos, modAncho, nivelGroup(p.nivel), dragState.id, p.modulo.tipoModulo))
                 finalPos = dragState.startPosicion
             }
             onDragEnd(dragState.id, finalPos, targetWall)
@@ -308,9 +316,9 @@ function ElevationSVG({
           setDragState(null)
         }}
       >
-        <rect x={0} y={0} width={svgWidth} height={CANVAS_HEIGHT_PX + 24} fill="#0f172a" />
+        <rect x={0} y={0} width={svgWidth} height={canvasH + 24} fill="#0f172a" />
         {gridLines.map((mm) => (
-          <line key={mm} x1={mm * scale} y1={0} x2={mm * scale} y2={CANVAS_HEIGHT_PX} stroke="#1e293b" strokeWidth={1} />
+          <line key={mm} x1={mm * scale} y1={0} x2={mm * scale} y2={canvasH} stroke="#1e293b" strokeWidth={1} />
         ))}
         <line x1={0} y1={yCountertop} x2={svgWidth} y2={yCountertop} stroke="#64748b" strokeWidth={1} strokeDasharray="6,4" />
         <text x={4} y={yCountertop - 3} fill="#64748b" fontSize={9}>Muestrario 850mm</text>
@@ -387,7 +395,7 @@ function ElevationSVG({
           const clamped = Math.max(0, Math.min(snapped, wall.longitud - (placingModule.ancho || 300)))
           const isAereo = nivelForTipo(placingModule.tipoModulo) === 'alto'
           const ng = nivelGroup(isAereo ? 'alto' : 'base')
-          const hasOv = overlaps(allPlacements, wall.id, clamped, placingModule.ancho || 300, ng)
+          const hasOv = overlaps(allPlacements, wall.id, clamped, placingModule.ancho || 300, ng, undefined, placingModule.tipoModulo)
           const rectW = Math.max((placingModule.ancho || 300) * scale, 40)
           const rectH = Math.max((placingModule.alto || 720) * scale, 30)
           const ghostPos = flipped ? (wall.longitud - clamped - (placingModule.ancho || 300)) : clamped
@@ -416,23 +424,23 @@ function ElevationSVG({
           return (
             <>
               {nearLeft && <g pointerEvents="none">
-                <rect x={0} y={0} width={70} height={CANVAS_HEIGHT_PX} fill="#f59e0b" fillOpacity={0.1} />
-                <text x={35} y={CANVAS_HEIGHT_PX / 2} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="#f59e0b" fontFamily="sans-serif">← {adjacentAtStart.nombre}</text>
+                <rect x={0} y={0} width={70} height={canvasH} fill="#f59e0b" fillOpacity={0.1} />
+                <text x={35} y={canvasH / 2} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="#f59e0b" fontFamily="sans-serif">← {adjacentAtStart.nombre}</text>
               </g>}
               {nearRight && <g pointerEvents="none">
-                <rect x={svgWidth - 70} y={0} width={70} height={CANVAS_HEIGHT_PX} fill="#f59e0b" fillOpacity={0.1} />
-                <text x={svgWidth - 35} y={CANVAS_HEIGHT_PX / 2} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="#f59e0b" fontFamily="sans-serif">{adjacentAtEnd.nombre} →</text>
+                <rect x={svgWidth - 70} y={0} width={70} height={canvasH} fill="#f59e0b" fillOpacity={0.1} />
+                <text x={svgWidth - 35} y={canvasH / 2} textAnchor="middle" dominantBaseline="middle" fontSize={10} fill="#f59e0b" fontFamily="sans-serif">{adjacentAtEnd.nombre} →</text>
               </g>}
             </>
           )
         })()}
 
         {/* Ruler */}
-        <rect x={0} y={CANVAS_HEIGHT_PX} width={svgWidth} height={24} fill="#1e293b" />
+        <rect x={0} y={canvasH} width={svgWidth} height={24} fill="#1e293b" />
         {rulerTicks.map((mm) => (
           <g key={mm}>
-            <line x1={mm * scale} y1={CANVAS_HEIGHT_PX} x2={mm * scale} y2={CANVAS_HEIGHT_PX + (mm % 1000 === 0 ? 8 : 5)} stroke="#475569" strokeWidth={1} />
-            {mm % 500 === 0 && <text x={mm * scale} y={CANVAS_HEIGHT_PX + 18} textAnchor="middle" fontSize={8} fill="#64748b" fontFamily="monospace">{mm}</text>}
+            <line x1={mm * scale} y1={canvasH} x2={mm * scale} y2={canvasH + (mm % 1000 === 0 ? 8 : 5)} stroke="#475569" strokeWidth={1} />
+            {mm % 500 === 0 && <text x={mm * scale} y={canvasH + 18} textAnchor="middle" fontSize={8} fill="#64748b" fontFamily="monospace">{mm}</text>}
           </g>
         ))}
       </svg>
@@ -591,7 +599,7 @@ function InteractivePlanSVG({
         const modAncho = p.modulo.ancho || 300
         const snapped = Math.round(planDrag.currentPosicion / SNAP_MM) * SNAP_MM
         const clamped = Math.max(0, Math.min(snapped, seg.wall.longitud - modAncho))
-        if (!overlaps(placements, seg.wall.id, clamped, modAncho, nivelGroup(p.nivel), planDrag.id)) {
+        if (!overlaps(placements, seg.wall.id, clamped, modAncho, nivelGroup(p.nivel), planDrag.id, p.modulo.tipoModulo)) {
           onPlanDragEnd(planDrag.id, clamped)
         } else {
           onPlanDragEnd(planDrag.id, planDrag.startPosicion)
@@ -746,7 +754,7 @@ function InteractivePlanSVG({
           const posMm = Math.min(hoverPos.posMm, seg.wall.longitud - (placingModule.ancho || 300))
           const depth = profBase * scale
           const moduleW = (placingModule.ancho || 300) * scale
-          const hasOv = overlaps(placements, seg.wall.id, posMm, placingModule.ancho || 300, nivelGroup(nivelForTipo(placingModule.tipoModulo)))
+          const hasOv = overlaps(placements, seg.wall.id, posMm, placingModule.ancho || 300, nivelGroup(nivelForTipo(placingModule.tipoModulo)), undefined, placingModule.tipoModulo)
           const color = hasOv ? '#ef4444' : '#3b82f6'
           let gx: number, gy: number, gw: number, gh: number
           if (seg.cabinetDir === 'down') { gx = seg.x1 + posMm * scale; gy = seg.y1; gw = moduleW; gh = depth }
@@ -1053,6 +1061,16 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   const [calcResults, setCalcResults] = useState<CalcResult[] | null>(null)
   const [calculating, setCalculating] = useState(false)
   const [elevFlipped, setElevFlipped] = useState(false)
+  const [canvasZoom, setCanvasZoom] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1
+    const saved = parseFloat(localStorage.getItem('cocinas_canvas_zoom') || '1')
+    return isNaN(saved) ? 1 : Math.max(0.6, Math.min(2.5, saved))
+  })
+  const setCanvasZoomPersist = useCallback((z: number) => {
+    const clamped = Math.max(0.6, Math.min(2.5, z))
+    setCanvasZoom(clamped)
+    if (typeof window !== 'undefined') localStorage.setItem('cocinas_canvas_zoom', String(clamped))
+  }, [])
   const [positionInput, setPositionInput] = useState('')
   const [alturaInput, setAlturaInput] = useState(String(DEFAULT_ALTURA))
   const [showPresupuestoModal, setShowPresupuestoModal] = useState(false)
@@ -1123,7 +1141,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
       return
     }
     const ng = nivelGroup(nivelForTipo(placingModule.tipoModulo))
-    if (overlaps(placements, activeWallId, clamped, modAncho || 1, ng)) {
+    if (overlaps(placements, activeWallId, clamped, modAncho || 1, ng, undefined, placingModule.tipoModulo)) {
       showError('Hay un módulo en esa posición.')
       return
     }
@@ -1137,7 +1155,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     const modAncho = placingModule.ancho || 0
     const clamped = Math.max(0, Math.min(positionMm, wall.longitud - modAncho))
     const ng = nivelGroup(nivelForTipo(placingModule.tipoModulo))
-    if (overlaps(placements, wallId, clamped, modAncho || 1, ng)) {
+    if (overlaps(placements, wallId, clamped, modAncho || 1, ng, undefined, placingModule.tipoModulo)) {
       showError('Hay un módulo en esa posición.')
       return
     }
@@ -1214,7 +1232,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
       const newPos = parseFloat(val)
       if (isNaN(newPos)) return
       const clamped = Math.max(0, Math.min(newPos, activeWall.longitud - selectedPlacement.modulo.ancho))
-      if (overlaps(placements, selectedPlacement.wallId!, clamped, selectedPlacement.modulo.ancho, nivelGroup(selectedPlacement.nivel), selectedPlacement.id)) return
+      if (overlaps(placements, selectedPlacement.wallId!, clamped, selectedPlacement.modulo.ancho, nivelGroup(selectedPlacement.nivel), selectedPlacement.id, selectedPlacement.modulo.tipoModulo)) return
       await doPatch(selectedPlacement.id, { posicion: clamped })
     }, 600)
   }
@@ -1479,14 +1497,41 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     <span className="ml-1.5 text-muted-foreground">{Math.round(wall.longitud)}mm</span>
                   </button>
                 ))}
-                <button
-                  onClick={() => setElevFlipped(!elevFlipped)}
-                  className={cn('ml-auto px-2 py-1.5 rounded-t-lg text-xs font-medium transition-colors border-t border-l border-r',
-                    elevFlipped ? 'bg-amber-900/40 border-amber-600/40 text-amber-300' : 'bg-transparent border-transparent text-muted-foreground hover:text-muted-foreground/70')}
-                  title="Invertir dirección de la vista de elevación"
-                >
-                  {elevFlipped ? '← Der a Izq' : 'Izq a Der →'}
-                </button>
+                <div className="ml-auto flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 bg-slate-800/40 rounded-md border border-slate-700">
+                    <button
+                      onClick={() => setCanvasZoomPersist(canvasZoom - 0.15)}
+                      disabled={canvasZoom <= 0.6}
+                      className="px-2 py-1 text-xs text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground"
+                      title="Reducir zoom"
+                    >
+                      −
+                    </button>
+                    <button
+                      onClick={() => setCanvasZoomPersist(1)}
+                      className="px-1.5 py-1 text-[10px] text-muted-foreground hover:text-white font-mono min-w-[36px]"
+                      title="Restablecer zoom (100%)"
+                    >
+                      {Math.round(canvasZoom * 100)}%
+                    </button>
+                    <button
+                      onClick={() => setCanvasZoomPersist(canvasZoom + 0.15)}
+                      disabled={canvasZoom >= 2.5}
+                      className="px-2 py-1 text-xs text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground"
+                      title="Aumentar zoom"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setElevFlipped(!elevFlipped)}
+                    className={cn('px-2 py-1.5 rounded-t-lg text-xs font-medium transition-colors border-t border-l border-r',
+                      elevFlipped ? 'bg-amber-900/40 border-amber-600/40 text-amber-300' : 'bg-transparent border-transparent text-muted-foreground hover:text-muted-foreground/70')}
+                    title="Invertir dirección de la vista de elevación"
+                  >
+                    {elevFlipped ? '← Der a Izq' : 'Izq a Der →'}
+                  </button>
+                </div>
               </div>
 
               {placingModule && !isIslandMode && (
@@ -1514,6 +1559,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     flipped={elevFlipped}
                     adjacentAtStart={adjacentWalls.atStart}
                     adjacentAtEnd={adjacentWalls.atEnd}
+                    zoom={canvasZoom}
                     onCanvasClick={handleCanvasClick}
                     onCanvasMouseMove={setHoverX}
                     onCanvasMouseLeave={() => setHoverX(null)}

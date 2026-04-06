@@ -31,9 +31,10 @@ export default async function ModuloDetallePage({
     prisma.configuracion.findUnique({ where: { clave: 'tipos_modulo_melamina' } }),
   ])
 
-  const tiposModulo: string[] = tiposConfig
+  const tiposBase: string[] = tiposConfig
     ? JSON.parse(tiposConfig.valor)
-    : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro']
+    : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Repisa', 'Columna', 'Closet', 'Baño', 'Oficina', 'Otro']
+  const tiposModulo = tiposBase.includes('Repisa') ? tiposBase : [...tiposBase, 'Repisa']
 
   if (!modulo) notFound()
 

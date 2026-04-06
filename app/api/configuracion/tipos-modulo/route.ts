@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 const CLAVE = 'tipos_modulo_melamina'
 const DEFAULTS = [
   'Base con puertas', 'Base con cajones', 'Base mixto',
-  'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina',
+  'Aéreo con puertas', 'Repisa', 'Columna', 'Closet', 'Baño', 'Oficina',
   'Electrodoméstico', 'Otro',
 ]
 
