@@ -28,10 +28,12 @@ else
   echo "   Ver instrucciones en README-v1.4.md"
 fi
 
-# 1. Traer últimos cambios
+# 1. Traer últimos cambios (stash local changes like ecosystem.config.js)
 echo ""
 echo "→ git pull..."
+git stash --quiet 2>/dev/null || true
 git pull origin main
+git stash pop --quiet 2>/dev/null || true
 
 # 2. Instalar dependencias (si cambiaron)
 echo ""
