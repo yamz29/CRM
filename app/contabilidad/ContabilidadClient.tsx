@@ -523,6 +523,7 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   const [movimientos, setMovimientos] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showTransferForm, setShowTransferForm] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [importResult, setImportResult] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
@@ -595,8 +596,11 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
           ))}
         </select>
         <Button variant="outline" onClick={fetchMovimientos} disabled={!cuentaId}>Cargar</Button>
-        <Button onClick={() => setShowAddForm(!showAddForm)} disabled={!cuentaId}>
+        <Button onClick={() => { setShowAddForm(!showAddForm); setShowTransferForm(false) }} disabled={!cuentaId}>
           <Plus className="w-4 h-4" /> Movimiento
+        </Button>
+        <Button variant="outline" onClick={() => { setShowTransferForm(!showTransferForm); setShowAddForm(false) }}>
+          <ArrowRightLeft className="w-4 h-4" /> Transferencia
         </Button>
         <Button variant="outline" onClick={() => importRef.current?.click()} disabled={!cuentaId || importing}>
           <Upload className="w-4 h-4" /> {importing ? 'Importando...' : 'Importar Extracto'}
@@ -615,6 +619,15 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
           cuentaId={parseInt(cuentaId)}
           onClose={() => setShowAddForm(false)}
           onSaved={() => { setShowAddForm(false); fetchMovimientos() }}
+        />
+      )}
+
+      {showTransferForm && (
+        <TransferenciaForm
+          cuentas={cuentas}
+          cuentaOrigenId={cuentaId}
+          onClose={() => setShowTransferForm(false)}
+          onSaved={() => { setShowTransferForm(false); fetchMovimientos() }}
         />
       )}
 
@@ -774,6 +787,127 @@ function MovimientoForm({ cuentaId, onClose, onSaved }: { cuentaId: number; onCl
         <div className="col-span-full flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Agregar'}</Button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ── Transferencia Form ──────────────────────────────────────────────────
+
+function TransferenciaForm({ cuentas, cuentaOrigenId, onClose, onSaved }: {
+  cuentas: CuentaBancaria[]; cuentaOrigenId: string; onClose: () => void; onSaved: () => void
+}) {
+  const [origenId, setOrigenId] = useState(cuentaOrigenId)
+  const [destinoId, setDestinoId] = useState('')
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
+  const [monto, setMonto] = useState('')
+  const [descripcion, setDescripcion] = useState('')
+  const [referencia, setReferencia] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const origen = cuentas.find(c => c.id.toString() === origenId)
+  const destino = cuentas.find(c => c.id.toString() === destinoId)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true); setError(''); setSuccess('')
+    const res = await fetch('/api/contabilidad/transferencia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cuentaOrigenId: parseInt(origenId),
+        cuentaDestinoId: parseInt(destinoId),
+        monto: parseFloat(monto) || 0,
+        fecha,
+        descripcion: descripcion || undefined,
+        referencia: referencia || undefined,
+      }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setSuccess(data.message)
+      setTimeout(() => onSaved(), 1500)
+    } else {
+      setError(data.error || 'Error al transferir')
+    }
+    setLoading(false)
+  }
+
+  const inputCls = 'w-full border border-border rounded-md px-2.5 py-1.5 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring'
+
+  return (
+    <div className="bg-card border border-purple-200 dark:border-purple-800 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold flex items-center gap-2">
+          <ArrowRightLeft className="w-4 h-4 text-purple-500" /> Transferencia entre cuentas
+        </h3>
+        <button onClick={onClose}><X className="w-4 h-4" /></button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">
+        Transfiere fondos entre cuentas. Ej: pago de tarjeta de crédito desde cuenta corriente.
+      </p>
+      {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+      {success && <p className="text-green-600 text-sm mb-3">{success}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Cuenta origen (sale dinero) *</label>
+            <select value={origenId} onChange={(e) => setOrigenId(e.target.value)} className={inputCls} required>
+              <option value="">Seleccionar...</option>
+              {cuentas.map((c) => (
+                <option key={c.id} value={c.id} disabled={c.id.toString() === destinoId}>
+                  {c.nombre} — {c.banco} {c.tipoCuenta === 'tarjeta_credito' ? '(TC)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Cuenta destino (recibe dinero) *</label>
+            <select value={destinoId} onChange={(e) => setDestinoId(e.target.value)} className={inputCls} required>
+              <option value="">Seleccionar...</option>
+              {cuentas.map((c) => (
+                <option key={c.id} value={c.id} disabled={c.id.toString() === origenId}>
+                  {c.nombre} — {c.banco} {c.tipoCuenta === 'tarjeta_credito' ? '(TC)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {origen && destino && (
+          <div className="flex items-center justify-center gap-3 py-2 text-sm">
+            <span className="px-3 py-1 rounded-lg bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 font-medium">{origen.nombre}</span>
+            <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
+            <span className="px-3 py-1 rounded-lg bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 font-medium">{destino.nombre}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-4 gap-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Fecha *</label>
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputCls} required />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Monto *</label>
+            <input type="number" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputCls} required placeholder="0.00" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Descripción</label>
+            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className={inputCls} placeholder="Pago tarjeta, transferencia..." />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Referencia</label>
+            <input value={referencia} onChange={(e) => setReferencia(e.target.value)} className={inputCls} placeholder="Nro. referencia" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={loading || !origenId || !destinoId}>
+            {loading ? 'Procesando...' : 'Realizar Transferencia'}
+          </Button>
         </div>
       </form>
     </div>
