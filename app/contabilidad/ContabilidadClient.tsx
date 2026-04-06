@@ -556,6 +556,12 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
     if (res.ok) fetchMovimientos()
   }
 
+  const handleDeleteMovimiento = async (movId: number) => {
+    if (!confirm('¿Eliminar este movimiento?')) return
+    const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos/${movId}`, { method: 'DELETE' })
+    if (res.ok) fetchMovimientos()
+  }
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !cuentaId) return
@@ -665,6 +671,7 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Monto</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Conciliado</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Factura</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -728,6 +735,11 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
                           })}
                       </select>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => handleDeleteMovimiento(m.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar movimiento">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -65,9 +65,10 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
   }
 
   const handleDeletePago = async (pagoId: number) => {
-    // Simple approach: we don't have a DELETE pago endpoint yet, but we can add context
-    // For now, just note this is not yet implemented
-    alert('Para eliminar un pago, contacte al administrador.')
+    if (!confirm('¿Eliminar este pago? Se recalculará el saldo de la factura.')) return
+    const res = await fetch(`/api/contabilidad/facturas/${factura.id}/pagos/${pagoId}`, { method: 'DELETE' })
+    if (res.ok) refreshFactura()
+    else alert('Error al eliminar pago')
   }
 
   const refreshFactura = async () => {
@@ -209,7 +210,12 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
                       </p>
                       {p.observaciones && <p className="text-xs text-muted-foreground mt-0.5">{p.observaciones}</p>}
                     </div>
-                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <button onClick={() => handleDeletePago(p.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar pago">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
