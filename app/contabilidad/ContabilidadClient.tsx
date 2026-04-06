@@ -539,7 +539,8 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   }, [cuentaId])
 
   const fetchFacturas = useCallback(async () => {
-    const res = await fetch('/api/contabilidad/facturas?conciliables=1')
+    // Load all non-anulada facturas for conciliation matching
+    const res = await fetch('/api/contabilidad/facturas')
     if (res.ok) {
       const data = await res.json()
       setFacturasDisponibles(data.facturas || [])
@@ -691,19 +692,40 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {m.factura ? (
-                      <Link href={`/contabilidad/facturas/${m.factura.id}`} className="text-xs text-primary hover:underline">
-                        #{m.factura.numero}
-                      </Link>
+                      <div className="flex items-center gap-1 justify-center">
+                        <Link href={`/contabilidad/facturas/${m.factura.id}`} className="text-xs text-primary hover:underline">
+                          #{m.factura.numero}
+                        </Link>
+                        <button onClick={() => handleConciliar(m.id, null)} className="text-muted-foreground hover:text-red-500" title="Desvincular">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
                     ) : (
                       <select
-                        className="text-xs border border-border rounded px-1 py-0.5 bg-card"
+                        className={`text-xs border rounded px-1 py-0.5 bg-card ${
+                          facturasDisponibles.some((f: any) => f.estado !== 'anulada' && Math.abs(f.total - m.monto) < 0.02)
+                            ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-border'
+                        }`}
                         value=""
                         onChange={(e) => { if (e.target.value) handleConciliar(m.id, parseInt(e.target.value)) }}
                       >
                         <option value="">Vincular...</option>
-                        {facturasDisponibles.map((f: any) => (
-                          <option key={f.id} value={f.id}>#{f.numero} — {formatCurrency(f.total)}</option>
-                        ))}
+                        {/* Show matching amounts first */}
+                        {facturasDisponibles
+                          .filter((f: any) => f.estado !== 'anulada')
+                          .sort((a: any, b: any) => {
+                            const aMatch = Math.abs(a.total - m.monto) < 0.02 ? 0 : 1
+                            const bMatch = Math.abs(b.total - m.monto) < 0.02 ? 0 : 1
+                            return aMatch - bMatch
+                          })
+                          .map((f: any) => {
+                            const montoMatch = Math.abs(f.total - m.monto) < 0.02
+                            return (
+                              <option key={f.id} value={f.id}>
+                                {montoMatch ? '✓ ' : ''}#{f.numero} — {formatCurrency(f.total)} — {f.proveedor || f.cliente?.nombre || 'Sin nombre'} [{f.estado}]
+                              </option>
+                            )
+                          })}
                       </select>
                     )}
                   </td>
