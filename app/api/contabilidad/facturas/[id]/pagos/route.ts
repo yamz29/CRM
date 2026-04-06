@@ -44,15 +44,18 @@ export async function POST(request: NextRequest, { params }: Ctx) {
       return NextResponse.json({ error: `Monto excede el saldo pendiente (${saldoPendiente.toFixed(2)})` }, { status: 400 })
     }
 
+    const fechaPago = new Date(fecha || Date.now())
+    const cuentaId = cuentaBancariaId ? parseInt(String(cuentaBancariaId)) : null
+
     const result = await prisma.$transaction(async (tx) => {
       const pago = await tx.pagoFactura.create({
         data: {
           facturaId,
-          fecha: new Date(fecha || Date.now()),
+          fecha: fechaPago,
           monto: montoNum,
           metodoPago: metodoPago || 'Transferencia',
           referencia: referencia || null,
-          cuentaBancariaId: cuentaBancariaId ? parseInt(String(cuentaBancariaId)) : null,
+          cuentaBancariaId: cuentaId,
           observaciones: observaciones || null,
         },
         include: { cuentaBancaria: { select: { id: true, nombre: true, banco: true } } },
@@ -65,6 +68,23 @@ export async function POST(request: NextRequest, { params }: Ctx) {
         where: { id: facturaId },
         data: { montoPagado: nuevoMontoPagado, estado: nuevoEstado },
       })
+
+      // Auto-create bank movement if a bank account was selected
+      if (cuentaId) {
+        const tipoMov = factura.tipo === 'egreso' ? 'debito' : 'credito'
+        await tx.movimientoBancario.create({
+          data: {
+            cuentaBancariaId: cuentaId,
+            fecha: fechaPago,
+            tipo: tipoMov,
+            monto: montoNum,
+            descripcion: `Pago factura #${factura.numero}${factura.proveedor ? ' — ' + factura.proveedor : ''}`,
+            referencia: referencia || null,
+            conciliado: true,
+            facturaId,
+          },
+        })
+      }
 
       return pago
     })

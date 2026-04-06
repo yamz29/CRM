@@ -27,9 +27,15 @@ export async function GET(request: NextRequest) {
   const hasta = sp.get('hasta')
   const clienteId = sp.get('clienteId')
 
+  const conciliables = sp.get('conciliables')
+
   const where: any = {}
   if (tipo) where.tipo = tipo
-  if (estado) where.estado = estado
+  if (conciliables) {
+    where.estado = { in: ['pendiente', 'parcial'] }
+  } else if (estado) {
+    where.estado = estado
+  }
   if (clienteId) where.clienteId = parseInt(clienteId)
   if (desde || hasta) {
     where.fecha = {}

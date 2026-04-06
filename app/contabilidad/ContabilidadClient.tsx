@@ -539,7 +539,7 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   }, [cuentaId])
 
   const fetchFacturas = useCallback(async () => {
-    const res = await fetch('/api/contabilidad/facturas?estado=pendiente')
+    const res = await fetch('/api/contabilidad/facturas?conciliables=1')
     if (res.ok) {
       const data = await res.json()
       setFacturasDisponibles(data.facturas || [])
