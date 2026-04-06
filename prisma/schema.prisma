@@ -91,12 +91,14 @@ model GastoProyecto {
   recursoId        Int?
   cantidadRecurso  Float?
   movimientoStock  String?  // 'entrada' | 'salida' | null
+  facturaId        Int?     @unique  // vínculo con factura de contabilidad
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   proyecto  Proyecto?        @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   partida   ProyectoPartida? @relation(fields: [partidaId], references: [id], onDelete: SetNull)
   recurso   Recurso?         @relation(fields: [recursoId], references: [id], onDelete: SetNull)
+  factura   Factura?         @relation(fields: [facturaId], references: [id], onDelete: SetNull)
 
   @@index([proyectoId])
   @@index([proyectoId, estado])
@@ -1057,6 +1059,7 @@ model Factura {
 
   pagos            PagoFactura[]
   movimientos      MovimientoBancario[]
+  gasto            GastoProyecto?
 
   @@index([tipo])
   @@index([estado])

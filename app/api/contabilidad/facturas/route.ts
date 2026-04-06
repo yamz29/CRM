@@ -141,28 +141,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tipo debe ser ingreso o egreso' }, { status: 400 })
     }
 
+    const parsedProyectoId = proyectoId ? parseInt(String(proyectoId)) : null
+    const parsedTotal = parseFloat(String(total)) || 0
+    const fechaFactura = new Date(fecha || Date.now())
+
     const factura = await prisma.factura.create({
       data: {
         numero: numero.toString().trim(),
         ncf: ncf || null,
         tipo,
-        fecha: new Date(fecha || Date.now()),
+        fecha: fechaFactura,
         fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : null,
         proveedor: proveedor || null,
         rncProveedor: rncProveedor || null,
         clienteId: clienteId ? parseInt(String(clienteId)) : null,
         destinoTipo: destinoTipo || 'general',
-        proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+        proyectoId: parsedProyectoId,
         descripcion: descripcion || null,
         subtotal: parseFloat(String(subtotal)) || 0,
         impuesto: parseFloat(String(impuesto)) || 0,
-        total: parseFloat(String(total)) || 0,
+        total: parsedTotal,
         observaciones: observaciones || null,
         archivoUrl,
         driveUrl,
       },
       include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
+
+    // Auto-create gasto for egreso invoices linked to a project
+    if (tipo === 'egreso' && parsedProyectoId) {
+      await prisma.gastoProyecto.create({
+        data: {
+          proyectoId: parsedProyectoId,
+          destinoTipo: destinoTipo || 'proyecto',
+          fecha: fechaFactura,
+          tipoGasto: 'Factura',
+          referencia: `FAC-${factura.numero}`,
+          descripcion: descripcion || `Factura #${factura.numero}`,
+          suplidor: proveedor || null,
+          monto: parsedTotal,
+          metodoPago: 'Factura',
+          observaciones: ncf ? `NCF: ${ncf}` : null,
+          archivoUrl,
+          facturaId: factura.id,
+        },
+      })
+    }
 
     return NextResponse.json(factura, { status: 201 })
   } catch (error) {

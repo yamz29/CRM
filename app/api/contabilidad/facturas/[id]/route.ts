@@ -116,6 +116,48 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
 
+    // Sync linked gasto when factura changes
+    if (factura.tipo === 'egreso') {
+      const gastoExistente = await prisma.gastoProyecto.findUnique({ where: { facturaId: id } })
+
+      if (factura.estado === 'anulada' && gastoExistente) {
+        // Anulada → delete the gasto
+        await prisma.gastoProyecto.delete({ where: { facturaId: id } })
+      } else if (factura.proyectoId && gastoExistente) {
+        // Update existing gasto
+        await prisma.gastoProyecto.update({
+          where: { facturaId: id },
+          data: {
+            proyectoId: factura.proyectoId,
+            fecha: factura.fecha,
+            descripcion: factura.descripcion || `Factura #${factura.numero}`,
+            suplidor: factura.proveedor,
+            monto: factura.total,
+            referencia: `FAC-${factura.numero}`,
+          },
+        })
+      } else if (factura.proyectoId && !gastoExistente) {
+        // New project assigned → create gasto
+        await prisma.gastoProyecto.create({
+          data: {
+            proyectoId: factura.proyectoId,
+            destinoTipo: factura.destinoTipo || 'proyecto',
+            fecha: factura.fecha,
+            tipoGasto: 'Factura',
+            referencia: `FAC-${factura.numero}`,
+            descripcion: factura.descripcion || `Factura #${factura.numero}`,
+            suplidor: factura.proveedor,
+            monto: factura.total,
+            metodoPago: 'Factura',
+            facturaId: id,
+          },
+        })
+      } else if (!factura.proyectoId && gastoExistente) {
+        // Project removed → delete gasto
+        await prisma.gastoProyecto.delete({ where: { facturaId: id } })
+      }
+    }
+
     return NextResponse.json(factura)
   } catch (error) {
     console.error('Error updating factura:', error)
@@ -150,6 +192,9 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
       where: { facturaId: id },
       data: { conciliado: false, facturaId: null },
     })
+
+    // Delete linked gasto
+    await prisma.gastoProyecto.deleteMany({ where: { facturaId: id } })
 
     // Delete file if exists
     if (existing.archivoUrl) {
