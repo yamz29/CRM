@@ -94,6 +94,7 @@ export async function POST(
             subtotal: p.subtotal,
             observaciones: p.observaciones,
             orden: p.orden,
+            esNota: p.esNota,
             ...(p.analisis ? {
               analisis: {
                 create: {

@@ -233,6 +233,7 @@ model PartidaPresupuesto {
   subtotal       Float    @default(0)
   observaciones  String?
   orden          Int      @default(0)
+  esNota         Boolean  @default(false)  // si true: solo descripción, no suma al total
   createdAt      DateTime @default(now())
 
   capitulo CapituloPresupuesto @relation(fields: [capituloId], references: [id], onDelete: Cascade)

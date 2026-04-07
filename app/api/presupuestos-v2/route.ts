@@ -13,6 +13,7 @@ function calcTotals(capitulos: any[], indirectoLineas: any[], descuentoTipo = 'n
   let subtotalBase = 0
   for (const cap of capitulos) {
     for (const p of cap.partidas || []) {
+      if (p.esNota) continue
       subtotalBase += safeNum(p.subtotal) || safeNum(p.cantidad) * safeNum(p.precioUnitario)
     }
   }
@@ -129,11 +130,12 @@ export async function POST(request: NextRequest) {
               codigo: p.codigo || null,
               descripcion: p.descripcion,
               unidad: p.unidad || 'gl',
-              cantidad: safeNum(p.cantidad),
-              precioUnitario: safeNum(p.precioUnitario),
-              subtotal: safeNum(p.subtotal),
+              cantidad: p.esNota ? 0 : safeNum(p.cantidad),
+              precioUnitario: p.esNota ? 0 : safeNum(p.precioUnitario),
+              subtotal: p.esNota ? 0 : safeNum(p.subtotal),
               observaciones: p.observaciones || null,
               orden: pi,
+              esNota: !!p.esNota,
               ...(p.analisis ? {
                 analisis: {
                   create: {

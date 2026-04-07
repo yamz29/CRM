@@ -90,6 +90,7 @@ export default async function EditarPresupuestoV2Page({
         subtotal: p.subtotal,
         observaciones: p.observaciones || '',
         orden: p.orden,
+        esNota: p.esNota,
         analisis: p.analisis
           ? {
               materiales: p.analisis.materiales,

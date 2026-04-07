@@ -45,6 +45,7 @@ interface Partida {
   codigo: string; descripcion: string; unidad: string
   cantidad: number; precioUnitario: number; subtotal: number
   observaciones: string; orden: number; analisis?: Analisis
+  esNota?: boolean   // si true: solo descripción, no suma al total
 }
 
 interface Capitulo {
@@ -143,6 +144,9 @@ function calcAnalisisFromDetalle(detalle: DetalleAPU, indirectos: number, utilid
 
 function emptyPartida(orden: number): Partida {
   return { _key: nextPK(), codigo: '', descripcion: '', unidad: 'gl', cantidad: 1, precioUnitario: 0, subtotal: 0, observaciones: '', orden }
+}
+function emptyNota(orden: number): Partida {
+  return { _key: nextPK(), codigo: '', descripcion: '', unidad: 'gl', cantidad: 0, precioUnitario: 0, subtotal: 0, observaciones: '', orden, esNota: true }
 }
 function emptyCapitulo(codigo: string, nombre: string, orden: number, tituloIdx: number | null = null): Capitulo {
   return { codigo, nombre, orden, tituloIdx, partidas: [emptyPartida(0)] }
@@ -437,7 +441,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   // ── Derived ────────────────────────────────────────────────────────────────
 
   const filteredProyectos = clienteId ? proyectos.filter((p) => p.clienteId === parseInt(clienteId)) : proyectos
-  const subtotalBase = capitulos.reduce((acc, cap) => acc + cap.partidas.reduce((a, p) => a + p.subtotal, 0), 0)
+  const subtotalBase = capitulos.reduce((acc, cap) => acc + cap.partidas.reduce((a, p) => a + (p.esNota ? 0 : p.subtotal), 0), 0)
   const subtotalIndirecto = indirectoLineas.filter(l => l.activo).reduce((s, l) => s + subtotalBase * l.porcentaje / 100, 0)
   const subtotalAntesDescuento = subtotalBase + subtotalIndirecto
   const montoDescuento = descuentoTipo === 'porcentaje'
@@ -505,6 +509,14 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
     setCapitulos(prev => {
       const next = [...prev]
       next[ci] = { ...next[ci], partidas: [...next[ci].partidas, emptyPartida(next[ci].partidas.length)] }
+      return next
+    })
+  }, [])
+
+  const addNota = useCallback((ci: number) => {
+    setCapitulos(prev => {
+      const next = [...prev]
+      next[ci] = { ...next[ci], partidas: [...next[ci].partidas, emptyNota(next[ci].partidas.length)] }
       return next
     })
   }, [])
@@ -615,7 +627,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   // ── Render capitulo (shared) ───────────────────────────────────────────────
 
   function renderCapitulo(cap: Capitulo, ci: number) {
-    const capTotal = cap.partidas.reduce((a, p) => a + p.subtotal, 0)
+    const capTotal = cap.partidas.reduce((a, p) => a + (p.esNota ? 0 : p.subtotal), 0)
     const isCollapsed = collapsed.has(ci)
     const pct = subtotalBase > 0 ? (capTotal / subtotalBase) * 100 : 0
     return (
@@ -675,6 +687,27 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                 <tbody>
                   {cap.partidas.map((p, pi) => {
                     const apuKey = `${ci}-${pi}`
+                    if (p.esNota) {
+                      return (
+                        <tr key={p._key ?? `idx-${ci}-${pi}`} className="border-b border-amber-200 bg-amber-50/60 hover:bg-amber-50 group">
+                          <td className="px-2 py-1 text-center text-xs text-amber-700 select-none font-bold" title="Nota informativa">★</td>
+                          <td colSpan={6} className="px-1 py-0.5">
+                            <input
+                              type="text"
+                              value={p.descripcion}
+                              onChange={(e) => updatePartida(ci, pi, 'descripcion', e.target.value)}
+                              placeholder="Nota informativa (no suma al total)..."
+                              className="w-full px-2 py-1.5 text-sm italic text-amber-900 border border-transparent rounded focus:outline-none focus:border-amber-400 focus:bg-card focus:ring-1 focus:ring-amber-300 hover:border-amber-300 bg-transparent transition-colors"
+                            />
+                          </td>
+                          <td className="px-1 py-0.5">
+                            <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => removePartida(ci, pi)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    }
                     return (
                       <Fragment key={p._key ?? `idx-${ci}-${pi}`}>
                         <tr className="border-b border-border hover:bg-muted/40/50 group">
@@ -738,10 +771,13 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
               </table>
             </div>
 
-            {/* Add partida / APU search */}
+            {/* Add partida / APU search / nota */}
             <div className="flex items-center gap-3 px-3 py-2 bg-muted/40 border-t border-border">
               <button onClick={() => addPartida(ci)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Agregar partida
+              </button>
+              <button onClick={() => addNota(ci)} className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium transition-colors" title="Agrega una línea informativa que no suma al total">
+                <Plus className="w-3.5 h-3.5" /> Agregar nota
               </button>
               <button onClick={() => setApuSearchOpen(ci)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors">
                 <FileSpreadsheet className="w-3.5 h-3.5" /> Insertar desde catálogo APU
@@ -877,7 +913,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
       {/* ── TÍTULOS con sus capítulos ── */}
       {titulos.map((titulo, ti) => {
         const capsInTitulo = chaptersByTitulo[ti] || []
-        const tituloTotal = capsInTitulo.reduce((s, { cap }) => s + cap.partidas.reduce((a, p) => a + p.subtotal, 0), 0)
+        const tituloTotal = capsInTitulo.reduce((s, { cap }) => s + cap.partidas.reduce((a, p) => a + (p.esNota ? 0 : p.subtotal), 0), 0)
         const isCollapsedT = collapsedTitulos.has(ti)
         return (
           <div key={ti} className="border-2 border-amber-200 rounded-xl overflow-hidden">

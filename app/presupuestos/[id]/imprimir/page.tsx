@@ -41,7 +41,7 @@ export default async function ImprimirPresupuestoPage({
   const nombreEmpresa = empresa?.nombre || 'Gonzalva Group'
 
   const subtotalBase = presupuesto.capitulos.reduce(
-    (acc, cap) => acc + cap.partidas.reduce((s, p) => s + p.subtotal, 0), 0
+    (acc, cap) => acc + cap.partidas.reduce((s, p) => s + (p.esNota ? 0 : p.subtotal), 0), 0
   )
   const indirectosActivos = presupuesto.indirectos.filter(l => l.activo)
   const subtotalIndirecto = indirectosActivos.reduce(
@@ -202,9 +202,9 @@ export default async function ImprimirPresupuestoPage({
 
             {/* Titled groups */}
             {presupuesto.titulos.map(titulo => {
-              const caps = (tituloMap[titulo.id] || []).filter(c => c.partidas.reduce((s, p) => s + p.subtotal, 0) > 0)
+              const caps = (tituloMap[titulo.id] || []).filter(c => c.partidas.length > 0)
               if (caps.length === 0) return null
-              const tituloTotal = caps.reduce((s, c) => s + c.partidas.reduce((ss, p) => ss + p.subtotal, 0), 0)
+              const tituloTotal = caps.reduce((s, c) => s + c.partidas.reduce((ss, p) => ss + (p.esNota ? 0 : p.subtotal), 0), 0)
               return (
                 <div key={titulo.id} style={{ marginBottom: 20 }}>
                   {/* Título row */}
@@ -220,7 +220,7 @@ export default async function ImprimirPresupuestoPage({
             })}
 
             {/* Floating chapters (no titulo) */}
-            {floating.filter(cap => cap.partidas.reduce((s, p) => s + p.subtotal, 0) > 0).map(cap => (
+            {floating.filter(cap => cap.partidas.length > 0).map(cap => (
               <div key={cap.id} style={{ marginBottom: 12 }}>
                 <CapBlock cap={cap} />
               </div>
@@ -441,11 +441,12 @@ type Cap = {
     cantidad: number
     precioUnitario: number
     subtotal: number
+    esNota: boolean
   }[]
 }
 
 function CapBlock({ cap }: { cap: Cap }) {
-  const capTotal = cap.partidas.reduce((s, p) => s + p.subtotal, 0)
+  const capTotal = cap.partidas.reduce((s, p) => s + (p.esNota ? 0 : p.subtotal), 0)
   return (
     <div className="cap-block" style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
       {/* Chapter header */}
@@ -469,21 +470,37 @@ function CapBlock({ cap }: { cap: Cap }) {
             </tr>
           </thead>
           <tbody>
-            {cap.partidas.map((p, pi) => (
-              <tr key={p.id} style={{ background: pi % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '4px 8px', fontSize: 9, color: '#94a3b8' }}>{pi + 1}</td>
-                <td style={{ padding: '4px 8px', fontSize: 9, color: '#1e293b', fontWeight: 500 }}>
-                  {p.codigo && <span style={{ fontFamily: 'monospace', fontSize: 8, color: '#94a3b8', marginRight: 6 }}>{p.codigo}</span>}
-                  {p.descripcion}
-                </td>
-                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'center', color: '#64748b' }}>{p.unidad}</td>
-                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                  {p.cantidad.toLocaleString('en-US', { maximumFractionDigits: 4 })}
-                </td>
-                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>{formatCurrency(p.precioUnitario)}</td>
-                <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.subtotal)}</td>
-              </tr>
-            ))}
+            {(() => {
+              let partidaNum = 0
+              return cap.partidas.map((p, pi) => {
+                if (p.esNota) {
+                  return (
+                    <tr key={p.id} style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a' }}>
+                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#b45309', textAlign: 'center' }}>—</td>
+                      <td colSpan={5} style={{ padding: '4px 8px', fontSize: 9, color: '#78350f', fontStyle: 'italic' }}>
+                        {p.descripcion}
+                      </td>
+                    </tr>
+                  )
+                }
+                partidaNum += 1
+                return (
+                  <tr key={p.id} style={{ background: pi % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '4px 8px', fontSize: 9, color: '#94a3b8' }}>{partidaNum}</td>
+                    <td style={{ padding: '4px 8px', fontSize: 9, color: '#1e293b', fontWeight: 500 }}>
+                      {p.codigo && <span style={{ fontFamily: 'monospace', fontSize: 8, color: '#94a3b8', marginRight: 6 }}>{p.codigo}</span>}
+                      {p.descripcion}
+                    </td>
+                    <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'center', color: '#64748b' }}>{p.unidad}</td>
+                    <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                      {p.cantidad.toLocaleString('en-US', { maximumFractionDigits: 4 })}
+                    </td>
+                    <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>{formatCurrency(p.precioUnitario)}</td>
+                    <td style={{ padding: '4px 8px', fontSize: 9, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(p.subtotal)}</td>
+                  </tr>
+                )
+              })
+            })()}
           </tbody>
           <tfoot>
             <tr style={{ background: '#e2e8f0', borderTop: '1px solid #cbd5e1' }}>

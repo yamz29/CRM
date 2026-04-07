@@ -56,7 +56,7 @@ export default async function PresupuestoDetailPage({
     0
   )
   const subtotalBase = presupuesto.capitulos.reduce(
-    (acc, cap) => acc + cap.partidas.reduce((s, p) => s + p.subtotal, 0),
+    (acc, cap) => acc + cap.partidas.reduce((s, p) => s + (p.esNota ? 0 : p.subtotal), 0),
     0
   )
   const indirectosActivos = presupuesto.indirectos.filter(l => l.activo)
@@ -193,7 +193,7 @@ export default async function PresupuestoDetailPage({
             <h2 className="text-lg font-semibold text-foreground">Capítulos y Partidas</h2>
           </div>
           {presupuesto.capitulos.map((cap) => {
-            const capTotal = cap.partidas.reduce((a, p) => a + p.subtotal, 0)
+            const capTotal = cap.partidas.reduce((a, p) => a + (p.esNota ? 0 : p.subtotal), 0)
             return (
               <Card key={cap.id}>
                 <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800 text-white rounded-t-xl">
@@ -217,14 +217,21 @@ export default async function PresupuestoDetailPage({
                     </thead>
                     <tbody className="divide-y divide-border">
                       {cap.partidas.map((partida) => (
-                        <tr key={partida.id} className="hover:bg-muted/50">
-                          <td className="px-4 py-2.5 text-sm text-muted-foreground font-mono">{partida.codigo || '-'}</td>
-                          <td className="px-4 py-2.5 text-sm text-foreground">{partida.descripcion}</td>
-                          <td className="px-4 py-2.5 text-sm text-muted-foreground">{partida.unidad}</td>
-                          <td className="px-4 py-2.5 text-sm text-muted-foreground text-right">{partida.cantidad}</td>
-                          <td className="px-4 py-2.5 text-sm text-muted-foreground text-right">{formatCurrency(partida.precioUnitario)}</td>
-                          <td className="px-4 py-2.5 text-sm font-semibold text-foreground text-right">{formatCurrency(partida.subtotal)}</td>
-                        </tr>
+                        partida.esNota ? (
+                          <tr key={partida.id} className="bg-amber-50/60">
+                            <td className="px-4 py-2 text-center text-amber-700 font-bold" title="Nota">★</td>
+                            <td colSpan={5} className="px-4 py-2 text-sm italic text-amber-900">{partida.descripcion}</td>
+                          </tr>
+                        ) : (
+                          <tr key={partida.id} className="hover:bg-muted/50">
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground font-mono">{partida.codigo || '-'}</td>
+                            <td className="px-4 py-2.5 text-sm text-foreground">{partida.descripcion}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground">{partida.unidad}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground text-right">{partida.cantidad}</td>
+                            <td className="px-4 py-2.5 text-sm text-muted-foreground text-right">{formatCurrency(partida.precioUnitario)}</td>
+                            <td className="px-4 py-2.5 text-sm font-semibold text-foreground text-right">{formatCurrency(partida.subtotal)}</td>
+                          </tr>
+                        )
                       ))}
                     </tbody>
                   </table>
