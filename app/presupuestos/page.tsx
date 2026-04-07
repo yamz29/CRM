@@ -8,6 +8,7 @@ import { Plus, Eye, Pencil, FileText, ChevronLeft, ChevronRight } from 'lucide-r
 import { DeletePresupuestoButton } from './DeletePresupuestoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { PresupuestosBuscador } from './PresupuestosBuscador'
+import { ResumenIAQuickButton } from '@/components/presupuestos/ResumenIAQuickButton'
 
 const PER_PAGE = 20
 
@@ -203,6 +204,12 @@ export default async function PresupuestosPage({
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
+                          <ResumenIAQuickButton
+                            presupuestoId={p.id}
+                            numero={p.numero}
+                            resumenIA={p.resumenIA}
+                            resumenIAGeneradoAt={p.resumenIAGeneradoAt ? p.resumenIAGeneradoAt.toISOString() : null}
+                          />
                           <Link href={`/presupuestos/${p.id}`}>
                             <Button variant="ghost" size="sm" title="Ver detalle">
                               <Eye className="w-4 h-4" />
