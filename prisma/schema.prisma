@@ -158,6 +158,8 @@ model Presupuesto {
   itbisPorcentaje Float   @default(18)           // 18% normal o 1.8% norma 07-07
   total          Float    @default(0)
   notas          String?
+  resumenIA           String?   // resumen generado por IA (markdown)
+  resumenIAGeneradoAt DateTime? // cuándo se generó el último resumen
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { CambiarEstadoButton } from './CambiarEstadoButton'
 import { DuplicarButton } from './DuplicarButton'
+import { ResumenIAPanel } from '@/components/presupuestos/ResumenIAPanel'
 
 async function getPresupuesto(id: number) {
   return prisma.presupuesto.findUnique({
@@ -184,6 +185,13 @@ export default async function PresupuestoDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Resumen IA */}
+      <ResumenIAPanel
+        presupuestoId={presupuesto.id}
+        resumenIA={presupuesto.resumenIA}
+        resumenIAGeneradoAt={presupuesto.resumenIAGeneradoAt ? presupuesto.resumenIAGeneradoAt.toISOString() : null}
+      />
 
       {/* Capítulos V2 */}
       {presupuesto.capitulos.length > 0 && (
