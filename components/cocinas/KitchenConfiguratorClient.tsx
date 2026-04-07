@@ -1073,9 +1073,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
   }, [])
   const [positionInput, setPositionInput] = useState('')
   const [alturaInput, setAlturaInput] = useState(String(DEFAULT_ALTURA))
-  const [showPresupuestoModal, setShowPresupuestoModal] = useState(false)
-  const [presupuestoNombre, setPresupuestoNombre] = useState(project.nombre)
-  const [generatingPresupuesto, setGeneratingPresupuesto] = useState(false)
+  const [showApuModal, setShowApuModal] = useState(false)
+  const [apuNombre, setApuNombre] = useState(project.nombre)
+  const [generatingApu, setGeneratingApu] = useState(false)
   const [showCutListModal, setShowCutListModal] = useState(false)
   const [showNestingModal, setShowNestingModal] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1298,18 +1298,22 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     } finally { setCalculating(false) }
   }, [project.id])
 
-  async function handleGenerarPresupuesto() {
-    setGeneratingPresupuesto(true)
+  async function handleGenerarApu() {
+    setGeneratingApu(true)
     try {
-      const res = await fetch(`/api/cocinas/${project.id}/presupuesto`, {
+      const res = await fetch(`/api/cocinas/${project.id}/apu`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: presupuestoNombre }),
+        body: JSON.stringify({ nombre: apuNombre }),
       })
-      if (!res.ok) return
-      const data = await res.json() as { presupuestoId: number }
-      router.push(`/presupuestos/${data.presupuestoId}`)
-    } finally { setGeneratingPresupuesto(false); setShowPresupuestoModal(false) }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        showError(err.error || 'Error al crear APU')
+        return
+      }
+      const data = await res.json() as { apuId: number }
+      router.push(`/apus/${data.apuId}`)
+    } finally { setGeneratingApu(false); setShowApuModal(false) }
   }
 
   function buildCutListText(): string {
@@ -1729,9 +1733,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     className="w-full flex items-center justify-center gap-2 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
                     <Grid2x2 className="w-4 h-4" />Ver nesting
                   </button>
-                  <button onClick={() => setShowPresupuestoModal(true)}
+                  <button onClick={() => setShowApuModal(true)}
                     className="w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 text-muted-foreground/70 rounded-lg text-sm font-medium transition-colors">
-                    <FileText className="w-4 h-4" />Generar Presupuesto
+                    <FileText className="w-4 h-4" />Crear APU
                   </button>
                 </div>
               )}
@@ -1864,29 +1868,33 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
         />
       )}
 
-      {/* Presupuesto modal */}
-      {showPresupuestoModal && (
+      {/* APU modal */}
+      {showApuModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-white font-semibold">Generar Presupuesto</h3>
-              <button onClick={() => setShowPresupuestoModal(false)} className="text-muted-foreground hover:text-white"><X className="w-4 h-4" /></button>
+              <h3 className="text-white font-semibold">Crear APU del mueble</h3>
+              <button onClick={() => setShowApuModal(false)} className="text-muted-foreground hover:text-white"><X className="w-4 h-4" /></button>
             </div>
+            <p className="text-muted-foreground text-xs">
+              Se creará un APU en el catálogo con el nombre del mueble y una línea por cada módulo único.
+              Después puedes arrastrarlo a una cotización desde el constructor de presupuestos.
+            </p>
             <div>
-              <label className="block text-muted-foreground/70 text-sm font-medium mb-1">Nombre del presupuesto</label>
-              <input type="text" value={presupuestoNombre} onChange={(e) => setPresupuestoNombre(e.target.value)}
+              <label className="block text-muted-foreground/70 text-sm font-medium mb-1">Nombre del APU</label>
+              <input type="text" value={apuNombre} onChange={(e) => setApuNombre(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total estimado</span>
+              <span className="text-muted-foreground">Costo estimado</span>
               <span className="text-emerald-400 font-bold">{formatCurrency(totalCalcCost)}</span>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowPresupuestoModal(false)}
+              <button onClick={() => setShowApuModal(false)}
                 className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-muted-foreground/70 rounded-lg text-sm font-medium transition-colors">Cancelar</button>
-              <button onClick={handleGenerarPresupuesto} disabled={generatingPresupuesto}
+              <button onClick={handleGenerarApu} disabled={generatingApu}
                 className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                {generatingPresupuesto ? 'Generando...' : 'Crear presupuesto'}
+                {generatingApu ? 'Creando...' : 'Crear APU'}
               </button>
             </div>
           </div>
