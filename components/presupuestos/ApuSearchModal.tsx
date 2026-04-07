@@ -17,15 +17,26 @@ interface ApuResult {
   indirectos: number
   utilidad: number
   recursos: Array<{
-    recursoId: number
+    tipoComponente?: string | null
+    recursoId?: number | null
+    apuHijoId?: number | null
+    descripcionLibre?: string | null
+    unidadLibre?: string | null
+    nombreSnapshot?: string | null
+    unidadSnapshot?: string | null
+    tipoLinea?: string | null
     cantidad: number
     costoSnapshot: number
     subtotal: number
-    recurso: {
+    recurso?: {
       nombre: string
       tipo: string
       unidad: string
-    }
+    } | null
+    apuHijo?: {
+      nombre: string
+      unidad: string
+    } | null
   }>
 }
 
@@ -83,17 +94,48 @@ function buildPartidaFromApu(apu: ApuResult, cantidad: number, orden: number): I
   const precioSugerido = apu.precioVenta
   const margen = precioSugerido > 0 ? ((precioSugerido - apu.costoDirecto) / precioSugerido) * 100 : 0
 
-  // Group resources into detalle sections
+  // Group resources into detalle sections.
+  // An ApuRecurso line can be one of three variants:
+  //   1. recurso del catálogo  → ar.recurso (Recurso)
+  //   2. APU hijo (sub-APU)    → ar.apuHijo (ApuCatalogo) + tipoComponente='apu'
+  //   3. línea libre           → ar.descripcionLibre + ar.tipoLinea
   const detalle: InsertedPartida['analisis']['detalle'] = {
     materiales: [], manoObra: [], equipos: [], subcontratos: [], transporte: []
   }
   let mat = 0, mo = 0, eq = 0, sub = 0, tra = 0
 
   for (const ar of apu.recursos) {
-    const seccion = TIPO_TO_SECCION[ar.recurso.tipo] || 'materiales'
+    let descripcion: string
+    let unidad: string
+    let seccion: keyof InsertedPartida['analisis']['detalle']
+
+    if (ar.recurso) {
+      // Variante 1: recurso del catálogo
+      descripcion = ar.recurso.nombre
+      unidad = ar.recurso.unidad
+      seccion = TIPO_TO_SECCION[ar.recurso.tipo] || 'materiales'
+    } else if (ar.apuHijo || ar.tipoComponente === 'apu') {
+      // Variante 2: sub-APU
+      descripcion = ar.nombreSnapshot || ar.apuHijo?.nombre || 'Sub-APU'
+      unidad = ar.unidadSnapshot || ar.apuHijo?.unidad || 'gl'
+      // Sub-APUs los agrupamos en subcontratos por defecto (representan trabajo compuesto)
+      seccion = 'subcontratos'
+    } else {
+      // Variante 3: línea libre
+      descripcion = ar.descripcionLibre || 'Línea libre'
+      unidad = ar.unidadLibre || 'ud'
+      // tipoLinea puede venir como 'materiales' | 'manoObra' | 'equipos' | 'subcontratos' | 'transporte'
+      const tl = ar.tipoLinea
+      if (tl === 'manoObra' || tl === 'equipos' || tl === 'subcontratos' || tl === 'transporte') {
+        seccion = tl
+      } else {
+        seccion = 'materiales'
+      }
+    }
+
     detalle[seccion].push({
-      descripcion: ar.recurso.nombre,
-      unidad: ar.recurso.unidad,
+      descripcion,
+      unidad,
       cantidad: ar.cantidad,
       precioUnitario: ar.costoSnapshot,
     })
