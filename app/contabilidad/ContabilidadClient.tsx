@@ -126,9 +126,14 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
         </div>
         <div className="flex gap-2">
           {tab === 'facturas' && (
-            <Link href="/contabilidad/facturas/nueva">
-              <Button><Plus className="w-4 h-4" /> Nueva Factura</Button>
-            </Link>
+            <>
+              <Link href="/contabilidad/facturas/importar">
+                <Button variant="secondary"><Upload className="w-4 h-4" /> Importar CSV</Button>
+              </Link>
+              <Link href="/contabilidad/facturas/nueva">
+                <Button><Plus className="w-4 h-4" /> Nueva Factura</Button>
+              </Link>
+            </>
           )}
           {tab === 'cuentas' && (
             <Button onClick={() => { setEditingCuenta(null); setShowCuentaForm(true) }}>
