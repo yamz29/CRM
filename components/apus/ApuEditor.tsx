@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -329,15 +330,38 @@ function RecursoSearch({ recursos, selectedId, onSelect }: {
   const selected = selectedId ? recursos.find((r) => r.id === selectedId) : null
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
+  // Position the dropdown based on the input's bounding rect (used by the portal)
+  const updateRect = useCallback(() => {
+    const el = inputRef.current ?? containerRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    setDropdownRect({ top: r.bottom + 4, left: r.left, width: r.width })
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    updateRect()
+    window.addEventListener('scroll', updateRect, true)
+    window.addEventListener('resize', updateRect)
+    return () => {
+      window.removeEventListener('scroll', updateRect, true)
+      window.removeEventListener('resize', updateRect)
+    }
+  }, [open, updateRect])
+
+  // Close on outside click (must also ignore clicks inside the portal)
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-        setQuery('')
-      }
+      const target = e.target as Node
+      if (containerRef.current?.contains(target)) return
+      if (dropdownRef.current?.contains(target)) return
+      setOpen(false)
+      setQuery('')
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -364,10 +388,11 @@ function RecursoSearch({ recursos, selectedId, onSelect }: {
   return (
     <div ref={containerRef} className="relative w-full">
       {open ? (
-        <div className="flex flex-col gap-1">
+        <>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
+              ref={inputRef}
               autoFocus
               type="text"
               value={query}
@@ -376,34 +401,41 @@ function RecursoSearch({ recursos, selectedId, onSelect }: {
               className="w-full pl-7 pr-2 py-1.5 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             />
           </div>
-          <div className="absolute top-9 left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl max-h-56 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-slate-400 italic">Sin resultados para &quot;{query}&quot;</p>
-            ) : (
-              filtered.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onMouseDown={() => handleSelect(r)}
-                  className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-slate-100 last:border-0 transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-xs font-semibold text-slate-700 truncate block">
-                        {r.codigo && <span className="font-mono text-slate-400 mr-1">[{r.codigo}]</span>}
-                        {r.nombre}
+          {typeof window !== 'undefined' && dropdownRect && createPortal(
+            <div
+              ref={dropdownRef}
+              style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
+              className="bg-white border border-slate-200 rounded-lg shadow-xl max-h-72 overflow-y-auto"
+            >
+              {filtered.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-slate-400 italic">Sin resultados para &quot;{query}&quot;</p>
+              ) : (
+                filtered.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onMouseDown={() => handleSelect(r)}
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-slate-100 last:border-0 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold text-slate-700 truncate block">
+                          {r.codigo && <span className="font-mono text-slate-400 mr-1">[{r.codigo}]</span>}
+                          {r.nombre}
+                        </span>
+                        <span className="text-xs text-slate-400">{r.tipo} · {r.unidad}</span>
+                      </div>
+                      <span className="text-xs font-bold text-slate-600 whitespace-nowrap flex-shrink-0">
+                        {formatCurrency(r.costoUnitario)}
                       </span>
-                      <span className="text-xs text-slate-400">{r.tipo} · {r.unidad}</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-600 whitespace-nowrap flex-shrink-0">
-                      {formatCurrency(r.costoUnitario)}
-                    </span>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
+                  </button>
+                ))
+              )}
+            </div>,
+            document.body
+          )}
+        </>
       ) : (
         <button
           type="button"
