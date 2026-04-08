@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
 
     const costoDirecto = recursos.reduce((s: number, r: any) => s + (parseFloat(r.subtotal) || 0), 0)
     const costoTotal = costoDirecto * (1 + (parseFloat(apuData.indirectos) || 0) / 100)
-    const precioVenta = costoTotal * (1 + (parseFloat(apuData.utilidad) || 0) / 100)
+    const precioBruto = costoTotal * (1 + (parseFloat(apuData.utilidad) || 0) / 100)
+    const volumenAnalisis = apuData.volumenAnalisis != null ? parseFloat(apuData.volumenAnalisis) : null
+    const divisor = volumenAnalisis && volumenAnalisis > 0 ? volumenAnalisis : 1
+    const precioVenta = precioBruto / divisor
 
     const apu = await prisma.apuCatalogo.create({
       data: {
@@ -51,6 +54,7 @@ export async function POST(request: NextRequest) {
         utilidad: parseFloat(apuData.utilidad) || 0,
         desperdicio: parseFloat(apuData.desperdicio) || 0,
         rendimiento: apuData.rendimiento != null ? parseFloat(apuData.rendimiento) : null,
+        volumenAnalisis,
         costoDirecto,
         costoTotal,
         precioVenta,

@@ -65,6 +65,8 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
           indirectos: apu.indirectos,
           utilidad: apu.utilidad,
           desperdicio: apu.desperdicio,
+          rendimiento: apu.rendimiento,
+          volumenAnalisis: apu.volumenAnalisis,
           activo: apu.activo,
           observaciones: apu.observaciones || '',
           recursos: apu.recursos.map((ar) => ({

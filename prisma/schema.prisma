@@ -541,6 +541,7 @@ model ApuCatalogo {
   utilidad      Float    @default(20)
   desperdicio   Float    @default(5)
   rendimiento   Float?   // unidades por día — para calcular duración en cronograma
+  volumenAnalisis Float? // volumen de análisis — el precio de venta se divide entre este valor (null/0 = 1)
   costoDirecto  Float    @default(0)
   costoTotal    Float    @default(0)
   precioVenta   Float    @default(0)

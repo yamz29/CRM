@@ -64,6 +64,7 @@ interface Props {
     utilidad?: number
     desperdicio?: number
     rendimiento?: number | null
+    volumenAnalisis?: number | null
     activo?: boolean
     observaciones?: string
     recursos?: Array<{
@@ -730,6 +731,7 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
     utilidad: initialData?.utilidad ?? 20,
     desperdicio: initialData?.desperdicio ?? 5,
     rendimiento: initialData?.rendimiento ?? null as number | null,
+    volumenAnalisis: initialData?.volumenAnalisis ?? null as number | null,
     activo: initialData?.activo !== false,
     observaciones: initialData?.observaciones || '',
   })
@@ -779,8 +781,10 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
   const costoApus = apuLines.reduce((s, l) => s + l.subtotal, 0)
   const costoDirecto = costoRecursos + costoApus
   const costoConInd  = costoDirecto * (1 + header.indirectos / 100)
-  const precioVenta  = costoConInd  * (1 + header.utilidad / 100)
-  const margen       = precioVenta > 0 ? ((precioVenta - costoDirecto) / precioVenta) * 100 : 0
+  const precioBruto  = costoConInd  * (1 + header.utilidad / 100)
+  const divisor      = header.volumenAnalisis && header.volumenAnalisis > 0 ? header.volumenAnalisis : 1
+  const precioVenta  = precioBruto / divisor
+  const margen       = precioVenta > 0 ? ((precioVenta - costoDirecto / divisor) / precioVenta) * 100 : 0
 
   const sectionTotals = SECCIONES.map((s) => ({
     ...s,
@@ -896,6 +900,19 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-slate-400 mt-0.5">Para calcular duración en cronograma: Cantidad ÷ Rendimiento</p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
+              Volumen de análisis
+            </label>
+            <input
+              type="number" min="0" step="any"
+              value={header.volumenAnalisis ?? ''}
+              onChange={(e) => setHeader(p => ({ ...p, volumenAnalisis: e.target.value === '' ? null : parseFloat(e.target.value) }))}
+              placeholder="Ej: 10"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-400 mt-0.5">El precio de venta se divide entre este valor (vacío = 1)</p>
           </div>
         </div>
 
@@ -1036,8 +1053,20 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
               {header.utilidad > 0 && (
                 <tr>
                   <td className="py-1.5 text-slate-500">+ Utilidad ({header.utilidad}%)</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatCurrency(precioVenta - costoConInd)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatCurrency(precioBruto - costoConInd)}</td>
                 </tr>
+              )}
+              {divisor !== 1 && (
+                <>
+                  <tr className="border-t border-slate-200">
+                    <td className="py-1.5 text-slate-600 font-medium">Total bruto</td>
+                    <td className="py-1.5 text-right font-medium text-slate-700">{formatCurrency(precioBruto)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-amber-600">÷ Volumen de análisis</td>
+                    <td className="py-1.5 text-right text-amber-700">{divisor}</td>
+                  </tr>
+                </>
               )}
             </tbody>
           </table>
@@ -1053,7 +1082,7 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="bg-slate-700 rounded-lg px-3 py-2">
               <p className="text-slate-400 text-xs">Costo directo</p>
-              <p className="text-white font-semibold text-sm">{formatCurrency(costoDirecto)}</p>
+              <p className="text-white font-semibold text-sm">{formatCurrency(costoDirecto / divisor)}</p>
             </div>
             <div className="bg-slate-700 rounded-lg px-3 py-2">
               <p className="text-slate-400 text-xs">Margen</p>
