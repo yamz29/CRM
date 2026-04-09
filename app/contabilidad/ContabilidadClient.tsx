@@ -6,11 +6,12 @@ import Link from 'next/link'
 import {
   Landmark, FileText, Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle,
   DollarSign, AlertCircle, Eye, Trash2, CreditCard, Building2, ArrowRightLeft,
-  CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List,
+  CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCard } from '@/components/ui/stats-card'
 import { formatCurrency } from '@/lib/utils'
+import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ interface Props {
   resumen: Resumen
 }
 
-type Tab = 'dashboard' | 'facturas' | 'cuentas' | 'conciliacion'
+type Tab = 'dashboard' | 'facturas' | 'cuentas' | 'conciliacion' | 'proveedores'
 
 const ESTADOS_BADGE: Record<string, { color: string; icon: any }> = {
   pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
@@ -112,6 +113,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
     { key: 'facturas' as Tab, label: 'Facturas', icon: <FileText className="w-3.5 h-3.5" /> },
     { key: 'cuentas' as Tab, label: 'Cuentas', icon: <Building2 className="w-3.5 h-3.5" /> },
     { key: 'conciliacion' as Tab, label: 'Conciliación', icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
+    { key: 'proveedores' as Tab, label: 'Proveedores', icon: <Truck className="w-3.5 h-3.5" /> },
   ]
 
   return (
@@ -412,6 +414,11 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
       {/* ── Conciliación ── */}
       {tab === 'conciliacion' && (
         <ConciliacionTab cuentas={cuentas} />
+      )}
+
+      {/* ── Proveedores ── */}
+      {tab === 'proveedores' && (
+        <ProveedoresTab />
       )}
     </div>
   )

@@ -61,6 +61,7 @@ model Proyecto {
   ordenesProduccion OrdenProduccion[]
   facturas          Factura[]
   adicionales       AdicionalProyecto[]
+  punchlist         PunchItem[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -1063,6 +1064,29 @@ model CuentaBancaria {
   @@map("cuenta_bancaria")
 }
 
+// ── PROVEEDORES ──────────────────────────────────────────────────────
+// Catálogo normalizado de proveedores / suplidores.
+// Las facturas de egreso pueden enlazarse opcionalmente a un proveedor.
+
+model Proveedor {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  rnc              String?   @unique // RNC (empresas) o cédula (personas)
+  telefono         String?
+  contacto         String?   // nombre del contacto principal
+  correo           String?
+  direccion        String?
+  condicionesPago  String?   // ej: "30 días", "contado"
+  notas            String?
+  activo           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  facturas         Factura[]
+
+  @@map("proveedor")
+}
+
 model Factura {
   id               Int       @id @default(autoincrement())
   numero           String                            // número de factura
@@ -1071,8 +1095,10 @@ model Factura {
   fecha            DateTime
   fechaVencimiento DateTime?
 
-  // Egreso → proveedor
-  proveedor        String?
+  // Egreso → proveedor (catálogo normalizado + texto legacy)
+  proveedorId      Int?
+  proveedorRef     Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  proveedor        String?                            // nombre denormalizado / legacy
   rncProveedor     String?                            // RNC del proveedor
   // Ingreso → cliente existente
   clienteId        Int?
@@ -1104,6 +1130,7 @@ model Factura {
   @@index([tipo])
   @@index([estado])
   @@index([clienteId])
+  @@index([proveedorId])
   @@index([proyectoId])
   @@index([fecha])
   @@map("factura")
@@ -1150,4 +1177,36 @@ model MovimientoBancario {
   @@index([cuentaBancariaId])
   @@index([conciliado])
   @@map("movimiento_bancario")
+}
+
+// ── PUNCHLIST (Pendientes pre-entrega) ───────────────────────────────
+// Lista de detalles/defectos que deben resolverse antes de la entrega
+// formal de la obra al cliente. Flujo de 5 estados.
+
+model PunchItem {
+  id              Int       @id @default(autoincrement())
+  proyectoId      Int
+  titulo          String
+  descripcion     String?
+  ubicacion       String?   // ej: "Baño principal 2do piso", "Cocina"
+  categoria       String?   // ej: "Pintura", "Plomería", "Eléctrico", "Acabado"
+  prioridad       String    @default("media")  // baja | media | alta | critica
+  estado          String    @default("abierto") // abierto | en_progreso | resuelto | verificado | cerrado
+  asignadoA       String?   // nombre del responsable de resolver
+  fechaLimite     DateTime?
+  fotos           String?   // JSON array de URLs ["url1","url2"]
+  resolucionNotas String?   // notas de quién resolvió
+  resueltoEn      DateTime?
+  verificadoPor   String?   // nombre del cliente o PM que verificó
+  verificadoEn    DateTime?
+  createdById     Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId])
+  @@index([estado])
+  @@index([prioridad])
+  @@map("punch_item")
 }

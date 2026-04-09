@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle,
-  Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2,
+  Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2, Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Cliente { id: number; nombre: string }
 interface Proyecto { id: number; nombre: string }
+interface ProveedorCat { id: number; nombre: string; rnc: string | null; telefono: string | null; condicionesPago: string | null }
 interface FacturaData {
   id?: number; numero: string; ncf: string; tipo: string
   fecha: string; fechaVencimiento: string; proveedor: string
-  rncProveedor: string; clienteId: string
+  rncProveedor: string; clienteId: string; proveedorId?: string
   destinoTipo: string; proyectoId: string
   descripcion: string; subtotal: number; impuesto: number; total: number
   observaciones: string; archivoUrl: string | null
@@ -46,6 +47,12 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
   const [fechaVencimiento, setFechaVencimiento] = useState(factura?.fechaVencimiento || '')
   const [proveedor, setProveedor] = useState(factura?.proveedor || '')
   const [rncProveedor, setRncProveedor] = useState(factura?.rncProveedor || '')
+  const [proveedorId, setProveedorId] = useState(factura?.proveedorId || '')
+  // Proveedor search
+  const [proveedorSearch, setProveedorSearch] = useState('')
+  const [proveedorResults, setProveedorResults] = useState<ProveedorCat[]>([])
+  const [proveedorSearching, setProveedorSearching] = useState(false)
+  const [showProvDropdown, setShowProvDropdown] = useState(false)
   const [clienteId, setClienteId] = useState(factura?.clienteId || '')
   const [destinoTipo, setDestinoTipo] = useState(factura?.destinoTipo || 'general')
   const [proyectoId, setProyectoId] = useState(factura?.proyectoId || '')
@@ -167,6 +174,34 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     if (rncProveedor.length >= 9) searchRNC(rncProveedor)
   }
 
+  // Search proveedor catalog
+  const searchProveedores = useCallback(async (q: string) => {
+    if (q.length < 2) { setProveedorResults([]); return }
+    setProveedorSearching(true)
+    try {
+      const res = await fetch(`/api/proveedores?q=${encodeURIComponent(q)}`)
+      if (res.ok) setProveedorResults(await res.json())
+    } finally {
+      setProveedorSearching(false)
+    }
+  }, [])
+
+  const selectProveedor = (p: ProveedorCat) => {
+    setProveedorId(String(p.id))
+    setProveedor(p.nombre)
+    setRncProveedor(p.rnc || '')
+    setProveedorSearch('')
+    setShowProvDropdown(false)
+    if (p.rnc && p.rnc.length >= 9) setRncMatch(`Proveedor del catálogo: ${p.nombre}`)
+  }
+
+  const clearProveedor = () => {
+    setProveedorId('')
+    setProveedor('')
+    setRncProveedor('')
+    setRncMatch(null)
+  }
+
   const calcITBIS = () => {
     setItbis((subtotalNum * 0.18).toFixed(2))
   }
@@ -185,6 +220,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     if (tipo === 'egreso') {
       formData.append('proveedor', proveedor)
       formData.append('rncProveedor', rncProveedor)
+      if (proveedorId) formData.append('proveedorId', proveedorId)
     }
     if (tipo === 'ingreso' && clienteId) formData.append('clienteId', clienteId)
     formData.append('destinoTipo', destinoTipo)
@@ -320,28 +356,69 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
           {/* Proveedor / Cliente */}
           {tipo === 'egreso' ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
+              {/* Buscador de catálogo */}
               <div>
-                <label className={labelCls}>RNC Proveedor</label>
+                <label className={labelCls}>Buscar proveedor del catálogo</label>
                 <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <input
-                    value={rncProveedor}
-                    onChange={(e) => setRncProveedor(e.target.value)}
-                    onBlur={handleRncBlur}
-                    className={inputCls}
-                    placeholder="123456789"
+                    value={proveedorSearch}
+                    onChange={(e) => { setProveedorSearch(e.target.value); searchProveedores(e.target.value); setShowProvDropdown(true) }}
+                    onFocus={() => { if (proveedorResults.length > 0) setShowProvDropdown(true) }}
+                    className={`${inputCls} pl-8`}
+                    placeholder="Buscar por nombre o RNC..."
+                    autoComplete="off"
                   />
-                  {rncSearching && <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                  {proveedorSearching && <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                  {showProvDropdown && proveedorResults.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {proveedorResults.map((p: ProveedorCat) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => selectProveedor(p)}
+                          className="w-full text-left px-3 py-2 hover:bg-muted/60 text-sm flex items-center justify-between gap-2"
+                        >
+                          <span className="font-medium text-foreground">{p.nombre}</span>
+                          {p.rnc && <span className="text-xs text-muted-foreground font-mono">{p.rnc}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {rncMatch && (
-                  <p className={`text-xs mt-1 ${rncMatch.includes('encontrado') || rncMatch.includes('previo') ? 'text-green-600' : 'text-muted-foreground'}`}>
-                    {rncMatch}
-                  </p>
+                {proveedorId && (
+                  <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1.5 bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 rounded-lg">
+                    <Building2 className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                    <span className="text-xs text-green-700 dark:text-green-300 font-medium flex-1">{proveedor}{rncProveedor ? ` · ${rncProveedor}` : ''}</span>
+                    <button type="button" onClick={clearProveedor} className="text-green-600 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                  </div>
                 )}
               </div>
-              <div>
-                <label className={labelCls}>Proveedor / Suplidor</label>
-                <input value={proveedor} onChange={(e) => setProveedor(e.target.value)} className={inputCls} placeholder="Nombre del proveedor" />
+              {/* Campos manuales (editables siempre, autocompletados desde catálogo) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>RNC Proveedor</label>
+                  <div className="relative">
+                    <input
+                      value={rncProveedor}
+                      onChange={(e) => setRncProveedor(e.target.value)}
+                      onBlur={handleRncBlur}
+                      className={inputCls}
+                      placeholder="123456789"
+                    />
+                    {rncSearching && <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                  </div>
+                  {rncMatch && !proveedorId && (
+                    <p className={`text-xs mt-1 ${rncMatch.includes('encontrado') || rncMatch.includes('previo') || rncMatch.includes('catálogo') ? 'text-green-600' : 'text-muted-foreground'}`}>
+                      {rncMatch}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className={labelCls}>Proveedor / Suplidor</label>
+                  <input value={proveedor} onChange={(e) => setProveedor(e.target.value)} className={inputCls} placeholder="Nombre del proveedor" />
+                </div>
               </div>
             </div>
           ) : (

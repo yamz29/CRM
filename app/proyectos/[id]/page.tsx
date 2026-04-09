@@ -9,12 +9,13 @@ import { GastosTab } from '@/components/gastos/GastosTab'
 import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupuestarioTab'
 import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
 import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
+import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
-  FilePlus,
+  FilePlus, ClipboardCheck,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -23,7 +24,7 @@ async function getProyecto(id: number) {
     include: {
       cliente: { select: { id: true, nombre: true } },
       presupuestos: { orderBy: { createdAt: 'desc' } },
-      _count: { select: { partidas: true, capitulos: true, adicionales: true } },
+      _count: { select: { partidas: true, capitulos: true, adicionales: true, punchlist: true } },
     },
   })
 }
@@ -132,6 +133,7 @@ export default async function ProyectoDetailPage({
     { key: 'presupuestos', label: `Presupuestos (${proyecto.presupuestos.length})` },
     { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
     { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
+    { key: 'punchlist', label: `Punchlist (${proyecto._count.punchlist})`, icon: ClipboardCheck },
     { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
     { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
   ]
@@ -751,6 +753,11 @@ export default async function ProyectoDetailPage({
       {/* ADICIONALES (CHANGE ORDERS) */}
       {tab === 'adicionales' && (
         <AdicionalesTab proyectoId={proyecto.id} />
+      )}
+
+      {/* PUNCHLIST */}
+      {tab === 'punchlist' && (
+        <PunchlistTab proyectoId={proyecto.id} />
       )}
 
       {/* GASTOS */}
