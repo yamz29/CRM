@@ -60,9 +60,41 @@ model Proyecto {
   bitacora        BitacoraEntrada[]
   ordenesProduccion OrdenProduccion[]
   facturas          Factura[]
+  adicionales       AdicionalProyecto[]
 
   @@index([estado])
   @@index([clienteId, estado])
+}
+
+// ── ADICIONALES (CHANGE ORDERS) ──────────────────────────────────────────
+// Modificaciones del alcance de un proyecto: trabajos extra, cambios de
+// material, ampliaciones que el cliente solicita después del presupuesto
+// original. El monto aprobado se suma al presupuesto vigente para
+// recalcular margen y rentabilidad real del proyecto.
+
+model AdicionalProyecto {
+  id              Int       @id @default(autoincrement())
+  proyectoId      Int
+  numero          String?   // ej: AD-001 (opcional, para referencia del cliente)
+  titulo          String
+  descripcion     String?
+  monto           Float     @default(0)
+  estado          String    @default("propuesto") // propuesto | aprobado | rechazado | facturado
+  fechaPropuesta  DateTime  @default(now())
+  fechaAprobacion DateTime?
+  aprobadoPor     String?   // nombre del cliente o representante que aprueba
+  motivoRechazo   String?
+  archivoUrl      String?   // PDF/imagen firmada por el cliente
+  notas           String?
+  createdById     Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId])
+  @@index([estado])
+  @@map("adicional_proyecto")
 }
 
 // ── GASTOS DEL PROYECTO ───────────────────────────────────────────────

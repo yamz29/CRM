@@ -8,10 +8,13 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { GastosTab } from '@/components/gastos/GastosTab'
 import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupuestarioTab'
 import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
+import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
+import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
+  FilePlus,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -20,13 +23,21 @@ async function getProyecto(id: number) {
     include: {
       cliente: { select: { id: true, nombre: true } },
       presupuestos: { orderBy: { createdAt: 'desc' } },
-      _count: { select: { partidas: true, capitulos: true } },
+      _count: { select: { partidas: true, capitulos: true, adicionales: true } },
     },
   })
 }
 
+async function getAdicionalesAprobados(proyectoId: number) {
+  const agg = await prisma.adicionalProyecto.aggregate({
+    where: { proyectoId, estado: { in: ['aprobado', 'facturado'] } },
+    _sum: { monto: true },
+  })
+  return agg._sum.monto ?? 0
+}
+
 async function getGastosResumen(proyectoId: number) {
-  const [agg, cantidad, horas] = await Promise.all([
+  const [agg, cantidad, horas, factorCargaSocial] = await Promise.all([
     prisma.gastoProyecto.aggregate({
       where: { proyectoId, estado: { not: 'Anulado' } },
       _sum: { monto: true },
@@ -38,19 +49,24 @@ async function getGastosResumen(proyectoId: number) {
       where: { proyectoId },
       include: { usuario: { select: { costoHora: true } } },
     }),
+    getFactorCargaSocial(),
   ])
 
-  const costoHoras = horas.reduce((acc, r) => {
+  // Costo de horas con carga social (Labor Burden) aplicada al sueldo base
+  const costoHorasBase = horas.reduce((acc, r) => {
     const tarifa = r.usuario?.costoHora ?? 0
     return acc + r.horas * tarifa
   }, 0)
+  const costoHoras = costoHorasBase * factorCargaSocial
   const totalHoras = horas.reduce((acc, r) => acc + r.horas, 0)
 
   return {
     total: agg._sum.monto ?? 0,
     cantidad,
     costoHoras,
+    costoHorasBase,
     totalHoras,
+    factorCargaSocial,
   }
 }
 
@@ -65,28 +81,37 @@ export default async function ProyectoDetailPage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [proyecto, gastosResumen] = await Promise.all([
+  const [proyecto, gastosResumen, adicionalesAprobados] = await Promise.all([
     getProyecto(id),
     getGastosResumen(id),
+    getAdicionalesAprobados(id),
   ])
   if (!proyecto) notFound()
 
   const tab = sp.tab ?? 'resumen'
-  const { total: totalGastado, cantidad: cantidadGastos, costoHoras, totalHoras } = gastosResumen
+  const { total: totalGastado, cantidad: cantidadGastos, costoHoras, costoHorasBase, totalHoras, factorCargaSocial } = gastosResumen
   const costoTotal = totalGastado + costoHoras
-  const balance = proyecto.presupuestoEstimado != null ? proyecto.presupuestoEstimado - costoTotal : null
-  const pctGastado = proyecto.presupuestoEstimado ? Math.min((costoTotal / proyecto.presupuestoEstimado) * 100, 100) : null
+  // Presupuesto vigente = presupuesto original + adicionales aprobados (Change Orders)
+  const presupuestoVigente = proyecto.presupuestoEstimado != null
+    ? proyecto.presupuestoEstimado + adicionalesAprobados
+    : null
+  const balance = presupuestoVigente != null ? presupuestoVigente - costoTotal : null
+  const pctGastado = presupuestoVigente ? Math.min((costoTotal / presupuestoVigente) * 100, 100) : null
 
-  // Rentabilidad Real
+  // Rentabilidad Real (incluye adicionales aprobados como ingresos extra)
   const presupuestoAprobado = proyecto.presupuestos.find(p => p.estado === 'Aprobado')
-  const ingresos = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
+  const ingresosBase = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
+  const ingresos = ingresosBase != null ? ingresosBase + adicionalesAprobados : null
   const costos = costoTotal
   const utilidad = ingresos != null ? ingresos - costos : null
   const margen = ingresos != null && ingresos > 0 ? (utilidad! / ingresos) * 100 : null
 
   // Indicadores de ejecución
   const avanceFisico: number = (proyecto as any).avanceFisico ?? 0
-  const presupuestoBase = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
+  const presupuestoBaseRaw = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
+  // Sumamos adicionales aprobados al presupuesto base para que la ejecución
+  // financiera y el forecast no penalicen el aumento legítimo del alcance
+  const presupuestoBase = presupuestoBaseRaw != null ? presupuestoBaseRaw + adicionalesAprobados : null
   const pctEjecucionFin = presupuestoBase && presupuestoBase > 0
     ? Math.min((costoTotal / presupuestoBase) * 100, 999)
     : null
@@ -105,6 +130,7 @@ export default async function ProyectoDetailPage({
   const tabs = [
     { key: 'resumen', label: 'Resumen' },
     { key: 'presupuestos', label: `Presupuestos (${proyecto.presupuestos.length})` },
+    { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
     { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
     { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
     { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
@@ -328,14 +354,21 @@ export default async function ProyectoDetailPage({
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-5 divide-x divide-border">
-            {/* Presupuesto estimado */}
+            {/* Presupuesto estimado (vigente con adicionales) */}
             <div className="px-5 py-4">
               <div className="flex items-center gap-1.5 mb-1">
                 <DollarSign className="w-3.5 h-3.5 text-blue-500" />
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Presupuestado</span>
               </div>
-              {proyecto.presupuestoEstimado != null ? (
-                <p className="text-lg font-black text-foreground">{formatCurrency(proyecto.presupuestoEstimado)}</p>
+              {presupuestoVigente != null ? (
+                <>
+                  <p className="text-lg font-black text-foreground">{formatCurrency(presupuestoVigente)}</p>
+                  {adicionalesAprobados > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5" title="Presupuesto original + adicionales aprobados">
+                      Base {formatCurrency(proyecto.presupuestoEstimado!)} + {formatCurrency(adicionalesAprobados)} adic.
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground italic">No definido</p>
               )}
@@ -362,7 +395,14 @@ export default async function ProyectoDetailPage({
               {costoHoras > 0 ? (
                 <>
                   <p className="text-lg font-black text-foreground">{formatCurrency(costoHoras)}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{totalHoras.toFixed(1)} h registradas</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {totalHoras.toFixed(1)} h
+                    {factorCargaSocial > 1 && (
+                      <span title={`Sueldo base: ${formatCurrency(costoHorasBase)} · carga social ${((factorCargaSocial - 1) * 100).toFixed(0)}%`}>
+                        {' '}· ×{factorCargaSocial.toFixed(2)} carga
+                      </span>
+                    )}
+                  </p>
                 </>
               ) : (
                 <>
@@ -706,6 +746,11 @@ export default async function ProyectoDetailPage({
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* ADICIONALES (CHANGE ORDERS) */}
+      {tab === 'adicionales' && (
+        <AdicionalesTab proyectoId={proyecto.id} />
       )}
 
       {/* GASTOS */}
