@@ -62,6 +62,8 @@ model Proyecto {
   facturas          Factura[]
   adicionales       AdicionalProyecto[]
   punchlist         PunchItem[]
+  ordenesCompra     OrdenCompra[]
+  evmSnapshots      EVMSnapshot[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -670,7 +672,7 @@ model Usuario {
 model PermisoUsuario {
   id        Int    @id @default(autoincrement())
   usuarioId Int
-  modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|contabilidad|recursos|apus|tareas|horas|melamina|cocinas|produccion|configuracion
+  modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|contabilidad|proveedores|compras|recursos|apus|tareas|horas|melamina|cocinas|produccion|configuracion
   nivel     String @default("editar") // ninguno | ver | editar | admin
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -1083,6 +1085,7 @@ model Proveedor {
   updatedAt        DateTime  @updatedAt
 
   facturas         Factura[]
+  ordenesCompra    OrdenCompra[]
 
   @@map("proveedor")
 }
@@ -1177,6 +1180,84 @@ model MovimientoBancario {
   @@index([cuentaBancariaId])
   @@index([conciliado])
   @@map("movimiento_bancario")
+}
+
+// ── ÓRDENES DE COMPRA ────────────────────────────────────────────────
+// Documento formal de solicitud de materiales a un proveedor.
+// Estados: borrador → enviada → recibida_parcial → recibida → facturada → cancelada
+
+model OrdenCompra {
+  id              Int       @id @default(autoincrement())
+  numero          String    @unique           // OC-2026-0001
+  proveedorId     Int?
+  proyectoId      Int?
+  estado          String    @default("borrador") // borrador|enviada|recibida_parcial|recibida|facturada|cancelada
+  fechaEmision    DateTime  @default(now())
+  fechaEntrega    DateTime?                   // fecha estimada de entrega
+  fechaRecepcion  DateTime?                   // fecha real de recepción
+  condicionesPago String?                     // ej: "30 días", "contado"
+  moneda          String    @default("RD$")
+  subtotal        Float     @default(0)
+  impuesto        Float     @default(0)
+  total           Float     @default(0)
+  notas           String?
+  creadoPorId     Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  proveedor  Proveedor?      @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  proyecto   Proyecto?        @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  items      ItemOrdenCompra[]
+
+  @@index([estado])
+  @@index([proveedorId])
+  @@index([proyectoId])
+  @@index([fechaEmision])
+  @@map("orden_compra")
+}
+
+model ItemOrdenCompra {
+  id                Int      @id @default(autoincrement())
+  ordenCompraId     Int
+  descripcion       String
+  unidad            String   @default("ud")
+  cantidad          Float    @default(1)
+  cantidadRecibida  Float    @default(0)
+  precioUnitario    Float    @default(0)
+  subtotal          Float    @default(0)
+  observaciones     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  ordenCompra OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+
+  @@index([ordenCompraId])
+  @@map("item_orden_compra")
+}
+
+// ── EVM SNAPSHOTS ────────────────────────────────────────────────────
+// Earned Value Management: foto periódica del estado financiero del proyecto
+// para construir curvas S (PV, EV, AC) y calcular SPI/CPI.
+
+model EVMSnapshot {
+  id              Int      @id @default(autoincrement())
+  proyectoId      Int
+  fecha           DateTime @default(now())
+  avanceFisico    Float    @default(0)       // % avance real 0-100
+  presupuestoBase Float    @default(0)       // BAC (Budget at Completion)
+  valorPlanificado Float   @default(0)       // PV (Planned Value) a la fecha
+  valorGanado     Float    @default(0)       // EV (Earned Value) = BAC × avance%
+  costoReal       Float    @default(0)       // AC (Actual Cost) gastado a la fecha
+  spi             Float?                     // Schedule Performance Index = EV/PV
+  cpi             Float?                     // Cost Performance Index = EV/AC
+  eac             Float?                     // Estimate at Completion = BAC/CPI
+  notas           String?
+  createdAt       DateTime @default(now())
+
+  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId, fecha])
+  @@map("evm_snapshot")
 }
 
 // ── PUNCHLIST (Pendientes pre-entrega) ───────────────────────────────

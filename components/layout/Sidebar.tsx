@@ -31,6 +31,9 @@ import {
   PanelLeftOpen,
   Factory,
   Landmark,
+  Banknote,
+  Truck,
+  ShoppingCart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, Fragment } from 'react'
@@ -51,9 +54,18 @@ const NAV_GROUPS = [
       { href: '/proyectos',     label: 'Proyectos',     icon: FolderOpen,     modulo: 'proyectos'     as ModuloKey },
       { href: '/cronograma',    label: 'Cronogramas',   icon: GanttChart,     modulo: 'cronogramas'   as ModuloKey },
       { href: '/gastos',        label: 'Gastos',        icon: Receipt,        modulo: 'gastos'        as ModuloKey },
-      { href: '/contabilidad', label: 'Contabilidad', icon: Landmark,      modulo: 'contabilidad' as ModuloKey },
       { href: '/recursos',      label: 'Recursos',      icon: Package,        modulo: 'recursos'      as ModuloKey },
       { href: '/apus',          label: 'Catálogo APU',  icon: FileSpreadsheet, modulo: 'apus'         as ModuloKey },
+    ],
+  },
+  {
+    key: 'finanzas',
+    label: 'Finanzas',
+    icon: Banknote,
+    items: [
+      { href: '/contabilidad', label: 'Contabilidad', icon: Landmark,     modulo: 'contabilidad' as ModuloKey },
+      { href: '/proveedores',  label: 'Proveedores',  icon: Truck,        modulo: 'proveedores'  as ModuloKey },
+      { href: '/compras',      label: 'Compras',      icon: ShoppingCart,  modulo: 'compras'      as ModuloKey },
     ],
   },
   {

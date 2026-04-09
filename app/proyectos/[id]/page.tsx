@@ -10,6 +10,7 @@ import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupue
 import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
 import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
 import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
+import { EVMTab } from '@/components/proyectos/EVMTab'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
@@ -134,6 +135,7 @@ export default async function ProyectoDetailPage({
     { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
     { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
     { key: 'punchlist', label: `Punchlist (${proyecto._count.punchlist})`, icon: ClipboardCheck },
+    { key: 'evm', label: 'EVM / Curva S', icon: TrendingUp },
     { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
     { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
   ]
@@ -774,6 +776,11 @@ export default async function ProyectoDetailPage({
           proyectoId={proyecto.id}
           presupuestoBaseId={proyecto.presupuestoBaseId ?? null}
         />
+      )}
+
+      {/* EVM / Curva S */}
+      {tab === 'evm' && (
+        <EVMTab proyectoId={proyecto.id} />
       )}
 
       {/* BITÁCORA */}
