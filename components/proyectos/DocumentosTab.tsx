@@ -73,7 +73,7 @@ export function DocumentosTab({ proyectoId }: { proyectoId: number }) {
   const [deleting, setDeleting] = useState<number | null>(null)
 
   async function load() {
-    const res = await fetch(`/api/proyectos/${proyectoId}/documentos`)
+    const res = await fetch(`/api/documentos?proyectoId=${proyectoId}`)
     if (res.ok) setDocumentos(await res.json())
     setLoading(false)
   }
@@ -149,16 +149,16 @@ export function DocumentosTab({ proyectoId }: { proyectoId: number }) {
     }
 
     if (editingId) {
-      await fetch(`/api/proyectos/${proyectoId}/documentos`, {
+      await fetch(`/api/documentos/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentoId: editingId, ...payload }),
+        body: JSON.stringify(payload),
       })
     } else {
-      await fetch(`/api/proyectos/${proyectoId}/documentos`, {
+      await fetch('/api/documentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, proyectoId }),
       })
     }
 
@@ -171,7 +171,7 @@ export function DocumentosTab({ proyectoId }: { proyectoId: number }) {
   async function handleDelete(id: number) {
     if (!confirm('¿Eliminar este registro de documento?')) return
     setDeleting(id)
-    await fetch(`/api/proyectos/${proyectoId}/documentos?documentoId=${id}`, { method: 'DELETE' })
+    await fetch(`/api/documentos/${id}`, { method: 'DELETE' })
     setDeleting(null)
     load()
   }

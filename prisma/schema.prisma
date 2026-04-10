@@ -668,6 +668,7 @@ model Usuario {
   permisos       PermisoUsuario[]
   bitacora       BitacoraEntrada[]
   asignacionesProduccion AsignacionProduccion[]
+  comentariosDocumento   ComentarioDocumento[]
 }
 
 model PermisoUsuario {
@@ -806,6 +807,7 @@ model Oportunidad {
   actividades  ActividadCRM[]
   presupuestos Presupuesto[]
   tareas       Tarea[]
+  documentos   DocumentoProyecto[]
 
   @@index([etapa])
   @@index([clienteId, etapa])
@@ -1296,25 +1298,44 @@ model PunchItem {
 }
 
 // ── DOCUMENTOS DE PROYECTO ──────────────────────────────────────────────
-// Registro de documentos vinculados a un proyecto. Los archivos viven en
-// OneDrive/Google Drive — aquí solo se guarda la metadata y el enlace.
+// Registro de documentos vinculados a un proyecto u oportunidad. Los archivos
+// viven en OneDrive/Google Drive — aquí solo se guarda la metadata y el enlace.
 model DocumentoProyecto {
-  id            Int       @id @default(autoincrement())
-  proyectoId    Int
-  nombre        String                             // nombre descriptivo
-  categoria     String    @default("General")      // Plano | Contrato | Permiso | Foto | Factura | Acta | General
-  url           String                             // enlace a OneDrive / Google Drive / externo
-  descripcion   String?
-  etiquetas     String?                            // JSON array: ["cocina","plano"]
-  subidoPor     String?                            // nombre de quien lo registró
-  fechaDocumento DateTime?                         // fecha del documento (no de registro)
-  tamanioRef    String?                            // referencia de tamaño: "15 MB", "200 MB"
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              Int       @id @default(autoincrement())
+  proyectoId      Int?
+  oportunidadId   Int?
+  nombre          String                             // nombre descriptivo
+  categoria       String    @default("General")      // Plano | Contrato | Permiso | Foto | Factura | Acta | General
+  url             String                             // enlace a OneDrive / Google Drive / externo
+  descripcion     String?
+  etiquetas       String?                            // JSON array: ["cocina","plano"]
+  subidoPor       String?                            // nombre de quien lo registró
+  fechaDocumento  DateTime?                          // fecha del documento (no de registro)
+  tamanioRef      String?                            // referencia de tamaño: "15 MB", "200 MB"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  proyecto     Proyecto?    @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  oportunidad  Oportunidad? @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  comentarios  ComentarioDocumento[]
 
   @@index([proyectoId])
+  @@index([oportunidadId])
   @@index([categoria])
   @@map("documento_proyecto")
+}
+
+model ComentarioDocumento {
+  id           Int      @id @default(autoincrement())
+  documentoId  Int
+  usuarioId    Int?
+  autorNombre  String                             // nombre del autor (denormalizado)
+  contenido    String
+  createdAt    DateTime @default(now())
+
+  documento DocumentoProyecto @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  usuario   Usuario?          @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([documentoId])
+  @@map("comentario_documento")
 }

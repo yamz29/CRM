@@ -7,6 +7,7 @@ export const MODULOS = [
   { key: 'presupuestos',  label: 'Presupuestos',           grupo: 'Operaciones' },
   { key: 'proyectos',     label: 'Proyectos',              grupo: 'Operaciones' },
   { key: 'cronogramas',   label: 'Cronogramas',            grupo: 'Operaciones' },
+  { key: 'documentos',    label: 'Documentos',             grupo: 'Operaciones' },
   { key: 'gastos',        label: 'Gastos',                 grupo: 'Operaciones' },
   { key: 'recursos',      label: 'Recursos',               grupo: 'Operaciones' },
   { key: 'apus',          label: 'Catálogo APU',           grupo: 'Operaciones' },

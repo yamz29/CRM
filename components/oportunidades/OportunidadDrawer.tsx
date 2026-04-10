@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import {
   X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
   Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2,
-  ListTodo, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore, Star
+  ListTodo, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore, Star,
+  FolderOpen, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -138,10 +139,12 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
   const [vincularOpen, setVincularOpen] = useState(false)
   const [presupuestoAVincular, setPresupuestoAVincular] = useState('')
   const [vinculando, setVinculando]     = useState(false)
+  const [docs, setDocs] = useState<{ id: number; nombre: string; categoria: string; url: string; createdAt: string }[]>([])
+  const [docsLoaded, setDocsLoaded] = useState(false)
 
   const etapaCfg = ETAPAS.find((e) => e.key === oportunidad.etapa)
 
-  // Load activities and tasks on mount
+  // Load activities, tasks and documents on mount
   useEffect(() => {
     fetch(`/api/oportunidades/${oportunidad.id}/actividades`)
       .then((r) => r.json())
@@ -149,6 +152,9 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
     fetch(`/api/oportunidades/${oportunidad.id}/tareas`)
       .then((r) => r.json())
       .then((data) => { setTareas(data); setTareasLoaded(true) })
+    fetch(`/api/documentos?oportunidadId=${oportunidad.id}`)
+      .then((r) => r.json())
+      .then((data) => { setDocs(data); setDocsLoaded(true) })
   }, [oportunidad.id])
 
   async function addActividad() {
@@ -519,6 +525,38 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
                   <p className="text-xs text-muted-foreground">Sin tareas registradas.</p>
                 )}
               </>
+            )}
+          </div>
+
+          {/* Documentos */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Documentos</p>
+              <a href="/documentos" className="text-xs text-primary hover:underline">Ver todos</a>
+            </div>
+            {!docsLoaded ? (
+              <p className="text-xs text-muted-foreground">Cargando...</p>
+            ) : docs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Sin documentos vinculados.</p>
+            ) : (
+              <div className="space-y-1">
+                {docs.map((d: { id: number; nombre: string; categoria: string; url: string; createdAt: string }) => (
+                  <div key={d.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/30 group">
+                    <FolderOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <a href={d.url} target="_blank" rel="noopener noreferrer"
+                        className="text-xs font-medium text-foreground hover:text-primary transition-colors truncate block">
+                        {d.nombre}
+                      </a>
+                      <span className="text-[10px] text-muted-foreground">{d.categoria}</span>
+                    </div>
+                    <a href={d.url} target="_blank" rel="noopener noreferrer"
+                      className="p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
