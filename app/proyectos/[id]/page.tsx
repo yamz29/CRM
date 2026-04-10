@@ -16,7 +16,7 @@ import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
-  FilePlus, ClipboardCheck,
+  FilePlus, ClipboardCheck, GanttChart,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -25,6 +25,10 @@ async function getProyecto(id: number) {
     include: {
       cliente: { select: { id: true, nombre: true } },
       presupuestos: { orderBy: { createdAt: 'desc' } },
+      cronogramas: {
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, nombre: true, estado: true, fechaInicio: true, fechaFinEstimado: true, version: true, _count: { select: { actividades: true } } },
+      },
       _count: { select: { partidas: true, capitulos: true, adicionales: true, punchlist: true } },
     },
   })
@@ -681,6 +685,75 @@ export default async function ProyectoDetailPage({
                           <td className="px-4 py-3"><EstadoPresupuestoBadge estado={p.estado} /></td>
                           <td className="px-4 py-3">
                             <Link href={`/presupuestos/${p.id}`}><Button variant="ghost" size="sm">Ver</Button></Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cronogramas vinculados */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <GanttChart className="w-4 h-4 text-muted-foreground" />
+                    Cronogramas ({proyecto.cronogramas.length})
+                  </CardTitle>
+                  <Link href={`/cronograma/nuevo?proyectoId=${proyecto.id}`}>
+                    <Button size="sm" variant="secondary">
+                      <Plus className="w-3.5 h-3.5" /> Nuevo
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {proyecto.cronogramas.length === 0 ? (
+                  <div className="flex flex-col items-center py-10 text-center">
+                    <GanttChart className="w-10 h-10 text-muted-foreground/70 mb-2" />
+                    <p className="text-muted-foreground text-sm">Sin cronogramas para este proyecto</p>
+                    <Link href={`/cronograma/nuevo?proyectoId=${proyecto.id}`} className="mt-3">
+                      <Button size="sm"><Plus className="w-3.5 h-3.5" /> Crear cronograma</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/40 border-b border-border">
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Nombre</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Inicio</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Fin est.</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase">Actividades</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                        <th className="px-4 py-2.5"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {proyecto.cronogramas.map(c => (
+                        <tr key={c.id} className="hover:bg-muted/50">
+                          <td className="px-4 py-3">
+                            <Link href={`/cronograma/${c.id}`} className="text-sm font-medium text-foreground hover:text-primary">
+                              {c.nombre}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">v{c.version}</p>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(c.fechaInicio)}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {c.fechaFinEstimado ? formatDate(c.fechaFinEstimado) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-center text-sm font-bold text-foreground">{c._count.actividades}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                              c.estado === 'En Ejecución' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
+                              : c.estado === 'Terminado' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+                              : c.estado === 'Pausado' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
+                              : 'bg-muted text-foreground border-border'
+                            }`}>{c.estado}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link href={`/cronograma/${c.id}`}><Button variant="ghost" size="sm">Ver →</Button></Link>
                           </td>
                         </tr>
                       ))}
