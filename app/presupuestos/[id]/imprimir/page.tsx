@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Download } from 'lucide-react'
 import { PrintButton } from './PrintButton'
 
 async function getPresupuesto(id: number) {
@@ -123,6 +123,14 @@ export default async function ImprimirPresupuestoPage({
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 11, color: '#94a3b8', background: '#f1f5f9', padding: '3px 10px', borderRadius: 20 }}>Vista previa de impresión</span>
+          <a
+            href={`/api/presupuestos/${presupuesto.id}/excel`}
+            download
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 6, textDecoration: 'none' }}
+          >
+            <Download style={{ width: 14, height: 14 }} />
+            Excel
+          </a>
           <PrintButton />
         </div>
       </div>

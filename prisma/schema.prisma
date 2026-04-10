@@ -794,6 +794,7 @@ model Oportunidad {
   motivoPerdida  String?
   notas          String?
   proyectoId     Int?
+  urgente        Boolean   @default(false)
   archivada      Boolean   @default(false)
   fechaArchivada DateTime?
   createdAt      DateTime  @default(now())
@@ -808,6 +809,7 @@ model Oportunidad {
   @@index([etapa])
   @@index([clienteId, etapa])
   @@index([responsable])
+  @@index([urgente])
 }
 
 model ActividadCRM {

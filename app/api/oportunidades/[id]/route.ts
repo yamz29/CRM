@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   const body = await req.json()
-  const { nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, motivoPerdida, notas, _archivar } = body
+  const { nombre, etapa, valor, moneda, probabilidad, fechaCierreEst, responsable, motivoPerdida, notas, urgente, _archivar } = body
 
   // Archivar / desarchivar
   if (typeof _archivar === 'boolean') {
@@ -90,6 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       ...(responsable !== undefined ? { responsable: responsable || null } : {}),
       ...(motivoPerdida !== undefined ? { motivoPerdida: motivoPerdida || null } : {}),
       ...(notas !== undefined ? { notas: notas || null } : {}),
+      ...(typeof urgente === 'boolean' ? { urgente } : {}),
     },
     include: {
       cliente: { select: { id: true, nombre: true } },

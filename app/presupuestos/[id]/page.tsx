@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Pencil,
   Printer,
+  Download,
   User,
   FolderOpen,
   FileText,
@@ -87,6 +88,12 @@ export default async function PresupuestoDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <a href={`/api/presupuestos/${presupuesto.id}/excel`} download>
+            <Button variant="secondary">
+              <Download className="w-4 h-4" />
+              Excel
+            </Button>
+          </a>
           <Link href={`/presupuestos/${presupuesto.id}/imprimir`} target="_blank">
             <Button variant="secondary">
               <Printer className="w-4 h-4" />

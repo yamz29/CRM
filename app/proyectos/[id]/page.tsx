@@ -16,7 +16,7 @@ import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
-  FilePlus, ClipboardCheck, GanttChart,
+  FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -40,6 +40,27 @@ async function getAdicionalesAprobados(proyectoId: number) {
     _sum: { monto: true },
   })
   return agg._sum.monto ?? 0
+}
+
+async function getCobrosProyecto(proyectoId: number) {
+  const facturas = await prisma.factura.findMany({
+    where: { proyectoId, tipo: 'ingreso', estado: { not: 'anulada' } },
+    select: {
+      id: true,
+      numero: true,
+      fecha: true,
+      total: true,
+      montoPagado: true,
+      estado: true,
+      descripcion: true,
+    },
+    orderBy: { fecha: 'desc' },
+  })
+
+  const totalFacturado = facturas.reduce((s: number, f: { total: number }) => s + f.total, 0)
+  const totalCobrado = facturas.reduce((s: number, f: { montoPagado: number }) => s + f.montoPagado, 0)
+
+  return { facturas, totalFacturado, totalCobrado, porCobrar: totalFacturado - totalCobrado }
 }
 
 async function getGastosResumen(proyectoId: number) {
@@ -87,10 +108,11 @@ export default async function ProyectoDetailPage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [proyecto, gastosResumen, adicionalesAprobados] = await Promise.all([
+  const [proyecto, gastosResumen, adicionalesAprobados, cobros] = await Promise.all([
     getProyecto(id),
     getGastosResumen(id),
     getAdicionalesAprobados(id),
+    getCobrosProyecto(id),
   ])
   if (!proyecto) notFound()
 
@@ -547,6 +569,126 @@ export default async function ProyectoDetailPage({
               )}
             </div>
           </div>
+        </div>
+
+        {/* ── Cobros del proyecto ── */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Banknote className="w-4 h-4 text-muted-foreground" />
+              Cobros del proyecto
+            </h3>
+            <Link
+              href={`/contabilidad/facturas/nueva?tipo=ingreso&proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Nueva factura de ingreso
+            </Link>
+          </div>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-3 divide-x divide-border">
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <FileText className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Facturado</span>
+              </div>
+              <p className="text-lg font-black text-foreground">{formatCurrency(cobros.totalFacturado)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{cobros.facturas.length} {cobros.facturas.length === 1 ? 'factura' : 'facturas'}</p>
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cobrado</span>
+              </div>
+              <p className="text-lg font-black text-green-700">{formatCurrency(cobros.totalCobrado)}</p>
+              {cobros.totalFacturado > 0 && (
+                <div className="mt-1.5">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-green-500 transition-all"
+                      style={{ width: `${Math.min((cobros.totalCobrado / cobros.totalFacturado) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{((cobros.totalCobrado / cobros.totalFacturado) * 100).toFixed(0)}% cobrado</p>
+                </div>
+              )}
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className={`w-3.5 h-3.5 ${cobros.porCobrar > 0 ? 'text-amber-500' : 'text-green-500'}`} />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Por cobrar</span>
+              </div>
+              <p className={`text-lg font-black ${cobros.porCobrar > 0 ? 'text-amber-600' : 'text-green-700'}`}>
+                {formatCurrency(cobros.porCobrar)}
+              </p>
+            </div>
+          </div>
+
+          {/* Tabla de facturas */}
+          {cobros.facturas.length > 0 && (
+            <div className="border-t border-border">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/40 border-b border-border">
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Factura</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-muted-foreground uppercase">Total</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-muted-foreground uppercase">Cobrado</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {cobros.facturas.map((f: { id: number; numero: string; fecha: Date; total: number; montoPagado: number; estado: string; descripcion: string | null }) => (
+                    <tr key={f.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-2.5">
+                        <Link href={`/contabilidad/facturas/${f.id}`} className="text-sm font-medium text-foreground hover:text-primary">
+                          {f.numero}
+                        </Link>
+                        {f.descripcion && (
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">{f.descripcion}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-sm text-muted-foreground">{formatDate(f.fecha)}</td>
+                      <td className="px-4 py-2.5 text-sm font-semibold text-foreground text-right tabular-nums">{formatCurrency(f.total)}</td>
+                      <td className="px-4 py-2.5 text-sm font-semibold text-right tabular-nums">
+                        <span className={f.montoPagado >= f.total ? 'text-green-700' : 'text-amber-600'}>
+                          {formatCurrency(f.montoPagado)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          f.estado === 'pagada' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : f.estado === 'parcial' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {f.estado === 'pagada' ? 'Pagada' : f.estado === 'parcial' ? 'Parcial' : 'Pendiente'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <Link href={`/contabilidad/facturas/${f.id}`} className="text-muted-foreground hover:text-primary">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {cobros.facturas.length === 0 && (
+            <div className="border-t border-border py-8 text-center">
+              <Banknote className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No hay facturas de ingreso para este proyecto</p>
+              <Link href={`/contabilidad/facturas/nueva?tipo=ingreso&proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`} className="mt-2 inline-block">
+                <Button size="sm" variant="secondary">
+                  <Plus className="w-3.5 h-3.5" /> Registrar cobro
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

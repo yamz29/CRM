@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { BarChart3 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { PipelineClient } from '@/components/oportunidades/PipelineClient'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
@@ -68,7 +70,15 @@ export default async function OportunidadesPage() {
             Seguimiento de oportunidades desde el primer contacto hasta el cierre
           </p>
         </div>
-        <HelpDrawer slug="oportunidades" titulo="Pipeline de Ventas" />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/oportunidades/reporte"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <BarChart3 className="w-4 h-4" /> Reporte
+          </Link>
+          <HelpDrawer slug="oportunidades" titulo="Pipeline de Ventas" />
+        </div>
       </div>
       <PipelineClient oportunidades={serialized} clientes={clientes} presupuestos={presupuestos} usuarios={usuarios} />
     </div>

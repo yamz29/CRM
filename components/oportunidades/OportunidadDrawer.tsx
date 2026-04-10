@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
   Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2,
-  ListTodo, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore
+  ListTodo, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore, Star
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -266,6 +266,20 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
             <span className={`w-1.5 h-1.5 rounded-full ${etapaCfg?.color}`} />
             {oportunidad.etapa}
           </span>
+          <button
+            onClick={async () => {
+              await fetch(`/api/oportunidades/${oportunidad.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urgente: !oportunidad.urgente }),
+              })
+              onSaved()
+            }}
+            className={`shrink-0 transition-colors ${oportunidad.urgente ? 'text-amber-500' : 'text-muted-foreground hover:text-amber-500'}`}
+            title={oportunidad.urgente ? 'Quitar urgente' : 'Marcar urgente'}
+          >
+            <Star className={`w-4 h-4 ${oportunidad.urgente ? 'fill-amber-500' : ''}`} />
+          </button>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>

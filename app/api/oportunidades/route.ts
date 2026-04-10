@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       cliente:      { select: { id: true, nombre: true } },
       proyecto:     { select: { id: true, nombre: true } },
       presupuestos: { select: { id: true, numero: true, estado: true, total: true } },
-      _count:       { select: { actividades: true } },
+      _count:       { select: { actividades: true, tareas: true } },
     },
     orderBy: { createdAt: 'desc' },
   })
