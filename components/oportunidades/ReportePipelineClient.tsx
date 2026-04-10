@@ -190,7 +190,7 @@ export function ReportePipelineClient() {
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Tooltip
                   formatter={(value: any, name: any) => [Number(value), name === 'ganadas' ? 'Ganadas' : 'Perdidas']}
-                  labelFormatter={formatMes}
+                  labelFormatter={(label: any) => formatMes(String(label))}
                 />
                 <Bar dataKey="ganadas" fill="#22c55e" radius={[3, 3, 0, 0]} name="ganadas" />
                 <Bar dataKey="perdidas" fill="#ef4444" radius={[3, 3, 0, 0]} name="perdidas" />
