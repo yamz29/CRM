@@ -49,6 +49,22 @@ Al cierre del mes, el sistema muestra:
 
 ---
 
+## Factor de carga social
+
+El costo de mano de obra se calcula como:
+
+```
+Costo real = Horas × Costo/hora del empleado × Factor de carga social
+```
+
+El **factor de carga social** se configura en **Configuración → Costos** y refleja las prestaciones laborales obligatorias en RD (vacaciones, regalía navideña, seguro familiar de salud, AFP, riesgos laborales, etc.).
+
+Ejemplo: con costo/hora de RD$ 500 y factor 1.45 → el costo real por hora es **RD$ 725**.
+
+Este costo aparece en el resumen financiero del proyecto como "M.O. Interna" con la indicación del factor aplicado.
+
+---
+
 ## Errores comunes
 
 - ❌ **Registrar horas días después sin recordar los detalles** → pierde precisión la descripción. Registra el mismo día o al final de cada jornada

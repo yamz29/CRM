@@ -1,11 +1,51 @@
 [
   {
+    "slug": "clientes",
+    "titulo": "Clientes",
+    "descripcion": "Registro y gestión de clientes particulares y empresas",
+    "modulo": "/clientes",
+    "icono": "Users",
+    "tags": ["cliente", "empresa", "particular", "RNC", "contacto"]
+  },
+  {
+    "slug": "oportunidades",
+    "titulo": "Pipeline de Ventas",
+    "descripcion": "Seguimiento de oportunidades desde el lead hasta el cierre",
+    "modulo": "/oportunidades",
+    "icono": "TrendingUp",
+    "tags": ["pipeline", "ventas", "oportunidad", "lead", "cotización", "cierre"]
+  },
+  {
+    "slug": "presupuestos",
+    "titulo": "Presupuestos",
+    "descripcion": "Cotizaciones con capítulos, partidas, indirectos e ITBIS",
+    "modulo": "/presupuestos",
+    "icono": "FileText",
+    "tags": ["presupuesto", "cotización", "partida", "capítulo", "ITBIS", "descuento"]
+  },
+  {
     "slug": "proyectos",
     "titulo": "Proyectos",
-    "descripcion": "Gestión de obras, trabajos y clientes",
+    "descripcion": "Control integral de obras: financiero, adicionales, punchlist y EVM",
     "modulo": "/proyectos",
     "icono": "FolderOpen",
-    "tags": ["proyecto", "obra", "cliente", "estado", "contrato"]
+    "tags": ["proyecto", "obra", "adicional", "punchlist", "EVM", "avance", "margen"]
+  },
+  {
+    "slug": "cronogramas",
+    "titulo": "Cronogramas (Gantt)",
+    "descripcion": "Planificación y seguimiento de actividades con diagrama Gantt",
+    "modulo": "/cronograma",
+    "icono": "GanttChart",
+    "tags": ["cronograma", "gantt", "actividad", "dependencia", "avance", "plazo"]
+  },
+  {
+    "slug": "gastos",
+    "titulo": "Gastos",
+    "descripcion": "Control de gastos del negocio y por proyecto",
+    "modulo": "/gastos",
+    "icono": "Receipt",
+    "tags": ["gasto", "compra", "factura", "egreso", "costo", "proyecto"]
   },
   {
     "slug": "apu",
@@ -14,6 +54,38 @@
     "modulo": "/apus",
     "icono": "Calculator",
     "tags": ["apu", "precio", "unitario", "rendimiento", "insumo", "costo"]
+  },
+  {
+    "slug": "contabilidad",
+    "titulo": "Contabilidad",
+    "descripcion": "Facturas, pagos, cuentas bancarias y conciliación",
+    "modulo": "/contabilidad",
+    "icono": "Landmark",
+    "tags": ["factura", "pago", "cuenta", "banco", "conciliación", "NCF", "ITBIS"]
+  },
+  {
+    "slug": "proveedores",
+    "titulo": "Proveedores",
+    "descripcion": "Catálogo normalizado de suplidores y contratistas",
+    "modulo": "/proveedores",
+    "icono": "Truck",
+    "tags": ["proveedor", "suplidor", "RNC", "contacto", "condiciones"]
+  },
+  {
+    "slug": "compras",
+    "titulo": "Órdenes de Compra",
+    "descripcion": "Gestión de compras a proveedores con seguimiento de recepción",
+    "modulo": "/compras",
+    "icono": "ShoppingCart",
+    "tags": ["compra", "orden", "OC", "proveedor", "recepción", "material"]
+  },
+  {
+    "slug": "horas",
+    "titulo": "Control de Horas",
+    "descripcion": "Registro de horas trabajadas por proyecto y empleado",
+    "modulo": "/horas",
+    "icono": "Clock",
+    "tags": ["horas", "empleado", "tiempo", "mano de obra", "carga social"]
   },
   {
     "slug": "materiales",
@@ -40,27 +112,11 @@
     "tags": ["cocina", "modulo", "plancha", "despiece", "isla", "aéreo", "base"]
   },
   {
-    "slug": "horas",
-    "titulo": "Control de Horas",
-    "descripcion": "Registro de horas trabajadas por proyecto y empleado",
-    "modulo": "/horas",
-    "icono": "Clock",
-    "tags": ["horas", "empleado", "tiempo", "mano de obra", "productividad"]
-  },
-  {
-    "slug": "gastos",
-    "titulo": "Gastos",
-    "descripcion": "Control de gastos del negocio y por proyecto",
-    "modulo": "/gastos",
-    "icono": "Receipt",
-    "tags": ["gasto", "compra", "factura", "egreso", "costo", "proyecto"]
-  },
-  {
-    "slug": "oportunidades",
-    "titulo": "Pipeline de Ventas",
-    "descripcion": "Seguimiento de oportunidades desde el lead hasta el cierre",
-    "modulo": "/oportunidades",
-    "icono": "TrendingUp",
-    "tags": ["pipeline", "ventas", "oportunidad", "lead", "cotización", "cierre", "cliente"]
+    "slug": "produccion",
+    "titulo": "Producción (Taller)",
+    "descripcion": "Seguimiento de fabricación por etapas con QC y asignaciones",
+    "modulo": "/produccion",
+    "icono": "Factory",
+    "tags": ["producción", "taller", "kanban", "etapa", "QC", "corte", "ensamble"]
   }
 ]

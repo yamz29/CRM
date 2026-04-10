@@ -2,17 +2,27 @@ import Link from 'next/link'
 import {
   BookOpen, FolderOpen, Calculator, Layers,
   Grid2x2, ChefHat, Clock, Receipt, Search,
+  TrendingUp, FileText, GanttChart, Landmark,
+  Truck, ShoppingCart, Factory, Users,
 } from 'lucide-react'
 import articulos from '@/content/help/index.json'
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  FolderOpen: <FolderOpen className="w-5 h-5" />,
-  Calculator: <Calculator className="w-5 h-5" />,
-  Layers:     <Layers className="w-5 h-5" />,
-  Grid2x2:    <Grid2x2 className="w-5 h-5" />,
-  ChefHat:    <ChefHat className="w-5 h-5" />,
-  Clock:      <Clock className="w-5 h-5" />,
-  Receipt:    <Receipt className="w-5 h-5" />,
+  Users:        <Users className="w-5 h-5" />,
+  FolderOpen:   <FolderOpen className="w-5 h-5" />,
+  FileText:     <FileText className="w-5 h-5" />,
+  Calculator:   <Calculator className="w-5 h-5" />,
+  Layers:       <Layers className="w-5 h-5" />,
+  Grid2x2:      <Grid2x2 className="w-5 h-5" />,
+  ChefHat:      <ChefHat className="w-5 h-5" />,
+  Clock:        <Clock className="w-5 h-5" />,
+  Receipt:      <Receipt className="w-5 h-5" />,
+  TrendingUp:   <TrendingUp className="w-5 h-5" />,
+  GanttChart:   <GanttChart className="w-5 h-5" />,
+  Landmark:     <Landmark className="w-5 h-5" />,
+  Truck:        <Truck className="w-5 h-5" />,
+  ShoppingCart: <ShoppingCart className="w-5 h-5" />,
+  Factory:      <Factory className="w-5 h-5" />,
 }
 
 export default function AyudaPage() {
@@ -70,7 +80,7 @@ export default function AyudaPage() {
 
       {/* Footer note */}
       <p className="text-center text-muted-foreground text-xs mt-10">
-        Gonzalva ERP · Versión 1.3 · ¿No encuentras lo que buscas? Contacta a soporte.
+        Gonzalva ERP · Versión 1.5 · ¿No encuentras lo que buscas? Contacta a soporte.
       </p>
     </div>
   )
