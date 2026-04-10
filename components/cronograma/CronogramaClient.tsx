@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { LayoutGrid, List, Wand2, Plus, RefreshCw, Diamond } from 'lucide-react'
+import { LayoutGrid, List, Wand2, Plus, RefreshCw, Diamond, ChevronDown } from 'lucide-react'
 import { CronogramaGantt } from './CronogramaGantt'
 import { ActividadesTable } from './ActividadesTable'
 import { AvanceModal } from './AvanceModal'
@@ -56,6 +56,20 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
   const [avanceModal, setAvanceModal] = useState<Actividad | null>(null)
   const [generarModal, setGenerarModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showAddMenu, setShowAddMenu] = useState<'tarea' | 'hito' | null>(null)
+  const addMenuRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setShowAddMenu(null)
+    }
+    if (showAddMenu) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showAddMenu])
+
+  // Capítulos existentes para el dropdown
+  const capitulosExistentes = [...new Set(cronograma.actividades.map(a => a.capituloNombre).filter(Boolean))] as string[]
 
   const recargar = useCallback(() => {
     router.refresh()
@@ -136,7 +150,7 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
     }
   }
 
-  async function handleAgregarActividad(tipo: 'tarea' | 'hito' = 'tarea') {
+  async function handleAgregarActividad(tipo: 'tarea' | 'hito' = 'tarea', capituloNombre?: string | null) {
     const fechaInicio = new Date(cronograma.fechaInicio)
     const fechaFin = tipo === 'hito' ? new Date(fechaInicio) : new Date(fechaInicio)
     if (tipo === 'tarea') fechaFin.setDate(fechaFin.getDate() + 2)
@@ -151,6 +165,7 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
         fechaFin: fechaFin.toISOString(),
         duracion: tipo === 'hito' ? 0 : 3,
         orden: cronograma.actividades.length,
+        capituloNombre: capituloNombre ?? null,
       }),
     })
     if (res.ok) {
@@ -214,9 +229,38 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
               <Wand2 className="w-3.5 h-3.5" /> Generar desde presupuesto
             </Button>
           )}
-          <Button size="sm" onClick={() => handleAgregarActividad('tarea')}>
-            <Plus className="w-3.5 h-3.5" /> Añadir actividad
-          </Button>
+          {/* Añadir actividad con selector de grupo */}
+          <div className="relative" ref={capitulosExistentes.length > 0 ? addMenuRef : undefined}>
+            <div className="flex items-center">
+              <Button size="sm" onClick={() => {
+                if (capitulosExistentes.length > 0) setShowAddMenu(showAddMenu === 'tarea' ? null : 'tarea')
+                else handleAgregarActividad('tarea')
+              }} className={capitulosExistentes.length > 0 ? 'rounded-r-none' : ''}>
+                <Plus className="w-3.5 h-3.5" /> Añadir actividad
+              </Button>
+              {capitulosExistentes.length > 0 && (
+                <Button size="sm" onClick={() => setShowAddMenu(showAddMenu === 'tarea' ? null : 'tarea')}
+                  className="rounded-l-none border-l border-primary-foreground/20 px-1.5">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+            {showAddMenu === 'tarea' && (
+              <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 min-w-48 py-1">
+                <button onClick={() => { handleAgregarActividad('tarea'); setShowAddMenu(null) }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors text-muted-foreground italic">
+                  Sin grupo (General)
+                </button>
+                <div className="border-t border-border my-1" />
+                {capitulosExistentes.map(cap => (
+                  <button key={cap} onClick={() => { handleAgregarActividad('tarea', cap); setShowAddMenu(null) }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors">
+                    {cap}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <Button size="sm" variant="secondary" onClick={() => handleAgregarActividad('hito')}>
             <Diamond className="w-3.5 h-3.5" /> Añadir hito
           </Button>

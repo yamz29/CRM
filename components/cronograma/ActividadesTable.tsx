@@ -171,22 +171,40 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
 
   // ── Drag & drop ────────────────────────────────────────────────
   function handleDragStart(a: Actividad, cap: string) { setDragId(a.id); dragCapitulo.current = cap }
-  function handleDragOver(e: React.DragEvent, a: Actividad, cap: string) {
+  function handleDragOver(e: React.DragEvent, _a: Actividad, _cap: string) {
     e.preventDefault()
-    if (cap === dragCapitulo.current) setDragOverId(a.id)
+    setDragOverId(_a.id)
   }
   async function handleDrop(e: React.DragEvent, target: Actividad, cap: string) {
     e.preventDefault()
-    if (!dragId || cap !== dragCapitulo.current || dragId === target.id) {
+    if (!dragId || dragId === target.id) {
       setDragId(null); setDragOverId(null); return
     }
-    const grupo = grupos.get(cap) ?? []
-    const oldIdx = grupo.findIndex(a => a.id === dragId)
-    const newIdx = grupo.findIndex(a => a.id === target.id)
-    if (oldIdx === -1 || newIdx === -1) { setDragId(null); setDragOverId(null); return }
-    const reord = [...grupo]; const [moved] = reord.splice(oldIdx, 1); reord.splice(newIdx, 0, moved)
-    setDragId(null); setDragOverId(null)
-    await Promise.all(reord.map((a, idx) => a.orden !== idx ? onActualizar(a.id, { orden: idx }) : Promise.resolve()))
+    const sourceCap = dragCapitulo.current
+    if (sourceCap === cap) {
+      // Same group — reorder only
+      const grupo = grupos.get(cap) ?? []
+      const oldIdx = grupo.findIndex(a => a.id === dragId)
+      const newIdx = grupo.findIndex(a => a.id === target.id)
+      if (oldIdx === -1 || newIdx === -1) { setDragId(null); setDragOverId(null); return }
+      const reord = [...grupo]; const [moved] = reord.splice(oldIdx, 1); reord.splice(newIdx, 0, moved)
+      setDragId(null); setDragOverId(null)
+      await Promise.all(reord.map((a, idx) => a.orden !== idx ? onActualizar(a.id, { orden: idx }) : Promise.resolve()))
+    } else {
+      // Cross-group — move to target group at target position
+      const targetGrupo = [...(grupos.get(cap) ?? [])]
+      const targetIdx = targetGrupo.findIndex(a => a.id === target.id)
+      const newCapitulo = cap === 'General' ? null : cap
+      setDragId(null); setDragOverId(null)
+      const updates: Promise<void>[] = []
+      // Update dragged item: change group + set order at insertion point
+      updates.push(onActualizar(dragId, { capituloNombre: newCapitulo, orden: targetIdx } as Partial<Actividad>))
+      // Shift items after insertion point
+      for (let i = targetIdx; i < targetGrupo.length; i++) {
+        updates.push(onActualizar(targetGrupo[i].id, { orden: i + 1 }))
+      }
+      await Promise.all(updates)
+    }
   }
 
   function toggleColapso(key: string) {
@@ -323,7 +341,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
         onDragEnd={() => { setDragId(null); setDragOverId(null) }}
         className={`transition-colors ${
           dragId === a.id ? 'opacity-40' :
-          dragOverId === a.id && dragCapitulo.current === capitulo ? 'bg-blue-50 dark:bg-blue-900/20 border-t-2 border-t-blue-400' :
+          dragOverId === a.id ? 'bg-blue-50 dark:bg-blue-900/20 border-t-2 border-t-blue-400' :
           'hover:bg-muted/20'
         }`}
       >
@@ -348,6 +366,11 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
           } />
           <CeldaDependencia a={a} />
           {/* Capítulo editable — para mover la tarea entre grupos */}
+          <datalist id={`caps-${a.id}`}>
+            {Array.from(new Set(actividades.map(x => x.capituloNombre ?? 'General'))).map(c => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
           {isEditing(a.id, 'capituloNombre') ? (
             <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
               onBlur={() => commitEdit(a)}
@@ -356,13 +379,6 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
               placeholder="Nombre del capítulo" list={`caps-${a.id}`}
             />
           ) : (
-            <datalist id={`caps-${a.id}`}>
-              {Array.from(new Set(actividades.map(x => x.capituloNombre ?? 'General'))).map(c => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-          )}
-          {!isEditing(a.id, 'capituloNombre') && (
             <span
               onClick={() => startEdit(a, 'capituloNombre')}
               className="inline-block mt-0.5 text-xs text-muted-foreground/50 hover:text-muted-foreground cursor-pointer italic"
@@ -598,7 +614,7 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
       </table>
 
       <p className="px-4 py-2 text-xs text-muted-foreground/60 border-t border-border bg-muted/10 flex items-center gap-1">
-        Arrastra <GripVertical className="inline w-3 h-3" /> para reordenar · Clic en celda para editar · WBS de 3 segmentos (ej: 1.1.2) crea sub-grupos automáticamente
+        Arrastra <GripVertical className="inline w-3 h-3" /> para reordenar (entre grupos también) · Clic en celda para editar · Clic en nombre de grupo bajo la tarea para moverla
       </p>
     </div>
   )
