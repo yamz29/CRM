@@ -62,6 +62,7 @@ model Proyecto {
   facturas          Factura[]
   adicionales       AdicionalProyecto[]
   punchlist         PunchItem[]
+  documentos        DocumentoProyecto[]
   ordenesCompra     OrdenCompra[]
   evmSnapshots      EVMSnapshot[]
 
@@ -1292,4 +1293,28 @@ model PunchItem {
   @@index([estado])
   @@index([prioridad])
   @@map("punch_item")
+}
+
+// ── DOCUMENTOS DE PROYECTO ──────────────────────────────────────────────
+// Registro de documentos vinculados a un proyecto. Los archivos viven en
+// OneDrive/Google Drive — aquí solo se guarda la metadata y el enlace.
+model DocumentoProyecto {
+  id            Int       @id @default(autoincrement())
+  proyectoId    Int
+  nombre        String                             // nombre descriptivo
+  categoria     String    @default("General")      // Plano | Contrato | Permiso | Foto | Factura | Acta | General
+  url           String                             // enlace a OneDrive / Google Drive / externo
+  descripcion   String?
+  etiquetas     String?                            // JSON array: ["cocina","plano"]
+  subidoPor     String?                            // nombre de quien lo registró
+  fechaDocumento DateTime?                         // fecha del documento (no de registro)
+  tamanioRef    String?                            // referencia de tamaño: "15 MB", "200 MB"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  proyecto Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@index([proyectoId])
+  @@index([categoria])
+  @@map("documento_proyecto")
 }

@@ -10,13 +10,14 @@ import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupue
 import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
 import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
 import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
+import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
-  FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink,
+  FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink, FolderOpen,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -29,7 +30,7 @@ async function getProyecto(id: number) {
         orderBy: { createdAt: 'desc' },
         select: { id: true, nombre: true, estado: true, fechaInicio: true, fechaFinEstimado: true, version: true, _count: { select: { actividades: true } } },
       },
-      _count: { select: { partidas: true, capitulos: true, adicionales: true, punchlist: true } },
+      _count: { select: { partidas: true, capitulos: true, adicionales: true, punchlist: true, documentos: true } },
     },
   })
 }
@@ -161,6 +162,7 @@ export default async function ProyectoDetailPage({
     { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
     { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
     { key: 'punchlist', label: `Punchlist (${proyecto._count.punchlist})`, icon: ClipboardCheck },
+    { key: 'documentos', label: `Documentos (${proyecto._count.documentos})`, icon: FolderOpen },
     { key: 'evm', label: 'EVM / Curva S', icon: TrendingUp },
     { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
     { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
@@ -975,6 +977,11 @@ export default async function ProyectoDetailPage({
       {/* PUNCHLIST */}
       {tab === 'punchlist' && (
         <PunchlistTab proyectoId={proyecto.id} />
+      )}
+
+      {/* DOCUMENTOS */}
+      {tab === 'documentos' && (
+        <DocumentosTab proyectoId={proyecto.id} />
       )}
 
       {/* GASTOS */}
