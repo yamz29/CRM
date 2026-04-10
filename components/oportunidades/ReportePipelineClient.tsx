@@ -187,8 +187,9 @@ export function ReportePipelineClient() {
               <BarChart data={meses}>
                 <XAxis dataKey="mes" tickFormatter={formatMes} tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Tooltip
-                  formatter={(value: number, name: string) => [value, name === 'ganadas' ? 'Ganadas' : 'Perdidas']}
+                  formatter={(value: any, name: any) => [Number(value), name === 'ganadas' ? 'Ganadas' : 'Perdidas']}
                   labelFormatter={formatMes}
                 />
                 <Bar dataKey="ganadas" fill="#22c55e" radius={[3, 3, 0, 0]} name="ganadas" />
@@ -223,7 +224,8 @@ export function ReportePipelineClient() {
                       <Cell key={i} fill={MOTIVO_COLORS[i % MOTIVO_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => [value, 'Casos']} />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <Tooltip formatter={(value: any) => [Number(value), 'Casos']} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-1.5">
