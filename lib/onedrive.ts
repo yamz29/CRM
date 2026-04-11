@@ -54,10 +54,10 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 export async function loginOneDrive(): Promise<boolean> {
-  await initMsal()
+  // MSAL must already be initialized before this is called (via initMsal on mount)
+  // Do NOT await anything before loginPopup — it breaks the user gesture chain
+  // and causes the browser to block the popup
   const msal = getMsalInstance()
-
-  // Clear any stale interaction_in_progress flags from previous attempts
   clearMsalInteractionState()
 
   try {
@@ -66,15 +66,7 @@ export async function loginOneDrive(): Promise<boolean> {
     return !!result.account
   } catch (e) {
     console.error('MSAL login error:', e)
-    // Fallback: try redirect
-    try {
-      clearMsalInteractionState()
-      await msal.loginRedirect({ scopes: graphScopes })
-      return false
-    } catch (e2) {
-      console.error('MSAL redirect error:', e2)
-      return false
-    }
+    return false
   }
 }
 
