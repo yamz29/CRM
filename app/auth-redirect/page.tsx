@@ -1,25 +1,19 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getMsalInstance } from '@/lib/msal-config'
+import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridge'
 
 /**
- * Popup redirect page for MSAL authentication.
- * When Microsoft redirects the popup back here, MSAL processes
- * the auth response and communicates it to the parent window.
+ * MSAL v5 popup redirect bridge page.
+ * When Microsoft redirects the popup here after authentication,
+ * broadcastResponseToMainFrame() sends the auth response to the
+ * parent window via BroadcastChannel and closes the popup.
  */
 export default function AuthRedirectPage() {
   useEffect(() => {
-    async function handle() {
-      try {
-        const msal = getMsalInstance()
-        await msal.initialize()
-        await msal.handleRedirectPromise()
-      } catch (e) {
-        console.error('Auth redirect handling error:', e)
-      }
-    }
-    handle()
+    broadcastResponseToMainFrame().catch((e) => {
+      console.error('MSAL redirect bridge error:', e)
+    })
   }, [])
 
   return (
