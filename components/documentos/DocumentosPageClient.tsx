@@ -8,6 +8,8 @@ import {
   ChevronRight, ChevronDown, MessageSquare, Send, Folder,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { OneDriveBrowser } from './OneDriveBrowser'
+import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -89,6 +91,8 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['oportunidades', 'proyectos', 'sin_vincular']))
   const commentEndRef = useRef<HTMLDivElement>(null)
+  const [leftTab, setLeftTab] = useState<'crm' | 'onedrive'>('crm')
+  const [oneDrivePreview, setOneDrivePreview] = useState<{ name: string; embedUrl: string | null; webUrl: string | null } | null>(null)
 
   // ── Load documents ─────────────────────────────────────────────────
   async function load() {
@@ -234,6 +238,40 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   }
 
   // ── Loading ────────────────────────────────────────────────────────
+  // ── OneDrive handlers ───────────────────────────────────────────────
+  function handleOneDriveSelect(item: OneDriveItem, embedUrl: string | null, shareUrl: string | null) {
+    setSelectedDoc(null) // deselect CRM doc
+    setOneDrivePreview({ name: item.name, embedUrl, webUrl: shareUrl || item.webUrl })
+  }
+
+  function handleOneDriveRegister(item: OneDriveItem, shareUrl: string) {
+    // Pre-fill form with OneDrive file data
+    setEditingId(null)
+    setForm({
+      nombre: item.name.replace(/\.[^.]+$/, ''), // strip extension
+      categoria: guessCategory(item.name),
+      url: shareUrl,
+      descripcion: '',
+      etiquetasInput: '',
+      subidoPor: '',
+      fechaDocumento: '',
+      tamanioRef: formatFileSize(item.size),
+      proyectoId: '', oportunidadId: '',
+    })
+    setFormOpen(true)
+  }
+
+  function guessCategory(filename: string): string {
+    const lower = filename.toLowerCase()
+    if (lower.includes('plano') || lower.includes('dwg') || lower.includes('cad')) return 'Plano'
+    if (lower.includes('contrato') || lower.includes('acuerdo')) return 'Contrato'
+    if (lower.includes('permiso') || lower.includes('licencia')) return 'Permiso'
+    if (lower.includes('factura') || lower.includes('invoice')) return 'Factura'
+    if (lower.includes('acta')) return 'Acta'
+    if (/\.(jpg|jpeg|png|gif|webp|bmp|heic)$/i.test(lower)) return 'Foto'
+    return 'General'
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -263,18 +301,41 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
 
         {/* ═══ LEFT: Tree Panel ═══ */}
         <div className="border-r border-border flex flex-col">
-          <div className="px-3 py-2.5 border-b border-border bg-muted/30">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                value={treeSearch}
-                onChange={e => setTreeSearch(e.target.value)}
-                placeholder="Buscar documentos..."
-                className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
+          {/* Tabs: CRM | OneDrive */}
+          <div className="flex border-b border-border shrink-0">
+            <button
+              onClick={() => { setLeftTab('crm'); setOneDrivePreview(null) }}
+              className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors ${
+                leftTab === 'crm' ? 'text-primary border-b-2 border-primary bg-muted/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
+              }`}
+            >
+              Registrados
+            </button>
+            <button
+              onClick={() => { setLeftTab('onedrive'); setSelectedDoc(null) }}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
+                leftTab === 'onedrive' ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.617 9.17l3.583 2.096 3.6-2.178L14.2 6.05a2.5 2.5 0 00-2.3-.14L10.617 9.17zM9.8 9.76L6.2 7.3A2.5 2.5 0 004 9.5v.28l5.8 3.42V9.76zm.4 4.24L4 10.58v4.92a2.5 2.5 0 001.5 2.3l8.1 3.4.5-.26L10.2 14zm4.6.58l5.2 3.12V13a2.5 2.5 0 00-1.2-2.14l-3.6 2.18-.4 1.54z"/></svg>
+              OneDrive
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto text-xs">
+
+          {leftTab === 'crm' ? (
+            <>
+              <div className="px-3 py-2.5 border-b border-border bg-muted/30">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    value={treeSearch}
+                    onChange={e => setTreeSearch(e.target.value)}
+                    placeholder="Buscar documentos..."
+                    className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto text-xs">
             {/* Oportunidades */}
             {tree.opMap.size > 0 && (
               <TreeSection
@@ -347,7 +408,15 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                 <button onClick={openNew} className="text-primary text-xs mt-1 hover:underline">+ Registrar primero</button>
               </div>
             )}
-          </div>
+              </div>
+            </>
+          ) : (
+            /* OneDrive tab */
+            <OneDriveBrowser
+              onSelectFile={handleOneDriveSelect}
+              onRegisterFile={handleOneDriveRegister}
+            />
+          )}
         </div>
 
         {/* ═══ CENTER: Preview Panel ═══ */}
@@ -411,6 +480,38 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
               {/* Preview iframe */}
               <div className="flex-1 min-h-0">
                 <PreviewFrame url={selectedDoc.url} nombre={selectedDoc.nombre} />
+              </div>
+            </>
+          ) : oneDrivePreview ? (
+            <>
+              {/* OneDrive file header */}
+              <div className="px-4 py-2.5 border-b border-border bg-card flex items-center gap-3 shrink-0">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 text-blue-500 shrink-0" fill="currentColor"><path d="M10.617 9.17l3.583 2.096 3.6-2.178L14.2 6.05a2.5 2.5 0 00-2.3-.14L10.617 9.17zM9.8 9.76L6.2 7.3A2.5 2.5 0 004 9.5v.28l5.8 3.42V9.76zm.4 4.24L4 10.58v4.92a2.5 2.5 0 001.5 2.3l8.1 3.4.5-.26L10.2 14zm4.6.58l5.2 3.12V13a2.5 2.5 0 00-1.2-2.14l-3.6 2.18-.4 1.54z"/></svg>
+                    <span className="font-semibold text-sm text-foreground truncate">{oneDrivePreview.name}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">OneDrive</span>
+                  </div>
+                </div>
+                {oneDrivePreview.webUrl && (
+                  <a href={oneDrivePreview.webUrl} target="_blank" rel="noopener noreferrer"
+                    className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir en OneDrive">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+              {/* Preview */}
+              <div className="flex-1 min-h-0">
+                {oneDrivePreview.embedUrl ? (
+                  <iframe src={oneDrivePreview.embedUrl} className="w-full h-full border-0" title={oneDrivePreview.name} />
+                ) : oneDrivePreview.webUrl ? (
+                  <iframe src={oneDrivePreview.webUrl} className="w-full h-full border-0" title={oneDrivePreview.name} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                    <FileText className="w-12 h-12 opacity-20" />
+                    <p className="text-sm">Vista previa no disponible</p>
+                  </div>
+                )}
               </div>
             </>
           ) : (
