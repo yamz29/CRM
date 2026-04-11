@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Folder, FileText, Image, FileSpreadsheet, FileIcon, Presentation,
-  ChevronRight, ArrowLeft, Loader2, LogIn, LogOut, Plus, Cloud,
+  ChevronRight, ArrowLeft, Loader2, LogIn, LogOut, Plus, Cloud, AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,6 +47,7 @@ export function OneDriveBrowser({ onSelectFile, onRegisterFile }: Props) {
   const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>([{ id: null, name: 'OneDrive' }])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [registering, setRegistering] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Init MSAL on mount so loginPopup is instant on button click
   useEffect(() => {
@@ -65,14 +66,24 @@ export function OneDriveBrowser({ onSelectFile, onRegisterFile }: Props) {
   // Load files when logged in
   const loadFolder = useCallback(async (folderId: string | null) => {
     setLoading(true)
-    const files = folderId ? await listFolderFiles(folderId) : await listRootFiles()
-    // Sort: folders first, then files
-    files.sort((a, b) => {
-      if (a.folder && !b.folder) return -1
-      if (!a.folder && b.folder) return 1
-      return a.name.localeCompare(b.name)
-    })
-    setItems(files)
+    setError(null)
+    try {
+      const files = folderId ? await listFolderFiles(folderId) : await listRootFiles()
+      console.log('OneDrive files loaded:', files.length)
+      // Sort: folders first, then files
+      files.sort((a, b) => {
+        if (a.folder && !b.folder) return -1
+        if (!a.folder && b.folder) return 1
+        return a.name.localeCompare(b.name)
+      })
+      setItems(files)
+      if (files.length === 0) {
+        setError('No se pudieron cargar los archivos. Revisa la consola (F12) para más detalles.')
+      }
+    } catch (e) {
+      console.error('OneDrive loadFolder error:', e)
+      setError('Error al cargar archivos de OneDrive')
+    }
     setLoading(false)
   }, [])
 
@@ -83,7 +94,12 @@ export function OneDriveBrowser({ onSelectFile, onRegisterFile }: Props) {
   }, [loggedIn, loadFolder])
 
   async function handleLogin() {
+    setError(null)
     const success = await loginOneDrive()
+    console.log('OneDrive login result:', success)
+    if (!success) {
+      setError('No se pudo conectar a OneDrive. Permite ventanas emergentes e intenta de nuevo.')
+    }
     setLoggedIn(success)
   }
 
@@ -155,6 +171,11 @@ export function OneDriveBrowser({ onSelectFile, onRegisterFile }: Props) {
         <Button size="sm" onClick={handleLogin} className="gap-1.5">
           <LogIn className="w-3.5 h-3.5" /> Conectar OneDrive
         </Button>
+        {error && (
+          <div className="flex items-center gap-1.5 text-[10px] text-amber-500 text-center">
+            <AlertTriangle className="w-3 h-3 shrink-0" /> {error}
+          </div>
+        )}
       </div>
     )
   }
@@ -195,7 +216,15 @@ export function OneDriveBrowser({ onSelectFile, onRegisterFile }: Props) {
           </div>
         ) : items.length === 0 ? (
           <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-            Carpeta vacía
+            {error ? (
+              <div className="flex flex-col items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <p className="text-amber-500">{error}</p>
+                <Button size="sm" variant="outline" onClick={() => loadFolder(breadcrumb[breadcrumb.length - 1].id)}>
+                  Reintentar
+                </Button>
+              </div>
+            ) : 'Carpeta vacía'}
           </div>
         ) : (
           <div>

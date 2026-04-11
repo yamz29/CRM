@@ -33,11 +33,14 @@ export async function getAccessToken(): Promise<string | null> {
   const msal = getMsalInstance()
 
   const accounts = msal.getAllAccounts()
+  console.log('MSAL accounts:', accounts.length, accounts.map(a => a.username))
   if (accounts.length > 0) {
     try {
       const result = await msal.acquireTokenSilent({ scopes: graphScopes, account: accounts[0] })
+      console.log('MSAL token acquired silently')
       return result.accessToken
-    } catch {
+    } catch (silentErr) {
+      console.error('MSAL acquireTokenSilent error:', silentErr)
       // Token expired, try popup
       try {
         clearMsalInteractionState()
@@ -48,6 +51,8 @@ export async function getAccessToken(): Promise<string | null> {
         return null
       }
     }
+  } else {
+    console.warn('MSAL: no accounts found — user needs to login')
   }
 
   return null
