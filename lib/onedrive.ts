@@ -2,11 +2,6 @@ import { getMsalInstance, graphScopes } from './msal-config'
 
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 
-// Popup redirect to a blank page so Next.js routing doesn't interfere
-const POPUP_REDIRECT = typeof window !== 'undefined'
-  ? `${window.location.origin}/auth-redirect.html`
-  : ''
-
 // ── Auth ─────────────────────────────────────────────────────────────────
 
 let msalInitialized = false
@@ -46,7 +41,7 @@ export async function getAccessToken(): Promise<string | null> {
       // Token expired, try popup
       try {
         clearMsalInteractionState()
-        const result = await msal.acquireTokenPopup({ scopes: graphScopes, redirectUri: POPUP_REDIRECT })
+        const result = await msal.acquireTokenPopup({ scopes: graphScopes })
         return result.accessToken
       } catch (e) {
         console.error('MSAL acquireTokenPopup error:', e)
@@ -66,7 +61,7 @@ export async function loginOneDrive(): Promise<boolean> {
   clearMsalInteractionState()
 
   try {
-    const result = await msal.loginPopup({ scopes: graphScopes, redirectUri: POPUP_REDIRECT })
+    const result = await msal.loginPopup({ scopes: graphScopes })
     console.log('MSAL login success:', result.account?.username)
     return !!result.account
   } catch (e) {
