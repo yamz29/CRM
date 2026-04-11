@@ -21,7 +21,9 @@ cd "$APP_DIR"
 # Cargar variables de entorno del servidor (nunca en git)
 # Este archivo debe existir en la VPS con las URLs de PostgreSQL
 if [ -f "$APP_DIR/.env.server" ]; then
+  set -a  # auto-export all variables so npm run build can read them
   source "$APP_DIR/.env.server"
+  set +a
 else
   echo "⚠️  ADVERTENCIA: no existe $APP_DIR/.env.server"
   echo "   Crea ese archivo con DATABASE_URL_PROD y DATABASE_URL_TEST"
