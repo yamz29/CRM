@@ -6,15 +6,24 @@ const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 
 let msalInitialized = false
 
+/** Clear stale MSAL interaction flags from browser storage */
+function clearMsalInteractionState() {
+  if (typeof sessionStorage === 'undefined') return
+  for (const key of Object.keys(sessionStorage)) {
+    if (key.includes('msal') && key.includes('interaction')) {
+      sessionStorage.removeItem(key)
+    }
+  }
+}
+
 export async function initMsal(): Promise<void> {
   if (msalInitialized) return
   const msal = getMsalInstance()
   await msal.initialize()
-  // Clear any stale interaction state from previous interrupted login/redirect
   try {
     await msal.handleRedirectPromise()
   } catch {
-    // Ignore — just clears the interaction_in_progress flag
+    // Ignore
   }
   msalInitialized = true
 }
@@ -31,6 +40,7 @@ export async function getAccessToken(): Promise<string | null> {
     } catch {
       // Token expired, try popup
       try {
+        clearMsalInteractionState()
         const result = await msal.acquireTokenPopup({ scopes: graphScopes })
         return result.accessToken
       } catch (e) {
@@ -47,16 +57,20 @@ export async function loginOneDrive(): Promise<boolean> {
   await initMsal()
   const msal = getMsalInstance()
 
+  // Clear any stale interaction_in_progress flags from previous attempts
+  clearMsalInteractionState()
+
   try {
     const result = await msal.loginPopup({ scopes: graphScopes })
     console.log('MSAL login success:', result.account?.username)
     return !!result.account
   } catch (e) {
     console.error('MSAL login error:', e)
-    // Fallback: try redirect instead of popup
+    // Fallback: try redirect
     try {
+      clearMsalInteractionState()
       await msal.loginRedirect({ scopes: graphScopes })
-      return false // redirect will reload the page
+      return false
     } catch (e2) {
       console.error('MSAL redirect error:', e2)
       return false
