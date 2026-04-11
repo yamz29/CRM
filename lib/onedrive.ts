@@ -4,9 +4,18 @@ const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 
 // ── Auth ─────────────────────────────────────────────────────────────────
 
-export async function getAccessToken(): Promise<string | null> {
+let msalInitialized = false
+
+export async function initMsal(): Promise<void> {
+  if (msalInitialized) return
   const msal = getMsalInstance()
   await msal.initialize()
+  msalInitialized = true
+}
+
+export async function getAccessToken(): Promise<string | null> {
+  await initMsal()
+  const msal = getMsalInstance()
 
   const accounts = msal.getAllAccounts()
   if (accounts.length > 0) {
@@ -14,21 +23,39 @@ export async function getAccessToken(): Promise<string | null> {
       const result = await msal.acquireTokenSilent({ scopes: graphScopes, account: accounts[0] })
       return result.accessToken
     } catch {
-      // Token expired, need interactive login
+      // Token expired, try popup
+      try {
+        const result = await msal.acquireTokenPopup({ scopes: graphScopes })
+        return result.accessToken
+      } catch (e) {
+        console.error('MSAL acquireTokenPopup error:', e)
+        return null
+      }
     }
   }
 
-  try {
-    const result = await msal.acquireTokenPopup({ scopes: graphScopes })
-    return result.accessToken
-  } catch {
-    return null
-  }
+  return null
 }
 
 export async function loginOneDrive(): Promise<boolean> {
-  const token = await getAccessToken()
-  return !!token
+  await initMsal()
+  const msal = getMsalInstance()
+
+  try {
+    const result = await msal.loginPopup({ scopes: graphScopes })
+    console.log('MSAL login success:', result.account?.username)
+    return !!result.account
+  } catch (e) {
+    console.error('MSAL login error:', e)
+    // Fallback: try redirect instead of popup
+    try {
+      await msal.loginRedirect({ scopes: graphScopes })
+      return false // redirect will reload the page
+    } catch (e2) {
+      console.error('MSAL redirect error:', e2)
+      return false
+    }
+  }
 }
 
 export function isLoggedIn(): boolean {
@@ -41,12 +68,18 @@ export function isLoggedIn(): boolean {
 }
 
 export async function logoutOneDrive(): Promise<void> {
+  await initMsal()
   const msal = getMsalInstance()
-  await msal.initialize()
   const accounts = msal.getAllAccounts()
   if (accounts.length > 0) {
-    await msal.logoutPopup({ account: accounts[0] })
+    try {
+      await msal.logoutPopup({ account: accounts[0] })
+    } catch {
+      // If popup fails, clear accounts manually
+      msal.setActiveAccount(null)
+    }
   }
+  msalInitialized = false
 }
 
 // ── Graph API helpers ────────────────────────────────────────────────────
@@ -58,7 +91,10 @@ async function graphGet(path: string): Promise<Record<string, unknown> | null> {
   const res = await fetch(`${GRAPH_BASE}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    console.error('Graph API error:', res.status, await res.text().catch(() => ''))
+    return null
+  }
   return res.json()
 }
 

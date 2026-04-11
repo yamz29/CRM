@@ -7,12 +7,11 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  loginOneDrive, logoutOneDrive, isLoggedIn,
+  initMsal, loginOneDrive, logoutOneDrive, isLoggedIn,
   listRootFiles, listFolderFiles, getEmbedUrl, getItemShareLink,
   formatFileSize, getFileIcon,
   type OneDriveItem,
 } from '@/lib/onedrive'
-import { getMsalInstance } from '@/lib/msal-config'
 
 // ── Icon map ─────────────────────────────────────────────────────────────
 
@@ -49,14 +48,15 @@ export function OneDriveBrowser({ onSelectFile, onRegisterFile }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [registering, setRegistering] = useState<string | null>(null)
 
-  // Init MSAL and check login
+  // Init MSAL on mount so loginPopup is instant on button click
   useEffect(() => {
     async function init() {
       try {
-        const msal = getMsalInstance()
-        await msal.initialize()
+        await initMsal()
         setLoggedIn(isLoggedIn())
-      } catch { /* MSAL not configured */ }
+      } catch (e) {
+        console.error('MSAL init error:', e)
+      }
       setInitialized(true)
     }
     init()
