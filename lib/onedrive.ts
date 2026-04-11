@@ -10,6 +10,12 @@ export async function initMsal(): Promise<void> {
   if (msalInitialized) return
   const msal = getMsalInstance()
   await msal.initialize()
+  // Clear any stale interaction state from previous interrupted login/redirect
+  try {
+    await msal.handleRedirectPromise()
+  } catch {
+    // Ignore — just clears the interaction_in_progress flag
+  }
   msalInitialized = true
 }
 
