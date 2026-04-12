@@ -11,6 +11,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'
+import { SharePointBrowser } from '@/components/documentos/SharePointBrowser'
+import { sanitizeFolderName } from '@/lib/sharepoint'
 
 interface ActividadCRM {
   id: number
@@ -558,6 +560,34 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
                 ))}
               </div>
             )}
+
+            {/* SharePoint browser embebido */}
+            <div className="mt-3 border border-border rounded-lg overflow-hidden" style={{ height: 320 }}>
+              <SharePointBrowser
+                compact
+                allowUpload
+                rootPath={sanitizeFolderName(oportunidad.cliente.nombre)}
+                oportunidadId={oportunidad.id}
+                onRegisterFile={(item, shareUrl) => {
+                  // Auto-register document in CRM
+                  fetch('/api/documentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      nombre: item.name.replace(/\.[^.]+$/, ''),
+                      url: shareUrl,
+                      oportunidadId: oportunidad.id,
+                      tamanioRef: item.size ? `${(item.size / (1024 * 1024)).toFixed(1)} MB` : null,
+                    }),
+                  }).then(() => {
+                    // Refresh docs
+                    fetch(`/api/documentos?oportunidadId=${oportunidad.id}`)
+                      .then(r => r.json())
+                      .then(data => setDocs(data))
+                  })
+                }}
+              />
+            </div>
           </div>
 
           {/* Actividades */}

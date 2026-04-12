@@ -20,4 +20,4 @@ export function getMsalInstance(): PublicClientApplication {
   return msalInstance
 }
 
-export const graphScopes = ['Files.Read.All', 'Files.ReadWrite.All', 'Sites.Read.All']
+export const graphScopes = ['Files.Read.All', 'Files.ReadWrite.All', 'Sites.ReadWrite.All']

@@ -5,10 +5,10 @@ import {
   Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen,
   FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File,
   Tag, Calendar, User, Link2, Eye, Briefcase, TrendingUp,
-  ChevronRight, ChevronDown, MessageSquare, Send, Folder,
+  ChevronRight, ChevronDown, MessageSquare, Send, Folder, Globe,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { OneDriveBrowser } from './OneDriveBrowser'
+import { SharePointBrowser } from './SharePointBrowser'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -91,8 +91,8 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['oportunidades', 'proyectos', 'sin_vincular']))
   const commentEndRef = useRef<HTMLDivElement>(null)
-  const [leftTab, setLeftTab] = useState<'crm' | 'onedrive'>('crm')
-  const [oneDrivePreview, setOneDrivePreview] = useState<{ name: string; embedUrl: string | null; webUrl: string | null } | null>(null)
+  const [leftTab, setLeftTab] = useState<'crm' | 'sharepoint'>('crm')
+  const [cloudPreview, setCloudPreview] = useState<{ name: string; embedUrl: string | null; webUrl: string | null } | null>(null)
 
   // ── Load documents ─────────────────────────────────────────────────
   async function load() {
@@ -238,14 +238,14 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   }
 
   // ── Loading ────────────────────────────────────────────────────────
-  // ── OneDrive handlers ───────────────────────────────────────────────
-  function handleOneDriveSelect(item: OneDriveItem, embedUrl: string | null, shareUrl: string | null) {
+  // ── SharePoint handlers ─────────────────────────────────────────────
+  function handleCloudSelect(item: OneDriveItem, embedUrl: string | null, shareUrl: string | null) {
     setSelectedDoc(null) // deselect CRM doc
-    setOneDrivePreview({ name: item.name, embedUrl, webUrl: shareUrl || item.webUrl })
+    setCloudPreview({ name: item.name, embedUrl, webUrl: shareUrl || item.webUrl })
   }
 
-  function handleOneDriveRegister(item: OneDriveItem, shareUrl: string) {
-    // Pre-fill form with OneDrive file data
+  function handleCloudRegister(item: OneDriveItem, shareUrl: string) {
+    // Pre-fill form with SharePoint file data
     setEditingId(null)
     setForm({
       nombre: item.name.replace(/\.[^.]+$/, ''), // strip extension
@@ -288,7 +288,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Documentos</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Registro centralizado — archivos en OneDrive / Google Drive
+            Registro centralizado — archivos en SharePoint / Google Drive
           </p>
         </div>
         <Button onClick={openNew}>
@@ -304,7 +304,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
           {/* Tabs: CRM | OneDrive */}
           <div className="flex border-b border-border shrink-0">
             <button
-              onClick={() => { setLeftTab('crm'); setOneDrivePreview(null) }}
+              onClick={() => { setLeftTab('crm'); setCloudPreview(null) }}
               className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors ${
                 leftTab === 'crm' ? 'text-primary border-b-2 border-primary bg-muted/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
               }`}
@@ -312,13 +312,13 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
               Registrados
             </button>
             <button
-              onClick={() => { setLeftTab('onedrive'); setSelectedDoc(null) }}
+              onClick={() => { setLeftTab('sharepoint'); setSelectedDoc(null) }}
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
-                leftTab === 'onedrive' ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
+                leftTab === 'sharepoint' ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
               }`}
             >
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.617 9.17l3.583 2.096 3.6-2.178L14.2 6.05a2.5 2.5 0 00-2.3-.14L10.617 9.17zM9.8 9.76L6.2 7.3A2.5 2.5 0 004 9.5v.28l5.8 3.42V9.76zm.4 4.24L4 10.58v4.92a2.5 2.5 0 001.5 2.3l8.1 3.4.5-.26L10.2 14zm4.6.58l5.2 3.12V13a2.5 2.5 0 00-1.2-2.14l-3.6 2.18-.4 1.54z"/></svg>
-              OneDrive
+              <Globe className="w-3.5 h-3.5" />
+              SharePoint
             </button>
           </div>
 
@@ -411,10 +411,11 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
               </div>
             </>
           ) : (
-            /* OneDrive tab */
-            <OneDriveBrowser
-              onSelectFile={handleOneDriveSelect}
-              onRegisterFile={handleOneDriveRegister}
+            /* SharePoint tab */
+            <SharePointBrowser
+              onSelectFile={handleCloudSelect}
+              onRegisterFile={handleCloudRegister}
+              allowUpload
             />
           )}
         </div>
@@ -482,30 +483,30 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                 <PreviewFrame url={selectedDoc.url} nombre={selectedDoc.nombre} />
               </div>
             </>
-          ) : oneDrivePreview ? (
+          ) : cloudPreview ? (
             <>
-              {/* OneDrive file header */}
+              {/* SharePoint file header */}
               <div className="px-4 py-2.5 border-b border-border bg-card flex items-center gap-3 shrink-0">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 text-blue-500 shrink-0" fill="currentColor"><path d="M10.617 9.17l3.583 2.096 3.6-2.178L14.2 6.05a2.5 2.5 0 00-2.3-.14L10.617 9.17zM9.8 9.76L6.2 7.3A2.5 2.5 0 004 9.5v.28l5.8 3.42V9.76zm.4 4.24L4 10.58v4.92a2.5 2.5 0 001.5 2.3l8.1 3.4.5-.26L10.2 14zm4.6.58l5.2 3.12V13a2.5 2.5 0 00-1.2-2.14l-3.6 2.18-.4 1.54z"/></svg>
-                    <span className="font-semibold text-sm text-foreground truncate">{oneDrivePreview.name}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">OneDrive</span>
+                    <Globe className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="font-semibold text-sm text-foreground truncate">{cloudPreview.name}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">SharePoint</span>
                   </div>
                 </div>
-                {oneDrivePreview.webUrl && (
-                  <a href={oneDrivePreview.webUrl} target="_blank" rel="noopener noreferrer"
-                    className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir en OneDrive">
+                {cloudPreview.webUrl && (
+                  <a href={cloudPreview.webUrl} target="_blank" rel="noopener noreferrer"
+                    className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir en SharePoint">
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
               </div>
               {/* Preview */}
               <div className="flex-1 min-h-0">
-                {oneDrivePreview.embedUrl ? (
-                  <iframe src={oneDrivePreview.embedUrl} className="w-full h-full border-0" title={oneDrivePreview.name} />
-                ) : oneDrivePreview.webUrl ? (
-                  <iframe src={oneDrivePreview.webUrl} className="w-full h-full border-0" title={oneDrivePreview.name} />
+                {cloudPreview.embedUrl ? (
+                  <iframe src={cloudPreview.embedUrl} className="w-full h-full border-0" title={cloudPreview.name} />
+                ) : cloudPreview.webUrl ? (
+                  <iframe src={cloudPreview.webUrl} className="w-full h-full border-0" title={cloudPreview.name} />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                     <FileText className="w-12 h-12 opacity-20" />
@@ -518,7 +519,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
               <Eye className="w-12 h-12 opacity-20" />
               <p className="text-sm">Selecciona un documento del panel izquierdo</p>
-              <p className="text-xs opacity-60">Vista previa de PDFs, OneDrive y Google Drive</p>
+              <p className="text-xs opacity-60">Vista previa de PDFs, SharePoint y Google Drive</p>
             </div>
           )}
         </div>
@@ -637,8 +638,8 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Enlace (OneDrive / Google Drive) *</label>
-                <input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://1drv.ms/... o https://drive.google.com/..."
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Enlace (SharePoint / Google Drive) *</label>
+                <input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://sharepoint.com/... o https://drive.google.com/..."
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div className="grid grid-cols-2 gap-3">
