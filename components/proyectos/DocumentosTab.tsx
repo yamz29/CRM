@@ -4,9 +4,12 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen,
   FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File,
-  Tag, Calendar, User, Link2,
+  Tag, Calendar, User, Link2, Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SharePointUploader, guessCategory } from '@/components/documentos/SharePointUploader'
+import { sanitizeFolderName } from '@/lib/sharepoint'
+import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -61,7 +64,14 @@ const emptyForm = {
 
 // ── Component ────────────────────────────────────────────────────────────
 
-export function DocumentosTab({ proyectoId }: { proyectoId: number }) {
+export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
+  proyectoId: number
+  clienteNombre?: string
+  proyectoNombre?: string
+}) {
+  const spFolderPath = clienteNombre && proyectoNombre
+    ? `CRM/${sanitizeFolderName(clienteNombre)}/${sanitizeFolderName(proyectoNombre)}`
+    : null
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
@@ -210,6 +220,27 @@ export function DocumentosTab({ proyectoId }: { proyectoId: number }) {
           <Plus className="w-3.5 h-3.5" /> Registrar documento
         </Button>
       </div>
+
+      {/* SharePoint Upload */}
+      {spFolderPath && (
+        <SharePointUploader
+          folderPath={spFolderPath}
+          onUploaded={(item: OneDriveItem, shareUrl: string) => {
+            // Auto-register in CRM
+            fetch('/api/documentos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                nombre: item.name.replace(/\.[^.]+$/, ''),
+                url: shareUrl,
+                categoria: guessCategory(item.name),
+                proyectoId,
+                tamanioRef: formatFileSize(item.size),
+              }),
+            }).then(() => load())
+          }}
+        />
+      )}
 
       {/* Stats */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -367,11 +398,11 @@ export function DocumentosTab({ proyectoId }: { proyectoId: number }) {
 
               {/* URL */}
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Enlace (OneDrive / Google Drive) *</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Enlace (SharePoint / Google Drive) *</label>
                 <input
                   value={form.url}
                   onChange={(e) => setForm({ ...form, url: e.target.value })}
-                  placeholder="https://1drv.ms/... o https://drive.google.com/..."
+                  placeholder="https://sharepoint.com/... o https://drive.google.com/..."
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>

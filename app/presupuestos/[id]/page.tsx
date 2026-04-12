@@ -20,6 +20,7 @@ import {
 import { CambiarEstadoButton } from './CambiarEstadoButton'
 import { DuplicarButton } from './DuplicarButton'
 import { ResumenIAPanel } from '@/components/presupuestos/ResumenIAPanel'
+import { DocumentosPresupuesto } from '@/components/presupuestos/DocumentosPresupuesto'
 
 async function getPresupuesto(id: number) {
   return prisma.presupuesto.findUnique({
@@ -27,6 +28,7 @@ async function getPresupuesto(id: number) {
     include: {
       cliente: true,
       proyecto: true,
+      oportunidad: { select: { id: true, nombre: true } },
       partidas: { orderBy: { orden: 'asc' } },
       modulosMelamina: { orderBy: { orden: 'asc' } },
       indirectos: { orderBy: { orden: 'asc' } },
@@ -417,6 +419,17 @@ export default async function PresupuestoDetailPage({
       )}
 
       {/* Total Summary */}
+      {/* Documentos */}
+      <Card>
+        <CardContent className="py-5">
+          <DocumentosPresupuesto
+            oportunidadId={presupuesto.oportunidadId}
+            clienteNombre={presupuesto.cliente.nombre}
+            folderName={presupuesto.oportunidad?.nombre || presupuesto.numero}
+          />
+        </CardContent>
+      </Card>
+
       <Card className="border-2 border-blue-100">
         <CardContent className="py-5">
           <div className="flex flex-col items-end gap-2">

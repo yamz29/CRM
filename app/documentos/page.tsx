@@ -4,12 +4,12 @@ import { DocumentosPageClient } from '@/components/documentos/DocumentosPageClie
 export default async function DocumentosPage() {
   const [proyectos, oportunidades] = await Promise.all([
     prisma.proyecto.findMany({
-      select: { id: true, nombre: true },
+      select: { id: true, nombre: true, cliente: { select: { nombre: true } } },
       orderBy: { nombre: 'asc' },
     }),
     prisma.oportunidad.findMany({
       where: { archivada: false },
-      select: { id: true, nombre: true, etapa: true },
+      select: { id: true, nombre: true, etapa: true, cliente: { select: { nombre: true } } },
       orderBy: { nombre: 'asc' },
     }),
   ])

@@ -5,10 +5,11 @@ import {
   Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen,
   FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File,
   Tag, Calendar, User, Link2, Eye, Briefcase, TrendingUp,
-  ChevronRight, ChevronDown, MessageSquare, Send, Folder, Globe,
+  ChevronRight, ChevronDown, MessageSquare, Send, Folder, Globe, Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SharePointBrowser } from './SharePointBrowser'
+import { SharePointUploader, guessCategory } from './SharePointUploader'
+import { sanitizeFolderName } from '@/lib/sharepoint'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -42,8 +43,8 @@ interface Comentario {
 }
 
 interface Props {
-  proyectos: { id: number; nombre: string }[]
-  oportunidades: { id: number; nombre: string; etapa: string }[]
+  proyectos: { id: number; nombre: string; cliente: { nombre: string } }[]
+  oportunidades: { id: number; nombre: string; etapa: string; cliente: { nombre: string } }[]
 }
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -91,8 +92,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['oportunidades', 'proyectos', 'sin_vincular']))
   const commentEndRef = useRef<HTMLDivElement>(null)
-  const [leftTab, setLeftTab] = useState<'crm' | 'sharepoint'>('crm')
-  const [cloudPreview, setCloudPreview] = useState<{ name: string; embedUrl: string | null; webUrl: string | null } | null>(null)
+  const [uploadTarget, setUploadTarget] = useState<{ tipo: 'proyecto' | 'oportunidad'; id: number; nombre: string; clienteNombre: string } | null>(null)
 
   // ── Load documents ─────────────────────────────────────────────────
   async function load() {
@@ -238,38 +238,23 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   }
 
   // ── Loading ────────────────────────────────────────────────────────
-  // ── SharePoint handlers ─────────────────────────────────────────────
-  function handleCloudSelect(item: OneDriveItem, embedUrl: string | null, shareUrl: string | null) {
-    setSelectedDoc(null) // deselect CRM doc
-    setCloudPreview({ name: item.name, embedUrl, webUrl: shareUrl || item.webUrl })
-  }
-
-  function handleCloudRegister(item: OneDriveItem, shareUrl: string) {
-    // Pre-fill form with SharePoint file data
-    setEditingId(null)
-    setForm({
-      nombre: item.name.replace(/\.[^.]+$/, ''), // strip extension
-      categoria: guessCategory(item.name),
+  // ── Upload handler ─────────────────────────────────────────────────
+  function handleUploaded(item: OneDriveItem, shareUrl: string) {
+    if (!uploadTarget) return
+    // Auto-register in CRM
+    const payload: Record<string, unknown> = {
+      nombre: item.name.replace(/\.[^.]+$/, ''),
       url: shareUrl,
-      descripcion: '',
-      etiquetasInput: '',
-      subidoPor: '',
-      fechaDocumento: '',
+      categoria: guessCategory(item.name),
       tamanioRef: formatFileSize(item.size),
-      proyectoId: '', oportunidadId: '',
-    })
-    setFormOpen(true)
-  }
-
-  function guessCategory(filename: string): string {
-    const lower = filename.toLowerCase()
-    if (lower.includes('plano') || lower.includes('dwg') || lower.includes('cad')) return 'Plano'
-    if (lower.includes('contrato') || lower.includes('acuerdo')) return 'Contrato'
-    if (lower.includes('permiso') || lower.includes('licencia')) return 'Permiso'
-    if (lower.includes('factura') || lower.includes('invoice')) return 'Factura'
-    if (lower.includes('acta')) return 'Acta'
-    if (/\.(jpg|jpeg|png|gif|webp|bmp|heic)$/i.test(lower)) return 'Foto'
-    return 'General'
+    }
+    if (uploadTarget.tipo === 'proyecto') payload.proyectoId = uploadTarget.id
+    if (uploadTarget.tipo === 'oportunidad') payload.oportunidadId = uploadTarget.id
+    fetch('/api/documentos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(() => load())
   }
 
   if (loading) {
@@ -288,7 +273,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Documentos</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Registro centralizado — archivos en SharePoint / Google Drive
+            Registro centralizado de documentos del CRM
           </p>
         </div>
         <Button onClick={openNew}>
@@ -301,41 +286,39 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
 
         {/* ═══ LEFT: Tree Panel ═══ */}
         <div className="border-r border-border flex flex-col">
-          {/* Tabs: CRM | OneDrive */}
-          <div className="flex border-b border-border shrink-0">
-            <button
-              onClick={() => { setLeftTab('crm'); setCloudPreview(null) }}
-              className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors ${
-                leftTab === 'crm' ? 'text-primary border-b-2 border-primary bg-muted/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
-              }`}
-            >
-              Registrados
-            </button>
-            <button
-              onClick={() => { setLeftTab('sharepoint'); setSelectedDoc(null) }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
-                leftTab === 'sharepoint' ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              SharePoint
-            </button>
+          {/* Header */}
+          <div className="px-3 py-2.5 border-b border-border bg-muted/30">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                value={treeSearch}
+                onChange={e => setTreeSearch(e.target.value)}
+                placeholder="Buscar documentos..."
+                className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
           </div>
 
-          {leftTab === 'crm' ? (
-            <>
-              <div className="px-3 py-2.5 border-b border-border bg-muted/30">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input
-                    value={treeSearch}
-                    onChange={e => setTreeSearch(e.target.value)}
-                    placeholder="Buscar documentos..."
-                    className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
+          {/* Upload zone */}
+          {uploadTarget && (
+            <div className="px-3 py-2 border-b border-border bg-blue-50/50 dark:bg-blue-900/10">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-foreground">
+                  Subir a: {uploadTarget.nombre}
+                </span>
+                <button onClick={() => setUploadTarget(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-3 h-3" />
+                </button>
               </div>
-              <div className="flex-1 overflow-y-auto text-xs">
+              <SharePointUploader
+                folderPath={`CRM/${sanitizeFolderName(uploadTarget.clienteNombre)}/${sanitizeFolderName(uploadTarget.nombre)}`}
+                onUploaded={handleUploaded}
+                label="Arrastra o haz clic para subir"
+              />
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto text-xs">
             {/* Oportunidades */}
             {tree.opMap.size > 0 && (
               <TreeSection
@@ -345,19 +328,23 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                 onToggle={() => toggleExpand('oportunidades')}
                 count={Array.from(tree.opMap.values()).reduce((s, g) => s + g.docs.length, 0)}
               >
-                {Array.from(tree.opMap.entries()).map(([opId, group]) => (
-                  <TreeEntity
-                    key={`op-${opId}`}
-                    name={group.nombre}
-                    icon={<TrendingUp className="w-3 h-3 text-purple-500" />}
-                    docs={group.docs}
-                    selectedId={selectedDoc?.id ?? null}
-                    onSelect={selectDoc}
-                    expanded={expanded}
-                    expandKey={`op-${opId}`}
-                    onToggle={toggleExpand}
-                  />
-                ))}
+                {Array.from(tree.opMap.entries()).map(([opId, group]) => {
+                  const op = oportunidades.find(o => o.id === opId)
+                  return (
+                    <TreeEntity
+                      key={`op-${opId}`}
+                      name={group.nombre}
+                      icon={<TrendingUp className="w-3 h-3 text-purple-500" />}
+                      docs={group.docs}
+                      selectedId={selectedDoc?.id ?? null}
+                      onSelect={selectDoc}
+                      expanded={expanded}
+                      expandKey={`op-${opId}`}
+                      onToggle={toggleExpand}
+                      onUpload={op ? () => setUploadTarget({ tipo: 'oportunidad', id: opId, nombre: group.nombre, clienteNombre: op.cliente.nombre }) : undefined}
+                    />
+                  )
+                })}
               </TreeSection>
             )}
 
@@ -370,19 +357,23 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                 onToggle={() => toggleExpand('proyectos')}
                 count={Array.from(tree.projMap.values()).reduce((s, g) => s + g.docs.length, 0)}
               >
-                {Array.from(tree.projMap.entries()).map(([pId, group]) => (
-                  <TreeEntity
-                    key={`proj-${pId}`}
-                    name={group.nombre}
-                    icon={<Briefcase className="w-3 h-3 text-blue-500" />}
-                    docs={group.docs}
-                    selectedId={selectedDoc?.id ?? null}
-                    onSelect={selectDoc}
-                    expanded={expanded}
-                    expandKey={`proj-${pId}`}
-                    onToggle={toggleExpand}
-                  />
-                ))}
+                {Array.from(tree.projMap.entries()).map(([pId, group]) => {
+                  const proj = proyectos.find(p => p.id === pId)
+                  return (
+                    <TreeEntity
+                      key={`proj-${pId}`}
+                      name={group.nombre}
+                      icon={<Briefcase className="w-3 h-3 text-blue-500" />}
+                      docs={group.docs}
+                      selectedId={selectedDoc?.id ?? null}
+                      onSelect={selectDoc}
+                      expanded={expanded}
+                      expandKey={`proj-${pId}`}
+                      onToggle={toggleExpand}
+                      onUpload={proj ? () => setUploadTarget({ tipo: 'proyecto', id: pId, nombre: group.nombre, clienteNombre: proj.cliente.nombre }) : undefined}
+                    />
+                  )
+                })}
               </TreeSection>
             )}
 
@@ -408,16 +399,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                 <button onClick={openNew} className="text-primary text-xs mt-1 hover:underline">+ Registrar primero</button>
               </div>
             )}
-              </div>
-            </>
-          ) : (
-            /* SharePoint tab */
-            <SharePointBrowser
-              onSelectFile={handleCloudSelect}
-              onRegisterFile={handleCloudRegister}
-              allowUpload
-            />
-          )}
+          </div>
         </div>
 
         {/* ═══ CENTER: Preview Panel ═══ */}
@@ -483,43 +465,11 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                 <PreviewFrame url={selectedDoc.url} nombre={selectedDoc.nombre} />
               </div>
             </>
-          ) : cloudPreview ? (
-            <>
-              {/* SharePoint file header */}
-              <div className="px-4 py-2.5 border-b border-border bg-card flex items-center gap-3 shrink-0">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="font-semibold text-sm text-foreground truncate">{cloudPreview.name}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">SharePoint</span>
-                  </div>
-                </div>
-                {cloudPreview.webUrl && (
-                  <a href={cloudPreview.webUrl} target="_blank" rel="noopener noreferrer"
-                    className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir en SharePoint">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-              </div>
-              {/* Preview */}
-              <div className="flex-1 min-h-0">
-                {cloudPreview.embedUrl ? (
-                  <iframe src={cloudPreview.embedUrl} className="w-full h-full border-0" title={cloudPreview.name} />
-                ) : cloudPreview.webUrl ? (
-                  <iframe src={cloudPreview.webUrl} className="w-full h-full border-0" title={cloudPreview.name} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                    <FileText className="w-12 h-12 opacity-20" />
-                    <p className="text-sm">Vista previa no disponible</p>
-                  </div>
-                )}
-              </div>
-            </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
               <Eye className="w-12 h-12 opacity-20" />
               <p className="text-sm">Selecciona un documento del panel izquierdo</p>
-              <p className="text-xs opacity-60">Vista previa de PDFs, SharePoint y Google Drive</p>
+              <p className="text-xs opacity-60">Vista previa de PDFs y documentos registrados</p>
             </div>
           )}
         </div>
@@ -728,19 +678,29 @@ function TreeSection({ title, icon, expanded, onToggle, count, children }: {
   )
 }
 
-function TreeEntity({ name, icon, docs, selectedId, onSelect, expanded, expandKey, onToggle }: {
+function TreeEntity({ name, icon, docs, selectedId, onSelect, expanded, expandKey, onToggle, onUpload }: {
   name: string; icon: React.ReactNode; docs: Documento[]; selectedId: number | null
   onSelect: (d: Documento) => void; expanded: Set<string>; expandKey: string; onToggle: (k: string) => void
+  onUpload?: () => void
 }) {
   const isOpen = expanded.has(expandKey)
   return (
     <div>
-      <button onClick={() => onToggle(expandKey)} className="w-full flex items-center gap-2 pl-6 pr-3 py-1.5 hover:bg-muted/30 transition-colors">
-        {isOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
-        {icon}
-        <span className="text-foreground truncate flex-1 text-left">{name}</span>
-        <span className="text-muted-foreground/60 shrink-0">{docs.length}</span>
-      </button>
+      <div className="flex items-center pl-6 pr-3 py-1.5 hover:bg-muted/30 transition-colors group">
+        <button onClick={() => onToggle(expandKey)} className="flex items-center gap-2 flex-1 min-w-0">
+          {isOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
+          {icon}
+          <span className="text-foreground truncate flex-1 text-left">{name}</span>
+        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {onUpload && (
+            <button onClick={onUpload} className="p-0.5 text-muted-foreground hover:text-primary rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Subir archivo">
+              <Upload className="w-3 h-3" />
+            </button>
+          )}
+          <span className="text-muted-foreground/60">{docs.length}</span>
+        </div>
+      </div>
       {isOpen && docs.map(d => (
         <TreeDocItem key={d.id} doc={d} selected={selectedId === d.id} onSelect={onSelect} indent />
       ))}
@@ -776,17 +736,51 @@ function TreeDocItem({ doc, selected, onSelect, indent = false }: {
 
 function PreviewFrame({ url, nombre }: { url: string; nombre: string }) {
   const lower = url.toLowerCase()
-  const isPdf = lower.endsWith('.pdf') || lower.includes('/pdf')
-  const isOneDrive = lower.includes('1drv.ms') || lower.includes('sharepoint') || lower.includes('onedrive') || lower.includes('officeapps')
   const isGDrive = lower.includes('drive.google.com')
+  const isSharePoint = lower.includes('sharepoint.com') || lower.includes('1drv.ms')
+  const isOfficeOnline = lower.includes('officeapps.live.com')
 
-  if (isPdf || isOneDrive) {
+  // SharePoint share links — convert to embedded Office Online viewer
+  if (isSharePoint) {
+    // For SharePoint URLs, use the Office Online embed approach
+    const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+    const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase() ?? ''
+    const officeExts = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt']
+
+    if (officeExts.includes(ext)) {
+      return <iframe src={embedUrl} className="w-full h-full border-0" title={nombre} />
+    }
+
+    // For PDFs and images on SharePoint, try direct embed
+    if (ext === 'pdf' || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+      return <iframe src={url} className="w-full h-full border-0" title={nombre} />
+    }
+
+    // Fallback: link to open in SharePoint
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <Globe className="w-16 h-16 text-blue-500/20" />
+        <p className="text-muted-foreground text-sm">Documento en SharePoint</p>
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+          <ExternalLink className="w-4 h-4" /> Abrir en SharePoint
+        </a>
+      </div>
+    )
+  }
+
+  if (isOfficeOnline) {
     return <iframe src={url} className="w-full h-full border-0" title={nombre} />
   }
 
   if (isGDrive) {
     const previewUrl = url.replace('/view', '/preview').replace('/edit', '/preview')
     return <iframe src={previewUrl} className="w-full h-full border-0" title={nombre} sandbox="allow-scripts allow-same-origin" />
+  }
+
+  // PDF direct
+  if (lower.endsWith('.pdf') || lower.includes('/pdf')) {
+    return <iframe src={url} className="w-full h-full border-0" title={nombre} />
   }
 
   // Fallback

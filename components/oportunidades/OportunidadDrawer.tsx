@@ -11,8 +11,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'
-import { SharePointBrowser } from '@/components/documentos/SharePointBrowser'
+import { SharePointUploader, guessCategory } from '@/components/documentos/SharePointUploader'
 import { sanitizeFolderName } from '@/lib/sharepoint'
+import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
 interface ActividadCRM {
   id: number
@@ -561,31 +562,28 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
               </div>
             )}
 
-            {/* SharePoint browser embebido */}
-            <div className="mt-3 border border-border rounded-lg overflow-hidden" style={{ height: 320 }}>
-              <SharePointBrowser
-                compact
-                allowUpload
-                rootPath={sanitizeFolderName(oportunidad.cliente.nombre)}
-                oportunidadId={oportunidad.id}
-                onRegisterFile={(item, shareUrl) => {
-                  // Auto-register document in CRM
+            {/* SharePoint upload */}
+            <div className="mt-3">
+              <SharePointUploader
+                folderPath={`CRM/${sanitizeFolderName(oportunidad.cliente.nombre)}/${sanitizeFolderName(oportunidad.nombre)}`}
+                onUploaded={(item: OneDriveItem, shareUrl: string) => {
                   fetch('/api/documentos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       nombre: item.name.replace(/\.[^.]+$/, ''),
                       url: shareUrl,
+                      categoria: guessCategory(item.name),
                       oportunidadId: oportunidad.id,
-                      tamanioRef: item.size ? `${(item.size / (1024 * 1024)).toFixed(1)} MB` : null,
+                      tamanioRef: formatFileSize(item.size),
                     }),
                   }).then(() => {
-                    // Refresh docs
                     fetch(`/api/documentos?oportunidadId=${oportunidad.id}`)
                       .then(r => r.json())
                       .then(data => setDocs(data))
                   })
                 }}
+                label="Subir archivo a SharePoint"
               />
             </div>
           </div>

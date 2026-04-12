@@ -981,7 +981,7 @@ export default async function ProyectoDetailPage({
 
       {/* DOCUMENTOS */}
       {tab === 'documentos' && (
-        <DocumentosTab proyectoId={proyecto.id} />
+        <DocumentosTab proyectoId={proyecto.id} clienteNombre={proyecto.cliente.nombre} proyectoNombre={proyecto.nombre} />
       )}
 
       {/* GASTOS */}
