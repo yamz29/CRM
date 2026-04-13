@@ -117,6 +117,44 @@ export async function getSharePointShareLink(itemId: string): Promise<string | n
   return (data as any)?.link?.webUrl ?? null
 }
 
+// ── Resolve share URL to preview ────────────────────────────────────────
+
+/** Encode a share URL for use with the /shares/ Graph API endpoint */
+function encodeShareUrl(shareUrl: string): string {
+  const base64 = btoa(shareUrl)
+    .replace(/=+$/, '')
+    .replace(/\//g, '_')
+    .replace(/\+/g, '-')
+  return `u!${base64}`
+}
+
+/**
+ * Resolve a SharePoint share link to an embeddable preview URL.
+ * Uses the /shares/{encoded}/driveItem/preview endpoint.
+ * Returns { embedUrl, downloadUrl, mimeType } or null.
+ */
+export async function resolveShareLinkPreview(shareUrl: string): Promise<{
+  embedUrl: string | null
+  downloadUrl: string | null
+  mimeType: string | null
+} | null> {
+  const encoded = encodeShareUrl(shareUrl)
+
+  // Get the driveItem to find downloadUrl and mimeType
+  const item = await graphGet(`/shares/${encoded}/driveItem`)
+  if (!item) return null
+
+  const downloadUrl = (item['@microsoft.graph.downloadUrl'] as string) ?? null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mimeType = ((item as any)?.file?.mimeType as string) ?? null
+
+  // Get embeddable preview URL (works for Office docs)
+  const preview = await graphGet(`/shares/${encoded}/driveItem/preview`)
+  const embedUrl = ((preview as Record<string, unknown>)?.getUrl as string) ?? null
+
+  return { embedUrl, downloadUrl, mimeType }
+}
+
 // ── Upload ──────────────────────────────────────────────────────────────
 
 /** Sanitize a string for use as a SharePoint folder name */

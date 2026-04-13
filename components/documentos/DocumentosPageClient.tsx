@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
   Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen,
   FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File,
@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SharePointUploader, guessCategory } from './SharePointUploader'
-import { sanitizeFolderName } from '@/lib/sharepoint'
+import { sanitizeFolderName, resolveShareLinkPreview } from '@/lib/sharepoint'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -782,22 +782,8 @@ function PreviewFrame({ url, nombre }: { url: string; nombre: string }) {
   const isSharePoint = lower.includes('sharepoint.com') || lower.includes('1drv.ms')
   const isOfficeOnline = lower.includes('officeapps.live.com')
 
-  // SharePoint share links cannot be embedded (X-Frame-Options: deny)
-  // Always open in a new tab
   if (isSharePoint) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
-        <Globe className="w-16 h-16 text-blue-500/20" />
-        <p className="text-muted-foreground text-sm">Documento almacenado en SharePoint</p>
-        <p className="text-xs text-muted-foreground/60 max-w-xs text-center">
-          SharePoint no permite vista previa embebida — se abrirá en una nueva pestaña
-        </p>
-        <a href={url} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-          <ExternalLink className="w-4 h-4" /> Abrir en SharePoint
-        </a>
-      </div>
-    )
+    return <SharePointPreview url={url} nombre={nombre} />
   }
 
   if (isOfficeOnline) {
@@ -822,6 +808,90 @@ function PreviewFrame({ url, nombre }: { url: string; nombre: string }) {
       <a href={url} target="_blank" rel="noopener noreferrer"
         className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
         <ExternalLink className="w-4 h-4" /> Abrir en nueva pestaña
+      </a>
+    </div>
+  )
+}
+
+/** Resolves a SharePoint share link to an embeddable preview via Graph API */
+function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
+  const [state, setState] = useState<'loading' | 'embed' | 'image' | 'fallback'>('loading')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setState('loading')
+    setPreviewUrl(null)
+    setError(false)
+
+    resolveShareLinkPreview(url).then(result => {
+      if (cancelled) return
+      if (!result) {
+        setState('fallback')
+        return
+      }
+
+      const { embedUrl, downloadUrl, mimeType } = result
+
+      // Images: show directly with download URL
+      if (mimeType?.startsWith('image/') && downloadUrl) {
+        setPreviewUrl(downloadUrl)
+        setState('image')
+        return
+      }
+
+      // Office docs / PDFs: use embed URL from /preview
+      if (embedUrl) {
+        setPreviewUrl(embedUrl)
+        setState('embed')
+        return
+      }
+
+      // PDF with download URL
+      if (mimeType === 'application/pdf' && downloadUrl) {
+        setPreviewUrl(downloadUrl)
+        setState('embed')
+        return
+      }
+
+      setState('fallback')
+    }).catch(() => {
+      if (!cancelled) setState('fallback')
+    })
+
+    return () => { cancelled = true }
+  }, [url])
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+        <p className="text-xs">Cargando vista previa...</p>
+      </div>
+    )
+  }
+
+  if (state === 'image' && previewUrl) {
+    return (
+      <div className="flex items-center justify-center h-full p-4 bg-muted/20">
+        <img src={previewUrl} alt={nombre} className="max-w-full max-h-full object-contain rounded-lg shadow-md" />
+      </div>
+    )
+  }
+
+  if (state === 'embed' && previewUrl) {
+    return <iframe src={previewUrl} className="w-full h-full border-0" title={nombre} />
+  }
+
+  // Fallback
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4">
+      <Globe className="w-16 h-16 text-blue-500/20" />
+      <p className="text-muted-foreground text-sm">No se pudo generar vista previa</p>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+        <ExternalLink className="w-4 h-4" /> Abrir en SharePoint
       </a>
     </div>
   )
