@@ -844,9 +844,9 @@ function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
         return
       }
 
-      // PDFs: render in iframe via pre-authenticated download URL
+      // PDFs: use Google Docs viewer (downloadUrl has Content-Disposition: attachment)
       if (mimeType === 'application/pdf' && downloadUrl) {
-        setPreviewUrl(downloadUrl)
+        setPreviewUrl(`https://docs.google.com/gview?url=${encodeURIComponent(downloadUrl)}&embedded=true`)
         setState('pdf')
         return
       }
