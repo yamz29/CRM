@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SharePointUploader, guessCategory } from './SharePointUploader'
+import { SharePointFileManager } from './SharePointFileManager'
 import { sanitizeFolderName, resolveShareLinkPreview } from '@/lib/sharepoint'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
@@ -93,6 +94,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['oportunidades', 'proyectos', 'sin_vincular']))
   const commentEndRef = useRef<HTMLDivElement>(null)
   const [uploadTarget, setUploadTarget] = useState<{ tipo: 'proyecto' | 'oportunidad'; id: number; nombre: string; clienteNombre: string } | null>(null)
+  const [fileManagerTarget, setFileManagerTarget] = useState<{ nombre: string; clienteNombre: string; tipo: 'proyecto' | 'oportunidad'; id: number } | null>(null)
 
   // ── Load documents ─────────────────────────────────────────────────
   async function load() {
@@ -342,6 +344,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                       expandKey={`op-${opId}`}
                       onToggle={toggleExpand}
                       onUpload={op ? () => setUploadTarget({ tipo: 'oportunidad', id: opId, nombre: group.nombre, clienteNombre: op.cliente.nombre }) : undefined}
+                      onManage={op ? () => { setFileManagerTarget({ tipo: 'oportunidad', id: opId, nombre: group.nombre, clienteNombre: op.cliente.nombre }); setSelectedDoc(null) } : undefined}
                     />
                   )
                 })}
@@ -371,6 +374,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                       expandKey={`proj-${pId}`}
                       onToggle={toggleExpand}
                       onUpload={proj ? () => setUploadTarget({ tipo: 'proyecto', id: pId, nombre: group.nombre, clienteNombre: proj.cliente.nombre }) : undefined}
+                      onManage={proj ? () => { setFileManagerTarget({ tipo: 'proyecto', id: pId, nombre: group.nombre, clienteNombre: proj.cliente.nombre }); setSelectedDoc(null) } : undefined}
                     />
                   )
                 })}
@@ -402,9 +406,41 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
           </div>
         </div>
 
-        {/* ═══ CENTER: Preview Panel ═══ */}
+        {/* ═══ CENTER: Preview / FileManager Panel ═══ */}
         <div className="flex flex-col bg-muted/10">
-          {selectedDoc ? (
+          {fileManagerTarget ? (
+            <>
+              <div className="px-4 py-2.5 border-b border-border bg-card flex items-center gap-3 shrink-0">
+                <Globe className="w-4 h-4 text-blue-500" />
+                <span className="font-semibold text-sm text-foreground flex-1 truncate">
+                  SharePoint — {fileManagerTarget.nombre}
+                </span>
+                <button onClick={() => setFileManagerTarget(null)} className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 p-3">
+                <SharePointFileManager
+                  rootPath={`CRM/${sanitizeFolderName(fileManagerTarget.clienteNombre)}/${sanitizeFolderName(fileManagerTarget.nombre)}`}
+                  onFileUploaded={(item, shareUrl) => {
+                    const payload: Record<string, unknown> = {
+                      nombre: item.name.replace(/\.[^.]+$/, ''),
+                      url: shareUrl,
+                      categoria: guessCategory(item.name),
+                      tamanioRef: formatFileSize(item.size),
+                    }
+                    if (fileManagerTarget.tipo === 'proyecto') payload.proyectoId = fileManagerTarget.id
+                    if (fileManagerTarget.tipo === 'oportunidad') payload.oportunidadId = fileManagerTarget.id
+                    fetch('/api/documentos', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload),
+                    }).then(() => load())
+                  }}
+                />
+              </div>
+            </>
+          ) : selectedDoc ? (
             <>
               {/* Doc header */}
               <div className="px-4 py-2.5 border-b border-border bg-card flex items-center gap-3 shrink-0">
@@ -720,10 +756,11 @@ function TreeSection({ title, icon, expanded, onToggle, count, children }: {
   )
 }
 
-function TreeEntity({ name, icon, docs, selectedId, onSelect, expanded, expandKey, onToggle, onUpload }: {
+function TreeEntity({ name, icon, docs, selectedId, onSelect, expanded, expandKey, onToggle, onUpload, onManage }: {
   name: string; icon: React.ReactNode; docs: Documento[]; selectedId: number | null
   onSelect: (d: Documento) => void; expanded: Set<string>; expandKey: string; onToggle: (k: string) => void
   onUpload?: () => void
+  onManage?: () => void
 }) {
   const isOpen = expanded.has(expandKey)
   return (
@@ -735,6 +772,11 @@ function TreeEntity({ name, icon, docs, selectedId, onSelect, expanded, expandKe
           <span className="text-foreground truncate flex-1 text-left">{name}</span>
         </button>
         <div className="flex items-center gap-1 shrink-0">
+          {onManage && (
+            <button onClick={onManage} className="p-0.5 text-muted-foreground hover:text-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Gestionar archivos en SharePoint">
+              <FolderOpen className="w-3 h-3" />
+            </button>
+          )}
           {onUpload && (
             <button onClick={onUpload} className="p-0.5 text-muted-foreground hover:text-primary rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Subir archivo">
               <Upload className="w-3 h-3" />
