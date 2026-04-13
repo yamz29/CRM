@@ -740,27 +740,16 @@ function PreviewFrame({ url, nombre }: { url: string; nombre: string }) {
   const isSharePoint = lower.includes('sharepoint.com') || lower.includes('1drv.ms')
   const isOfficeOnline = lower.includes('officeapps.live.com')
 
-  // SharePoint share links — convert to embedded Office Online viewer
+  // SharePoint share links cannot be embedded (X-Frame-Options: deny)
+  // Always open in a new tab
   if (isSharePoint) {
-    // For SharePoint URLs, use the Office Online embed approach
-    const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
-    const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase() ?? ''
-    const officeExts = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt']
-
-    if (officeExts.includes(ext)) {
-      return <iframe src={embedUrl} className="w-full h-full border-0" title={nombre} />
-    }
-
-    // For PDFs and images on SharePoint, try direct embed
-    if (ext === 'pdf' || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-      return <iframe src={url} className="w-full h-full border-0" title={nombre} />
-    }
-
-    // Fallback: link to open in SharePoint
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <Globe className="w-16 h-16 text-blue-500/20" />
-        <p className="text-muted-foreground text-sm">Documento en SharePoint</p>
+        <p className="text-muted-foreground text-sm">Documento almacenado en SharePoint</p>
+        <p className="text-xs text-muted-foreground/60 max-w-xs text-center">
+          SharePoint no permite vista previa embebida — se abrirá en una nueva pestaña
+        </p>
         <a href={url} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
           <ExternalLink className="w-4 h-4" /> Abrir en SharePoint
