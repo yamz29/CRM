@@ -80,7 +80,8 @@ const emptyForm = {
 export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
-  const [treeSearch, setTreeSearch] = useState('')
+  const [selectedEntity, setSelectedEntity] = useState<{ tipo: 'oportunidad' | 'proyecto'; id: number; nombre: string; clienteNombre: string } | null>(null)
+  const [selectedSpFile, setSelectedSpFile] = useState<{ item: OneDriveItem; shareUrl: string } | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<Documento | null>(null)
   const [comentarios, setComentarios] = useState<Comentario[]>([])
   const [comentariosLoading, setComentariosLoading] = useState(false)
@@ -91,10 +92,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(['oportunidades', 'proyectos', 'sin_vincular']))
   const commentEndRef = useRef<HTMLDivElement>(null)
-  const [uploadTarget, setUploadTarget] = useState<{ tipo: 'proyecto' | 'oportunidad'; id: number; nombre: string; clienteNombre: string } | null>(null)
-  const [fileManagerTarget, setFileManagerTarget] = useState<{ nombre: string; clienteNombre: string; tipo: 'proyecto' | 'oportunidad'; id: number } | null>(null)
 
   // ── Load documents ─────────────────────────────────────────────────
   async function load() {
@@ -116,45 +114,6 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   function selectDoc(doc: Documento) {
     setSelectedDoc(doc)
     loadComentarios(doc.id)
-  }
-
-  // ── Tree structure ─────────────────────────────────────────────────
-  const tree = useMemo(() => {
-    const lq = treeSearch.toLowerCase()
-    const filteredDocs = lq
-      ? documentos.filter(d =>
-          d.nombre.toLowerCase().includes(lq) ||
-          d.proyecto?.nombre.toLowerCase().includes(lq) ||
-          d.oportunidad?.nombre.toLowerCase().includes(lq) ||
-          parseEtiquetas(d.etiquetas).some(t => t.toLowerCase().includes(lq))
-        )
-      : documentos
-
-    // Group by oportunidad
-    const opMap = new Map<number, { nombre: string; docs: Documento[] }>()
-    // Group by proyecto
-    const projMap = new Map<number, { nombre: string; docs: Documento[] }>()
-    const sinVincular: Documento[] = []
-
-    for (const d of filteredDocs) {
-      if (d.oportunidadId && d.oportunidad) {
-        if (!opMap.has(d.oportunidadId)) opMap.set(d.oportunidadId, { nombre: d.oportunidad.nombre, docs: [] })
-        opMap.get(d.oportunidadId)!.docs.push(d)
-      }
-      if (d.proyectoId && d.proyecto) {
-        if (!projMap.has(d.proyectoId)) projMap.set(d.proyectoId, { nombre: d.proyecto.nombre, docs: [] })
-        projMap.get(d.proyectoId)!.docs.push(d)
-      }
-      if (!d.oportunidadId && !d.proyectoId) {
-        sinVincular.push(d)
-      }
-    }
-
-    return { opMap, projMap, sinVincular }
-  }, [documentos, treeSearch])
-
-  function toggleExpand(key: string) {
-    setExpanded(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
   }
 
   // ── Comments ───────────────────────────────────────────────────────
@@ -239,26 +198,6 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
     load()
   }
 
-  // ── Loading ────────────────────────────────────────────────────────
-  // ── Upload handler ─────────────────────────────────────────────────
-  function handleUploaded(item: OneDriveItem, shareUrl: string) {
-    if (!uploadTarget) return
-    // Auto-register in CRM
-    const payload: Record<string, unknown> = {
-      nombre: item.name.replace(/\.[^.]+$/, ''),
-      url: shareUrl,
-      categoria: guessCategory(item.name),
-      tamanioRef: formatFileSize(item.size),
-    }
-    if (uploadTarget.tipo === 'proyecto') payload.proyectoId = uploadTarget.id
-    if (uploadTarget.tipo === 'oportunidad') payload.oportunidadId = uploadTarget.id
-    fetch('/api/documentos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).then(() => load())
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -284,160 +223,106 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
       </div>
 
       {/* 3-Panel Layout */}
-      <div className="grid grid-cols-[280px_1fr_320px] gap-0 border border-border rounded-xl overflow-hidden bg-card" style={{ height: 'calc(100vh - 180px)' }}>
+      <div className="grid grid-cols-[300px_1fr_320px] gap-0 border border-border rounded-xl overflow-hidden bg-card" style={{ height: 'calc(100vh - 180px)' }}>
 
-        {/* ═══ LEFT: Tree Panel ═══ */}
+        {/* ═══ LEFT: SharePoint File Manager ═══ */}
         <div className="border-r border-border flex flex-col">
-          {/* Header */}
-          <div className="px-3 py-2.5 border-b border-border bg-muted/30">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                value={treeSearch}
-                onChange={e => setTreeSearch(e.target.value)}
-                placeholder="Buscar documentos..."
-                className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
+          {/* Entity selector */}
+          <div className="px-3 py-2 border-b border-border bg-muted/30">
+            <select
+              value={selectedEntity ? `${selectedEntity.tipo}:${selectedEntity.id}` : ''}
+              onChange={e => {
+                const val = e.target.value
+                if (!val) { setSelectedEntity(null); return }
+                const [tipo, idStr] = val.split(':')
+                const id = parseInt(idStr)
+                if (tipo === 'oportunidad') {
+                  const op = oportunidades.find(o => o.id === id)
+                  if (op) setSelectedEntity({ tipo: 'oportunidad', id, nombre: op.nombre, clienteNombre: op.cliente.nombre })
+                } else {
+                  const proj = proyectos.find(p => p.id === id)
+                  if (proj) setSelectedEntity({ tipo: 'proyecto', id, nombre: proj.nombre, clienteNombre: proj.cliente.nombre })
+                }
+                setSelectedDoc(null)
+                setSelectedSpFile(null)
+              }}
+              className="w-full h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground"
+            >
+              <option value="">Seleccionar oportunidad o proyecto...</option>
+              <optgroup label="Oportunidades">
+                {oportunidades.map(o => <option key={`op-${o.id}`} value={`oportunidad:${o.id}`}>{o.nombre} ({o.etapa})</option>)}
+              </optgroup>
+              <optgroup label="Proyectos">
+                {proyectos.map(p => <option key={`proj-${p.id}`} value={`proyecto:${p.id}`}>{p.nombre}</option>)}
+              </optgroup>
+            </select>
           </div>
 
-          {/* Upload zone */}
-          {uploadTarget && (
-            <div className="px-3 py-2 border-b border-border bg-blue-50/50 dark:bg-blue-900/10">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-foreground">
-                  Subir a: {uploadTarget.nombre}
-                </span>
-                <button onClick={() => setUploadTarget(null)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-              <SharePointUploader
-                folderPath={`CRM/${sanitizeFolderName(uploadTarget.clienteNombre)}/${sanitizeFolderName(uploadTarget.nombre)}`}
-                onUploaded={handleUploaded}
-                label="Arrastra o haz clic para subir"
+          {/* File Manager */}
+          <div className="flex-1 min-h-0">
+            {selectedEntity ? (
+              <SharePointFileManager
+                key={`${selectedEntity.tipo}-${selectedEntity.id}`}
+                rootPath={`CRM/${sanitizeFolderName(selectedEntity.clienteNombre)}/${sanitizeFolderName(selectedEntity.nombre)}`}
+                fillHeight
+                selectedFileId={selectedSpFile?.item.id ?? null}
+                onSelectFile={(item, shareUrl) => {
+                  setSelectedSpFile({ item, shareUrl })
+                  setSelectedDoc(null)
+                  // Check if this file is registered in CRM
+                  const crmDoc = documentos.find(d => d.url === shareUrl)
+                  if (crmDoc) {
+                    setSelectedDoc(crmDoc)
+                    loadComentarios(crmDoc.id)
+                  }
+                }}
+                onFileUploaded={(item, shareUrl) => {
+                  const payload: Record<string, unknown> = {
+                    nombre: item.name.replace(/\.[^.]+$/, ''),
+                    url: shareUrl,
+                    categoria: guessCategory(item.name),
+                    tamanioRef: formatFileSize(item.size),
+                  }
+                  if (selectedEntity.tipo === 'proyecto') payload.proyectoId = selectedEntity.id
+                  if (selectedEntity.tipo === 'oportunidad') payload.oportunidadId = selectedEntity.id
+                  fetch('/api/documentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                  }).then(() => load())
+                }}
               />
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto text-xs">
-            {/* Oportunidades */}
-            {tree.opMap.size > 0 && (
-              <TreeSection
-                title="Oportunidades"
-                icon={<TrendingUp className="w-3.5 h-3.5" />}
-                expanded={expanded.has('oportunidades')}
-                onToggle={() => toggleExpand('oportunidades')}
-                count={Array.from(tree.opMap.values()).reduce((s, g) => s + g.docs.length, 0)}
-              >
-                {Array.from(tree.opMap.entries()).map(([opId, group]) => {
-                  const op = oportunidades.find(o => o.id === opId)
-                  return (
-                    <TreeEntity
-                      key={`op-${opId}`}
-                      name={group.nombre}
-                      icon={<TrendingUp className="w-3 h-3 text-purple-500" />}
-                      docs={group.docs}
-                      selectedId={selectedDoc?.id ?? null}
-                      onSelect={selectDoc}
-                      expanded={expanded}
-                      expandKey={`op-${opId}`}
-                      onToggle={toggleExpand}
-                      onUpload={op ? () => setUploadTarget({ tipo: 'oportunidad', id: opId, nombre: group.nombre, clienteNombre: op.cliente.nombre }) : undefined}
-                      onManage={op ? () => { setFileManagerTarget({ tipo: 'oportunidad', id: opId, nombre: group.nombre, clienteNombre: op.cliente.nombre }); setSelectedDoc(null) } : undefined}
-                    />
-                  )
-                })}
-              </TreeSection>
-            )}
-
-            {/* Proyectos */}
-            {tree.projMap.size > 0 && (
-              <TreeSection
-                title="Proyectos"
-                icon={<Briefcase className="w-3.5 h-3.5" />}
-                expanded={expanded.has('proyectos')}
-                onToggle={() => toggleExpand('proyectos')}
-                count={Array.from(tree.projMap.values()).reduce((s, g) => s + g.docs.length, 0)}
-              >
-                {Array.from(tree.projMap.entries()).map(([pId, group]) => {
-                  const proj = proyectos.find(p => p.id === pId)
-                  return (
-                    <TreeEntity
-                      key={`proj-${pId}`}
-                      name={group.nombre}
-                      icon={<Briefcase className="w-3 h-3 text-blue-500" />}
-                      docs={group.docs}
-                      selectedId={selectedDoc?.id ?? null}
-                      onSelect={selectDoc}
-                      expanded={expanded}
-                      expandKey={`proj-${pId}`}
-                      onToggle={toggleExpand}
-                      onUpload={proj ? () => setUploadTarget({ tipo: 'proyecto', id: pId, nombre: group.nombre, clienteNombre: proj.cliente.nombre }) : undefined}
-                      onManage={proj ? () => { setFileManagerTarget({ tipo: 'proyecto', id: pId, nombre: group.nombre, clienteNombre: proj.cliente.nombre }); setSelectedDoc(null) } : undefined}
-                    />
-                  )
-                })}
-              </TreeSection>
-            )}
-
-            {/* Sin vincular */}
-            {tree.sinVincular.length > 0 && (
-              <TreeSection
-                title="Sin vincular"
-                icon={<Folder className="w-3.5 h-3.5" />}
-                expanded={expanded.has('sin_vincular')}
-                onToggle={() => toggleExpand('sin_vincular')}
-                count={tree.sinVincular.length}
-              >
-                {tree.sinVincular.map(d => (
-                  <TreeDocItem key={d.id} doc={d} selected={selectedDoc?.id === d.id} onSelect={selectDoc} />
-                ))}
-              </TreeSection>
-            )}
-
-            {documentos.length === 0 && (
-              <div className="px-4 py-8 text-center text-muted-foreground">
-                <FolderOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p>Sin documentos</p>
-                <button onClick={openNew} className="text-primary text-xs mt-1 hover:underline">+ Registrar primero</button>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground px-4">
+                <Globe className="w-10 h-10 opacity-20" />
+                <p className="text-xs text-center">Selecciona una oportunidad o proyecto para navegar sus archivos en SharePoint</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* ═══ CENTER: Preview / FileManager Panel ═══ */}
+        {/* ═══ CENTER: Preview Panel ═══ */}
         <div className="flex flex-col bg-muted/10">
-          {fileManagerTarget ? (
+          {selectedSpFile && !selectedDoc ? (
             <>
+              {/* SharePoint file header */}
               <div className="px-4 py-2.5 border-b border-border bg-card flex items-center gap-3 shrink-0">
-                <Globe className="w-4 h-4 text-blue-500" />
-                <span className="font-semibold text-sm text-foreground flex-1 truncate">
-                  SharePoint — {fileManagerTarget.nombre}
-                </span>
-                <button onClick={() => setFileManagerTarget(null)} className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm text-foreground truncate">{selectedSpFile.item.name}</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      {formatFileSize(selectedSpFile.item.size)}
+                    </span>
+                  </div>
+                </div>
+                <a href={selectedSpFile.shareUrl} target="_blank" rel="noopener noreferrer"
+                  className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir en SharePoint">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
-              <div className="flex-1 min-h-0 p-3">
-                <SharePointFileManager
-                  rootPath={`CRM/${sanitizeFolderName(fileManagerTarget.clienteNombre)}/${sanitizeFolderName(fileManagerTarget.nombre)}`}
-                  onFileUploaded={(item, shareUrl) => {
-                    const payload: Record<string, unknown> = {
-                      nombre: item.name.replace(/\.[^.]+$/, ''),
-                      url: shareUrl,
-                      categoria: guessCategory(item.name),
-                      tamanioRef: formatFileSize(item.size),
-                    }
-                    if (fileManagerTarget.tipo === 'proyecto') payload.proyectoId = fileManagerTarget.id
-                    if (fileManagerTarget.tipo === 'oportunidad') payload.oportunidadId = fileManagerTarget.id
-                    fetch('/api/documentos', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(payload),
-                    }).then(() => load())
-                  }}
-                />
+              {/* Preview */}
+              <div className="flex-1 min-h-0">
+                <PreviewFrame url={selectedSpFile.shareUrl} nombre={selectedSpFile.item.name} />
               </div>
             </>
           ) : selectedDoc ? (
@@ -735,84 +620,6 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
         </div>
       )}
     </div>
-  )
-}
-
-// ── Tree Sub-components ──────────────────────────────────────────────────
-
-function TreeSection({ title, icon, expanded, onToggle, count, children }: {
-  title: string; icon: React.ReactNode; expanded: boolean; onToggle: () => void; count: number; children: React.ReactNode
-}) {
-  return (
-    <div>
-      <button onClick={onToggle} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 transition-colors border-b border-border/50">
-        {expanded ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
-        {icon}
-        <span className="font-bold text-foreground uppercase tracking-wide text-xs">{title}</span>
-        <span className="text-muted-foreground ml-auto">({count})</span>
-      </button>
-      {expanded && <div>{children}</div>}
-    </div>
-  )
-}
-
-function TreeEntity({ name, icon, docs, selectedId, onSelect, expanded, expandKey, onToggle, onUpload, onManage }: {
-  name: string; icon: React.ReactNode; docs: Documento[]; selectedId: number | null
-  onSelect: (d: Documento) => void; expanded: Set<string>; expandKey: string; onToggle: (k: string) => void
-  onUpload?: () => void
-  onManage?: () => void
-}) {
-  const isOpen = expanded.has(expandKey)
-  return (
-    <div>
-      <div className="flex items-center pl-6 pr-3 py-1.5 hover:bg-muted/30 transition-colors group">
-        <button onClick={() => onToggle(expandKey)} className="flex items-center gap-2 flex-1 min-w-0">
-          {isOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
-          {icon}
-          <span className="text-foreground truncate flex-1 text-left">{name}</span>
-        </button>
-        <div className="flex items-center gap-1 shrink-0">
-          {onManage && (
-            <button onClick={onManage} className="p-0.5 text-muted-foreground hover:text-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Gestionar archivos en SharePoint">
-              <FolderOpen className="w-3 h-3" />
-            </button>
-          )}
-          {onUpload && (
-            <button onClick={onUpload} className="p-0.5 text-muted-foreground hover:text-primary rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Subir archivo">
-              <Upload className="w-3 h-3" />
-            </button>
-          )}
-          <span className="text-muted-foreground/60">{docs.length}</span>
-        </div>
-      </div>
-      {isOpen && docs.map(d => (
-        <TreeDocItem key={d.id} doc={d} selected={selectedId === d.id} onSelect={onSelect} indent />
-      ))}
-    </div>
-  )
-}
-
-function TreeDocItem({ doc, selected, onSelect, indent = false }: {
-  doc: Documento; selected: boolean; onSelect: (d: Documento) => void; indent?: boolean
-}) {
-  const cat = getCatConfig(doc.categoria)
-  const CatIcon = cat.icon
-  return (
-    <button
-      onClick={() => onSelect(doc)}
-      className={`w-full flex items-center gap-2 py-1.5 pr-3 transition-colors text-left ${
-        indent ? 'pl-12' : 'pl-6'
-      } ${selected ? 'bg-primary/10 text-primary border-r-2 border-primary' : 'hover:bg-muted/30 text-foreground'}`}
-    >
-      <CatIcon className="w-3 h-3 shrink-0 opacity-60" />
-      <span className="truncate flex-1">{doc.nombre}</span>
-      {doc._count.comentarios > 0 && (
-        <span className="flex items-center gap-0.5 text-muted-foreground shrink-0">
-          <MessageSquare className="w-2.5 h-2.5" />
-          <span className="text-[10px]">{doc._count.comentarios}</span>
-        </span>
-      )}
-    </button>
   )
 }
 

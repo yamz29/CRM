@@ -39,6 +39,12 @@ interface Props {
   rootPath: string
   /** Called when a file is uploaded and registered */
   onFileUploaded?: (item: OneDriveItem, shareUrl: string) => void
+  /** Called when a file is clicked (for preview) */
+  onSelectFile?: (item: OneDriveItem, shareUrl: string) => void
+  /** Currently selected file ID (for highlighting) */
+  selectedFileId?: string | null
+  /** Fill available height instead of fixed 420px */
+  fillHeight?: boolean
 }
 
 interface BreadcrumbItem {
@@ -48,7 +54,7 @@ interface BreadcrumbItem {
 
 // ── Component ────────────────────────────────────────────────────────────
 
-export function SharePointFileManager({ rootPath, onFileUploaded }: Props) {
+export function SharePointFileManager({ rootPath, onFileUploaded, onSelectFile, selectedFileId, fillHeight }: Props) {
   const rootName = rootPath.split('/').pop() || getRootFolder()
   const [loggedIn, setLoggedIn] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -292,7 +298,7 @@ export function SharePointFileManager({ rootPath, onFileUploaded }: Props) {
 
   // ── File Manager ──────────────────────────────────────────────────
   return (
-    <div className="flex flex-col border border-border rounded-xl overflow-hidden bg-card" style={{ height: 420 }}>
+    <div className={`flex flex-col ${fillHeight ? '' : 'border border-border rounded-xl'} overflow-hidden bg-card`} style={fillHeight ? { height: '100%' } : { height: 420 }}>
       {/* Toolbar */}
       <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center gap-2 shrink-0">
         {breadcrumb.length > 1 && (
@@ -415,9 +421,18 @@ export function SharePointFileManager({ rootPath, onFileUploaded }: Props) {
                   className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors group ${
                     isDragOver
                       ? 'bg-blue-100 dark:bg-blue-900/30 border-l-2 border-blue-500'
+                      : selectedFileId === item.id
+                      ? 'bg-primary/10 border-r-2 border-primary'
                       : 'hover:bg-muted/30'
                   }`}
-                  onClick={() => isFolder && !isRenaming && navigateToFolder(item)}
+                  onClick={async () => {
+                    if (isRenaming) return
+                    if (isFolder) { navigateToFolder(item); return }
+                    if (onSelectFile) {
+                      const shareUrl = await getSharePointShareLink(item.id)
+                      if (shareUrl) onSelectFile(item, shareUrl)
+                    }
+                  }}
                 >
                   {icon}
                   <div className="flex-1 min-w-0">
