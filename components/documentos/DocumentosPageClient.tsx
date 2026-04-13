@@ -817,13 +817,13 @@ function PreviewFrame({ url, nombre }: { url: string; nombre: string }) {
 function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
   const [state, setState] = useState<'loading' | 'embed' | 'image' | 'fallback'>('loading')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [error, setError] = useState(false)
+  const [fallbackUrl, setFallbackUrl] = useState(url)
 
   useEffect(() => {
     let cancelled = false
     setState('loading')
     setPreviewUrl(null)
-    setError(false)
+    setFallbackUrl(url)
 
     resolveShareLinkPreview(url).then(result => {
       if (cancelled) return
@@ -832,7 +832,10 @@ function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
         return
       }
 
-      const { embedUrl, downloadUrl, mimeType } = result
+      const { embedUrl, downloadUrl, webUrl, mimeType } = result
+
+      // Use webUrl for the fallback button (opens in SharePoint web UI)
+      if (webUrl) setFallbackUrl(webUrl)
 
       // Images: show directly with download URL
       if (mimeType?.startsWith('image/') && downloadUrl) {
@@ -841,16 +844,9 @@ function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
         return
       }
 
-      // Office docs / PDFs: use embed URL from /preview
+      // Office docs / PDFs: use embed URL from /drives/{}/items/{}/preview
       if (embedUrl) {
         setPreviewUrl(embedUrl)
-        setState('embed')
-        return
-      }
-
-      // PDF with download URL
-      if (mimeType === 'application/pdf' && downloadUrl) {
-        setPreviewUrl(downloadUrl)
         setState('embed')
         return
       }
@@ -889,7 +885,7 @@ function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
     <div className="flex flex-col items-center justify-center h-full gap-4">
       <Globe className="w-16 h-16 text-blue-500/20" />
       <p className="text-muted-foreground text-sm">No se pudo generar vista previa</p>
-      <a href={url} target="_blank" rel="noopener noreferrer"
+      <a href={fallbackUrl} target="_blank" rel="noopener noreferrer"
         className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
         <ExternalLink className="w-4 h-4" /> Abrir en SharePoint
       </a>

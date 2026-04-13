@@ -130,29 +130,38 @@ function encodeShareUrl(shareUrl: string): string {
 
 /**
  * Resolve a SharePoint share link to an embeddable preview URL.
- * Uses the /shares/{encoded}/driveItem/preview endpoint.
- * Returns { embedUrl, downloadUrl, mimeType } or null.
+ * First resolves via /shares/ to get the driveItem ID and drive ID,
+ * then uses /drives/{driveId}/items/{itemId}/preview which has proper permissions.
  */
 export async function resolveShareLinkPreview(shareUrl: string): Promise<{
   embedUrl: string | null
   downloadUrl: string | null
+  webUrl: string | null
   mimeType: string | null
 } | null> {
   const encoded = encodeShareUrl(shareUrl)
 
-  // Get the driveItem to find downloadUrl and mimeType
+  // Step 1: Resolve share link to get the driveItem (ID, drive, mime type)
   const item = await graphGet(`/shares/${encoded}/driveItem`)
   if (!item) return null
 
+  const itemId = item.id as string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const driveId = ((item as any)?.parentReference?.driveId as string) ?? null
   const downloadUrl = (item['@microsoft.graph.downloadUrl'] as string) ?? null
+  const webUrl = (item.webUrl as string) ?? null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mimeType = ((item as any)?.file?.mimeType as string) ?? null
 
-  // Get embeddable preview URL (works for Office docs)
-  const preview = await graphGet(`/shares/${encoded}/driveItem/preview`)
+  if (!driveId || !itemId) {
+    return { embedUrl: null, downloadUrl, webUrl, mimeType }
+  }
+
+  // Step 2: Use the drive-based /preview endpoint (works with Sites.ReadWrite.All)
+  const preview = await graphGet(`/drives/${driveId}/items/${itemId}/preview`)
   const embedUrl = ((preview as Record<string, unknown>)?.getUrl as string) ?? null
 
-  return { embedUrl, downloadUrl, mimeType }
+  return { embedUrl, downloadUrl, webUrl, mimeType }
 }
 
 // ── Upload ──────────────────────────────────────────────────────────────
