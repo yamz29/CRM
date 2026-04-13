@@ -813,9 +813,9 @@ function PreviewFrame({ url, nombre }: { url: string; nombre: string }) {
   )
 }
 
-/** Resolves a SharePoint share link to an embeddable preview via Graph API */
+/** Resolves a SharePoint share link to a preview using Graph API downloadUrl */
 function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
-  const [state, setState] = useState<'loading' | 'embed' | 'image' | 'fallback'>('loading')
+  const [state, setState] = useState<'loading' | 'image' | 'pdf' | 'office' | 'fallback'>('loading')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [fallbackUrl, setFallbackUrl] = useState(url)
 
@@ -832,22 +832,35 @@ function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
         return
       }
 
-      const { embedUrl, downloadUrl, webUrl, mimeType } = result
+      const { downloadUrl, webUrl, mimeType } = result
 
-      // Use webUrl for the fallback button (opens in SharePoint web UI)
+      // webUrl opens in SharePoint web UI (for fallback & Office docs)
       if (webUrl) setFallbackUrl(webUrl)
 
-      // Images: show directly with download URL
+      // Images: render directly via pre-authenticated download URL
       if (mimeType?.startsWith('image/') && downloadUrl) {
         setPreviewUrl(downloadUrl)
         setState('image')
         return
       }
 
-      // Office docs / PDFs: use embed URL from /drives/{}/items/{}/preview
-      if (embedUrl) {
-        setPreviewUrl(embedUrl)
-        setState('embed')
+      // PDFs: render in iframe via pre-authenticated download URL
+      if (mimeType === 'application/pdf' && downloadUrl) {
+        setPreviewUrl(downloadUrl)
+        setState('pdf')
+        return
+      }
+
+      // Office docs (Word, Excel, PowerPoint): open in SharePoint web viewer
+      const officeTypes = [
+        'application/vnd.openxmlformats-officedocument',
+        'application/vnd.ms-excel',
+        'application/vnd.ms-powerpoint',
+        'application/msword',
+      ]
+      if (webUrl && mimeType && officeTypes.some(t => mimeType.startsWith(t))) {
+        setPreviewUrl(webUrl)
+        setState('office')
         return
       }
 
@@ -876,8 +889,24 @@ function SharePointPreview({ url, nombre }: { url: string; nombre: string }) {
     )
   }
 
-  if (state === 'embed' && previewUrl) {
+  if (state === 'pdf' && previewUrl) {
     return <iframe src={previewUrl} className="w-full h-full border-0" title={nombre} />
+  }
+
+  if (state === 'office' && previewUrl) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <Globe className="w-16 h-16 text-blue-500/20" />
+        <p className="text-muted-foreground text-sm">Documento de Office</p>
+        <p className="text-xs text-muted-foreground/60 max-w-xs text-center">
+          Se abrirá en el editor de SharePoint Online
+        </p>
+        <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+          <ExternalLink className="w-4 h-4" /> Abrir documento
+        </a>
+      </div>
+    )
   }
 
   // Fallback
