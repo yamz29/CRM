@@ -582,16 +582,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre del documento *</label>
-                <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="ej: Plano arquitectónico v2"
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Enlace (SharePoint / Google Drive) *</label>
-                <input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://sharepoint.com/... o https://drive.google.com/..."
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-              </div>
+              {/* Step 1: Select where to link */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Vincular a oportunidad</label>
@@ -610,6 +601,57 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                   </select>
                 </div>
               </div>
+
+              {/* Step 2: Upload or paste URL */}
+              {!editingId && (() => {
+                // Determine folder path based on selection
+                const selectedOp = form.oportunidadId ? oportunidades.find(o => String(o.id) === form.oportunidadId) : null
+                const selectedProj = form.proyectoId ? proyectos.find(p => String(p.id) === form.proyectoId) : null
+                const clienteNombre = selectedProj?.cliente.nombre || selectedOp?.cliente.nombre || null
+                const entityName = selectedProj?.nombre || selectedOp?.nombre || null
+                const folderPath = clienteNombre && entityName
+                  ? `CRM/${sanitizeFolderName(clienteNombre)}/${sanitizeFolderName(entityName)}`
+                  : null
+
+                return folderPath ? (
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Subir archivo a SharePoint</label>
+                    <SharePointUploader
+                      folderPath={folderPath}
+                      onUploaded={(item, shareUrl) => {
+                        setForm(prev => ({
+                          ...prev,
+                          nombre: prev.nombre || item.name.replace(/\.[^.]+$/, ''),
+                          url: shareUrl,
+                          categoria: guessCategory(item.name),
+                          tamanioRef: formatFileSize(item.size),
+                        }))
+                      }}
+                      label="Arrastra un archivo o haz clic para subir a SharePoint"
+                    />
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 bg-muted/30 border border-dashed border-border rounded-lg text-xs text-muted-foreground text-center">
+                    Selecciona una oportunidad o proyecto para habilitar la subida a SharePoint
+                  </div>
+                )
+              })()}
+
+              {/* URL manual (always visible for edit mode or fallback) */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  {editingId ? 'Enlace *' : form.url ? 'Enlace (auto-completado)' : 'O pega un enlace manualmente'}
+                </label>
+                <input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://sharepoint.com/... o https://drive.google.com/..."
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre del documento *</label>
+                <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="ej: Plano arquitectónico v2"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Categoría</label>
