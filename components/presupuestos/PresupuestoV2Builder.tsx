@@ -325,6 +325,56 @@ function ApuPanel({ partida, onClose, onUpdate, onApply, unidades }: { partida: 
   const calc = calcAnalisisFromDetalle(detalle, indirectos, utilidad)
   const updateDetalle = useCallback((key: SeccionAPU, lines: LineaAPU[]) => { onUpdate(calcAnalisisFromDetalle({ ...detalle, [key]: lines }, indirectos, utilidad)) }, [detalle, indirectos, utilidad, onUpdate])
   const updatePct = useCallback((field: 'indirectos' | 'utilidad', val: number) => { onUpdate(calcAnalisisFromDetalle(detalle, field === 'indirectos' ? val : indirectos, field === 'utilidad' ? val : utilidad)) }, [detalle, indirectos, utilidad, onUpdate])
+
+  // ── Save to APU catalog ───────────────────────────────────────────
+  const [savingToCatalog, setSavingToCatalog] = useState(false)
+  const [savedToCatalog, setSavedToCatalog] = useState(false)
+
+  async function handleSaveToCatalog() {
+    setSavingToCatalog(true)
+    try {
+      // Map detalle sections to ApuRecurso format
+      const tipoLineaMap: Record<string, string> = {
+        materiales: 'material', manoObra: 'mano_obra', equipos: 'equipo',
+        subcontratos: 'subcontrato', transporte: 'transporte',
+      }
+      const recursos: { tipoComponente: string; descripcionLibre: string; unidadLibre: string; tipoLinea: string; cantidad: number; costoSnapshot: number; subtotal: number }[] = []
+      for (const [secKey, lines] of Object.entries(detalle)) {
+        for (const line of lines as LineaAPU[]) {
+          if (!line.descripcion.trim()) continue
+          recursos.push({
+            tipoComponente: 'libre',
+            descripcionLibre: line.descripcion,
+            unidadLibre: line.unidad,
+            tipoLinea: tipoLineaMap[secKey] || secKey,
+            cantidad: line.cantidad,
+            costoSnapshot: line.precioUnitario,
+            subtotal: line.cantidad * line.precioUnitario,
+          })
+        }
+      }
+
+      const res = await fetch('/api/apus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: partida.descripcion || 'APU sin nombre',
+          unidad: partida.unidad || 'gl',
+          indirectos,
+          utilidad,
+          recursos,
+        }),
+      })
+
+      if (res.ok) {
+        setSavedToCatalog(true)
+        setTimeout(() => setSavedToCatalog(false), 3000)
+      }
+    } catch (e) {
+      console.error('Error saving to catalog:', e)
+    }
+    setSavingToCatalog(false)
+  }
   return (
     <div className="bg-muted/40 border-y border-blue-200">
       <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
@@ -360,6 +410,23 @@ function ApuPanel({ partida, onClose, onUpdate, onApply, unidades }: { partida: 
               </tbody>
             </table>
             <button onClick={onApply} className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"><CheckCircle className="w-4 h-4" />Aplicar {formatCurrency(calc.precioSugerido)} al presupuesto</button>
+            <button
+              onClick={handleSaveToCatalog}
+              disabled={savingToCatalog || savedToCatalog || calc.costoDirecto === 0}
+              className={`mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                savedToCatalog
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-muted text-foreground hover:bg-muted/80 border border-border'
+              }`}
+            >
+              {savingToCatalog ? (
+                <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Guardando...</>
+              ) : savedToCatalog ? (
+                <><CheckCircle className="w-4 h-4" /> Guardado en catálogo APU</>
+              ) : (
+                <><Save className="w-4 h-4" /> Guardar en catálogo APU</>
+              )}
+            </button>
           </div>
         </div>
       </div>
