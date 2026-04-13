@@ -249,6 +249,109 @@ export async function uploadLargeFile(
   return result
 }
 
+// ── Folder & item management ────────────────────────────────────────────
+
+/** Create a subfolder inside a parent folder by ID */
+export async function createFolder(parentId: string, name: string): Promise<OneDriveItem | null> {
+  const driveId = await getSiteDriveId()
+  if (!driveId) return null
+  const safeName = sanitizeFolderName(name) || 'Nueva carpeta'
+  const data = await graphPost(`/drives/${driveId}/items/${parentId}/children`, {
+    name: safeName,
+    folder: {},
+    '@microsoft.graph.conflictBehavior': 'rename',
+  })
+  return (data as unknown as OneDriveItem) ?? null
+}
+
+/** Move an item to a different folder */
+export async function moveItem(itemId: string, newParentId: string): Promise<boolean> {
+  const driveId = await getSiteDriveId()
+  const token = await getAccessToken()
+  if (!driveId || !token) return false
+  const res = await fetch(`${GRAPH_BASE}/drives/${driveId}/items/${itemId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parentReference: { id: newParentId } }),
+  })
+  return res.ok
+}
+
+/** Rename an item */
+export async function renameItem(itemId: string, newName: string): Promise<boolean> {
+  const driveId = await getSiteDriveId()
+  const token = await getAccessToken()
+  if (!driveId || !token) return false
+  const res = await fetch(`${GRAPH_BASE}/drives/${driveId}/items/${itemId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: newName }),
+  })
+  return res.ok
+}
+
+/** Delete an item (file or folder) */
+export async function deleteItem(itemId: string): Promise<boolean> {
+  const driveId = await getSiteDriveId()
+  const token = await getAccessToken()
+  if (!driveId || !token) return false
+  const res = await fetch(`${GRAPH_BASE}/drives/${driveId}/items/${itemId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.ok || res.status === 204
+}
+
+/** Upload a file directly to a folder by parent ID */
+export async function uploadToFolder(
+  parentId: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<OneDriveItem | null> {
+  const driveId = await getSiteDriveId()
+  const token = await getAccessToken()
+  if (!driveId || !token) return null
+  const safeName = sanitizeFolderName(file.name) || 'archivo'
+
+  const FOUR_MB = 4 * 1024 * 1024
+  if (file.size < FOUR_MB) {
+    const buffer = await file.arrayBuffer()
+    const res = await fetch(
+      `${GRAPH_BASE}/drives/${driveId}/items/${parentId}:/${safeName}:/content`,
+      { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream' }, body: buffer },
+    )
+    if (!res.ok) return null
+    onProgress?.(100)
+    return (await res.json()) as OneDriveItem
+  }
+
+  // Large file: upload session
+  const sessionRes = await fetch(
+    `${GRAPH_BASE}/drives/${driveId}/items/${parentId}:/${safeName}:/createUploadSession`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ item: { '@microsoft.graph.conflictBehavior': 'rename' } }) },
+  )
+  if (!sessionRes.ok) return null
+  const { uploadUrl } = await sessionRes.json()
+
+  const CHUNK = 5 * 1024 * 1024
+  let offset = 0
+  let result: OneDriveItem | null = null
+  while (offset < file.size) {
+    const end = Math.min(offset + CHUNK, file.size)
+    const buffer = await file.slice(offset, end).arrayBuffer()
+    const chunkRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Length': `${end - offset}`, 'Content-Range': `bytes ${offset}-${end - 1}/${file.size}` },
+      body: buffer,
+    })
+    if (chunkRes.status === 200 || chunkRes.status === 201) result = (await chunkRes.json()) as OneDriveItem
+    else if (!chunkRes.ok) return null
+    offset = end
+    onProgress?.(Math.round((offset / file.size) * 100))
+  }
+  return result
+}
+
 /** Create a folder under SP_ROOT_FOLDER if it doesn't exist */
 export async function ensureFolder(relativePath: string): Promise<boolean> {
   const driveId = await getSiteDriveId()

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SharePointUploader, guessCategory } from '@/components/documentos/SharePointUploader'
+import { SharePointFileManager } from '@/components/documentos/SharePointFileManager'
 import { sanitizeFolderName } from '@/lib/sharepoint'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
 
@@ -72,6 +73,7 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
   const spFolderPath = clienteNombre && proyectoNombre
     ? `CRM/${sanitizeFolderName(clienteNombre)}/${sanitizeFolderName(proyectoNombre)}`
     : null
+  const [showFileManager, setShowFileManager] = useState(false)
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
@@ -221,25 +223,53 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
         </Button>
       </div>
 
-      {/* SharePoint Upload */}
+      {/* SharePoint section */}
       {spFolderPath && (
-        <SharePointUploader
-          folderPath={spFolderPath}
-          onUploaded={(item: OneDriveItem, shareUrl: string) => {
-            // Auto-register in CRM
-            fetch('/api/documentos', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                nombre: item.name.replace(/\.[^.]+$/, ''),
-                url: shareUrl,
-                categoria: guessCategory(item.name),
-                proyectoId,
-                tamanioRef: formatFileSize(item.size),
-              }),
-            }).then(() => load())
-          }}
-        />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <SharePointUploader
+              folderPath={spFolderPath}
+              onUploaded={(item: OneDriveItem, shareUrl: string) => {
+                fetch('/api/documentos', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    nombre: item.name.replace(/\.[^.]+$/, ''),
+                    url: shareUrl,
+                    categoria: guessCategory(item.name),
+                    proyectoId,
+                    tamanioRef: formatFileSize(item.size),
+                  }),
+                }).then(() => load())
+              }}
+            />
+          </div>
+          <button
+            onClick={() => setShowFileManager(v => !v)}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            <FolderOpen className="w-3 h-3" />
+            {showFileManager ? 'Ocultar gestor de archivos' : 'Gestionar archivos en SharePoint'}
+          </button>
+          {showFileManager && (
+            <SharePointFileManager
+              rootPath={spFolderPath}
+              onFileUploaded={(item, shareUrl) => {
+                fetch('/api/documentos', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    nombre: item.name.replace(/\.[^.]+$/, ''),
+                    url: shareUrl,
+                    categoria: guessCategory(item.name),
+                    proyectoId,
+                    tamanioRef: formatFileSize(item.size),
+                  }),
+                }).then(() => load())
+              }}
+            />
+          )}
+        </div>
       )}
 
       {/* Stats */}
