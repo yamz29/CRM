@@ -7,10 +7,11 @@ import { formatCurrency } from '@/lib/utils'
 import { PoblarPresupuestoModal } from './PoblarPresupuestoModal'
 import { FusionarPorCodigoModal } from './FusionarPorCodigoModal'
 import { FusionarManualModal } from './FusionarManualModal'
+import { EditarPartidaModal } from './EditarPartidaModal'
 import {
   BarChart2, FileDown, Search, ChevronDown, ChevronRight,
   TrendingDown, TrendingUp, AlertTriangle, CheckCircle, Minus,
-  RefreshCw, Printer, Combine, X,
+  RefreshCw, Printer, Combine, X, Pencil,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -132,6 +133,7 @@ export function ControlPresupuestarioTab({
   const [showFusionarManual, setShowFusionarManual] = useState(false)
   const [modoSeleccion, setModoSeleccion] = useState(false)
   const [seleccionadas, setSeleccionadas] = useState<Set<number>>(new Set())
+  const [partidaEditando, setPartidaEditando] = useState<PartidaData | null>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
@@ -378,6 +380,7 @@ export function ControlPresupuestarioTab({
                           <th className="px-4 py-2 text-right font-semibold text-muted-foreground uppercase tracking-wide">Diferencia</th>
                           <th className="px-4 py-2 text-left font-semibold text-muted-foreground uppercase tracking-wide w-32">Avance</th>
                           <th className="px-4 py-2 text-left font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
+                          <th className="px-2 py-2 w-8" />
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -419,6 +422,17 @@ export function ControlPresupuestarioTab({
                             <td className="px-4 py-2.5">
                               <EstadoBadge estado={p.estado} />
                             </td>
+                            <td className="px-2 py-2.5">
+                              {!modoSeleccion && (
+                                <button
+                                  onClick={() => setPartidaEditando(p)}
+                                  className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                                  title="Editar partida"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -447,6 +461,7 @@ export function ControlPresupuestarioTab({
                   <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground uppercase tracking-wide">Diferencia</th>
                   <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide w-32">Avance</th>
                   <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
+                  <th className="px-2 py-2.5 w-8" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -482,6 +497,17 @@ export function ControlPresupuestarioTab({
                       </td>
                       <td className="px-4 py-2.5 min-w-[120px]"><BarPct pct={p.pctConsumido} estado={p.estado} /></td>
                       <td className="px-4 py-2.5"><EstadoBadge estado={p.estado} /></td>
+                      <td className="px-2 py-2.5">
+                        {!modoSeleccion && (
+                          <button
+                            onClick={() => setPartidaEditando(p)}
+                            className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                            title="Editar partida"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
@@ -497,6 +523,7 @@ export function ControlPresupuestarioTab({
                   </td>
                   <td className="px-4 py-3"><BarPct pct={resumen.pctConsumido} estado={resumen.pctConsumido >= 100 ? 'excedido' : resumen.pctConsumido >= 80 ? 'alerta' : 'normal'} /></td>
                   <td className="px-4 py-3" />
+                  <td className="px-2 py-3" />
                 </tr>
               </tfoot>
             </table>
@@ -539,6 +566,15 @@ export function ControlPresupuestarioTab({
             setSeleccionadas(new Set())
             load()
           }}
+        />
+      )}
+
+      {partidaEditando && (
+        <EditarPartidaModal
+          proyectoId={proyectoId}
+          partida={partidaEditando}
+          onClose={() => setPartidaEditando(null)}
+          onSuccess={load}
         />
       )}
     </div>
