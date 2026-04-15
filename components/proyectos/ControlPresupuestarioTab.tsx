@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/lib/utils'
 import { PoblarPresupuestoModal } from './PoblarPresupuestoModal'
+import { FusionarPorCodigoModal } from './FusionarPorCodigoModal'
+import { FusionarManualModal } from './FusionarManualModal'
 import {
   BarChart2, FileDown, Search, ChevronDown, ChevronRight,
   TrendingDown, TrendingUp, AlertTriangle, CheckCircle, Minus,
-  RefreshCw, Printer,
+  RefreshCw, Printer, Combine, X,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -126,6 +128,10 @@ export function ControlPresupuestarioTab({
   const [data, setData] = useState<{ capitulos: CapituloData[]; resumen: Resumen } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPoblar, setShowPoblar] = useState(false)
+  const [showFusionarAuto, setShowFusionarAuto] = useState(false)
+  const [showFusionarManual, setShowFusionarManual] = useState(false)
+  const [modoSeleccion, setModoSeleccion] = useState(false)
+  const [seleccionadas, setSeleccionadas] = useState<Set<number>>(new Set())
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
@@ -279,15 +285,41 @@ export function ControlPresupuestarioTab({
             </button>
           ))}
         </div>
-        <div className="flex gap-2 ml-auto">
-          <Button variant="secondary" size="sm" onClick={() => setShowPoblar(true)}>
-            <FileDown className="w-3.5 h-3.5" /> Reimportar
-          </Button>
-          <Link href={`/proyectos/${proyectoId}/reporte`} target="_blank">
-            <Button variant="secondary" size="sm">
-              <Printer className="w-3.5 h-3.5" /> Imprimir reporte
-            </Button>
-          </Link>
+        <div className="flex gap-2 ml-auto flex-wrap">
+          {modoSeleccion ? (
+            <>
+              <span className="self-center text-xs text-muted-foreground">
+                {seleccionadas.size} seleccionada{seleccionadas.size === 1 ? '' : 's'}
+              </span>
+              <Button
+                size="sm"
+                onClick={() => setShowFusionarManual(true)}
+                disabled={seleccionadas.size < 2}
+              >
+                <Combine className="w-3.5 h-3.5" /> Fusionar selección
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => { setModoSeleccion(false); setSeleccionadas(new Set()) }}>
+                <X className="w-3.5 h-3.5" /> Cancelar
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setShowFusionarAuto(true)}>
+                <Combine className="w-3.5 h-3.5" /> Fusionar por código
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setModoSeleccion(true)}>
+                <Combine className="w-3.5 h-3.5" /> Fusionar manual
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowPoblar(true)}>
+                <FileDown className="w-3.5 h-3.5" /> Reimportar
+              </Button>
+              <Link href={`/proyectos/${proyectoId}/reporte`} target="_blank">
+                <Button variant="secondary" size="sm">
+                  <Printer className="w-3.5 h-3.5" /> Imprimir reporte
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -350,8 +382,25 @@ export function ControlPresupuestarioTab({
                       </thead>
                       <tbody className="divide-y divide-border">
                         {cap.partidas.map(p => (
-                          <tr key={p.id} className={`hover:bg-muted/70 ${p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
-                            <td className="px-3 py-2.5 text-center"><Semaforo estado={p.estado} /></td>
+                          <tr key={p.id} className={`hover:bg-muted/70 ${seleccionadas.has(p.id) ? 'bg-primary/5' : p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
+                            <td className="px-3 py-2.5 text-center">
+                              {modoSeleccion ? (
+                                <input
+                                  type="checkbox"
+                                  checked={seleccionadas.has(p.id)}
+                                  onChange={() => {
+                                    setSeleccionadas(prev => {
+                                      const n = new Set(prev)
+                                      if (n.has(p.id)) n.delete(p.id)
+                                      else n.add(p.id)
+                                      return n
+                                    })
+                                  }}
+                                />
+                              ) : (
+                                <Semaforo estado={p.estado} />
+                              )}
+                            </td>
                             <td className="px-4 py-2.5 text-muted-foreground font-mono">{p.codigo ?? '—'}</td>
                             <td className="px-4 py-2.5 text-foreground font-medium max-w-xs">{p.descripcion}</td>
                             <td className="px-4 py-2.5 text-right text-muted-foreground">{p.unidad}</td>
@@ -404,8 +453,25 @@ export function ControlPresupuestarioTab({
                 {allPartidas.map(p => {
                   const cap = filteredCapitulos.find(c => c.partidas.some(pp => pp.id === p.id))
                   return (
-                    <tr key={p.id} className={`hover:bg-muted/70 ${p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
-                      <td className="px-3 py-2.5 text-center"><Semaforo estado={p.estado} /></td>
+                    <tr key={p.id} className={`hover:bg-muted/70 ${seleccionadas.has(p.id) ? 'bg-primary/5' : p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
+                      <td className="px-3 py-2.5 text-center">
+                        {modoSeleccion ? (
+                          <input
+                            type="checkbox"
+                            checked={seleccionadas.has(p.id)}
+                            onChange={() => {
+                              setSeleccionadas(prev => {
+                                const n = new Set(prev)
+                                if (n.has(p.id)) n.delete(p.id)
+                                else n.add(p.id)
+                                return n
+                              })
+                            }}
+                          />
+                        ) : (
+                          <Semaforo estado={p.estado} />
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-muted-foreground max-w-[120px] truncate">{cap?.nombre ?? '—'}</td>
                       <td className="px-4 py-2.5 text-muted-foreground font-mono">{p.codigo ?? '—'}</td>
                       <td className="px-4 py-2.5 text-foreground font-medium max-w-xs">{p.descripcion}</td>
@@ -445,6 +511,34 @@ export function ControlPresupuestarioTab({
           presupuestoBaseId={presupuestoBaseId}
           onClose={() => setShowPoblar(false)}
           onSuccess={load}
+        />
+      )}
+
+      {showFusionarAuto && (
+        <FusionarPorCodigoModal
+          proyectoId={proyectoId}
+          onClose={() => setShowFusionarAuto(false)}
+          onSuccess={load}
+        />
+      )}
+
+      {showFusionarManual && seleccionadas.size >= 2 && (
+        <FusionarManualModal
+          proyectoId={proyectoId}
+          partidas={allPartidas.filter(p => seleccionadas.has(p.id)).map(p => ({
+            id: p.id,
+            codigo: p.codigo,
+            descripcion: p.descripcion,
+            subtotalPresupuestado: p.subtotalPresupuestado,
+            cantidad: p.cantidad,
+            unidad: p.unidad,
+          }))}
+          onClose={() => setShowFusionarManual(false)}
+          onSuccess={() => {
+            setModoSeleccion(false)
+            setSeleccionadas(new Set())
+            load()
+          }}
         />
       )}
     </div>
