@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recalcValorOportunidad } from '@/lib/oportunidad-valor'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clienteId, proyectoId, estado, notas, capitulos = [], titulos = [], indirectoLineas = [], descuentoTipo = 'ninguno', descuentoValor = 0, itbisActivo = false, itbisPorcentaje = 18 } = body
+    const { clienteId, proyectoId, oportunidadId, estado, notas, capitulos = [], titulos = [], indirectoLineas = [], descuentoTipo = 'ninguno', descuentoValor = 0, itbisActivo = false, itbisPorcentaje = 18 } = body
 
     if (!clienteId) return NextResponse.json({ error: 'Cliente requerido' }, { status: 400 })
 
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
           numero,
           clienteId: parseInt(String(clienteId)),
           proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+          oportunidadId: oportunidadId ? parseInt(String(oportunidadId)) : null,
           estado: estado || 'Borrador',
           notas: notas || null,
           subtotal: subtotalBase,
@@ -176,6 +178,11 @@ export async function POST(request: NextRequest) {
 
       return created
     })
+
+    // Recalcular valor de oportunidad si aplica
+    if (presupuesto.oportunidadId) {
+      await recalcValorOportunidad(presupuesto.oportunidadId)
+    }
 
     return NextResponse.json({ id: presupuesto.id, numero: presupuesto.numero }, { status: 201 })
   } catch (error) {

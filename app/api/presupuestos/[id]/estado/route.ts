@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recalcValorOportunidad } from '@/lib/oportunidad-valor'
 
 export async function PATCH(
   request: NextRequest,
@@ -31,6 +32,11 @@ export async function PATCH(
         where: { id: presupuesto.proyectoId },
         data: { estado: 'En Ejecución' },
       })
+    }
+
+    // Recalcular valor de oportunidad vinculada
+    if (presupuesto.oportunidadId) {
+      await recalcValorOportunidad(presupuesto.oportunidadId)
     }
 
     return NextResponse.json(presupuesto)

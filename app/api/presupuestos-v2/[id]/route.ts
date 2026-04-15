@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recalcValorOportunidad } from '@/lib/oportunidad-valor'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -173,6 +174,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
         })
       }
     })
+
+    // Recalcular valor de oportunidad vinculada si existe
+    const updated = await prisma.presupuesto.findUnique({
+      where: { id },
+      select: { oportunidadId: true },
+    })
+    if (updated?.oportunidadId) {
+      await recalcValorOportunidad(updated.oportunidadId)
+    }
 
     return NextResponse.json({ ok: true, total })
   } catch (error) {
