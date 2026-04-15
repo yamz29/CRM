@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { rescheduleActividad, cascadeReschedule } from '@/lib/cronograma-scheduling'
 
 type Params = { params: Promise<{ id: string; aid: string }> }
 
@@ -11,10 +12,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const body = await req.json()
   const {
     nombre, descripcion, duracion, fechaInicio, fechaFin,
-    pctAvance, estado, dependenciaId, tipoDependencia, orden, capituloNombre, cuadrilla, tipo, wbs,
+    pctAvance, estado, dependenciaId, tipoDependencia, desfaseDias,
+    orden, capituloNombre, cuadrilla, tipo, wbs,
   } = body
 
-  const actividad = await prisma.actividadCronograma.update({
+  // 1. Aplicar cambios del usuario
+  await prisma.actividadCronograma.update({
     where: { id: numId },
     data: {
       ...(nombre !== undefined && { nombre }),
@@ -27,6 +30,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       ...(estado !== undefined && { estado }),
       ...(dependenciaId !== undefined && { dependenciaId: dependenciaId ? parseInt(dependenciaId) : null }),
       ...(tipoDependencia !== undefined && { tipoDependencia }),
+      ...(desfaseDias !== undefined && { desfaseDias: parseInt(desfaseDias) || 0 }),
       ...(orden !== undefined && { orden: parseInt(orden) }),
       ...(cuadrilla !== undefined && { cuadrilla: cuadrilla || null }),
       ...(tipo !== undefined && { tipo }),
@@ -34,7 +38,27 @@ export async function PUT(req: NextRequest, { params }: Params) {
     },
   })
 
-  // Auto-actualizar estado basado en avance
+  // 2. Auto-recalcular fechas si cambió algo relevante al agendamiento
+  //    (duracion, dependenciaId, tipoDependencia, desfaseDias o fechaInicio explícita)
+  const schedulingFieldsChanged =
+    duracion !== undefined ||
+    dependenciaId !== undefined ||
+    tipoDependencia !== undefined ||
+    desfaseDias !== undefined ||
+    fechaInicio !== undefined ||
+    tipo !== undefined
+
+  if (schedulingFieldsChanged) {
+    await rescheduleActividad(numId)
+    // 3. Propagar cambios en cascada a sucesoras
+    await cascadeReschedule(numId)
+  }
+
+  // 4. Re-leer la actividad actualizada para devolverla
+  const actividad = await prisma.actividadCronograma.findUnique({ where: { id: numId } })
+  if (!actividad) return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 })
+
+  // 5. Auto-actualizar estado basado en avance
   let estadoCalculado = actividad.estado
   const hoy = new Date()
   if (actividad.pctAvance >= 100) {

@@ -897,7 +897,8 @@ model ActividadCronograma {
   tipo            String   @default("tarea") // tarea | hito
   wbs             String?  // código WBS ej: 1.1, 1.2.3
   dependenciaId   Int?
-  tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio
+  tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio | FF=Fin-Fin
+  desfaseDias     Int      @default(0)   // lag/lead en días (positivo=espera, negativo=adelanto)
   cuadrilla       String?  // nombre de la cuadrilla asignada
   orden           Int      @default(0)
   createdAt       DateTime @default(now())

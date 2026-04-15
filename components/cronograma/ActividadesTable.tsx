@@ -309,16 +309,42 @@ export function ActividadesTable({ actividades, onActualizar, onEliminar, onAbri
         className="h-6 text-xs border border-primary rounded px-1 bg-background focus:outline-none w-full">
         <option value="">Sin dependencia</option>
         {actividades.filter(x => x.id !== a.id).map(x => (
-          <option key={x.id} value={x.id}>{wbsAuto.get(x.id)} {x.nombre}</option>
+          <option key={x.id} value={x.id}>{wbsAuto.get(x.id) || ''} {x.nombre}</option>
         ))}
       </select>
     }
     return (
-      <div onClick={() => startEdit(a, 'dependenciaId')}
-        className="cursor-pointer text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors mt-0.5" title="Clic para asignar dependencia">
-        {a.dependencia
-          ? <><Link2 className="w-3 h-3 shrink-0" />{a.tipoDependencia}: {a.dependencia.nombre}</>
-          : <span className="text-muted-foreground/40 italic">+ dependencia</span>}
+      <div className="mt-0.5 space-y-0.5">
+        <div onClick={() => startEdit(a, 'dependenciaId')}
+          className="cursor-pointer text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors" title="Clic para asignar predecesora">
+          {a.dependencia
+            ? <><Link2 className="w-3 h-3 shrink-0" />{a.dependencia.nombre}</>
+            : <span className="text-muted-foreground/40 italic">+ dependencia</span>}
+        </div>
+        {a.dependenciaId && (
+          <div className="flex items-center gap-1 text-[10px]">
+            <select
+              value={a.tipoDependencia}
+              onChange={e => onActualizar(a.id, { tipoDependencia: e.target.value })}
+              className="h-5 border border-border rounded px-0.5 bg-background focus:outline-none focus:ring-1 focus:ring-ring text-[10px]"
+              title="Tipo PDM: FS=Fin-Inicio, SS=Inicio-Inicio, FF=Fin-Fin, SF=Inicio-Fin"
+            >
+              <option value="FS">FS</option>
+              <option value="SS">SS</option>
+              <option value="FF">FF</option>
+              <option value="SF">SF</option>
+            </select>
+            <span className="text-muted-foreground">+</span>
+            <input
+              type="number"
+              value={a.desfaseDias ?? 0}
+              onChange={e => onActualizar(a.id, { desfaseDias: parseInt(e.target.value) || 0 })}
+              className="h-5 w-10 border border-border rounded px-0.5 bg-background focus:outline-none focus:ring-1 focus:ring-ring text-[10px]"
+              title="Desfase en días (positivo=espera, negativo=adelanto)"
+            />
+            <span className="text-muted-foreground">d</span>
+          </div>
+        )}
       </div>
     )
   }
