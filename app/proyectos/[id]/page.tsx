@@ -13,6 +13,7 @@ import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
 import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
+import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
@@ -286,8 +287,7 @@ export default async function ProyectoDetailPage({
         )}
 
         {/* ── Panel de ejecución ── */}
-        {(avanceFisico > 0 || pctEjecucionFin != null) && (
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-3 border-b border-border">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-muted-foreground" />
@@ -296,20 +296,8 @@ export default async function ProyectoDetailPage({
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
 
-              {/* Avance físico */}
-              <div className="px-5 py-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Avance físico</p>
-                <p className={`text-2xl font-black tabular-nums ${
-                  avanceFisico === 100 ? 'text-green-700' : avanceFisico >= 50 ? 'text-blue-700' : 'text-amber-600'
-                }`}>{avanceFisico}%</p>
-                <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{
-                    width: `${avanceFisico}%`,
-                    backgroundColor: avanceFisico === 100 ? '#22c55e' : avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
-                  }} />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">% obra completada</p>
-              </div>
+              {/* Avance físico (editable) */}
+              <AvanceFisicoCard proyectoId={proyecto.id} avanceActual={avanceFisico} />
 
               {/* Ejecución financiera */}
               <div className="px-5 py-4">
@@ -380,8 +368,7 @@ export default async function ProyectoDetailPage({
               </div>
 
             </div>
-          </div>
-        )}
+        </div>
 
         {/* ── Tarjeta financiera ── */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">

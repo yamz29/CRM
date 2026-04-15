@@ -64,6 +64,19 @@ export async function PUT(
       return NextResponse.json(proyecto)
     }
 
+    // Patch parcial: solo actualiza los campos enviados (ej: avanceFisico)
+    if (body._patch === true) {
+      const data: Record<string, unknown> = {}
+      if (body.avanceFisico != null) data.avanceFisico = parseInt(String(body.avanceFisico))
+      if (body.estado !== undefined) data.estado = body.estado
+      if (body.responsable !== undefined) data.responsable = body.responsable || null
+      if (Object.keys(data).length === 0) {
+        return NextResponse.json({ error: 'Sin cambios' }, { status: 400 })
+      }
+      const proyecto = await prisma.proyecto.update({ where: { id }, data })
+      return NextResponse.json(proyecto)
+    }
+
     const {
       nombre,
       clienteId,

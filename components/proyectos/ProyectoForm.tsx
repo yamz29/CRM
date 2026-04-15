@@ -174,6 +174,7 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
                   <option value="Construcción">Construcción</option>
                   <option value="Diseño">Diseño</option>
                   <option value="Melamina">Melamina / Ebanistería</option>
+                  <option value="Servicios">Servicios (ingeniería, consultoría, etc.)</option>
                 </Select>
               </div>
 
