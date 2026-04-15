@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoProyectoBadge } from '@/components/ui/badge'
 import { StatsCard } from '@/components/ui/stats-card'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle } from 'lucide-react'
+import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle, BarChart2 } from 'lucide-react'
 import { DeleteProyectoButton } from './DeleteProyectoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
@@ -77,6 +77,11 @@ export default async function ProyectosPage({
         </div>
         <div className="flex items-center gap-2">
           <HelpDrawer slug="proyectos" titulo="Proyectos" />
+          <Link href="/proyectos/reporte">
+            <Button variant="secondary">
+              <BarChart2 className="w-4 h-4" /> Reporte
+            </Button>
+          </Link>
           <ExportButton href="/api/export/proyectos" label="Exportar" />
           <Link href="/proyectos/nuevo">
             <Button>
