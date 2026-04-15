@@ -62,8 +62,9 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
         displayOrder: tasks.length,
       })
 
-      for (const [tIdx, a] of acts.entries()) {
-        const wbs = a.wbs ?? `${Array.from(grupos.keys()).indexOf(capitulo) + 1}.${tIdx + 1}`
+      for (const a of acts) {
+        // Solo mostrar WBS si el usuario lo asignó manualmente (no auto-generar)
+        const wbsPrefix = a.wbs ? `${a.wbs} ` : ''
         const color = a.tipo === 'hito' ? '#f59e0b' : (ESTADO_COLORS[a.estado] ?? '#94a3b8')
         const fechaInicio = new Date(a.fechaInicio)
         const fechaFin = a.tipo === 'hito' ? new Date(fechaInicio) : new Date(a.fechaFin)
@@ -71,7 +72,7 @@ export function CronogramaGantt({ actividades, onActualizarActividad, onAbrirAva
         if (fechaFin <= fechaInicio) fechaFin.setDate(fechaInicio.getDate() + 1)
         tasks.push({
           id: String(a.id),
-          name: `${wbs} ${a.nombre}`,
+          name: `${wbsPrefix}${a.nombre}`,
           start: fechaInicio,
           end: fechaFin,
           progress: a.tipo === 'hito' ? 0 : a.pctAvance,

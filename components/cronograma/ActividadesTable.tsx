@@ -44,19 +44,12 @@ function wbsSort(a: string, b: string) {
   return 0
 }
 
-// Compute auto-WBS for all actividades
+// WBS solo se muestra si el usuario lo definió explícitamente.
+// No auto-generamos códigos "1.1", "1.2" — confunde al usuario.
 function computeWbsAuto(actividades: Actividad[]) {
-  const grupos = new Map<string, Actividad[]>()
-  for (const a of actividades) {
-    const key = a.capituloNombre ?? 'General'
-    if (!grupos.has(key)) grupos.set(key, [])
-    grupos.get(key)!.push(a)
-  }
   const map = new Map<number, string>()
-  let gIdx = 1
-  for (const acts of grupos.values()) {
-    acts.forEach((a, tIdx) => { map.set(a.id, a.wbs ?? `${gIdx}.${tIdx + 1}`) })
-    gIdx++
+  for (const a of actividades) {
+    map.set(a.id, a.wbs ?? '')
   }
   return map
 }

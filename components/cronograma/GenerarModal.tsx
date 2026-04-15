@@ -2,21 +2,19 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Wand2, AlertTriangle } from 'lucide-react'
+import { X, Wand2, AlertTriangle, Info } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface Props {
   presupuestos: { id: number; numero: string; total: number }[]
-  onGenerar: (presupuestoId: number, duracionDefault: number) => Promise<void>
+  onGenerar: (presupuestoId: number) => Promise<void>
   onClose: () => void
   loading: boolean
 }
 
 export function GenerarModal({ presupuestos, onGenerar, onClose, loading }: Props) {
   const [presupuestoId, setPresupuestoId] = useState(presupuestos[0]?.id ? String(presupuestos[0].id) : '')
-  const [duracionDefault, setDuracionDefault] = useState('3')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -24,7 +22,7 @@ export function GenerarModal({ presupuestos, onGenerar, onClose, loading }: Prop
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-blue-500" />
-            <h3 className="text-base font-bold text-foreground">Generar desde presupuesto</h3>
+            <h3 className="text-base font-bold text-foreground">Importar trabajos del presupuesto</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted">
             <X className="w-4 h-4" />
@@ -43,13 +41,12 @@ export function GenerarModal({ presupuestos, onGenerar, onClose, loading }: Prop
           </select>
         </div>
 
-        <div className="space-y-1">
-          <Label>Días por defecto (partidas sin rendimiento APU)</Label>
-          <Input type="number" min="1" max="365" value={duracionDefault}
-            onChange={e => setDuracionDefault(e.target.value)} />
-          <p className="text-xs text-muted-foreground">
-            Si la partida tiene rendimiento configurado en el APU, se calcula automáticamente: <strong>Cantidad ÷ Rendimiento</strong>.
-          </p>
+        <div className="flex items-start gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+          <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+            <p>Se importarán las partidas como actividades en una lista.</p>
+            <p>Las <strong>fechas, duración, WBS y dependencias</strong> las defines tú manualmente después.</p>
+          </div>
         </div>
 
         <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
@@ -61,11 +58,11 @@ export function GenerarModal({ presupuestos, onGenerar, onClose, loading }: Prop
 
         <div className="flex gap-3">
           <Button
-            onClick={() => onGenerar(parseInt(presupuestoId), parseInt(duracionDefault))}
+            onClick={() => onGenerar(parseInt(presupuestoId))}
             disabled={loading || !presupuestoId}
             className="flex-1"
           >
-            {loading ? 'Generando…' : 'Generar actividades'}
+            {loading ? 'Importando…' : 'Importar trabajos'}
           </Button>
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
         </div>

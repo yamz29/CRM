@@ -177,13 +177,13 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
     }
   }
 
-  async function handleGenerar(presupuestoId: number, duracionDefault: number) {
+  async function handleGenerar(presupuestoId: number) {
     setLoading(true)
     try {
       const res = await fetch(`/api/cronograma/${cronograma.id}/generar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presupuestoId, duracionDefault }),
+        body: JSON.stringify({ presupuestoId }),
       })
       if (res.ok) {
         setGenerarModal(false)
