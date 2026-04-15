@@ -14,27 +14,32 @@ import { ExportButton } from '@/components/ui/export-button'
 interface SearchParams {
   estado?: string
   msg?: string
+  archivados?: string
 }
 
-async function getProyectos(estado?: string) {
+async function getProyectos(estado?: string, verArchivados = false) {
   return prisma.proyecto.findMany({
-    where: estado ? { estado } : undefined,
+    where: {
+      ...(estado ? { estado } : {}),
+      archivada: verArchivados,
+    },
     include: {
       cliente: { select: { id: true, nombre: true } },
       _count: { select: { presupuestos: true } },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: verArchivados ? { fechaArchivada: 'desc' } : { createdAt: 'desc' },
   })
 }
 
 async function getStats() {
-  const [total, enEjecucion, adjudicados, terminados] = await Promise.all([
-    prisma.proyecto.count(),
-    prisma.proyecto.count({ where: { estado: 'En Ejecución' } }),
-    prisma.proyecto.count({ where: { estado: 'Adjudicado' } }),
-    prisma.proyecto.count({ where: { estado: 'Terminado' } }),
+  const [total, enEjecucion, adjudicados, terminados, archivadosCount] = await Promise.all([
+    prisma.proyecto.count({ where: { archivada: false } }),
+    prisma.proyecto.count({ where: { estado: 'En Ejecución', archivada: false } }),
+    prisma.proyecto.count({ where: { estado: 'Adjudicado', archivada: false } }),
+    prisma.proyecto.count({ where: { estado: 'Terminado', archivada: false } }),
+    prisma.proyecto.count({ where: { archivada: true } }),
   ])
-  return { total, enEjecucion, adjudicados, terminados }
+  return { total, enEjecucion, adjudicados, terminados, archivadosCount }
 }
 
 const estadoOptions = [
@@ -52,9 +57,10 @@ export default async function ProyectosPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { estado, msg } = await searchParams
+  const { estado, msg, archivados } = await searchParams
+  const verArchivados = archivados === '1'
   const [proyectos, stats] = await Promise.all([
-    getProyectos(estado),
+    getProyectos(estado, verArchivados),
     getStats(),
   ])
 
@@ -112,20 +118,41 @@ export default async function ProyectosPage({
       {/* Filter */}
       <Card>
         <CardContent className="py-4">
-          <div className="flex gap-2 flex-wrap">
-            {estadoOptions.map((opt) => (
-              <Link
-                key={opt.value}
-                href={opt.value ? `/proyectos?estado=${encodeURIComponent(opt.value)}` : '/proyectos'}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  estado === opt.value || (!estado && opt.value === '')
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {opt.label}
-              </Link>
-            ))}
+          <div className="flex gap-2 flex-wrap items-center justify-between">
+            <div className="flex gap-2 flex-wrap">
+              {estadoOptions.map((opt) => {
+                const params = new URLSearchParams()
+                if (opt.value) params.set('estado', opt.value)
+                if (verArchivados) params.set('archivados', '1')
+                const href = params.toString() ? `/proyectos?${params.toString()}` : '/proyectos'
+                return (
+                  <Link
+                    key={opt.value}
+                    href={href}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      estado === opt.value || (!estado && opt.value === '')
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    }`}
+                  >
+                    {opt.label}
+                  </Link>
+                )
+              })}
+            </div>
+            <Link
+              href={verArchivados
+                ? (estado ? `/proyectos?estado=${encodeURIComponent(estado)}` : '/proyectos')
+                : (estado ? `/proyectos?estado=${encodeURIComponent(estado)}&archivados=1` : '/proyectos?archivados=1')
+              }
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                verArchivados
+                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {verArchivados ? 'Ocultando activos' : `Ver archivados (${stats.archivadosCount})`}
+            </Link>
           </div>
         </CardContent>
       </Card>

@@ -44,6 +44,8 @@ model Proyecto {
   presupuestoEstimado Float?
   presupuestoBaseId   Int?      // ID del presupuesto usado como snapshot base
   avanceFisico        Int       @default(0)  // % de avance físico 0-100
+  archivada           Boolean   @default(false)
+  fechaArchivada      DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

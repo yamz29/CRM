@@ -12,6 +12,7 @@ import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
 import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
 import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
+import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
@@ -181,6 +182,11 @@ export default async function ProyectoDetailPage({
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-foreground">{proyecto.nombre}</h1>
               <EstadoProyectoBadge estado={proyecto.estado} />
+              {(proyecto as { archivada?: boolean }).archivada && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  Archivado
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4 mt-1">
               <Link href={`/clientes/${proyecto.cliente.id}`}
@@ -196,11 +202,18 @@ export default async function ProyectoDetailPage({
             </div>
           </div>
         </div>
-        <Link href={`/proyectos/${proyecto.id}/editar`}>
-          <Button variant="secondary">
-            <Pencil className="w-4 h-4" /> Editar
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ArchivarProyectoButton
+            id={proyecto.id}
+            nombre={proyecto.nombre}
+            archivada={(proyecto as { archivada?: boolean }).archivada ?? false}
+          />
+          <Link href={`/proyectos/${proyecto.id}/editar`}>
+            <Button variant="secondary">
+              <Pencil className="w-4 h-4" /> Editar
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* ── Tab bar ── */}

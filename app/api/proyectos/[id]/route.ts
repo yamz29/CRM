@@ -51,6 +51,19 @@ export async function PUT(
     }
 
     const body = await request.json()
+
+    // Acción rápida: archivar/desarchivar (no requiere todos los campos)
+    if (body._archivar !== undefined) {
+      const proyecto = await prisma.proyecto.update({
+        where: { id },
+        data: {
+          archivada: !!body._archivar,
+          fechaArchivada: body._archivar ? new Date() : null,
+        },
+      })
+      return NextResponse.json(proyecto)
+    }
+
     const {
       nombre,
       clienteId,
