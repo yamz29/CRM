@@ -31,6 +31,7 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ nombre: '', categoria: '', contenido: '' })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // ── Load ─────────────────────────────────────────────────────────
   async function load() {
@@ -76,29 +77,34 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
   async function handleSave() {
     if (!form.nombre.trim() || !form.contenido.trim()) return
     setSaving(true)
+    setError(null)
     const payload = {
       nombre: form.nombre.trim(),
       categoria: form.categoria.trim() || null,
       contenido: form.contenido.trim(),
     }
-    if (editingId) {
-      await fetch(`/api/quicktexts/${editingId}`, {
-        method: 'PUT',
+    try {
+      const url = editingId ? `/api/quicktexts/${editingId}` : '/api/quicktexts'
+      const method = editingId ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-    } else {
-      await fetch('/api/quicktexts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Error HTTP ${res.status}`)
+      }
+      setShowForm(false)
+      setEditingId(null)
+      setForm({ nombre: '', categoria: '', contenido: '' })
+      load()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error al guardar plantilla'
+      setError(msg)
+    } finally {
+      setSaving(false)
     }
-    setShowForm(false)
-    setEditingId(null)
-    setForm({ nombre: '', categoria: '', contenido: '' })
-    setSaving(false)
-    load()
   }
 
   async function handleDelete(id: number) {
@@ -159,8 +165,13 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
               />
             </div>
+            {error && (
+              <div className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={() => { setShowForm(false); setEditingId(null) }}>
+              <Button variant="secondary" onClick={() => { setShowForm(false); setEditingId(null); setError(null) }}>
                 Cancelar
               </Button>
               <Button onClick={handleSave} disabled={saving || !form.nombre.trim() || !form.contenido.trim()}>
