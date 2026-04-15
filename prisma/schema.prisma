@@ -214,6 +214,20 @@ model Presupuesto {
   @@index([oportunidadId])
 }
 
+// ── PLANTILLAS DE TEXTO (QuickText para notas de presupuestos) ──────
+
+model PresupuestoQuickText {
+  id        Int      @id @default(autoincrement())
+  nombre    String   // etiqueta corta, ej: "Forma de pago 50/50"
+  categoria String?  // agrupador opcional: Forma de pago, Garantía, Condiciones, etc.
+  contenido String   // texto completo a insertar
+  orden     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("presupuesto_quick_texts")
+}
+
 // ── PRESUPUESTOS V2: Capítulos y Partidas ────────────────────────────
 
 model PresupuestoTitulo {

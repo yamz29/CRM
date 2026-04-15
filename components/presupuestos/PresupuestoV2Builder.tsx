@@ -8,11 +8,12 @@ import { formatCurrency } from '@/lib/utils'
 import {
   Plus, Trash2, Copy, BarChart2, ChevronUp, ChevronDown,
   ChevronRight, Save, AlertCircle, CheckCircle, X,
-  FileSpreadsheet, Layers, Percent, Tag, Search,
+  FileSpreadsheet, FileText, Layers, Percent, Tag, Search,
 } from 'lucide-react'
 import { ApuSearchModal } from './ApuSearchModal'
 import { RecursoPickerModal } from './RecursoPickerModal'
 import ImportarExcelModal, { ImportResult } from './ImportarExcelModal'
+import { QuickTextPicker } from './QuickTextPicker'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -468,6 +469,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showQuickTextPicker, setShowQuickTextPicker] = useState(false)
 
   // ── Excel import handler ───────────────────────────────────────────────────
 
@@ -914,7 +916,16 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
             </div>
           </div>
           <div className="mt-3">
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notas / Observaciones</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notas / Observaciones</label>
+              <button
+                type="button"
+                onClick={() => setShowQuickTextPicker(true)}
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <FileText className="w-3 h-3" /> Plantillas
+              </button>
+            </div>
             <textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
@@ -1201,6 +1212,16 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
         <ImportarExcelModal
           onClose={() => setShowImportModal(false)}
           onImport={handleImport}
+        />
+      )}
+
+      {showQuickTextPicker && (
+        <QuickTextPicker
+          currentText={notas}
+          onInsert={(texto) => {
+            setNotas(prev => prev.trim() ? `${prev}\n\n${texto}` : texto)
+          }}
+          onClose={() => setShowQuickTextPicker(false)}
         />
       )}
     </div>
