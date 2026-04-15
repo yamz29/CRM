@@ -64,6 +64,7 @@ const NAV_GROUPS = [
     label: 'Finanzas',
     icon: Banknote,
     items: [
+      { href: '/contabilidad/transacciones', label: 'Transacciones', icon: Receipt,      modulo: 'contabilidad' as ModuloKey },
       { href: '/contabilidad', label: 'Contabilidad', icon: Landmark,     modulo: 'contabilidad' as ModuloKey },
       { href: '/proveedores',  label: 'Proveedores',  icon: Truck,        modulo: 'proveedores'  as ModuloKey },
       { href: '/compras',      label: 'Compras',      icon: ShoppingCart,  modulo: 'compras'      as ModuloKey },

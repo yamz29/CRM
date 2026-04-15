@@ -23,11 +23,21 @@ export default async function GastosPage() {
   }
 
   return (
-    <GastosPageClient
-      gastosIniciales={gastos as any}
-      proyectos={proyectos}
-      totalInicial={total}
-      porDestinoInicial={porDestino}
-    />
+    <>
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+        <p className="text-sm text-blue-900 dark:text-blue-200">
+          ✨ <strong>Nuevo:</strong> Ahora puedes ver gastos de proyecto y facturas contables unificados en una sola vista.
+        </p>
+        <a href="/contabilidad/transacciones" className="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline whitespace-nowrap">
+          Ir a Transacciones →
+        </a>
+      </div>
+      <GastosPageClient
+        gastosIniciales={gastos as any}
+        proyectos={proyectos}
+        totalInicial={total}
+        porDestinoInicial={porDestino}
+      />
+    </>
   )
 }

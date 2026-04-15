@@ -57,11 +57,21 @@ export default async function ContabilidadPage() {
   resumen.porPagar = resumen.totalEgresos - resumen.pagado
 
   return (
-    <ContabilidadClient
-      facturasIniciales={JSON.parse(JSON.stringify(facturas))}
-      cuentasIniciales={JSON.parse(JSON.stringify(cuentas))}
-      clientes={clientes}
-      resumen={resumen}
-    />
+    <>
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+        <p className="text-sm text-blue-900 dark:text-blue-200">
+          ✨ <strong>Nuevo:</strong> Ahora puedes ver facturas y gastos de proyectos unificados en una sola vista.
+        </p>
+        <a href="/contabilidad/transacciones" className="text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline whitespace-nowrap">
+          Ir a Transacciones →
+        </a>
+      </div>
+      <ContabilidadClient
+        facturasIniciales={JSON.parse(JSON.stringify(facturas))}
+        cuentasIniciales={JSON.parse(JSON.stringify(cuentas))}
+        clientes={clientes}
+        resumen={resumen}
+      />
+    </>
   )
 }
