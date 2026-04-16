@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -112,12 +113,43 @@ function PartidaCell({ gasto, partidas, proyectoId, onUpdated }: {
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
+
+  // Actualizar posición del menú cuando se abre o hay scroll
+  useEffect(() => {
+    if (!open || !btnRef.current) return
+    function updatePos() {
+      const rect = btnRef.current!.getBoundingClientRect()
+      const menuWidth = 288 // w-72 = 18rem = 288px
+      // Si el menú se sale por la derecha, alinearlo a la derecha del botón
+      const viewportWidth = window.innerWidth
+      let left = rect.left
+      if (left + menuWidth > viewportWidth - 8) {
+        left = Math.max(8, viewportWidth - menuWidth - 8)
+      }
+      setCoords({ top: rect.bottom + 4, left, width: menuWidth })
+    }
+    updatePos()
+    window.addEventListener('scroll', updatePos, true)
+    window.addEventListener('resize', updatePos)
+    return () => {
+      window.removeEventListener('scroll', updatePos, true)
+      window.removeEventListener('resize', updatePos)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
     function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (btnRef.current?.contains(target)) return
+      if (menuRef.current?.contains(target)) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
@@ -159,8 +191,9 @@ function PartidaCell({ gasto, partidas, proyectoId, onUpdated }: {
   }
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={btnRef}
         onClick={() => { setOpen(v => !v); setSearch('') }}
         disabled={saving}
         title={label ?? 'Sin asignar — clic para asignar'}
@@ -174,8 +207,12 @@ function PartidaCell({ gasto, partidas, proyectoId, onUpdated }: {
         {saving ? 'Guardando…' : saved ? '✓ Guardado' : label ?? '+ Asignar partida'}
       </button>
 
-      {open && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-card border border-border rounded-lg shadow-xl z-50">
+      {mounted && open && coords && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed bg-card border border-border rounded-lg shadow-xl z-[9999]"
+          style={{ top: coords.top, left: coords.left, width: coords.width }}
+        >
           <div className="p-2 border-b border-border">
             <input
               autoFocus
@@ -183,14 +220,14 @@ function PartidaCell({ gasto, partidas, proyectoId, onUpdated }: {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar partida…"
-              className="w-full text-xs border border-border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              className="w-full text-xs border border-border rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-input text-foreground"
             />
           </div>
           <div className="max-h-56 overflow-y-auto py-1">
             {gasto.partida && (
               <button
                 onClick={() => assign(null)}
-                className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 border-b border-border"
+                className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border-b border-border"
               >
                 ✕ Quitar asignación
               </button>
@@ -202,8 +239,8 @@ function PartidaCell({ gasto, partidas, proyectoId, onUpdated }: {
                 <button
                   key={p.id}
                   onClick={() => assign(p.id)}
-                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 transition-colors ${
-                    gasto.partidaId === p.id ? 'bg-blue-50 text-blue-700' : 'text-foreground'
+                  className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                    gasto.partidaId === p.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-foreground'
                   }`}
                 >
                   <div className="text-xs font-medium truncate">
@@ -217,9 +254,10 @@ function PartidaCell({ gasto, partidas, proyectoId, onUpdated }: {
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 
