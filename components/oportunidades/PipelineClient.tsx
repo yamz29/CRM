@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { OportunidadForm } from './OportunidadForm'
 import { OportunidadDrawer } from './OportunidadDrawer'
+import { MarcarPerdidaModal } from './MarcarPerdidaModal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -201,6 +202,7 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
   const [dragging, setDragging] = useState<number | null>(null)
   const [verArchivadas, setVerArchivadas] = useState(false)
   const [filtroUrgente, setFiltroUrgente] = useState(false)
+  const [perdidaPending, setPerdidaPending] = useState<Oportunidad | null>(null)
 
   const filtered = useMemo(() => {
     return oportunidades.filter((o) => {
@@ -255,12 +257,19 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
     e.preventDefault()
     if (!dragging) return
     const op = oportunidades.find((o) => o.id === dragging)
-    if (!op || op.etapa === nuevaEtapa) { setDragging(null); return }
-
-    setOportunidades((prev) => prev.map((o) => o.id === dragging ? { ...o, etapa: nuevaEtapa, updatedAt: new Date().toISOString() } : o))
+    const idArrastrado = dragging
     setDragging(null)
+    if (!op || op.etapa === nuevaEtapa) return
 
-    await fetch(`/api/oportunidades/${dragging}`, {
+    // Si la nueva etapa es Perdido, abrir modal en vez de guardar directo
+    if (nuevaEtapa === 'Perdido') {
+      setPerdidaPending(op)
+      return
+    }
+
+    setOportunidades((prev) => prev.map((o) => o.id === idArrastrado ? { ...o, etapa: nuevaEtapa, updatedAt: new Date().toISOString() } : o))
+
+    await fetch(`/api/oportunidades/${idArrastrado}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ etapa: nuevaEtapa }),
@@ -499,6 +508,20 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
           onClose={() => setDrawerOp(null)}
           onEdit={handleEdit}
           onSaved={reload}
+        />
+      )}
+
+      {/* Modal al arrastrar a Perdido */}
+      {perdidaPending && (
+        <MarcarPerdidaModal
+          oportunidadId={perdidaPending.id}
+          oportunidadNombre={perdidaPending.nombre}
+          onClose={() => setPerdidaPending(null)}
+          onSuccess={async () => {
+            setPerdidaPending(null)
+            await reload()
+            router.refresh()
+          }}
         />
       )}
     </div>

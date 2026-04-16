@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'
+import { MarcarPerdidaModal } from './MarcarPerdidaModal'
 import { SharePointUploader, guessCategory } from '@/components/documentos/SharePointUploader'
 import { sanitizeFolderName } from '@/lib/sharepoint'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
@@ -48,17 +49,6 @@ const TIPO_ACTIVIDAD_ICONS: Record<string, React.ReactNode> = {
   Correo:   <Mail className="w-3.5 h-3.5" />,
   Nota:     <StickyNote className="w-3.5 h-3.5" />,
 }
-
-export const CATEGORIAS_PERDIDA = [
-  'Precio alto',
-  'Competencia',
-  'Tiempos de entrega',
-  'Sin presupuesto',
-  'No responde',
-  'Proyecto cancelado',
-  'Calidad / Especificaciones',
-  'Otro',
-]
 
 const ESTADO_PRES_COLORS: Record<string, string> = {
   Borrador: 'bg-muted text-muted-foreground',
@@ -149,8 +139,6 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
   const [saving, setSaving]           = useState(false)
   const [ganarOpen, setGanarOpen]       = useState(false)
   const [perdidaOpen, setPerdidaOpen]   = useState(false)
-  const [motivoPerdida, setMotivoPerdida] = useState('')
-  const [categoriaPerdida, setCategoriaPerdida] = useState('')
   const [vincularOpen, setVincularOpen] = useState(false)
   const [presupuestoAVincular, setPresupuestoAVincular] = useState('')
   const [vinculando, setVinculando]     = useState(false)
@@ -246,21 +234,6 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ _archivar: archivar }),
     })
-    onSaved()
-    onClose()
-  }
-
-  async function marcarPerdida() {
-    await fetch(`/api/oportunidades/${oportunidad.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        etapa: 'Perdido',
-        motivoPerdida: motivoPerdida || null,
-        categoriaPerdida: categoriaPerdida || null,
-      }),
-    })
-    setPerdidaOpen(false)
     onSaved()
     onClose()
   }
@@ -715,59 +688,16 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
 
       {/* Perdida confirm */}
       {perdidaOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-red-500" />
-              <h3 className="font-semibold text-foreground">Marcar como perdida</h3>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-2">
-                Categoría de pérdida <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {CATEGORIAS_PERDIDA.map(cat => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setCategoriaPerdida(cat)}
-                    className={`text-xs px-2 py-2 rounded-lg border-2 transition-colors text-left ${
-                      categoriaPerdida === cat
-                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium'
-                        : 'border-border text-muted-foreground hover:border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Detalles del motivo (opcional)
-              </label>
-              <textarea
-                value={motivoPerdida}
-                onChange={(e) => setMotivoPerdida(e.target.value)}
-                placeholder="ej: El cliente decidió otro proveedor por mejor precio, tiempos de entrega muy largos..."
-                rows={3}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={() => { setPerdidaOpen(false); setMotivoPerdida(''); setCategoriaPerdida('') }}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={marcarPerdida}
-                disabled={!categoriaPerdida}
-                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-              >
-                Confirmar pérdida
-              </Button>
-            </div>
-          </div>
-        </div>
+        <MarcarPerdidaModal
+          oportunidadId={oportunidad.id}
+          oportunidadNombre={oportunidad.nombre}
+          onClose={() => setPerdidaOpen(false)}
+          onSuccess={async () => {
+            setPerdidaOpen(false)
+            await onSaved()
+            onClose()
+          }}
+        />
       )}
     </>
   )
