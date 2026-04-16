@@ -9,12 +9,14 @@ import { formatCurrency } from '@/lib/utils'
 import { Plus, Box, Pencil, Layers, Package2, List, LayoutGrid } from 'lucide-react'
 import { DeleteModuloButton } from './DeleteModuloButton'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
+import { BuscadorModulos } from './BuscadorModulos'
 
 interface SearchParams {
   msg?: string
   vista?: string
   estado?: string
   tipo?: string
+  q?: string
 }
 
 const ESTADOS_PRODUCCION = [
@@ -41,11 +43,23 @@ export default async function MelaminaPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { msg, vista = 'lista', estado: filtroEstado, tipo: filtroTipo } = await searchParams
+  const { msg, vista = 'lista', estado: filtroEstado, tipo: filtroTipo, q } = await searchParams
 
+  const qTrim = q?.trim() ?? ''
   const where = {
     ...(filtroEstado ? { estadoProduccion: filtroEstado } : {}),
     ...(filtroTipo ? { tipoModulo: filtroTipo } : {}),
+    ...(qTrim
+      ? {
+          OR: [
+            { nombre: { contains: qTrim } },
+            { codigo: { contains: qTrim } },
+            { colorAcabado: { contains: qTrim } },
+            { material: { contains: qTrim } },
+            { tipoModulo: { contains: qTrim } },
+          ],
+        }
+      : {}),
   }
 
   // Load configurable tipos
@@ -96,6 +110,8 @@ export default async function MelaminaPage({
   const buildHref = (params: Record<string, string | undefined>) => {
     const p = new URLSearchParams()
     for (const [k, v] of Object.entries(params)) { if (v) p.set(k, v) }
+    // preservar búsqueda
+    if (qTrim) p.set('q', qTrim)
     const s = p.toString()
     return `/melamina${s ? `?${s}` : ''}`
   }
@@ -109,7 +125,9 @@ export default async function MelaminaPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Módulos Melamina</h1>
-          <p className="text-muted-foreground mt-1">{modulos.length} módulos {filtroTipo ? `tipo "${filtroTipo}"` : 'registrados'}</p>
+          <p className="text-muted-foreground mt-1">
+            {modulos.length} módulos{qTrim ? ` coinciden con "${qTrim}"` : filtroTipo ? ` tipo "${filtroTipo}"` : ' registrados'}
+          </p>
         </div>
         <div className="flex gap-2">
           <HelpDrawer slug="materiales" titulo="Módulos Melamina" />
@@ -150,6 +168,9 @@ export default async function MelaminaPage({
           colorClass="bg-green-50 text-green-600"
         />
       </div>
+
+      {/* Buscador */}
+      <BuscadorModulos />
 
       {/* Toolbar: filtro tipo + toggle vista */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -255,9 +276,13 @@ export default async function MelaminaPage({
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <Box className="w-12 h-12 text-muted-foreground/30 mb-3" />
                 <p className="text-muted-foreground font-medium">
-                  {filtroEstado ? `No hay módulos en "${filtroEstado}"` : 'No hay módulos registrados'}
+                  {qTrim
+                    ? `No hay módulos que coincidan con "${qTrim}"`
+                    : filtroEstado
+                      ? `No hay módulos en "${filtroEstado}"`
+                      : 'No hay módulos registrados'}
                 </p>
-                {!filtroEstado && (
+                {!filtroEstado && !qTrim && (
                   <Link href="/melamina/nuevo" className="mt-4">
                     <Button size="sm">
                       <Plus className="w-4 h-4" /> Nuevo módulo
