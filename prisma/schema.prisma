@@ -809,7 +809,8 @@ model Oportunidad {
   probabilidad   Int?      // 0-100
   fechaCierreEst DateTime?
   responsable    String?
-  motivoPerdida  String?
+  motivoPerdida  String?   // texto libre (detalles del motivo)
+  categoriaPerdida String? // categoría predefinida (Precio, Competencia, Tiempo, etc.)
   notas          String?
   proyectoId     Int?
   urgente        Boolean   @default(false)

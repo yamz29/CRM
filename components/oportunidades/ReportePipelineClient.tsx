@@ -31,12 +31,14 @@ interface DetalleCerrada {
   moneda: string
   responsable: string | null
   motivoPerdida: string | null
+  categoriaPerdida: string | null
   createdAt: string
   updatedAt: string
   cliente: { id: number; nombre: string }
 }
 
 interface Motivo { motivo: string; count: number; valor: number }
+interface Categoria { categoria: string; count: number; valor: number }
 interface MesData { mes: string; ganadas: number; perdidas: number; valorGanado: number; valorPerdido: number }
 interface ResponsableData { responsable: string; ganadas: number; perdidas: number; valorGanado: number; tasa: number }
 
@@ -45,6 +47,7 @@ interface ReporteData {
   resumen: Resumen
   detalle: DetalleCerrada[]
   motivos: Motivo[]
+  categorias: Categoria[]
   meses: MesData[]
   porResponsable: ResponsableData[]
 }
@@ -93,7 +96,7 @@ export function ReportePipelineClient() {
 
   if (!data) return <p className="text-center text-muted-foreground py-10">Error cargando reporte</p>
 
-  const { resumen, motivos, meses, porResponsable } = data
+  const { resumen, motivos, categorias, meses, porResponsable } = data
   const pieData = [
     { name: 'Ganadas', value: resumen.ganadas },
     { name: 'Perdidas', value: resumen.perdidas },
@@ -201,26 +204,26 @@ export function ReportePipelineClient() {
           )}
         </div>
 
-        {/* Pie chart: motivos de pérdida */}
+        {/* Pie chart: categorías de pérdida */}
         <div className="bg-card border border-border rounded-xl p-4">
           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-            Motivos de pérdida
+            Categorías de pérdida
           </h3>
-          {motivos.length > 0 ? (
+          {categorias.length > 0 ? (
             <div className="flex items-center gap-4">
               <ResponsiveContainer width="50%" height={200}>
                 <PieChart>
                   <Pie
-                    data={motivos}
+                    data={categorias}
                     dataKey="count"
-                    nameKey="motivo"
+                    nameKey="categoria"
                     cx="50%"
                     cy="50%"
                     outerRadius={75}
                     innerRadius={40}
                   >
-                    {motivos.map((_, i) => (
+                    {categorias.map((_, i) => (
                       <Cell key={i} fill={MOTIVO_COLORS[i % MOTIVO_COLORS.length]} />
                     ))}
                   </Pie>
@@ -229,14 +232,14 @@ export function ReportePipelineClient() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-1.5">
-                {motivos.map((m, i) => (
-                  <div key={m.motivo} className="flex items-center gap-2">
+                {categorias.map((c, i) => (
+                  <div key={c.categoria} className="flex items-center gap-2">
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: MOTIVO_COLORS[i % MOTIVO_COLORS.length] }}
                     />
-                    <span className="text-xs text-foreground truncate flex-1">{m.motivo}</span>
-                    <span className="text-xs font-bold text-muted-foreground">{m.count}</span>
+                    <span className="text-xs text-foreground truncate flex-1">{c.categoria}</span>
+                    <span className="text-xs font-bold text-muted-foreground">{c.count}</span>
                   </div>
                 ))}
               </div>
@@ -246,6 +249,29 @@ export function ReportePipelineClient() {
           )}
         </div>
       </div>
+
+      {/* Detalles de motivos (texto libre) */}
+      {motivos.length > 0 && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+              Detalle de motivos (texto libre)
+            </h3>
+          </div>
+          <div className="divide-y divide-border max-h-72 overflow-y-auto">
+            {motivos.slice(0, 15).map(m => (
+              <div key={m.motivo} className="px-5 py-2 flex items-start gap-3 hover:bg-muted/30 transition-colors">
+                <div className="flex-1 text-sm text-foreground">{m.motivo}</div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{m.count} caso{m.count === 1 ? '' : 's'}</span>
+              </div>
+            ))}
+            {motivos.length > 15 && (
+              <p className="px-5 py-2 text-xs text-muted-foreground italic">…y {motivos.length - 15} motivos más</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* By responsable */}
       {porResponsable.length > 0 && (
@@ -360,8 +386,20 @@ export function ReportePipelineClient() {
                       </td>
                       <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">{dias}d</td>
                       {filtroTabla !== 'ganadas' && (
-                        <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[200px] truncate">
-                          {d.etapa === 'Perdido' ? (d.motivoPerdida || <span className="italic text-muted-foreground/50">Sin motivo</span>) : '—'}
+                        <td className="px-4 py-2.5 text-xs max-w-[220px]">
+                          {d.etapa === 'Perdido' ? (
+                            <div className="space-y-0.5">
+                              {d.categoriaPerdida && (
+                                <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                  {d.categoriaPerdida}
+                                </span>
+                              )}
+                              {d.motivoPerdida && <div className="text-muted-foreground text-xs line-clamp-2">{d.motivoPerdida}</div>}
+                              {!d.categoriaPerdida && !d.motivoPerdida && (
+                                <span className="italic text-muted-foreground/50 text-xs">Sin motivo</span>
+                              )}
+                            </div>
+                          ) : '—'}
                         </td>
                       )}
                     </tr>

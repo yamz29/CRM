@@ -21,6 +21,7 @@ export interface Oportunidad {
   fechaCierreEst: string | null
   responsable: string | null
   motivoPerdida: string | null
+  categoriaPerdida: string | null
   notas: string | null
   proyectoId: number | null
   urgente: boolean

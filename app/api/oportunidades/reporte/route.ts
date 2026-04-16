@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       moneda: true,
       responsable: true,
       motivoPerdida: true,
+      categoriaPerdida: true,
       updatedAt: true,
       createdAt: true,
       cliente: { select: { id: true, nombre: true } },
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
   const valorGanado = ganadas.reduce((s: number, o: { valor: number | null }) => s + (o.valor ?? 0), 0)
   const valorPerdido = perdidas.reduce((s: number, o: { valor: number | null }) => s + (o.valor ?? 0), 0)
 
-  // Group perdidas by motivo
+  // Group perdidas by motivo (texto libre)
   const motivosMap: Record<string, { count: number; valor: number }> = {}
   for (const p of perdidas) {
     const motivo = (p as { motivoPerdida: string | null }).motivoPerdida || 'Sin motivo especificado'
@@ -56,6 +57,18 @@ export async function GET(req: NextRequest) {
   }
   const motivos = Object.entries(motivosMap)
     .map(([motivo, data]) => ({ motivo, ...data }))
+    .sort((a, b) => b.count - a.count)
+
+  // Group perdidas by categoria (predefinida)
+  const categoriasMap: Record<string, { count: number; valor: number }> = {}
+  for (const p of perdidas) {
+    const cat = (p as { categoriaPerdida: string | null }).categoriaPerdida || 'Sin categoría'
+    if (!categoriasMap[cat]) categoriasMap[cat] = { count: 0, valor: 0 }
+    categoriasMap[cat].count++
+    categoriasMap[cat].valor += (p as { valor: number | null }).valor ?? 0
+  }
+  const categorias = Object.entries(categoriasMap)
+    .map(([categoria, data]) => ({ categoria, ...data }))
     .sort((a, b) => b.count - a.count)
 
   // Monthly breakdown for chart
@@ -126,6 +139,7 @@ export async function GET(req: NextRequest) {
       updatedAt: o.updatedAt.toISOString(),
     })),
     motivos,
+    categorias,
     meses,
     porResponsable,
   })

@@ -49,6 +49,17 @@ const TIPO_ACTIVIDAD_ICONS: Record<string, React.ReactNode> = {
   Nota:     <StickyNote className="w-3.5 h-3.5" />,
 }
 
+export const CATEGORIAS_PERDIDA = [
+  'Precio alto',
+  'Competencia',
+  'Tiempos de entrega',
+  'Sin presupuesto',
+  'No responde',
+  'Proyecto cancelado',
+  'Calidad / Especificaciones',
+  'Otro',
+]
+
 const ESTADO_PRES_COLORS: Record<string, string> = {
   Borrador: 'bg-muted text-muted-foreground',
   Enviado:  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -139,6 +150,7 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
   const [ganarOpen, setGanarOpen]       = useState(false)
   const [perdidaOpen, setPerdidaOpen]   = useState(false)
   const [motivoPerdida, setMotivoPerdida] = useState('')
+  const [categoriaPerdida, setCategoriaPerdida] = useState('')
   const [vincularOpen, setVincularOpen] = useState(false)
   const [presupuestoAVincular, setPresupuestoAVincular] = useState('')
   const [vinculando, setVinculando]     = useState(false)
@@ -242,7 +254,11 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
     await fetch(`/api/oportunidades/${oportunidad.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ etapa: 'Perdido', motivoPerdida: motivoPerdida || null }),
+      body: JSON.stringify({
+        etapa: 'Perdido',
+        motivoPerdida: motivoPerdida || null,
+        categoriaPerdida: categoriaPerdida || null,
+      }),
     })
     setPerdidaOpen(false)
     onSaved()
@@ -334,10 +350,17 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
             </div>
           )}
 
-          {oportunidad.motivoPerdida && (
+          {(oportunidad.motivoPerdida || oportunidad.categoriaPerdida) && (
             <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3">
               <p className="text-xs text-red-600 dark:text-red-400 mb-1">Motivo de pérdida</p>
-              <p className="text-sm text-foreground">{oportunidad.motivoPerdida}</p>
+              {oportunidad.categoriaPerdida && (
+                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 mb-1.5">
+                  {oportunidad.categoriaPerdida}
+                </span>
+              )}
+              {oportunidad.motivoPerdida && (
+                <p className="text-sm text-foreground whitespace-pre-wrap">{oportunidad.motivoPerdida}</p>
+              )}
             </div>
           )}
 
@@ -693,23 +716,55 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
       {/* Perdida confirm */}
       {perdidaOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-card border border-border rounded-xl w-full max-w-sm shadow-2xl p-5 space-y-4">
+          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl p-5 space-y-4">
             <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5 text-red-500" />
               <h3 className="font-semibold text-foreground">Marcar como perdida</h3>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Motivo (opcional)</label>
-              <input
+              <label className="block text-xs font-medium text-muted-foreground mb-2">
+                Categoría de pérdida <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {CATEGORIAS_PERDIDA.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategoriaPerdida(cat)}
+                    className={`text-xs px-2 py-2 rounded-lg border-2 transition-colors text-left ${
+                      categoriaPerdida === cat
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium'
+                        : 'border-border text-muted-foreground hover:border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Detalles del motivo (opcional)
+              </label>
+              <textarea
                 value={motivoPerdida}
                 onChange={(e) => setMotivoPerdida(e.target.value)}
-                placeholder="ej: Precio, decidió otro proveedor..."
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="ej: El cliente decidió otro proveedor por mejor precio, tiempos de entrega muy largos..."
+                rows={3}
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setPerdidaOpen(false)}>Cancelar</Button>
-              <Button onClick={marcarPerdida} className="bg-red-600 hover:bg-red-700 text-white">Confirmar</Button>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => { setPerdidaOpen(false); setMotivoPerdida(''); setCategoriaPerdida('') }}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={marcarPerdida}
+                disabled={!categoriaPerdida}
+                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+              >
+                Confirmar pérdida
+              </Button>
             </div>
           </div>
         </div>
