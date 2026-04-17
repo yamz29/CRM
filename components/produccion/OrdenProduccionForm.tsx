@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PRIORIDADES } from '@/lib/produccion'
-import { Package, LayoutGrid, Plus, Trash2, Loader2, CheckSquare, FileText, Upload, X, AlertTriangle } from 'lucide-react'
+import { Package, LayoutGrid, Plus, Trash2, Loader2, CheckSquare, FileText, Upload, X, AlertTriangle, Download } from 'lucide-react'
 
 interface ModuloInfo {
   placementId: number
@@ -448,20 +448,40 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
       {modo === 'csv' && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Importar despiece CSV</CardTitle>
-              {csvFileName && (
-                <button type="button" onClick={clearCsv} className="text-xs text-red-500 hover:underline flex items-center gap-1">
-                  <X className="w-3 h-3" /> Quitar archivo
-                </button>
-              )}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base">Importar despiece</CardTitle>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/api/produccion/importar-csv/plantilla?formato=xlsx"
+                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                  download
+                >
+                  <Download className="w-3 h-3" /> Plantilla Excel
+                </a>
+                <span className="text-xs text-muted-foreground">•</span>
+                <a
+                  href="/api/produccion/importar-csv/plantilla?formato=csv"
+                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                  download
+                >
+                  <Download className="w-3 h-3" /> Plantilla CSV
+                </a>
+                {csvFileName && (
+                  <>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <button type="button" onClick={clearCsv} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                      <X className="w-3 h-3" /> Quitar archivo
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <input
               ref={csvInputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               className="hidden"
               onChange={e => {
                 const f = e.target.files?.[0]
@@ -476,9 +496,10 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
                 className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-10 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
               >
                 <Upload className="w-6 h-6" />
-                <span className="text-sm font-medium">Haz clic para seleccionar un archivo CSV</span>
-                <span className="text-xs">
-                  Compatible con exportaciones de software CAD/CNC (columnas: Designación, Cantidad, Longitud, Anchura, Grosor, Material…)
+                <span className="text-sm font-medium">Haz clic para seleccionar un archivo CSV o Excel</span>
+                <span className="text-xs max-w-md text-center">
+                  Descarga primero la plantilla (botones arriba) o usa un CSV/XLSX exportado de software CAD/CNC.
+                  Columnas reconocidas: Designación, Cantidad, Longitud, Anchura, Grosor, Material, Cantos…
                 </span>
               </button>
             ) : (
