@@ -45,7 +45,11 @@ export function nivelSuficiente(actual: NivelPermiso, requerido: NivelPermiso): 
 /**
  * Retorna el nivel de un usuario para un módulo.
  * - Si el usuario es Admin → siempre 'admin'
- * - Si no hay registro → 'editar' (compatibilidad hacia atrás)
+ * - Si no hay registro → 'ninguno' (seguro por defecto)
+ *
+ * NOTA: Antes el default era 'editar' para compatibilidad. Se cerró esa
+ * puerta trasera — a partir de ahora un usuario sin fila explícita en
+ * PermisoUsuario NO tiene acceso al módulo.
  */
 export function getNivel(
   permisos: PermisosMap,
@@ -53,7 +57,7 @@ export function getNivel(
   esAdmin: boolean
 ): NivelPermiso {
   if (esAdmin) return 'admin'
-  return permisos[modulo] ?? 'editar'
+  return permisos[modulo] ?? 'ninguno'
 }
 
 /** Convierte array de PermisoUsuario de Prisma a PermisosMap */
@@ -103,8 +107,9 @@ export async function checkPermiso(
     where: { usuarioId_modulo: { usuarioId: parseInt(userId), modulo } },
   })
 
-  // Si no hay registro, default = 'editar' (compatibilidad)
-  const nivel: NivelPermiso = (permiso?.nivel as NivelPermiso) ?? 'editar'
+  // Si no hay registro, default = 'ninguno' (seguro por defecto).
+  // Los usuarios deben tener permisos explícitos para acceder a cada módulo.
+  const nivel: NivelPermiso = (permiso?.nivel as NivelPermiso) ?? 'ninguno'
 
   if (!nivelSuficiente(nivel, requerido)) {
     return NextResponse.json(

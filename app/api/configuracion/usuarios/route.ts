@@ -35,11 +35,15 @@ export async function POST(request: Request) {
       hashedPassword = await bcrypt.hash(password, 12)
     }
 
+    // Validar rol explícitamente. Nunca defaultear a 'Admin' aunque venga vacío.
+    const rolesValidos = ['Admin', 'Usuario']
+    const rolFinal = rolesValidos.includes(rol) ? rol : 'Usuario'
+
     const usuario = await prisma.usuario.create({
       data: {
         nombre,
         correo,
-        rol: rol || 'Admin',
+        rol: rolFinal,
         activo: activo !== undefined ? activo : true,
         costoHora: costoHora ? parseFloat(costoHora) : 0,
         password: hashedPassword,

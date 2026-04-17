@@ -673,7 +673,7 @@ model Usuario {
   nombre    String
   correo    String   @unique
   password  String?
-  rol       String   @default("Admin")
+  rol       String   @default("Usuario")
   activo    Boolean  @default(true)
   costoHora Float    @default(0)  // costo por hora para calcular mano de obra interna
   createdAt DateTime @default(now())
@@ -691,7 +691,7 @@ model PermisoUsuario {
   id        Int    @id @default(autoincrement())
   usuarioId Int
   modulo    String // dashboard|clientes|oportunidades|presupuestos|proyectos|cronogramas|gastos|contabilidad|proveedores|compras|recursos|apus|tareas|horas|melamina|cocinas|produccion|configuracion
-  nivel     String @default("editar") // ninguno | ver | editar | admin
+  nivel     String @default("ninguno") // ninguno | ver | editar | admin
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 

@@ -11,8 +11,15 @@ export async function PUT(
   const body = await request.json()
   const { nombre, correo, rol, activo, password, costoHora } = body
 
+  // Validar rol explícitamente. Nunca defaultear a 'Admin'.
+  const rolesValidos = ['Admin', 'Usuario']
+  const rolFinal = rol !== undefined
+    ? (rolesValidos.includes(rol) ? rol : 'Usuario')
+    : undefined // si no viene, no tocar
+
   const updateData: Record<string, unknown> = {
-    nombre, correo, rol: rol || 'Admin', activo,
+    nombre, correo, activo,
+    ...(rolFinal !== undefined ? { rol: rolFinal } : {}),
     costoHora: costoHora !== undefined ? parseFloat(costoHora) : undefined,
   }
 
