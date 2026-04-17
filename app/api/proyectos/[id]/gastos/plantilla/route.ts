@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('gastos', 'ver', async (_req: NextRequest) => {
   const headers = [
     'fecha', 'tipoGasto', 'referencia', 'descripcion', 'suplidor',
     'categoria', 'subcategoria', 'monto', 'moneda', 'metodoPago',
@@ -29,4 +30,4 @@ export async function GET() {
       'Content-Disposition': 'attachment; filename="plantilla-gastos.csv"',
     },
   })
-}
+})

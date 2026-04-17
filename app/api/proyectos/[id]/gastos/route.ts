@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
 // ── GET /api/proyectos/[id]/gastos ────────────────────────────────────
-export async function GET(_req: Request, { params }: Params) {
+export const GET = withPermiso('gastos', 'ver', async (_req: NextRequest, { params }: Params) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -19,10 +20,10 @@ export async function GET(_req: Request, { params }: Params) {
 
   const total = gastos.reduce((s, g) => s + g.monto, 0)
   return NextResponse.json({ gastos, total })
-}
+})
 
 // ── POST /api/proyectos/[id]/gastos ───────────────────────────────────
-export async function POST(req: Request, { params }: Params) {
+export const POST = withPermiso('gastos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -112,7 +113,7 @@ export async function POST(req: Request, { params }: Params) {
     console.error('[POST /gastos]', err)
     return NextResponse.json({ error: 'Error al guardar el gasto' }, { status: 500 })
   }
-}
+})
 
 // ── Helpers ───────────────────────────────────────────────────────────
 async function saveFile(file: File, proyectoId: number): Promise<string> {

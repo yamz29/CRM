@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -26,7 +27,7 @@ const TIPOS_VALIDOS = ['Factura', 'Gasto menor', 'Transferencia', 'Caja chica', 
 const METODOS_VALIDOS = ['Efectivo', 'Transferencia', 'Tarjeta', 'Cheque', 'Caja chica', 'Otro']
 const ESTADOS_VALIDOS = ['Registrado', 'Revisado', 'Anulado']
 
-export async function POST(req: Request, { params }: Params) {
+export const POST = withPermiso('gastos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -87,4 +88,4 @@ export async function POST(req: Request, { params }: Params) {
   })
 
   return NextResponse.json({ importados: validas.length, errores })
-}
+})

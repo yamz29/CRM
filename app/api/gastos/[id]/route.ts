@@ -2,11 +2,12 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
 // ── PUT /api/gastos/[id] ──────────────────────────────────────────────
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('gastos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -121,10 +122,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     console.error('[PUT /api/gastos/[id]]', err)
     return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 })
   }
-}
+})
 
 // ── DELETE /api/gastos/[id] ───────────────────────────────────────────
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('gastos', 'editar', async (_req: NextRequest, { params }: Params) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -148,7 +149,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   }
 
   return NextResponse.json({ ok: true })
-}
+})
 
 async function saveFile(file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
