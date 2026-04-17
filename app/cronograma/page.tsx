@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
 import { Plus, CalendarRange, FolderOpen, CheckCircle2, Clock, AlertCircle, PauseCircle } from 'lucide-react'
+import { DeleteCronogramaButton } from './DeleteCronogramaButton'
 
 const ESTADO_CFG: Record<string, { color: string; icon: React.ElementType }> = {
   'Planificado':   { color: 'bg-muted text-foreground border-border',   icon: Clock },
@@ -124,9 +125,16 @@ export default async function CronogramaPage() {
                     </td>
                     <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/cronograma/${c.id}`}>
-                        <Button variant="ghost" size="sm">Ver →</Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/cronograma/${c.id}`}>
+                          <Button variant="ghost" size="sm">Ver →</Button>
+                        </Link>
+                        <DeleteCronogramaButton
+                          id={c.id}
+                          nombre={c.nombre}
+                          actividadesCount={c._count.actividades}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
