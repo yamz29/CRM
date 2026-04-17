@@ -209,25 +209,44 @@ export function ChatWidget() {
   )
 }
 
-// Simple markdown renderer for bold, lists, and line breaks
+// Renderizador seguro: bold + listas + saltos de línea.
+// NO usa dangerouslySetInnerHTML — React escapa todo el texto, evitando XSS
+// incluso cuando el LLM devuelve <script>, <img onerror>, onclick=, javascript:, etc.
+function renderBold(text: string): React.ReactNode[] {
+  // Divide el texto en segmentos alternando entre normal y **bold**.
+  // El delimitador captura el grupo (split retiene los grupos con paréntesis).
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts
+    .filter(p => p !== '')
+    .map((chunk, i) => {
+      if (chunk.startsWith('**') && chunk.endsWith('**') && chunk.length >= 4) {
+        return <strong key={i}>{chunk.slice(2, -2)}</strong>
+      }
+      return <span key={i}>{chunk}</span>
+    })
+}
+
 function MarkdownLite({ text }: { text: string }) {
   const lines = text.split('\n')
 
   return (
     <div className="space-y-1">
       {lines.map((line, i) => {
-        // Bold
-        let processed = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        // List items
+        // List items (líneas que empiezan con - o •)
         const isList = /^[-•]\s/.test(line)
         if (isList) {
-          processed = processed.replace(/^[-•]\s/, '')
-          return <div key={i} className="flex gap-1.5"><span className="text-muted-foreground">•</span><span dangerouslySetInnerHTML={{ __html: processed }} /></div>
+          const content = line.replace(/^[-•]\s/, '')
+          return (
+            <div key={i} className="flex gap-1.5">
+              <span className="text-muted-foreground">•</span>
+              <span>{renderBold(content)}</span>
+            </div>
+          )
         }
         // Empty line
         if (!line.trim()) return <div key={i} className="h-1" />
         // Normal line
-        return <div key={i} dangerouslySetInnerHTML={{ __html: processed }} />
+        return <div key={i}>{renderBold(line)}</div>
       })}
     </div>
   )
