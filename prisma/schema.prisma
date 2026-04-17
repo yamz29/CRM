@@ -1012,9 +1012,13 @@ model ItemProduccion {
   ordenId            Int
   moduloId           Int?
   nombreModulo       String
-  tipoModulo         String?
-  dimensiones        String?
+  tipoModulo         String?   // ej: 'Tablero', 'Canto', 'Herraje' o tipo de módulo
+  dimensiones        String?   // ej: '1986×297×18 mm'
   cantidad           Int       @default(1)
+  // Campos opcionales usados al importar desde CSV de despiece
+  referencia         String?   // letra/código de posición (ej: 'A', 'B1')
+  material           String?   // nombre del material/color (ej: 'Gris Coco Finsa')
+  canteado           String?   // resumen de cantos/bordes (ej: 'Canto 1x19 × 4 lados')
   observaciones      String?
   completado         Boolean   @default(false)
   createdAt          DateTime  @default(now())

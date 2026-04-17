@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PRIORIDADES } from '@/lib/produccion'
-import { Package, LayoutGrid, Plus, Trash2, Loader2, CheckSquare } from 'lucide-react'
+import { Package, LayoutGrid, Plus, Trash2, Loader2, CheckSquare, FileText, Upload, X, AlertTriangle } from 'lucide-react'
 
 interface ModuloInfo {
   placementId: number
@@ -40,9 +40,28 @@ interface ManualItem {
   cantidad: number
 }
 
+interface CsvPiezaRaw {
+  rowNumber: number
+  referencia: string | null
+  nombre: string
+  cantidad: number
+  dimensiones: string | null
+  tipo: string | null
+  material: string | null
+  canteado: string | null
+}
+
+interface CsvParseResult {
+  items: CsvPiezaRaw[]
+  errores: { fila: number; mensaje: string }[]
+  totalFilas: number
+  separador: ';' | ','
+  resumenPorMaterial: { material: string; piezas: number; cantidad: number }[]
+}
+
 export function OrdenProduccionForm({ espacios, proyectos }: Props) {
   const router = useRouter()
-  const [modo, setModo] = useState<'importar' | 'manual'>('importar')
+  const [modo, setModo] = useState<'importar' | 'manual' | 'csv'>('importar')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -59,6 +78,13 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
   const [items, setItems] = useState<ManualItem[]>([
     { nombre: '', tipo: '', dimensiones: '', cantidad: 1 },
   ])
+
+  // CSV mode
+  const csvInputRef = useRef<HTMLInputElement>(null)
+  const [csvFileName, setCsvFileName] = useState('')
+  const [csvParseResult, setCsvParseResult] = useState<CsvParseResult | null>(null)
+  const [csvLoading, setCsvLoading] = useState(false)
+  const [csvError, setCsvError] = useState('')
 
   const espacioData = selectedEspacio ? espacios.find(e => e.id === selectedEspacio) : null
 
@@ -98,6 +124,39 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
     setItems(items.map((item, i) => i === idx ? { ...item, [field]: value } : item))
   }
 
+  // ── CSV handlers ────────────────────────────────────────────────────
+  async function handleCsvFile(file: File) {
+    setCsvError('')
+    setCsvLoading(true)
+    setCsvFileName(file.name)
+    try {
+      const fd = new FormData()
+      fd.append('archivo', file)
+      const res = await fetch('/api/produccion/importar-csv', {
+        method: 'POST',
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCsvError(data.error || 'Error al parsear el CSV')
+        setCsvParseResult(null)
+      } else {
+        setCsvParseResult(data)
+      }
+    } catch {
+      setCsvError('Error al procesar el archivo')
+    } finally {
+      setCsvLoading(false)
+    }
+  }
+
+  function clearCsv() {
+    setCsvFileName('')
+    setCsvParseResult(null)
+    setCsvError('')
+    if (csvInputRef.current) csvInputRef.current.value = ''
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -122,6 +181,26 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
             nombre: nombre || `Producción - ${espacioData?.nombre || ''}`,
             proyectoId: proyectoId || null,
             prioridad,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error al crear orden')
+        router.push('/produccion?msg=creado')
+      } else if (modo === 'csv') {
+        if (!csvParseResult || csvParseResult.items.length === 0) {
+          setError('Carga un archivo CSV con items válidos primero')
+          setSaving(false)
+          return
+        }
+        const res = await fetch('/api/produccion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            modo: 'csv',
+            nombre: nombre || `Producción - ${csvFileName.replace(/\.[^.]+$/, '')}`,
+            proyectoId: proyectoId || null,
+            prioridad,
+            items: csvParseResult.items,
           }),
         })
         const data = await res.json()
@@ -158,34 +237,51 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Mode selector */}
-      <div className="flex gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <button
           type="button"
           onClick={() => setModo('importar')}
-          className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
             modo === 'importar'
               ? 'border-primary bg-primary/5 dark:bg-primary/10'
               : 'border-border hover:border-primary/30'
           }`}
         >
-          <LayoutGrid className={`w-5 h-5 ${modo === 'importar' ? 'text-primary' : 'text-muted-foreground'}`} />
+          <LayoutGrid className={`w-5 h-5 shrink-0 ${modo === 'importar' ? 'text-primary' : 'text-muted-foreground'}`} />
           <div className="text-left">
             <p className={`text-sm font-medium ${modo === 'importar' ? 'text-foreground' : 'text-muted-foreground'}`}>
               Importar de Espacio
             </p>
-            <p className="text-xs text-muted-foreground">Trae módulos de un proyecto de cocina/espacio</p>
+            <p className="text-xs text-muted-foreground">Módulos de un proyecto de cocina</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setModo('csv')}
+          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+            modo === 'csv'
+              ? 'border-primary bg-primary/5 dark:bg-primary/10'
+              : 'border-border hover:border-primary/30'
+          }`}
+        >
+          <FileText className={`w-5 h-5 shrink-0 ${modo === 'csv' ? 'text-primary' : 'text-muted-foreground'}`} />
+          <div className="text-left">
+            <p className={`text-sm font-medium ${modo === 'csv' ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Importar CSV de despiece
+            </p>
+            <p className="text-xs text-muted-foreground">Carga piezas desde CAD/CNC</p>
           </div>
         </button>
         <button
           type="button"
           onClick={() => setModo('manual')}
-          className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
             modo === 'manual'
               ? 'border-primary bg-primary/5 dark:bg-primary/10'
               : 'border-border hover:border-primary/30'
           }`}
         >
-          <Package className={`w-5 h-5 ${modo === 'manual' ? 'text-primary' : 'text-muted-foreground'}`} />
+          <Package className={`w-5 h-5 shrink-0 ${modo === 'manual' ? 'text-primary' : 'text-muted-foreground'}`} />
           <div className="text-left">
             <p className={`text-sm font-medium ${modo === 'manual' ? 'text-foreground' : 'text-muted-foreground'}`}>
               Crear Manualmente
@@ -346,6 +442,157 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
             </Card>
           )}
         </>
+      )}
+
+      {/* CSV mode: file upload + preview */}
+      {modo === 'csv' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Importar despiece CSV</CardTitle>
+              {csvFileName && (
+                <button type="button" onClick={clearCsv} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                  <X className="w-3 h-3" /> Quitar archivo
+                </button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) handleCsvFile(f)
+              }}
+            />
+
+            {!csvFileName ? (
+              <button
+                type="button"
+                onClick={() => csvInputRef.current?.click()}
+                className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-10 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+              >
+                <Upload className="w-6 h-6" />
+                <span className="text-sm font-medium">Haz clic para seleccionar un archivo CSV</span>
+                <span className="text-xs">
+                  Compatible con exportaciones de software CAD/CNC (columnas: Designación, Cantidad, Longitud, Anchura, Grosor, Material…)
+                </span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border border-border rounded-lg">
+                <FileText className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground truncate flex-1">{csvFileName}</span>
+                {csvLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              </div>
+            )}
+
+            {csvError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Error al procesar el CSV</p>
+                  <p className="text-xs mt-0.5">{csvError}</p>
+                </div>
+              </div>
+            )}
+
+            {csvParseResult && (
+              <>
+                {/* Resumen */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                    <p className="text-xs text-muted-foreground">Piezas detectadas</p>
+                    <p className="text-2xl font-bold text-foreground">{csvParseResult.items.length}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                    <p className="text-xs text-muted-foreground">Cantidad total</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {csvParseResult.items.reduce((s, i) => s + i.cantidad, 0)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                    <p className="text-xs text-muted-foreground">Materiales</p>
+                    <p className="text-2xl font-bold text-foreground">{csvParseResult.resumenPorMaterial.length}</p>
+                  </div>
+                </div>
+
+                {/* Materiales */}
+                {csvParseResult.resumenPorMaterial.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Por material</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {csvParseResult.resumenPorMaterial.map(m => (
+                        <span key={m.material} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-border bg-muted/30">
+                          <span className="font-medium text-foreground">{m.material}</span>
+                          <span className="text-muted-foreground">{m.piezas} ref / {m.cantidad} pz</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Errores */}
+                {csvParseResult.errores.length > 0 && (
+                  <details className="rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
+                    <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      {csvParseResult.errores.length} fila{csvParseResult.errores.length === 1 ? '' : 's'} con problemas
+                    </summary>
+                    <ul className="px-3 pb-2 text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+                      {csvParseResult.errores.slice(0, 10).map((e, i) => (
+                        <li key={i}>• Fila {e.fila}: {e.mensaje}</li>
+                      ))}
+                      {csvParseResult.errores.length > 10 && (
+                        <li className="italic">…y {csvParseResult.errores.length - 10} más</li>
+                      )}
+                    </ul>
+                  </details>
+                )}
+
+                {/* Tabla preview (primeros 50 items) */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Preview (primeras filas)</p>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted/40 sticky top-0">
+                          <tr className="border-b border-border">
+                            <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Ref</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Pieza</th>
+                            <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">Cant</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Dimensiones</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Material</th>
+                            <th className="px-2 py-1.5 text-left font-semibold text-muted-foreground">Cantos</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {csvParseResult.items.slice(0, 50).map((it, i) => (
+                            <tr key={i} className="hover:bg-muted/20">
+                              <td className="px-2 py-1 font-mono text-muted-foreground">{it.referencia ?? '—'}</td>
+                              <td className="px-2 py-1 text-foreground">{it.nombre}</td>
+                              <td className="px-2 py-1 text-right tabular-nums">{it.cantidad}</td>
+                              <td className="px-2 py-1 text-muted-foreground tabular-nums">{it.dimensiones ?? '—'}</td>
+                              <td className="px-2 py-1 text-muted-foreground truncate max-w-[140px]">{it.material ?? '—'}</td>
+                              <td className="px-2 py-1 text-muted-foreground truncate max-w-[180px]" title={it.canteado ?? ''}>{it.canteado ?? '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {csvParseResult.items.length > 50 && (
+                      <p className="px-3 py-1.5 text-[11px] text-muted-foreground border-t border-border bg-muted/20">
+                        Mostrando 50 de {csvParseResult.items.length}. Al crear la orden se incluirán todas.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Manual mode: add items */}

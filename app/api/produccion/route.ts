@@ -163,6 +163,78 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result, { status: 201 })
     }
 
+    // CSV mode — items ya vienen parseados por /api/produccion/importar-csv
+    if (modo === 'csv') {
+      const { nombre, proyectoId, prioridad, items: itemsData } = body as {
+        nombre?: string
+        proyectoId?: string | number
+        prioridad?: string
+        items: Array<{
+          nombre: string
+          cantidad?: number
+          dimensiones?: string | null
+          tipo?: string | null
+          material?: string | null
+          canteado?: string | null
+          referencia?: string | null
+        }>
+      }
+      if (!Array.isArray(itemsData) || itemsData.length === 0) {
+        return NextResponse.json({ error: 'Items vacíos' }, { status: 400 })
+      }
+
+      const orden = await prisma.$transaction(async (tx) => {
+        const created = await tx.ordenProduccion.create({
+          data: {
+            codigo,
+            nombre: nombre || `Orden ${codigo}`,
+            proyectoId: proyectoId ? parseInt(String(proyectoId)) : null,
+            prioridad: prioridad || 'Media',
+            etapaActual: 'Compra de Materiales',
+            estado: 'Pendiente',
+            checklistQCProceso: JSON.stringify(DEFAULT_QC_PROCESO),
+            checklistQCFinal: JSON.stringify(DEFAULT_QC_FINAL),
+            etapasLog: JSON.stringify([{ etapa: 'Compra de Materiales', inicio: new Date().toISOString(), fin: null }]),
+          },
+        })
+
+        await tx.itemProduccion.createMany({
+          data: itemsData.map(item => ({
+            ordenId: created.id,
+            nombreModulo: item.nombre,
+            tipoModulo: item.tipo || null,
+            dimensiones: item.dimensiones || null,
+            cantidad: item.cantidad && item.cantidad > 0 ? item.cantidad : 1,
+            referencia: item.referencia || null,
+            material: item.material || null,
+            canteado: item.canteado || null,
+          })),
+        })
+
+        // Agregar materiales sumando piezas por material (informativo)
+        const materialMap = new Map<string, number>()
+        for (const it of itemsData) {
+          if (!it.material) continue
+          materialMap.set(it.material, (materialMap.get(it.material) ?? 0) + (it.cantidad || 1))
+        }
+        if (materialMap.size > 0) {
+          await tx.materialOrdenProduccion.createMany({
+            data: Array.from(materialMap.entries()).map(([nombre, qty]) => ({
+              ordenId: created.id,
+              nombre,
+              tipo: 'tablero',
+              unidad: 'pz',
+              cantidadRequerida: qty,
+            })),
+          })
+        }
+
+        return created
+      })
+
+      return NextResponse.json(orden, { status: 201 })
+    }
+
     // Manual mode
     const { nombre, proyectoId, prioridad, items: itemsData } = body
 
