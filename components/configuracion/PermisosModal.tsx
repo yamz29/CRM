@@ -17,7 +17,8 @@ const NIVEL_BG: Record<NivelPermiso, string> = {
   admin:   'bg-purple-100 text-purple-700 border-purple-200',
 }
 
-const GRUPOS = ['Principal', 'Operaciones', 'Gestión', 'Taller', 'Sistema'] as const
+// Debe coincidir con los `grupo` de MODULOS en lib/permisos.ts
+const GRUPOS = ['Principal', 'Operaciones', 'Finanzas', 'Gestión', 'Taller', 'Sistema'] as const
 
 export function PermisosModal({ usuario, onClose }: Props) {
   const [permisos, setPermisos] = useState<PermisosMap>({})
@@ -51,10 +52,11 @@ export function PermisosModal({ usuario, onClose }: Props) {
 
   async function handleSave() {
     setSaving(true)
-    // Rellenar módulos sin registro con el default
+    // Rellenar módulos sin registro con 'ninguno' (seguro por defecto).
+    // El usuario debe marcar explícitamente qué puede ver.
     const full: Record<string, string> = {}
     for (const m of MODULOS) {
-      full[m.key] = permisos[m.key] ?? 'editar'
+      full[m.key] = permisos[m.key] ?? 'ninguno'
     }
     await fetch(`/api/configuracion/permisos/${usuario.id}`, {
       method: 'PUT',
@@ -129,7 +131,7 @@ export function PermisosModal({ usuario, onClose }: Props) {
                   </div>
                   <div className="border border-border rounded-lg overflow-hidden">
                     {items.map((m, i) => {
-                      const nivelActual = permisos[m.key] ?? 'editar'
+                      const nivelActual = permisos[m.key] ?? 'ninguno'
                       return (
                         <div key={m.key}
                           className={`flex items-center justify-between px-4 py-2.5 ${i < items.length - 1 ? 'border-b border-border' : ''} ${esAdmin ? 'opacity-60' : ''}`}>
