@@ -59,6 +59,7 @@ model Proyecto {
   registrosHoras  RegistroHoras[]
   oportunidades   Oportunidad[]
   hitos           HitoCronograma[]
+  tareasGantt     TareaGantt[]
   cronogramas     Cronograma[]
   bitacora        BitacoraEntrada[]
   ordenesProduccion OrdenProduccion[]
@@ -814,6 +815,24 @@ model HitoCronograma {
   @@index([fecha])
   @@index([proyectoId])
   @@map("hito_cronograma")
+}
+
+model TareaGantt {
+  id           Int       @id @default(autoincrement())
+  nombre       String
+  fechaInicio  DateTime
+  fechaFin     DateTime
+  descripcion  String?
+  color        String?   // hex opcional; si null usa color por defecto
+  avance       Int       @default(0)  // 0-100 %
+  proyectoId   Int?      // null = tarea global (ej: 'vacaciones del equipo')
+  proyecto     Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([fechaInicio])
+  @@index([proyectoId])
+  @@map("tarea_gantt")
 }
 
 // ── PIPELINE DE VENTAS ────────────────────────────────────────────────

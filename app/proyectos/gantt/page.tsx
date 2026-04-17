@@ -15,7 +15,7 @@ export default async function GanttProyectosPage({
   const verArchivados = archivados === '1'
   const estadosFiltro = estados ? estados.split(',').filter(Boolean) : []
 
-  const [proyectos, hitos] = await Promise.all([
+  const [proyectos, hitos, tareasGantt] = await Promise.all([
     prisma.proyecto.findMany({
       where: {
         ...(verArchivados ? {} : { archivada: false }),
@@ -36,6 +36,9 @@ export default async function GanttProyectosPage({
     }),
     prisma.hitoCronograma.findMany({
       orderBy: { fecha: 'asc' },
+    }),
+    prisma.tareaGantt.findMany({
+      orderBy: { fechaInicio: 'asc' },
     }),
   ])
 
@@ -63,11 +66,23 @@ export default async function GanttProyectosPage({
     proyectoId: h.proyectoId,
   }))
 
+  const tareasData = tareasGantt.map(t => ({
+    id: t.id,
+    nombre: t.nombre,
+    fechaInicio: t.fechaInicio.toISOString(),
+    fechaFin: t.fechaFin.toISOString(),
+    descripcion: t.descripcion,
+    color: t.color,
+    avance: t.avance,
+    proyectoId: t.proyectoId,
+  }))
+
   return (
     <div className="space-y-4 max-w-[1600px] mx-auto">
       <GanttProyectos
         proyectos={data}
         hitos={hitosData}
+        tareas={tareasData}
         estadosExistentes={estadosExistentes}
         estadosFiltro={estadosFiltro}
         verArchivados={verArchivados}

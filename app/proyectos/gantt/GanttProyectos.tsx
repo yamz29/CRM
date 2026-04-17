@@ -29,9 +29,23 @@ interface Hito {
   proyectoId: number | null
 }
 
+interface TareaG {
+  id: number
+  nombre: string
+  fechaInicio: string
+  fechaFin: string
+  descripcion: string | null
+  color: string | null
+  avance: number
+  proyectoId: number | null
+}
+
+type Escala = 'dia' | 'semana' | 'mes'
+
 interface Props {
   proyectos: Proyecto[]
   hitos: Hito[]
+  tareas: TareaG[]
   estadosExistentes: string[]
   estadosFiltro: string[]
   verArchivados: boolean
@@ -69,6 +83,38 @@ function monthsBetween(a: Date, b: Date): number {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
 }
 
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+function addDays(d: Date, n: number): Date {
+  const c = new Date(d)
+  c.setDate(c.getDate() + n)
+  return c
+}
+
+function daysBetween(a: Date, b: Date): number {
+  return Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / (1000 * 60 * 60 * 24))
+}
+
+// Lunes de la semana de d
+function startOfWeek(d: Date): Date {
+  const c = startOfDay(d)
+  const day = c.getDay() // 0=dom, 1=lun, ...
+  const diff = day === 0 ? 6 : day - 1 // mover al lunes anterior
+  return addDays(c, -diff)
+}
+
+// Devuelve número ISO de semana (aprox, suficiente visual)
+function isoWeek(d: Date): number {
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const dayNum = (target.getUTCDay() + 6) % 7
+  target.setUTCDate(target.getUTCDate() - dayNum + 3)
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4))
+  const diff = (target.getTime() - firstThursday.getTime()) / 86400000
+  return 1 + Math.round((diff - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7)
+}
+
 function fmtFecha(iso: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -77,6 +123,7 @@ function fmtFecha(iso: string | null): string {
 export function GanttProyectos({
   proyectos: proyectosIn,
   hitos,
+  tareas,
   estadosExistentes,
   estadosFiltro,
   verArchivados,
@@ -85,6 +132,8 @@ export function GanttProyectos({
   const [localEstados, setLocalEstados] = useState<string[]>(estadosFiltro)
   const [localArchivados, setLocalArchivados] = useState(verArchivados)
   const [hitoModal, setHitoModal] = useState<Partial<Hito> | 'new' | null>(null)
+  const [tareaModal, setTareaModal] = useState<Partial<TareaG> | 'new' | null>(null)
+  const [escala, setEscala] = useState<Escala>('mes')
 
   // Separar proyectos con fechas vs sin fechas
   const { conFechas, sinFechas } = useMemo(() => {
@@ -97,57 +146,113 @@ export function GanttProyectos({
     return { conFechas: con, sinFechas: sin }
   }, [proyectosIn])
 
-  // Calcular rango de fechas del eje X — por mes
-  const { firstMonth, totalMonths, months } = useMemo(() => {
-    if (conFechas.length === 0) {
-      const hoy = new Date()
-      const first = startOfMonth(hoy)
-      return { firstMonth: first, totalMonths: 6, months: [] }
-    }
-    let minDate = new Date(conFechas[0].fechaInicio!)
-    let maxDate = new Date(conFechas[0].fechaEstimada!)
+  // Rango de fechas: min y max considerando proyectos + tareas + hitos
+  const { firstDay, lastDay, totalDays } = useMemo(() => {
+    const fechas: Date[] = []
     for (const p of conFechas) {
-      const ini = new Date(p.fechaInicio!)
-      const fin = new Date(p.fechaEstimada!)
-      if (ini < minDate) minDate = ini
-      if (fin > maxDate) maxDate = fin
+      fechas.push(new Date(p.fechaInicio!))
+      fechas.push(new Date(p.fechaEstimada!))
     }
-    // Pad un mes antes y después
-    const first = addMonths(startOfMonth(minDate), -1)
-    const lastMonthStart = startOfMonth(maxDate)
-    const total = monthsBetween(first, lastMonthStart) + 2 // incluir último + 1 pad
-    const list: Date[] = []
-    for (let i = 0; i < total; i++) list.push(addMonths(first, i))
-    return { firstMonth: first, totalMonths: total, months: list }
-  }, [conFechas])
+    for (const t of tareas) {
+      fechas.push(new Date(t.fechaInicio))
+      fechas.push(new Date(t.fechaFin))
+    }
+    for (const h of hitos) {
+      fechas.push(new Date(h.fecha))
+    }
+    if (fechas.length === 0) {
+      const hoy = startOfDay(new Date())
+      return { firstDay: addDays(hoy, -15), lastDay: addDays(hoy, 45), totalDays: 60 }
+    }
+    let min = fechas[0], max = fechas[0]
+    for (const f of fechas) {
+      if (f < min) min = f
+      if (f > max) max = f
+    }
+    // Padding según escala
+    const padDays = escala === 'dia' ? 3 : escala === 'semana' ? 7 : 30
+    const first = addDays(startOfDay(min), -padDays)
+    const last = addDays(startOfDay(max), padDays)
+    return { firstDay: first, lastDay: last, totalDays: daysBetween(first, last) + 1 }
+  }, [conFechas, tareas, hitos, escala])
 
-  // Ancho de columna por mes (responsive según cantidad)
-  const monthWidth = Math.max(60, Math.min(140, 1200 / Math.max(1, totalMonths)))
-  const chartWidth = LABEL_WIDTH + totalMonths * monthWidth
-  const chartHeight = HEADER_HEIGHT + conFechas.length * ROW_HEIGHT + 10
+  // Ancho por día según escala
+  const dayWidth = escala === 'dia' ? 28 : escala === 'semana' ? 10 : 3
+  const chartWidth = LABEL_WIDTH + totalDays * dayWidth
+
+  // Helper: fecha → X
+  function dateToX(dateIso: string | Date): number | null {
+    const d = typeof dateIso === 'string' ? new Date(dateIso) : dateIso
+    const days = daysBetween(firstDay, d)
+    if (days < 0 || days > totalDays) return null
+    return LABEL_WIDTH + days * dayWidth
+  }
 
   // Hoy line
-  const hoyX = useMemo(() => {
-    const hoy = new Date()
-    const hoyStart = startOfMonth(hoy)
-    const monthsFromStart = monthsBetween(firstMonth, hoyStart)
-    if (monthsFromStart < 0 || monthsFromStart >= totalMonths) return null
-    // Posición proporcional dentro del mes
-    const daysInMonth = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate()
-    const dayRatio = (hoy.getDate() - 1) / daysInMonth
-    return LABEL_WIDTH + (monthsFromStart + dayRatio) * monthWidth
-  }, [firstMonth, totalMonths, monthWidth])
+  const hoyX = useMemo(() => dateToX(new Date()), [firstDay, dayWidth])
 
-  // Función para calcular posición X de una fecha cualquiera
-  function dateToX(dateIso: string): number | null {
-    const d = new Date(dateIso)
-    const monthStart = startOfMonth(d)
-    const monthsFromStart = monthsBetween(firstMonth, monthStart)
-    if (monthsFromStart < 0 || monthsFromStart >= totalMonths) return null
-    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-    const dayRatio = (d.getDate() - 1) / daysInMonth
-    return LABEL_WIDTH + (monthsFromStart + dayRatio) * monthWidth
-  }
+  // Unidades del header según escala: lista de { start, label, isPrimary, labelSecondary }
+  const headerUnits = useMemo(() => {
+    const units: Array<{ start: Date; width: number; label: string; labelSecondary?: string; isPrimary: boolean }> = []
+    if (escala === 'dia') {
+      // Cada día es una columna. Label secundario = mes cuando cambia.
+      let prevMonth = -1
+      for (let i = 0; i < totalDays; i++) {
+        const d = addDays(firstDay, i)
+        const m = d.getMonth()
+        units.push({
+          start: d,
+          width: dayWidth,
+          label: String(d.getDate()),
+          labelSecondary: m !== prevMonth ? `${MESES_ES[m]} ${d.getFullYear()}` : undefined,
+          isPrimary: d.getDay() === 1 || i === 0, // resalta lunes
+        })
+        prevMonth = m
+      }
+    } else if (escala === 'semana') {
+      // Columna = 7 días. Start lunes.
+      let cursor = startOfWeek(firstDay)
+      if (cursor < firstDay) cursor = startOfWeek(firstDay)
+      let prevMonth = -1
+      while (cursor < lastDay) {
+        const startDays = daysBetween(firstDay, cursor)
+        const endDays = Math.min(totalDays, startDays + 7)
+        const width = (endDays - Math.max(0, startDays)) * dayWidth
+        const m = cursor.getMonth()
+        units.push({
+          start: new Date(cursor),
+          width,
+          label: `S${isoWeek(cursor)}`,
+          labelSecondary: m !== prevMonth ? `${MESES_ES[m]} ${cursor.getFullYear()}` : undefined,
+          isPrimary: cursor.getDate() <= 7,
+        })
+        prevMonth = m
+        cursor = addDays(cursor, 7)
+      }
+    } else {
+      // Meses
+      let cursor = startOfMonth(firstDay)
+      while (cursor <= lastDay) {
+        const next = addMonths(cursor, 1)
+        const startX = Math.max(0, daysBetween(firstDay, cursor))
+        const endX = Math.min(totalDays, daysBetween(firstDay, next))
+        const width = (endX - startX) * dayWidth
+        units.push({
+          start: new Date(cursor),
+          width,
+          label: MESES_ES[cursor.getMonth()],
+          labelSecondary: cursor.getMonth() === 0 || cursor.getTime() === startOfMonth(firstDay).getTime()
+            ? String(cursor.getFullYear())
+            : undefined,
+          isPrimary: cursor.getMonth() === 0,
+        })
+        cursor = next
+      }
+    }
+    return units
+  }, [firstDay, lastDay, totalDays, dayWidth, escala])
+
+  const chartHeight = HEADER_HEIGHT + (tareas.length + conFechas.length) * ROW_HEIGHT + 10
 
   // Mapa de hitos por proyectoId (para renderizado rápido)
   const hitosPorProyecto = useMemo(() => {
@@ -162,23 +267,12 @@ export function GanttProyectos({
 
   const hitosGlobales = hitosPorProyecto.get(null) ?? []
 
-  // Función para calcular x e width de una barra de proyecto
-  function barGeometry(p: Proyecto) {
-    const ini = new Date(p.fechaInicio!)
-    const fin = new Date(p.fechaEstimada!)
-    const iniMonthStart = startOfMonth(ini)
-    const finMonthStart = startOfMonth(fin)
-    const daysIni = new Date(ini.getFullYear(), ini.getMonth() + 1, 0).getDate()
-    const daysFin = new Date(fin.getFullYear(), fin.getMonth() + 1, 0).getDate()
-
-    const x1 =
-      LABEL_WIDTH +
-      monthsBetween(firstMonth, iniMonthStart) * monthWidth +
-      ((ini.getDate() - 1) / daysIni) * monthWidth
-    const x2 =
-      LABEL_WIDTH +
-      monthsBetween(firstMonth, finMonthStart) * monthWidth +
-      (fin.getDate() / daysFin) * monthWidth
+  // Función para calcular x e width de una barra entre dos fechas ISO
+  function barGeometry(iniIso: string, finIso: string) {
+    const ini = new Date(iniIso)
+    const fin = new Date(finIso)
+    const x1 = LABEL_WIDTH + daysBetween(firstDay, ini) * dayWidth
+    const x2 = LABEL_WIDTH + (daysBetween(firstDay, fin) + 1) * dayWidth
     return { x: x1, width: Math.max(MIN_BAR_WIDTH, x2 - x1) }
   }
 
@@ -208,9 +302,28 @@ export function GanttProyectos({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Selector de escala */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            {(['dia', 'semana', 'mes'] as Escala[]).map(e => (
+              <button
+                key={e}
+                onClick={() => setEscala(e)}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  escala === e
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {e === 'dia' ? 'Días' : e === 'semana' ? 'Semanas' : 'Meses'}
+              </button>
+            ))}
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => setTareaModal('new')}>
+            <Plus className="w-4 h-4" /> Tarea
+          </Button>
           <Button size="sm" onClick={() => setHitoModal('new')}>
-            <Flag className="w-4 h-4" /> Agregar hito
+            <Flag className="w-4 h-4" /> Hito
           </Button>
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             Imprimir
@@ -294,45 +407,46 @@ export function GanttProyectos({
                 {/* Columna de labels (nombre + cliente) fondo */}
                 <rect x={0} y={0} width={LABEL_WIDTH} height={chartHeight} className="fill-muted/20" />
 
-                {/* Header: fila de meses */}
-                <rect x={LABEL_WIDTH} y={0} width={totalMonths * monthWidth} height={HEADER_HEIGHT} className="fill-muted/40" />
+                {/* Header: franja superior */}
+                <rect x={LABEL_WIDTH} y={0} width={totalDays * dayWidth} height={HEADER_HEIGHT} className="fill-muted/40" />
 
-                {months.map((m, i) => {
-                  const x = LABEL_WIDTH + i * monthWidth
-                  const isYearStart = m.getMonth() === 0 || i === 0
+                {/* Unidades del header según escala */}
+                {headerUnits.map((u, i) => {
+                  const x = LABEL_WIDTH + daysBetween(firstDay, u.start) * dayWidth
                   return (
                     <g key={i}>
                       {/* Divisor vertical */}
                       <line
                         x1={x} y1={0} x2={x} y2={chartHeight}
                         className="stroke-border"
-                        strokeWidth={isYearStart ? 1 : 0.5}
+                        strokeWidth={u.isPrimary ? 1 : 0.4}
+                        opacity={u.isPrimary ? 1 : 0.6}
                       />
-                      {/* Texto del mes */}
+                      {/* Texto principal (día / semana / mes) */}
                       <text
-                        x={x + monthWidth / 2}
-                        y={HEADER_HEIGHT / 2 + 4}
+                        x={x + u.width / 2}
+                        y={HEADER_HEIGHT / 2 + 6}
                         textAnchor="middle"
-                        className="fill-foreground text-xs font-medium"
+                        className="fill-foreground text-[11px] font-medium"
                       >
-                        {MESES_ES[m.getMonth()]}
+                        {u.label}
                       </text>
-                      {/* Año (solo en enero o primero) */}
-                      {isYearStart && (
+                      {/* Texto secundario (mes+año cuando cambia) */}
+                      {u.labelSecondary && (
                         <text
                           x={x + 4}
                           y={14}
                           className="fill-muted-foreground text-[10px] font-semibold"
                         >
-                          {m.getFullYear()}
+                          {u.labelSecondary}
                         </text>
                       )}
                     </g>
                   )
                 })}
 
-                {/* Líneas horizontales por fila */}
-                {conFechas.map((_, idx) => {
+                {/* Líneas horizontales por fila (tareas + proyectos) */}
+                {Array.from({ length: tareas.length + conFechas.length }).map((_, idx) => {
                   const y = HEADER_HEIGHT + idx * ROW_HEIGHT
                   return (
                     <line
@@ -344,6 +458,18 @@ export function GanttProyectos({
                     />
                   )
                 })}
+
+                {/* Separador entre tareas globales y proyectos */}
+                {tareas.length > 0 && (
+                  <line
+                    x1={0}
+                    y1={HEADER_HEIGHT + tareas.length * ROW_HEIGHT}
+                    x2={chartWidth}
+                    y2={HEADER_HEIGHT + tareas.length * ROW_HEIGHT}
+                    className="stroke-border"
+                    strokeWidth={1.5}
+                  />
+                )}
 
                 {/* Línea de "hoy" */}
                 {hoyX != null && (
@@ -402,11 +528,80 @@ export function GanttProyectos({
                   strokeWidth={1}
                 />
 
-                {/* Filas: label + barra */}
-                {conFechas.map((p, idx) => {
+                {/* Filas de tareas globales / por proyecto (arriba) */}
+                {tareas.map((t, idx) => {
                   const y = HEADER_HEIGHT + idx * ROW_HEIGHT
                   const rowCenterY = y + ROW_HEIGHT / 2
-                  const { x, width } = barGeometry(p)
+                  const { x, width } = barGeometry(t.fechaInicio, t.fechaFin)
+                  const tcolor = t.color || '#0ea5e9'
+                  const progressWidth = Math.min(width, width * (t.avance / 100))
+                  const proyNombre = t.proyectoId
+                    ? proyectosIn.find(p => p.id === t.proyectoId)?.nombre
+                    : null
+                  return (
+                    <g
+                      key={`t-${t.id}`}
+                      className="cursor-pointer"
+                      onClick={() => setTareaModal(t)}
+                    >
+                      <rect x={0} y={y} width={chartWidth} height={ROW_HEIGHT}
+                        className="fill-transparent hover:fill-muted/30 transition-colors" />
+                      <text x={12} y={rowCenterY - 2}
+                        className="fill-foreground text-xs font-medium pointer-events-none">
+                        ◇ {t.nombre.length > 32 ? t.nombre.slice(0, 30) + '…' : t.nombre}
+                      </text>
+                      <text x={12} y={rowCenterY + 11}
+                        className="fill-muted-foreground text-[10px] pointer-events-none">
+                        {proyNombre ? `En: ${proyNombre}` : 'Tarea global'}
+                      </text>
+                      <title>
+                        {t.nombre}{'\n'}
+                        {new Date(t.fechaInicio).toLocaleDateString('es-DO')} → {new Date(t.fechaFin).toLocaleDateString('es-DO')}{'\n'}
+                        Avance: {t.avance}%
+                        {t.descripcion ? '\n' + t.descripcion : ''}
+                      </title>
+                      {/* Barra con estilo punteado para diferenciar de proyectos */}
+                      <rect
+                        x={x} y={rowCenterY - 8}
+                        width={width} height={16}
+                        rx={4} ry={4}
+                        fill={tcolor}
+                        opacity={0.25}
+                      />
+                      {t.avance > 0 && (
+                        <rect
+                          x={x} y={rowCenterY - 8}
+                          width={progressWidth} height={16}
+                          rx={4} ry={4}
+                          fill={tcolor}
+                        />
+                      )}
+                      <rect
+                        x={x} y={rowCenterY - 8}
+                        width={width} height={16}
+                        rx={4} ry={4}
+                        fill="none" stroke={tcolor} strokeWidth={1} strokeDasharray="4 2"
+                      />
+                      {width > 40 && (
+                        <text
+                          x={x + width / 2}
+                          y={rowCenterY + 4}
+                          textAnchor="middle"
+                          className="text-[10px] font-semibold pointer-events-none"
+                          fill={t.avance >= 50 ? '#fff' : tcolor}
+                        >
+                          {t.avance}%
+                        </text>
+                      )}
+                    </g>
+                  )
+                })}
+
+                {/* Filas: label + barra de cada proyecto */}
+                {conFechas.map((p, idx) => {
+                  const y = HEADER_HEIGHT + (tareas.length + idx) * ROW_HEIGHT
+                  const rowCenterY = y + ROW_HEIGHT / 2
+                  const { x, width } = barGeometry(p.fechaInicio!, p.fechaEstimada!)
                   const color = ESTADO_COLORS[p.estado] ?? '#94a3b8'
                   const progressWidth = Math.min(width, width * (p.avance / 100))
                   return (
@@ -579,6 +774,16 @@ export function GanttProyectos({
           proyectos={proyectosIn}
           onClose={() => setHitoModal(null)}
           onSaved={() => { setHitoModal(null); router.refresh() }}
+        />
+      )}
+
+      {/* Modal de crear/editar tarea */}
+      {tareaModal !== null && (
+        <TareaModal
+          tarea={tareaModal === 'new' ? null : (tareaModal as TareaG)}
+          proyectos={proyectosIn}
+          onClose={() => setTareaModal(null)}
+          onSaved={() => { setTareaModal(null); router.refresh() }}
         />
       )}
     </>
@@ -783,6 +988,206 @@ function HitoModal({ hito, proyectos, onClose, onSaved }: HitoModalProps) {
             <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>Cancelar</Button>
             <Button size="sm" onClick={handleSave} disabled={saving || !nombre.trim()}>
               {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</> : isEdit ? 'Actualizar' : 'Crear hito'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Modal para crear / editar / eliminar tarea gantt ──────────────────
+
+interface TareaModalProps {
+  tarea: TareaG | null
+  proyectos: Proyecto[]
+  onClose: () => void
+  onSaved: () => void
+}
+
+function TareaModal({ tarea, proyectos, onClose, onSaved }: TareaModalProps) {
+  const isEdit = tarea != null
+  const hoy = new Date().toISOString().slice(0, 10)
+  const [nombre, setNombre] = useState(tarea?.nombre ?? '')
+  const [fechaInicio, setFechaInicio] = useState(
+    tarea?.fechaInicio ? new Date(tarea.fechaInicio).toISOString().slice(0, 10) : hoy
+  )
+  const [fechaFin, setFechaFin] = useState(
+    tarea?.fechaFin ? new Date(tarea.fechaFin).toISOString().slice(0, 10) : hoy
+  )
+  const [descripcion, setDescripcion] = useState(tarea?.descripcion ?? '')
+  const [color, setColor] = useState(tarea?.color ?? '#0ea5e9')
+  const [avance, setAvance] = useState(tarea?.avance ?? 0)
+  const [proyectoId, setProyectoId] = useState<string>(
+    tarea?.proyectoId ? String(tarea.proyectoId) : ''
+  )
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave() {
+    if (!nombre.trim()) { setError('Nombre requerido'); return }
+    if (new Date(fechaFin) < new Date(fechaInicio)) {
+      setError('La fecha de fin debe ser posterior al inicio'); return
+    }
+    setSaving(true); setError(null)
+    try {
+      const url = isEdit ? `/api/tareas-gantt/${tarea!.id}` : '/api/tareas-gantt'
+      const res = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          fechaInicio,
+          fechaFin,
+          descripcion: descripcion.trim() || null,
+          color,
+          avance,
+          proyectoId: proyectoId ? parseInt(proyectoId) : null,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Error al guardar')
+      } else {
+        onSaved()
+      }
+    } catch {
+      setError('Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!tarea || !confirm(`¿Eliminar la tarea "${tarea.nombre}"?`)) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/tareas-gantt/${tarea.id}`, { method: 'DELETE' })
+      if (res.ok) onSaved()
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <span>◇</span> {isEdit ? 'Editar tarea' : 'Nueva tarea'}
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label>
+            <input
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="ej: Levantamiento de obra, Vacaciones equipo..."
+              autoFocus
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Inicio *</label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={e => setFechaInicio(e.target.value)}
+                className="w-full h-9 px-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Fin *</label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={e => setFechaFin(e.target.value)}
+                className="w-full h-9 px-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Proyecto</label>
+            <select
+              value={proyectoId}
+              onChange={e => setProyectoId(e.target.value)}
+              className="w-full h-9 px-2 text-sm border border-border rounded-lg bg-input text-foreground"
+            >
+              <option value="">Tarea global (sin proyecto)</option>
+              {proyectos.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Color</label>
+            <div className="flex flex-wrap gap-1.5">
+              {COLORES_PRESET.map(c => (
+                <button
+                  key={c.value}
+                  onClick={() => setColor(c.value)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${
+                    color === c.value ? 'border-foreground scale-110' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.label}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Avance: {avance}%</label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={avance}
+              onChange={e => setAvance(parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Descripción</label>
+            <textarea
+              value={descripcion}
+              onChange={e => setDescripcion(e.target.value)}
+              rows={2}
+              placeholder="Notas opcionales..."
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+          {isEdit ? (
+            <Button variant="ghost" size="sm" onClick={handleDelete} disabled={saving || deleting} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Eliminar
+            </Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>Cancelar</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving || !nombre.trim()}>
+              {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</> : isEdit ? 'Actualizar' : 'Crear tarea'}
             </Button>
           </div>
         </div>
