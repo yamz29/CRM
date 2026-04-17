@@ -58,6 +58,7 @@ model Proyecto {
   partidas        ProyectoPartida[]
   registrosHoras  RegistroHoras[]
   oportunidades   Oportunidad[]
+  hitos           HitoCronograma[]
   cronogramas     Cronograma[]
   bitacora        BitacoraEntrada[]
   ordenesProduccion OrdenProduccion[]
@@ -794,6 +795,25 @@ model KitchenModulePlacement {
   modulo   ModuloMelaminaV2 @relation(fields: [moduloId], references: [id], onDelete: Cascade)
 
   @@map("kitchen_module_placement")
+}
+
+// ── HITOS GENERALES DEL CRONOGRAMA DE PROYECTOS ──────────────────────
+
+model HitoCronograma {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  fecha       DateTime
+  descripcion String?
+  color       String?   // hex opcional (ej: "#ef4444"). Si null, usa color por defecto.
+  icono       String?   // emoji opcional para diferenciar visualmente
+  proyectoId  Int?      // null = hito global (cruza todo el timeline)
+  proyecto    Proyecto? @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([fecha])
+  @@index([proyectoId])
+  @@map("hito_cronograma")
 }
 
 // ── PIPELINE DE VENTAS ────────────────────────────────────────────────

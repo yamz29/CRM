@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Filter, AlertCircle, Briefcase } from 'lucide-react'
+import { ArrowLeft, Calendar, Filter, AlertCircle, Briefcase, Flag, Plus, X, Loader2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -19,8 +19,19 @@ interface Proyecto {
   archivada: boolean
 }
 
+interface Hito {
+  id: number
+  nombre: string
+  fecha: string
+  descripcion: string | null
+  color: string | null
+  icono: string | null
+  proyectoId: number | null
+}
+
 interface Props {
   proyectos: Proyecto[]
+  hitos: Hito[]
   estadosExistentes: string[]
   estadosFiltro: string[]
   verArchivados: boolean
@@ -65,6 +76,7 @@ function fmtFecha(iso: string | null): string {
 
 export function GanttProyectos({
   proyectos: proyectosIn,
+  hitos,
   estadosExistentes,
   estadosFiltro,
   verArchivados,
@@ -72,6 +84,7 @@ export function GanttProyectos({
   const router = useRouter()
   const [localEstados, setLocalEstados] = useState<string[]>(estadosFiltro)
   const [localArchivados, setLocalArchivados] = useState(verArchivados)
+  const [hitoModal, setHitoModal] = useState<Partial<Hito> | 'new' | null>(null)
 
   // Separar proyectos con fechas vs sin fechas
   const { conFechas, sinFechas } = useMemo(() => {
@@ -125,6 +138,30 @@ export function GanttProyectos({
     return LABEL_WIDTH + (monthsFromStart + dayRatio) * monthWidth
   }, [firstMonth, totalMonths, monthWidth])
 
+  // Función para calcular posición X de una fecha cualquiera
+  function dateToX(dateIso: string): number | null {
+    const d = new Date(dateIso)
+    const monthStart = startOfMonth(d)
+    const monthsFromStart = monthsBetween(firstMonth, monthStart)
+    if (monthsFromStart < 0 || monthsFromStart >= totalMonths) return null
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    const dayRatio = (d.getDate() - 1) / daysInMonth
+    return LABEL_WIDTH + (monthsFromStart + dayRatio) * monthWidth
+  }
+
+  // Mapa de hitos por proyectoId (para renderizado rápido)
+  const hitosPorProyecto = useMemo(() => {
+    const m = new Map<number | null, Hito[]>()
+    for (const h of hitos) {
+      const key = h.proyectoId ?? null
+      if (!m.has(key)) m.set(key, [])
+      m.get(key)!.push(h)
+    }
+    return m
+  }, [hitos])
+
+  const hitosGlobales = hitosPorProyecto.get(null) ?? []
+
   // Función para calcular x e width de una barra de proyecto
   function barGeometry(p: Proyecto) {
     const ini = new Date(p.fechaInicio!)
@@ -171,9 +208,14 @@ export function GanttProyectos({
             </p>
           </div>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => window.print()}>
-          Imprimir
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setHitoModal('new')}>
+            <Flag className="w-4 h-4" /> Agregar hito
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => window.print()}>
+            Imprimir
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -317,6 +359,41 @@ export function GanttProyectos({
                   </g>
                 )}
 
+                {/* Hitos globales — líneas verticales que cruzan todo el Gantt */}
+                {hitosGlobales.map(h => {
+                  const x = dateToX(h.fecha)
+                  if (x == null) return null
+                  const color = h.color || '#8b5cf6'
+                  return (
+                    <g
+                      key={`hg-${h.id}`}
+                      className="cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); setHitoModal(h) }}
+                    >
+                      <title>
+                        {(h.icono ? h.icono + ' ' : '') + h.nombre}{'\n'}
+                        {new Date(h.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        {h.descripcion ? '\n' + h.descripcion : ''}
+                      </title>
+                      <line
+                        x1={x} y1={HEADER_HEIGHT}
+                        x2={x} y2={chartHeight}
+                        stroke={color}
+                        strokeWidth={1.2}
+                        strokeDasharray="3 3"
+                        opacity={0.75}
+                      />
+                      {/* Bandera en el header */}
+                      <g transform={`translate(${x - 6}, ${HEADER_HEIGHT - 18})`}>
+                        <rect width={12} height={14} rx={2} fill={color} />
+                        <text x={6} y={11} textAnchor="middle" className="text-[9px] fill-white font-bold">
+                          {h.icono || '●'}
+                        </text>
+                      </g>
+                    </g>
+                  )
+                })}
+
                 {/* Separador vertical entre labels y cronograma */}
                 <line
                   x1={LABEL_WIDTH} y1={0}
@@ -416,6 +493,44 @@ export function GanttProyectos({
                           </text>
                         )}
                       </g>
+
+                      {/* Hitos asociados a este proyecto — rombos sobre la fila */}
+                      {(hitosPorProyecto.get(p.id) ?? []).map(h => {
+                        const hx = dateToX(h.fecha)
+                        if (hx == null) return null
+                        const hcolor = h.color || '#f59e0b'
+                        return (
+                          <g
+                            key={`hp-${h.id}`}
+                            className="cursor-pointer"
+                            onClick={(e) => { e.stopPropagation(); setHitoModal(h) }}
+                          >
+                            <title>
+                              {(h.icono ? h.icono + ' ' : '') + h.nombre}{'\n'}
+                              {new Date(h.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })}
+                              {h.descripcion ? '\n' + h.descripcion : ''}
+                            </title>
+                            {/* Rombo (milestone típico de MS Project) */}
+                            <polygon
+                              points={`${hx},${rowCenterY - 9} ${hx + 7},${rowCenterY} ${hx},${rowCenterY + 9} ${hx - 7},${rowCenterY}`}
+                              fill={hcolor}
+                              stroke="#fff"
+                              strokeWidth={1}
+                            />
+                            {h.icono && (
+                              <text
+                                x={hx}
+                                y={rowCenterY + 3}
+                                textAnchor="middle"
+                                className="text-[9px] pointer-events-none"
+                                fill="#fff"
+                              >
+                                {h.icono}
+                              </text>
+                            )}
+                          </g>
+                        )
+                      })}
                     </g>
                   )
                 })}
@@ -456,6 +571,222 @@ export function GanttProyectos({
           </CardContent>
         </Card>
       )}
+
+      {/* Modal de crear/editar hito */}
+      {hitoModal !== null && (
+        <HitoModal
+          hito={hitoModal === 'new' ? null : (hitoModal as Hito)}
+          proyectos={proyectosIn}
+          onClose={() => setHitoModal(null)}
+          onSaved={() => { setHitoModal(null); router.refresh() }}
+        />
+      )}
     </>
+  )
+}
+
+// ── Modal para crear / editar / eliminar hito ─────────────────────────
+
+interface HitoModalProps {
+  hito: Hito | null
+  proyectos: Proyecto[]
+  onClose: () => void
+  onSaved: () => void
+}
+
+const COLORES_PRESET = [
+  { label: 'Morado', value: '#8b5cf6' },
+  { label: 'Rojo', value: '#ef4444' },
+  { label: 'Naranja', value: '#f59e0b' },
+  { label: 'Verde', value: '#22c55e' },
+  { label: 'Azul', value: '#3b82f6' },
+  { label: 'Rosa', value: '#ec4899' },
+]
+
+const ICONOS_PRESET = ['🎯', '🚩', '📅', '💰', '✅', '⚠️', '🔑', '📦', '🏗️', '📝', '🎉', '⭐']
+
+function HitoModal({ hito, proyectos, onClose, onSaved }: HitoModalProps) {
+  const isEdit = hito != null
+  const [nombre, setNombre] = useState(hito?.nombre ?? '')
+  const [fecha, setFecha] = useState(
+    hito?.fecha ? new Date(hito.fecha).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+  )
+  const [descripcion, setDescripcion] = useState(hito?.descripcion ?? '')
+  const [color, setColor] = useState(hito?.color ?? '#8b5cf6')
+  const [icono, setIcono] = useState(hito?.icono ?? '')
+  const [proyectoId, setProyectoId] = useState<string>(
+    hito?.proyectoId ? String(hito.proyectoId) : ''
+  )
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave() {
+    if (!nombre.trim()) { setError('Nombre requerido'); return }
+    setSaving(true); setError(null)
+    try {
+      const url = isEdit ? `/api/hitos/${hito!.id}` : '/api/hitos'
+      const res = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          fecha,
+          descripcion: descripcion.trim() || null,
+          color,
+          icono: icono || null,
+          proyectoId: proyectoId ? parseInt(proyectoId) : null,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Error al guardar')
+      } else {
+        onSaved()
+      }
+    } catch {
+      setError('Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!hito || !confirm(`¿Eliminar el hito "${hito.nombre}"?`)) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/hitos/${hito.id}`, { method: 'DELETE' })
+      if (res.ok) onSaved()
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Flag className="w-4 h-4" />
+            {isEdit ? 'Editar hito' : 'Nuevo hito'}
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Nombre *</label>
+            <input
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="ej: Firma de contrato, Entrega parcial..."
+              autoFocus
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="grid grid-cols-[1fr_1fr] gap-2">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Fecha *</label>
+              <input
+                type="date"
+                value={fecha}
+                onChange={e => setFecha(e.target.value)}
+                className="w-full h-9 px-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Proyecto</label>
+              <select
+                value={proyectoId}
+                onChange={e => setProyectoId(e.target.value)}
+                className="w-full h-9 px-2 text-sm border border-border rounded-lg bg-input text-foreground"
+              >
+                <option value="">Hito global (sin proyecto)</option>
+                {proyectos.map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Color</label>
+            <div className="flex flex-wrap gap-1.5">
+              {COLORES_PRESET.map(c => (
+                <button
+                  key={c.value}
+                  onClick={() => setColor(c.value)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${
+                    color === c.value ? 'border-foreground scale-110' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.label}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Ícono (opcional)</label>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setIcono('')}
+                className={`w-7 h-7 text-xs rounded border transition-colors ${
+                  icono === '' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'
+                }`}
+              >
+                —
+              </button>
+              {ICONOS_PRESET.map(i => (
+                <button
+                  key={i}
+                  onClick={() => setIcono(i)}
+                  className={`w-7 h-7 text-sm rounded border transition-colors ${
+                    icono === i ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  {i}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Descripción</label>
+            <textarea
+              value={descripcion}
+              onChange={e => setDescripcion(e.target.value)}
+              rows={2}
+              placeholder="Notas opcionales..."
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-xs text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+          {isEdit ? (
+            <Button variant="ghost" size="sm" onClick={handleDelete} disabled={saving || deleting} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Eliminar
+            </Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>Cancelar</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving || !nombre.trim()}>
+              {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</> : isEdit ? 'Actualizar' : 'Crear hito'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

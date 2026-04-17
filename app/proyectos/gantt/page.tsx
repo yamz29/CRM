@@ -15,24 +15,29 @@ export default async function GanttProyectosPage({
   const verArchivados = archivados === '1'
   const estadosFiltro = estados ? estados.split(',').filter(Boolean) : []
 
-  const proyectos = await prisma.proyecto.findMany({
-    where: {
-      ...(verArchivados ? {} : { archivada: false }),
-      ...(estadosFiltro.length > 0 ? { estado: { in: estadosFiltro } } : {}),
-    },
-    select: {
-      id: true,
-      nombre: true,
-      tipoProyecto: true,
-      estado: true,
-      fechaInicio: true,
-      fechaEstimada: true,
-      avanceFisico: true,
-      archivada: true,
-      cliente: { select: { id: true, nombre: true } },
-    },
-    orderBy: [{ fechaInicio: 'asc' }, { createdAt: 'desc' }],
-  })
+  const [proyectos, hitos] = await Promise.all([
+    prisma.proyecto.findMany({
+      where: {
+        ...(verArchivados ? {} : { archivada: false }),
+        ...(estadosFiltro.length > 0 ? { estado: { in: estadosFiltro } } : {}),
+      },
+      select: {
+        id: true,
+        nombre: true,
+        tipoProyecto: true,
+        estado: true,
+        fechaInicio: true,
+        fechaEstimada: true,
+        avanceFisico: true,
+        archivada: true,
+        cliente: { select: { id: true, nombre: true } },
+      },
+      orderBy: [{ fechaInicio: 'asc' }, { createdAt: 'desc' }],
+    }),
+    prisma.hitoCronograma.findMany({
+      orderBy: { fecha: 'asc' },
+    }),
+  ])
 
   const estadosExistentes = Array.from(new Set(proyectos.map(p => p.estado))).sort()
 
@@ -48,10 +53,21 @@ export default async function GanttProyectosPage({
     archivada: p.archivada,
   }))
 
+  const hitosData = hitos.map(h => ({
+    id: h.id,
+    nombre: h.nombre,
+    fecha: h.fecha.toISOString(),
+    descripcion: h.descripcion,
+    color: h.color,
+    icono: h.icono,
+    proyectoId: h.proyectoId,
+  }))
+
   return (
     <div className="space-y-4 max-w-[1600px] mx-auto">
       <GanttProyectos
         proyectos={data}
+        hitos={hitosData}
         estadosExistentes={estadosExistentes}
         estadosFiltro={estadosFiltro}
         verArchivados={verArchivados}
