@@ -1,0 +1,61 @@
+import { prisma } from '@/lib/prisma'
+import { GanttProyectos } from './GanttProyectos'
+
+interface SearchParams {
+  archivados?: string
+  estados?: string
+}
+
+export default async function GanttProyectosPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const { archivados, estados } = await searchParams
+  const verArchivados = archivados === '1'
+  const estadosFiltro = estados ? estados.split(',').filter(Boolean) : []
+
+  const proyectos = await prisma.proyecto.findMany({
+    where: {
+      ...(verArchivados ? {} : { archivada: false }),
+      ...(estadosFiltro.length > 0 ? { estado: { in: estadosFiltro } } : {}),
+    },
+    select: {
+      id: true,
+      nombre: true,
+      tipoProyecto: true,
+      estado: true,
+      fechaInicio: true,
+      fechaEstimada: true,
+      avanceFisico: true,
+      archivada: true,
+      cliente: { select: { id: true, nombre: true } },
+    },
+    orderBy: [{ fechaInicio: 'asc' }, { createdAt: 'desc' }],
+  })
+
+  const estadosExistentes = Array.from(new Set(proyectos.map(p => p.estado))).sort()
+
+  const data = proyectos.map(p => ({
+    id: p.id,
+    nombre: p.nombre,
+    cliente: p.cliente.nombre,
+    tipoProyecto: p.tipoProyecto,
+    estado: p.estado,
+    fechaInicio: p.fechaInicio?.toISOString() ?? null,
+    fechaEstimada: p.fechaEstimada?.toISOString() ?? null,
+    avance: p.avanceFisico ?? 0,
+    archivada: p.archivada,
+  }))
+
+  return (
+    <div className="space-y-4 max-w-[1600px] mx-auto">
+      <GanttProyectos
+        proyectos={data}
+        estadosExistentes={estadosExistentes}
+        estadosFiltro={estadosFiltro}
+        verArchivados={verArchivados}
+      />
+    </div>
+  )
+}
