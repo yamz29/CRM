@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Filter, AlertCircle, Briefcase, Flag, Plus, X, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Filter, AlertCircle, Briefcase, Flag, Plus, X, Loader2, Trash2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -134,17 +134,48 @@ export function GanttProyectos({
   const [hitoModal, setHitoModal] = useState<Partial<Hito> | 'new' | null>(null)
   const [tareaModal, setTareaModal] = useState<Partial<TareaG> | 'new' | null>(null)
   const [escala, setEscala] = useState<Escala>('mes')
+  const [hiddenProjectIds, setHiddenProjectIds] = useState<Set<number>>(new Set())
+  const [showOcultarMenu, setShowOcultarMenu] = useState(false)
 
-  // Separar proyectos con fechas vs sin fechas
-  const { conFechas, sinFechas } = useMemo(() => {
+  // Persistir ocultos en localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('gantt-hidden-projects')
+      if (saved) setHiddenProjectIds(new Set(JSON.parse(saved)))
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('gantt-hidden-projects', JSON.stringify(Array.from(hiddenProjectIds)))
+    } catch { /* ignore */ }
+  }, [hiddenProjectIds])
+
+  function toggleHidden(id: number) {
+    setHiddenProjectIds(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+
+  // Separar proyectos con fechas vs sin fechas, y aplicar filtro de ocultos
+  const { conFechas, sinFechas, ocultadosConFechas } = useMemo(() => {
     const con: Proyecto[] = []
     const sin: Proyecto[] = []
+    const ocultados: Proyecto[] = []
     for (const p of proyectosIn) {
-      if (p.fechaInicio && p.fechaEstimada) con.push(p)
+      const tieneFechas = !!(p.fechaInicio && p.fechaEstimada)
+      if (hiddenProjectIds.has(p.id)) {
+        if (tieneFechas) ocultados.push(p)
+        continue
+      }
+      if (tieneFechas) con.push(p)
       else sin.push(p)
     }
-    return { conFechas: con, sinFechas: sin }
-  }, [proyectosIn])
+    return { conFechas: con, sinFechas: sin, ocultadosConFechas: ocultados }
+  }, [proyectosIn, hiddenProjectIds])
 
   // Rango de fechas: min y max considerando proyectos + tareas + hitos
   const { firstDay, lastDay, totalDays } = useMemo(() => {
@@ -319,6 +350,71 @@ export function GanttProyectos({
               </button>
             ))}
           </div>
+          {/* Dropdown ocultar proyectos */}
+          <div className="relative">
+            <Button variant="secondary" size="sm" onClick={() => setShowOcultarMenu(v => !v)}>
+              {hiddenProjectIds.size > 0 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              Mostrar/ocultar
+              {hiddenProjectIds.size > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-[10px] font-bold">
+                  {hiddenProjectIds.size}
+                </span>
+              )}
+            </Button>
+            {showOcultarMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowOcultarMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl w-80 max-h-96 overflow-hidden flex flex-col">
+                  <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">Proyectos visibles</p>
+                    <div className="flex gap-2 text-xs">
+                      <button
+                        onClick={() => setHiddenProjectIds(new Set())}
+                        className="text-primary hover:underline"
+                      >
+                        Mostrar todos
+                      </button>
+                      <span className="text-muted-foreground">·</span>
+                      <button
+                        onClick={() => setHiddenProjectIds(new Set(proyectosIn.map(p => p.id)))}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        Ocultar todos
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-y-auto flex-1 py-1">
+                    {proyectosIn.map(p => {
+                      const isVisible = !hiddenProjectIds.has(p.id)
+                      return (
+                        <label
+                          key={p.id}
+                          className="flex items-start gap-2 px-3 py-1.5 hover:bg-muted/30 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isVisible}
+                            onChange={() => toggleHidden(p.id)}
+                            className="mt-1 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: ESTADO_COLORS[p.estado] ?? '#94a3b8' }}
+                              />
+                              <span className="text-xs font-medium text-foreground truncate">{p.nombre}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate">{p.cliente}</p>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           <Button size="sm" variant="secondary" onClick={() => setTareaModal('new')}>
             <Plus className="w-4 h-4" /> Tarea
           </Button>
@@ -397,16 +493,121 @@ export function GanttProyectos({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="flex">
+              {/* ═══ COLUMNA FIJA: labels de proyectos y tareas ═══ */}
+              <div className="shrink-0 border-r border-border bg-card print:border-r-2">
+                <svg
+                  width={LABEL_WIDTH}
+                  height={chartHeight}
+                  className="block"
+                >
+                  {/* Fondo del área de labels */}
+                  <rect x={0} y={0} width={LABEL_WIDTH} height={chartHeight} className="fill-card" />
+
+                  {/* Header con etiqueta */}
+                  <rect x={0} y={0} width={LABEL_WIDTH} height={HEADER_HEIGHT} className="fill-muted/40" />
+                  <text
+                    x={12}
+                    y={HEADER_HEIGHT / 2 + 4}
+                    className="fill-muted-foreground text-[11px] font-semibold uppercase tracking-wide"
+                  >
+                    Proyecto
+                  </text>
+
+                  {/* Líneas horizontales de cada fila */}
+                  {Array.from({ length: tareas.length + conFechas.length }).map((_, idx) => {
+                    const y = HEADER_HEIGHT + idx * ROW_HEIGHT
+                    return (
+                      <line
+                        key={idx}
+                        x1={0} y1={y}
+                        x2={LABEL_WIDTH} y2={y}
+                        className="stroke-border/50"
+                        strokeWidth={0.5}
+                      />
+                    )
+                  })}
+
+                  {/* Separador tareas/proyectos */}
+                  {tareas.length > 0 && (
+                    <line
+                      x1={0}
+                      y1={HEADER_HEIGHT + tareas.length * ROW_HEIGHT}
+                      x2={LABEL_WIDTH}
+                      y2={HEADER_HEIGHT + tareas.length * ROW_HEIGHT}
+                      className="stroke-border"
+                      strokeWidth={1.5}
+                    />
+                  )}
+
+                  {/* Labels de tareas (arriba) */}
+                  {tareas.map((t, idx) => {
+                    const y = HEADER_HEIGHT + idx * ROW_HEIGHT
+                    const rowCenterY = y + ROW_HEIGHT / 2
+                    const proyNombre = t.proyectoId
+                      ? proyectosIn.find(p => p.id === t.proyectoId)?.nombre
+                      : null
+                    return (
+                      <g
+                        key={`tl-${t.id}`}
+                        className="cursor-pointer"
+                        onClick={() => setTareaModal(t)}
+                      >
+                        <rect x={0} y={y} width={LABEL_WIDTH} height={ROW_HEIGHT}
+                          className="fill-transparent hover:fill-muted/30 transition-colors" />
+                        <text x={12} y={rowCenterY - 2}
+                          className="fill-foreground text-xs font-medium pointer-events-none">
+                          ◇ {t.nombre.length > 32 ? t.nombre.slice(0, 30) + '…' : t.nombre}
+                        </text>
+                        <text x={12} y={rowCenterY + 11}
+                          className="fill-muted-foreground text-[10px] pointer-events-none">
+                          {proyNombre ? `En: ${proyNombre}` : 'Tarea global'}
+                        </text>
+                      </g>
+                    )
+                  })}
+
+                  {/* Labels de proyectos */}
+                  {conFechas.map((p, idx) => {
+                    const y = HEADER_HEIGHT + (tareas.length + idx) * ROW_HEIGHT
+                    const rowCenterY = y + ROW_HEIGHT / 2
+                    return (
+                      <g
+                        key={`pl-${p.id}`}
+                        className="cursor-pointer"
+                        onClick={() => router.push(`/proyectos/${p.id}`)}
+                      >
+                        <rect x={0} y={y} width={LABEL_WIDTH} height={ROW_HEIGHT}
+                          className="fill-transparent hover:fill-muted/30 transition-colors" />
+                        <text
+                          x={12}
+                          y={rowCenterY - 2}
+                          className="fill-foreground text-xs font-semibold pointer-events-none"
+                        >
+                          {p.nombre.length > 32 ? p.nombre.slice(0, 30) + '…' : p.nombre}
+                        </text>
+                        <text
+                          x={12}
+                          y={rowCenterY + 11}
+                          className="fill-muted-foreground text-[10px] pointer-events-none"
+                        >
+                          {p.cliente.length > 34 ? p.cliente.slice(0, 32) + '…' : p.cliente}
+                        </text>
+                      </g>
+                    )
+                  })}
+                </svg>
+              </div>
+
+              {/* ═══ COLUMNA SCROLLEABLE: timeline ═══ */}
+              <div className="overflow-x-auto flex-1">
               <svg
-                width={chartWidth}
+                width={chartWidth - LABEL_WIDTH}
                 height={chartHeight}
+                viewBox={`${LABEL_WIDTH} 0 ${chartWidth - LABEL_WIDTH} ${chartHeight}`}
                 className="block"
                 style={{ minWidth: '100%' }}
               >
-                {/* Columna de labels (nombre + cliente) fondo */}
-                <rect x={0} y={0} width={LABEL_WIDTH} height={chartHeight} className="fill-muted/20" />
-
                 {/* Header: franja superior */}
                 <rect x={LABEL_WIDTH} y={0} width={totalDays * dayWidth} height={HEADER_HEIGHT} className="fill-muted/40" />
 
@@ -451,7 +652,7 @@ export function GanttProyectos({
                   return (
                     <line
                       key={idx}
-                      x1={0} y1={y}
+                      x1={LABEL_WIDTH} y1={y}
                       x2={chartWidth} y2={y}
                       className="stroke-border/50"
                       strokeWidth={0.5}
@@ -462,7 +663,7 @@ export function GanttProyectos({
                 {/* Separador entre tareas globales y proyectos */}
                 {tareas.length > 0 && (
                   <line
-                    x1={0}
+                    x1={LABEL_WIDTH}
                     y1={HEADER_HEIGHT + tareas.length * ROW_HEIGHT}
                     x2={chartWidth}
                     y2={HEADER_HEIGHT + tareas.length * ROW_HEIGHT}
@@ -520,40 +721,21 @@ export function GanttProyectos({
                   )
                 })}
 
-                {/* Separador vertical entre labels y cronograma */}
-                <line
-                  x1={LABEL_WIDTH} y1={0}
-                  x2={LABEL_WIDTH} y2={chartHeight}
-                  className="stroke-border"
-                  strokeWidth={1}
-                />
-
-                {/* Filas de tareas globales / por proyecto (arriba) */}
+                {/* Filas de tareas globales / por proyecto (arriba) — solo barras, no labels */}
                 {tareas.map((t, idx) => {
                   const y = HEADER_HEIGHT + idx * ROW_HEIGHT
                   const rowCenterY = y + ROW_HEIGHT / 2
                   const { x, width } = barGeometry(t.fechaInicio, t.fechaFin)
                   const tcolor = t.color || '#0ea5e9'
                   const progressWidth = Math.min(width, width * (t.avance / 100))
-                  const proyNombre = t.proyectoId
-                    ? proyectosIn.find(p => p.id === t.proyectoId)?.nombre
-                    : null
                   return (
                     <g
                       key={`t-${t.id}`}
                       className="cursor-pointer"
                       onClick={() => setTareaModal(t)}
                     >
-                      <rect x={0} y={y} width={chartWidth} height={ROW_HEIGHT}
+                      <rect x={LABEL_WIDTH} y={y} width={chartWidth - LABEL_WIDTH} height={ROW_HEIGHT}
                         className="fill-transparent hover:fill-muted/30 transition-colors" />
-                      <text x={12} y={rowCenterY - 2}
-                        className="fill-foreground text-xs font-medium pointer-events-none">
-                        ◇ {t.nombre.length > 32 ? t.nombre.slice(0, 30) + '…' : t.nombre}
-                      </text>
-                      <text x={12} y={rowCenterY + 11}
-                        className="fill-muted-foreground text-[10px] pointer-events-none">
-                        {proyNombre ? `En: ${proyNombre}` : 'Tarea global'}
-                      </text>
                       <title>
                         {t.nombre}{'\n'}
                         {new Date(t.fechaInicio).toLocaleDateString('es-DO')} → {new Date(t.fechaFin).toLocaleDateString('es-DO')}{'\n'}
@@ -612,26 +794,10 @@ export function GanttProyectos({
                     >
                       {/* Fondo de fila (hover invisible) */}
                       <rect
-                        x={0} y={y}
-                        width={chartWidth} height={ROW_HEIGHT}
+                        x={LABEL_WIDTH} y={y}
+                        width={chartWidth - LABEL_WIDTH} height={ROW_HEIGHT}
                         className="fill-transparent hover:fill-muted/30 transition-colors"
                       />
-
-                      {/* Label: nombre + cliente */}
-                      <text
-                        x={12}
-                        y={rowCenterY - 2}
-                        className="fill-foreground text-xs font-semibold pointer-events-none"
-                      >
-                        {p.nombre.length > 32 ? p.nombre.slice(0, 30) + '…' : p.nombre}
-                      </text>
-                      <text
-                        x={12}
-                        y={rowCenterY + 11}
-                        className="fill-muted-foreground text-[10px] pointer-events-none"
-                      >
-                        {p.cliente.length > 34 ? p.cliente.slice(0, 32) + '…' : p.cliente}
-                      </text>
 
                       {/* Barra */}
                       <g>
@@ -730,6 +896,7 @@ export function GanttProyectos({
                   )
                 })}
               </svg>
+              </div>
             </div>
           )}
         </CardContent>
