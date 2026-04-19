@@ -267,24 +267,43 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
       return
     }
 
+    // Guardar estado previo para rollback si falla la red.
+    const prevEtapa = op.etapa
     setOportunidades((prev) => prev.map((o) => o.id === idArrastrado ? { ...o, etapa: nuevaEtapa, updatedAt: new Date().toISOString() } : o))
 
-    await fetch(`/api/oportunidades/${idArrastrado}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ etapa: nuevaEtapa }),
-    })
-    router.refresh()
+    try {
+      const res = await fetch(`/api/oportunidades/${idArrastrado}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ etapa: nuevaEtapa }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      router.refresh()
+    } catch (err) {
+      // Rollback: restaurar la etapa anterior.
+      setOportunidades((prev) => prev.map((o) => o.id === idArrastrado ? { ...o, etapa: prevEtapa } : o))
+      console.error('No se pudo mover la oportunidad', err)
+      alert('No se pudo mover la oportunidad. Verifique su conexión e intente de nuevo.')
+    }
   }
 
   async function handleToggleUrgente(id: number, urgente: boolean) {
+    const prevUrgente = !urgente
     setOportunidades((prev) => prev.map((o) => o.id === id ? { ...o, urgente } : o))
     if (drawerOp?.id === id) setDrawerOp((prev) => prev ? { ...prev, urgente } : prev)
-    await fetch(`/api/oportunidades/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ urgente }),
-    })
+    try {
+      const res = await fetch(`/api/oportunidades/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urgente }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    } catch (err) {
+      // Rollback.
+      setOportunidades((prev) => prev.map((o) => o.id === id ? { ...o, urgente: prevUrgente } : o))
+      if (drawerOp?.id === id) setDrawerOp((prev) => prev ? { ...prev, urgente: prevUrgente } : prev)
+      console.error('No se pudo cambiar urgencia', err)
+    }
   }
 
   function handleCardClick(op: Oportunidad) {
