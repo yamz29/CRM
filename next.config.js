@@ -5,6 +5,10 @@ const nextConfig = {
   images: {
     formats: ['image/webp'],
   },
+  // Nota sobre "Failed to find Server Action" errors en logs:
+  // Next.js lee NEXT_SERVER_ACTIONS_ENCRYPTION_KEY de env vars automáticamente.
+  // Definirlo en .env.server hace que los IDs de Server Actions sean estables
+  // entre builds, evitando que pestañas abiertas tiren ese error tras un deploy.
   async headers() {
     return [
       {
