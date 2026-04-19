@@ -11,17 +11,21 @@ const MIME_TYPES: Record<string, string> = {
   pdf: 'application/pdf',
 }
 
+const UPLOADS_ROOT = path.resolve(process.cwd(), 'public', 'uploads')
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const segments = (await params).path
-  // Sanitize: no ".." allowed
-  if (segments.some((s) => s.includes('..'))) {
+
+  // Canonicalización: resolver y verificar que la ruta caiga dentro del root.
+  // path.resolve normaliza "..", encoding, separadores mixtos, etc.
+  const filePath = path.resolve(UPLOADS_ROOT, ...segments)
+  if (!filePath.startsWith(UPLOADS_ROOT + path.sep) && filePath !== UPLOADS_ROOT) {
     return NextResponse.json({ error: 'Ruta inválida' }, { status: 400 })
   }
 
-  const filePath = path.join(process.cwd(), 'public', 'uploads', ...segments)
   const ext = filePath.split('.').pop()?.toLowerCase() || ''
   const contentType = MIME_TYPES[ext] || 'application/octet-stream'
 
@@ -31,7 +35,8 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400',
+        // Uploads son privados (facturas, comprobantes) — no cachear en proxies/CDN compartidos.
+        'Cache-Control': 'private, max-age=3600',
       },
     })
   } catch {
