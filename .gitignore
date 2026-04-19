@@ -21,8 +21,6 @@ data/
 .env.test
 .env*.local
 .env.server
-.env.server.prod
-.env.server.test
 
 # Archivos subidos por usuarios
 public/uploads/
