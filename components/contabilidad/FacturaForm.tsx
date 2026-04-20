@@ -111,11 +111,20 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       if (ext.proveedor && !proveedor) { setProveedor(ext.proveedor); filled++ }
       if (ext.numero && !numero) { setNumero(ext.numero); filled++ }
       if (ext.fecha && !fecha) { setFecha(ext.fecha); filled++ }
+      if (ext.fechaVencimiento && !fechaVencimiento) { setFechaVencimiento(ext.fechaVencimiento); filled++ }
       if (ext.descripcion && !descripcion) { setDescripcion(ext.descripcion); filled++ }
       if (ext.subtotal && !subtotal) { setSubtotal(ext.subtotal.toString()); filled++ }
       if (ext.impuesto && !itbis) { setItbis(ext.impuesto.toString()); filled++ }
-      if (ext.total && !subtotal && !ext.subtotal && ext.impuesto) {
-        setSubtotal((ext.total - ext.impuesto).toString())
+      // Si OCR trae solo total (sin desglose), intenta calcular subtotal asumiendo ITBIS 18%
+      if (ext.total && !subtotal && !ext.subtotal) {
+        if (ext.impuesto) {
+          setSubtotal((ext.total - ext.impuesto).toString())
+        } else {
+          // Asume ITBIS 18%: subtotal = total / 1.18, impuesto = total - subtotal
+          const sub = ext.total / 1.18
+          setSubtotal(sub.toFixed(2))
+          setItbis((ext.total - sub).toFixed(2))
+        }
         filled++
       }
 
@@ -130,7 +139,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     } finally {
       setOcrLoading(false)
     }
-  }, [ncf, rncProveedor, proveedor, numero, fecha, descripcion, subtotal, itbis])
+  }, [ncf, rncProveedor, proveedor, numero, fecha, fechaVencimiento, descripcion, subtotal, itbis])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -141,8 +150,11 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       } else {
         setArchivoPreview(file.name)
       }
-      // OCR disabled — manual entry preferred
-      // runOCR(file)
+      // OCR automático solo para egresos (gastos de proveedor).
+      // Los ingresos los emite la empresa y ya se conocen los datos.
+      if (tipo === 'egreso') {
+        runOCR(file)
+      }
     }
   }
 
@@ -302,9 +314,31 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
           {(archivo || archivoPreview) && (
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); if (fileRef.current) fileRef.current.value = ''; }}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); setOcrResult(null); if (fileRef.current) fileRef.current.value = ''; }}>
                 <X className="w-3.5 h-3.5" /> Quitar archivo
               </Button>
+              {tipo === 'egreso' && archivo && !ocrLoading && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => runOCR(archivo)}>
+                  🔍 Releer con OCR
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Banner de estado del OCR */}
+          {ocrLoading && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <div className="w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+              <p className="text-xs text-blue-700 dark:text-blue-300">Leyendo factura con IA…</p>
+            </div>
+          )}
+          {!ocrLoading && ocrResult && (
+            <div className={`px-3 py-2 rounded-lg text-xs border ${
+              ocrResult.startsWith('Error')
+                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+                : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+            }`}>
+              {ocrResult}
             </div>
           )}
 
