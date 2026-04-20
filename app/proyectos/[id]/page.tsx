@@ -183,6 +183,11 @@ export default async function ProyectoDetailPage({
           </Link>
           <div>
             <div className="flex items-center gap-3 flex-wrap">
+              {proyecto.codigo && (
+                <span className="font-mono text-sm font-semibold text-muted-foreground bg-muted/60 px-2 py-1 rounded">
+                  {proyecto.codigo}
+                </span>
+              )}
               <h1 className="text-2xl font-bold text-foreground">{proyecto.nombre}</h1>
               <EstadoProyectoBadge estado={proyecto.estado} />
               {(proyecto as { archivada?: boolean }).archivada && (

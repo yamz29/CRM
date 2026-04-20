@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ProyectoSchema, zodError } from '@/lib/validations'
+import { generarCodigoProyecto } from '@/lib/codigo-proyecto'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,21 +40,50 @@ export async function POST(request: NextRequest) {
       responsable, presupuestoEstimado,
     } = parsed.data
 
-    const proyecto = await prisma.proyecto.create({
-      data: {
-        nombre,
-        clienteId,
-        tipoProyecto:        tipoProyecto || 'Remodelación',
-        ubicacion:           ubicacion    || null,
-        fechaInicio:         fechaInicio  ? new Date(fechaInicio)  : null,
-        fechaEstimada:       fechaEstimada ? new Date(fechaEstimada) : null,
-        estado:              estado || 'Prospecto',
-        descripcion:         descripcion  || null,
-        responsable:         responsable  || null,
-        presupuestoEstimado: presupuestoEstimado ?? null,
-      },
-      include: { cliente: { select: { id: true, nombre: true } } },
-    })
+    const tipo = tipoProyecto || 'Remodelación'
+
+    // Generar código consecutivo por tipo (R-0001, C-0042, etc.)
+    // Si hay colisión por concurrencia, reintenta una vez.
+    let proyecto
+    try {
+      const codigo = await generarCodigoProyecto(tipo)
+      proyecto = await prisma.proyecto.create({
+        data: {
+          codigo,
+          nombre,
+          clienteId,
+          tipoProyecto:        tipo,
+          ubicacion:           ubicacion    || null,
+          fechaInicio:         fechaInicio  ? new Date(fechaInicio)  : null,
+          fechaEstimada:       fechaEstimada ? new Date(fechaEstimada) : null,
+          estado:              estado || 'Prospecto',
+          descripcion:         descripcion  || null,
+          responsable:         responsable  || null,
+          presupuestoEstimado: presupuestoEstimado ?? null,
+        },
+        include: { cliente: { select: { id: true, nombre: true } } },
+      })
+    } catch (e) {
+      // Reintento: probablemente el código chocó por concurrencia.
+      const codigo = await generarCodigoProyecto(tipo)
+      proyecto = await prisma.proyecto.create({
+        data: {
+          codigo,
+          nombre,
+          clienteId,
+          tipoProyecto:        tipo,
+          ubicacion:           ubicacion    || null,
+          fechaInicio:         fechaInicio  ? new Date(fechaInicio)  : null,
+          fechaEstimada:       fechaEstimada ? new Date(fechaEstimada) : null,
+          estado:              estado || 'Prospecto',
+          descripcion:         descripcion  || null,
+          responsable:         responsable  || null,
+          presupuestoEstimado: presupuestoEstimado ?? null,
+        },
+        include: { cliente: { select: { id: true, nombre: true } } },
+      })
+      void e
+    }
 
     return NextResponse.json(proyecto, { status: 201 })
   } catch (error) {

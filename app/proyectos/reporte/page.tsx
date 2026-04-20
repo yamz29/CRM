@@ -69,6 +69,7 @@ export default async function ReporteProyectosPage({
 
     return {
       id: p.id,
+      codigo: p.codigo,
       nombre: p.nombre,
       cliente: p.cliente.nombre,
       clienteId: p.cliente.id,

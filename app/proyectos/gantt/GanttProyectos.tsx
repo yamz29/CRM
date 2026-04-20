@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 
 interface Proyecto {
   id: number
+  codigo: string | null
   nombre: string
   cliente: string
   tipoProyecto: string
@@ -584,7 +585,12 @@ export function GanttProyectos({
                           y={rowCenterY - 2}
                           className="fill-foreground text-xs font-semibold pointer-events-none"
                         >
-                          {p.nombre.length > 32 ? p.nombre.slice(0, 30) + '…' : p.nombre}
+                          {(() => {
+                            const prefijo = p.codigo ? `${p.codigo} · ` : ''
+                            const maxLen = Math.max(8, 32 - prefijo.length)
+                            const nombre = p.nombre.length > maxLen ? p.nombre.slice(0, maxLen - 1) + '…' : p.nombre
+                            return prefijo + nombre
+                          })()}
                         </text>
                         <text
                           x={12}

@@ -32,6 +32,7 @@ model Cliente {
 
 model Proyecto {
   id                  Int       @id @default(autoincrement())
+  codigo              String?   @unique  // "R-0001", "C-0042" — se genera al crear
   nombre              String
   clienteId           Int
   tipoProyecto        String    @default("Remodelación")

@@ -185,6 +185,7 @@ export default async function ProyectosPage({
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/40 border-b border-border">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-24">Código</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyecto</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</th>
@@ -198,6 +199,15 @@ export default async function ProyectosPage({
                 <tbody className="divide-y divide-border">
                   {proyectos.map((proyecto) => (
                     <tr key={proyecto.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        {proyecto.codigo ? (
+                          <span className="inline-block font-mono text-xs font-semibold text-foreground bg-muted/50 px-2 py-0.5 rounded">
+                            {proyecto.codigo}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/40">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <Link
                           href={`/proyectos/${proyecto.id}`}

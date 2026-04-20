@@ -23,6 +23,7 @@ export default async function GanttProyectosPage({
       },
       select: {
         id: true,
+        codigo: true,
         nombre: true,
         tipoProyecto: true,
         estado: true,
@@ -46,6 +47,7 @@ export default async function GanttProyectosPage({
 
   const data = proyectos.map(p => ({
     id: p.id,
+    codigo: p.codigo,
     nombre: p.nombre,
     cliente: p.cliente.nombre,
     tipoProyecto: p.tipoProyecto,

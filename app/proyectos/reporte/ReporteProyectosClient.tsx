@@ -19,6 +19,7 @@ import {
 
 interface Proyecto {
   id: number
+  codigo: string | null
   nombre: string
   cliente: string
   clienteId: number
@@ -181,8 +182,9 @@ export function ReporteProyectosClient({
   }
 
   function exportarCSV() {
-    const headers = ['Proyecto', 'Cliente', 'Tipo', 'Estado', 'Inicio', 'Fin estimado', 'Presupuesto', 'Gastado', '% Gasto', 'Avance %', 'Salud']
+    const headers = ['Código', 'Proyecto', 'Cliente', 'Tipo', 'Estado', 'Inicio', 'Fin estimado', 'Presupuesto', 'Gastado', '% Gasto', 'Avance %', 'Salud']
     const rows = tablaFiltrada.map(p => [
+      p.codigo || '',
       p.nombre,
       p.cliente,
       p.tipoProyecto,
@@ -474,6 +476,7 @@ export function ReporteProyectosClient({
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr className="border-b border-border">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Código</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Cliente</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
@@ -488,11 +491,16 @@ export function ReporteProyectosClient({
               </thead>
               <tbody className="divide-y divide-border">
                 {tablaFiltrada.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Sin proyectos para los filtros seleccionados</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Sin proyectos para los filtros seleccionados</td></tr>
                 ) : tablaFiltrada.map(p => {
                   const SaludIcon = SALUD_CONFIG[p.salud].icon
                   return (
                     <tr key={p.id} className="hover:bg-muted/20">
+                      <td className="px-3 py-2">
+                        {p.codigo ? (
+                          <span className="font-mono text-xs font-semibold text-foreground bg-muted/50 px-1.5 py-0.5 rounded">{p.codigo}</span>
+                        ) : <span className="text-muted-foreground/40 text-xs">—</span>}
+                      </td>
                       <td className="px-3 py-2">
                         <Link href={`/proyectos/${p.id}`} className="font-medium text-foreground hover:text-primary">{p.nombre}</Link>
                       </td>
