@@ -66,6 +66,7 @@ model Proyecto {
   facturas          Factura[]
   adicionales       AdicionalProyecto[]
   punchlist         PunchItem[]
+  itemsPrograma     ItemProgramaProyecto[]
   documentos        DocumentoProyecto[]
   ordenesCompra     OrdenCompra[]
   evmSnapshots      EVMSnapshot[]
@@ -1274,6 +1275,7 @@ model OrdenCompra {
   proveedor  Proveedor?      @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
   proyecto   Proyecto?        @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
   items      ItemOrdenCompra[]
+  itemsPrograma ItemProgramaProyecto[]
 
   @@index([estado])
   @@index([proveedorId])
@@ -1399,4 +1401,32 @@ model ComentarioDocumento {
 
   @@index([documentoId])
   @@map("comentario_documento")
+}
+
+// ── PROGRAMACIÓN DE COMPRAS Y TAREAS ─────────────────────────────────
+// Lista operativa ligera por proyecto: checklist de compras informales
+// (shopping list previo a OrdenCompra formal) y tareas de día a día
+// (llamadas, gestiones, recordatorios). NO es el Gantt ni Punchlist.
+// Cuando una compra se formaliza, puede "promoverse" a OrdenCompra.
+model ItemProgramaProyecto {
+  id            Int       @id @default(autoincrement())
+  proyectoId    Int
+  tipo          String    // "compra" | "tarea"
+  descripcion   String
+  cantidad      String?   // solo compras, texto libre: "20 sacos", "50 m²"
+  fechaObjetivo DateTime? // cuándo hay que hacerlo / comprarlo
+  prioridad     String    @default("Normal") // Alta | Normal | Baja
+  estado        String    @default("Pendiente") // Pendiente | En Progreso | Completado | Cancelado
+  notas         String?
+  ordenCompraId Int?      // si la compra se formalizó → link a la OC
+  orden         Int       @default(0) // drag&drop manual
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  proyecto     Proyecto     @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  ordenCompra  OrdenCompra? @relation(fields: [ordenCompraId], references: [id], onDelete: SetNull)
+
+  @@index([proyectoId, tipo, estado])
+  @@map("item_programa_proyecto")
 }

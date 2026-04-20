@@ -10,6 +10,7 @@ import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupue
 import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
 import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
 import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
+import { ProgramaTab } from '@/components/proyectos/ProgramaTab'
 import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
@@ -19,7 +20,7 @@ import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
-  FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink, FolderOpen,
+  FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink, FolderOpen, ListTodo,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -164,6 +165,7 @@ export default async function ProyectoDetailPage({
     { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
     { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
     { key: 'punchlist', label: `Punchlist (${proyecto._count.punchlist})`, icon: ClipboardCheck },
+    { key: 'programa', label: 'Programación', icon: ListTodo },
     { key: 'documentos', label: `Documentos (${proyecto._count.documentos})`, icon: FolderOpen },
     { key: 'evm', label: 'EVM / Curva S', icon: TrendingUp },
     { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
@@ -977,6 +979,11 @@ export default async function ProyectoDetailPage({
       {/* PUNCHLIST */}
       {tab === 'punchlist' && (
         <PunchlistTab proyectoId={proyecto.id} />
+      )}
+
+      {/* PROGRAMA (compras + tareas del día a día) */}
+      {tab === 'programa' && (
+        <ProgramaTab proyectoId={proyecto.id} />
       )}
 
       {/* DOCUMENTOS */}
