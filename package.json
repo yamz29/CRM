@@ -11,7 +11,10 @@
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "db:seed-v2": "ts-node --project tsconfig.seed.json prisma/seed-v2.ts",
     "db:seed-catalogos": "ts-node --project tsconfig.seed.json prisma/seed-catalogos.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@azure/msal-browser": "^5.6.3",
@@ -49,11 +52,14 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitest/ui": "^4.1.4",
     "autoprefixer": "^10.0.1",
     "postcss": "^8",
     "prisma": "^5.7.0",
     "tailwindcss": "^3.3.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.4"
   }
 }
