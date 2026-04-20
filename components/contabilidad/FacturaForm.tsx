@@ -102,61 +102,80 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       const ext = data.extracted
       let filled = 0
 
-      // Normaliza fecha a YYYY-MM-DD. Acepta también dd/mm/yyyy, d-m-yyyy, etc.
-      // Retorna null si no parsea.
+      // Normaliza fecha a YYYY-MM-DD estricto. iOS Safari rechaza cualquier
+      // otro formato con DOMException, por eso validamos año/mes/día.
       const normalizaFecha = (s: unknown): string | null => {
         if (!s || typeof s !== 'string') return null
-        const txt = s.trim()
-        // Ya viene como YYYY-MM-DD
-        if (/^\d{4}-\d{2}-\d{2}$/.test(txt)) return txt
-        // dd/mm/yyyy o dd-mm-yyyy
-        const m = txt.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
-        if (m) {
-          const d = m[1].padStart(2, '0')
-          const mo = m[2].padStart(2, '0')
-          return `${m[3]}-${mo}-${d}`
+        let txt = s.trim()
+
+        let y = 0, mo = 0, d = 0
+        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(txt)) {
+          const [ys, ms, ds] = txt.split('-')
+          y = +ys; mo = +ms; d = +ds
+        } else {
+          // dd/mm/yyyy o dd-mm-yyyy
+          const m = txt.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+          if (m) { d = +m[1]; mo = +m[2]; y = +m[3] }
+          else {
+            // yyyy/mm/dd
+            const m2 = txt.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/)
+            if (m2) { y = +m2[1]; mo = +m2[2]; d = +m2[3] }
+            else {
+              // Último intento: parser nativo
+              const dt = new Date(txt)
+              if (!isNaN(dt.getTime())) {
+                y = dt.getFullYear(); mo = dt.getMonth() + 1; d = dt.getDate()
+              }
+            }
+          }
         }
-        // yyyy/mm/dd
-        const m2 = txt.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/)
-        if (m2) {
-          return `${m2[1]}-${m2[2].padStart(2, '0')}-${m2[3].padStart(2, '0')}`
-        }
-        // Intento final con Date
-        const d = new Date(txt)
-        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10)
-        return null
+
+        // Validación estricta de rangos
+        if (y < 2000 || y > 2100) return null
+        if (mo < 1 || mo > 12) return null
+        if (d < 1 || d > 31) return null
+
+        return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
       }
 
-      if (ext.ncf && !ncf) { setNcf(String(ext.ncf)); filled++ }
-      if (ext.rncProveedor && !rncProveedor) {
-        setRncProveedor(String(ext.rncProveedor))
-        searchRNC(String(ext.rncProveedor))
-        filled++
+      // Aisla cada setState en try/catch. iOS Safari es muy estricto con
+      // <input type=date> y puede lanzar DOMException sincrónicamente; sin
+      // este aislamiento, un fallo en cualquier campo aborta todo el OCR.
+      const safeSet = <T,>(setter: (v: T) => void, value: T, fieldName: string) => {
+        try { setter(value); filled++ }
+        catch (e) { console.warn(`No se pudo setear ${fieldName}:`, e) }
       }
-      if (ext.proveedor && !proveedor) { setProveedor(String(ext.proveedor)); filled++ }
-      if (ext.numero && !numero) { setNumero(String(ext.numero)); filled++ }
+
+      if (ext.ncf && !ncf) safeSet(setNcf, String(ext.ncf), 'ncf')
+      if (ext.rncProveedor && !rncProveedor) {
+        safeSet(setRncProveedor, String(ext.rncProveedor), 'rncProveedor')
+        try { searchRNC(String(ext.rncProveedor)) } catch { /* no-op */ }
+      }
+      if (ext.proveedor && !proveedor) safeSet(setProveedor, String(ext.proveedor), 'proveedor')
+      if (ext.numero && !numero) safeSet(setNumero, String(ext.numero), 'numero')
       if (ext.fecha && !fecha) {
         const f = normalizaFecha(ext.fecha)
-        if (f) { setFecha(f); filled++ }
+        if (f) safeSet(setFecha, f, 'fecha')
       }
       if (ext.fechaVencimiento && !fechaVencimiento) {
         const f = normalizaFecha(ext.fechaVencimiento)
-        if (f) { setFechaVencimiento(f); filled++ }
+        if (f) safeSet(setFechaVencimiento, f, 'fechaVencimiento')
       }
-      if (ext.descripcion && !descripcion) { setDescripcion(String(ext.descripcion)); filled++ }
-      if (ext.subtotal && !subtotal) { setSubtotal(String(ext.subtotal)); filled++ }
-      if (ext.impuesto && !itbis) { setItbis(String(ext.impuesto)); filled++ }
-      // Si OCR trae solo total (sin desglose), intenta calcular subtotal asumiendo ITBIS 18%
+      if (ext.descripcion && !descripcion) safeSet(setDescripcion, String(ext.descripcion), 'descripcion')
+      if (ext.subtotal && !subtotal) safeSet(setSubtotal, String(ext.subtotal), 'subtotal')
+      if (ext.impuesto && !itbis) safeSet(setItbis, String(ext.impuesto), 'impuesto')
+      // Si OCR trae solo total (sin desglose), calcula subtotal asumiendo ITBIS 18%
       if (ext.total && !subtotal && !ext.subtotal) {
-        if (ext.impuesto) {
-          setSubtotal((ext.total - ext.impuesto).toString())
-        } else {
-          // Asume ITBIS 18%: subtotal = total / 1.18, impuesto = total - subtotal
-          const sub = ext.total / 1.18
-          setSubtotal(sub.toFixed(2))
-          setItbis((ext.total - sub).toFixed(2))
-        }
-        filled++
+        try {
+          if (ext.impuesto) {
+            setSubtotal(String(ext.total - ext.impuesto))
+          } else {
+            const sub = Number(ext.total) / 1.18
+            setSubtotal(sub.toFixed(2))
+            setItbis((Number(ext.total) - sub).toFixed(2))
+          }
+          filled++
+        } catch (e) { console.warn('No se pudo calcular subtotal:', e) }
       }
 
       setOcrResult(
