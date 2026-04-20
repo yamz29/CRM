@@ -102,19 +102,50 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       const ext = data.extracted
       let filled = 0
 
-      if (ext.ncf && !ncf) { setNcf(ext.ncf); filled++ }
+      // Normaliza fecha a YYYY-MM-DD. Acepta también dd/mm/yyyy, d-m-yyyy, etc.
+      // Retorna null si no parsea.
+      const normalizaFecha = (s: unknown): string | null => {
+        if (!s || typeof s !== 'string') return null
+        const txt = s.trim()
+        // Ya viene como YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(txt)) return txt
+        // dd/mm/yyyy o dd-mm-yyyy
+        const m = txt.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+        if (m) {
+          const d = m[1].padStart(2, '0')
+          const mo = m[2].padStart(2, '0')
+          return `${m[3]}-${mo}-${d}`
+        }
+        // yyyy/mm/dd
+        const m2 = txt.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/)
+        if (m2) {
+          return `${m2[1]}-${m2[2].padStart(2, '0')}-${m2[3].padStart(2, '0')}`
+        }
+        // Intento final con Date
+        const d = new Date(txt)
+        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10)
+        return null
+      }
+
+      if (ext.ncf && !ncf) { setNcf(String(ext.ncf)); filled++ }
       if (ext.rncProveedor && !rncProveedor) {
-        setRncProveedor(ext.rncProveedor)
-        searchRNC(ext.rncProveedor)
+        setRncProveedor(String(ext.rncProveedor))
+        searchRNC(String(ext.rncProveedor))
         filled++
       }
-      if (ext.proveedor && !proveedor) { setProveedor(ext.proveedor); filled++ }
-      if (ext.numero && !numero) { setNumero(ext.numero); filled++ }
-      if (ext.fecha && !fecha) { setFecha(ext.fecha); filled++ }
-      if (ext.fechaVencimiento && !fechaVencimiento) { setFechaVencimiento(ext.fechaVencimiento); filled++ }
-      if (ext.descripcion && !descripcion) { setDescripcion(ext.descripcion); filled++ }
-      if (ext.subtotal && !subtotal) { setSubtotal(ext.subtotal.toString()); filled++ }
-      if (ext.impuesto && !itbis) { setItbis(ext.impuesto.toString()); filled++ }
+      if (ext.proveedor && !proveedor) { setProveedor(String(ext.proveedor)); filled++ }
+      if (ext.numero && !numero) { setNumero(String(ext.numero)); filled++ }
+      if (ext.fecha && !fecha) {
+        const f = normalizaFecha(ext.fecha)
+        if (f) { setFecha(f); filled++ }
+      }
+      if (ext.fechaVencimiento && !fechaVencimiento) {
+        const f = normalizaFecha(ext.fechaVencimiento)
+        if (f) { setFechaVencimiento(f); filled++ }
+      }
+      if (ext.descripcion && !descripcion) { setDescripcion(String(ext.descripcion)); filled++ }
+      if (ext.subtotal && !subtotal) { setSubtotal(String(ext.subtotal)); filled++ }
+      if (ext.impuesto && !itbis) { setItbis(String(ext.impuesto)); filled++ }
       // Si OCR trae solo total (sin desglose), intenta calcular subtotal asumiendo ITBIS 18%
       if (ext.total && !subtotal && !ext.subtotal) {
         if (ext.impuesto) {

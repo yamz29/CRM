@@ -95,7 +95,6 @@ export async function POST(request: NextRequest) {
         generationConfig: {
           temperature: 0.1, // Baja creatividad → mayor consistencia
           maxOutputTokens: 1024,
-          responseMimeType: 'application/json',
         },
       }),
     })
