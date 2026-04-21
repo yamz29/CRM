@@ -1191,7 +1191,8 @@ model Factura {
 
   estado           String    @default("pendiente")    // pendiente | parcial | pagada | anulada
   archivoUrl       String?                            // foto o scan (local)
-  driveUrl         String?                            // Google Drive link
+  driveUrl         String?                            // Google Drive link (legacy)
+  sharepointUrl    String?                            // SharePoint share link
   observaciones    String?
 
   creadoEn         DateTime  @default(now())

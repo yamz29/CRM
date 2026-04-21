@@ -9,6 +9,9 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { compressImage } from '@/lib/compress-image'
+import { carpetaFactura, nombreArchivoFactura } from '@/lib/factura-sp-path'
+import { initMsal, isLoggedIn, loginOneDrive } from '@/lib/onedrive'
+import { ensureFolder, uploadSmallFile, uploadLargeFile, getSharePointShareLink } from '@/lib/sharepoint'
 
 interface Cliente { id: number; nombre: string }
 interface Proyecto { id: number; nombre: string }
@@ -77,6 +80,9 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
   // OCR state
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrResult, setOcrResult] = useState<string | null>(null)
+  // SharePoint upload state
+  const [spState, setSpState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
+  const [spMessage, setSpMessage] = useState<string | null>(null)
   // RNC match state
   const [rncMatch, setRncMatch] = useState<string | null>(null)
   const [rncSearching, setRncSearching] = useState(false)
@@ -316,6 +322,62 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     setRncMatch(null)
   }
 
+  // ── Subida best-effort a SharePoint ───────────────────────────────
+  // Estructura: /<SP_ROOT>/Facturas/YYYY/MM/Proveedor-FAC-NNNN.ext
+  // Se corre DESPUÉS de guardar la factura. Si falla, no revierte nada
+  // — la factura queda guardada solo con archivoUrl local.
+  async function subirASharepoint(facturaId: number, file: File) {
+    setSpState('uploading')
+    setSpMessage('Subiendo a SharePoint…')
+    try {
+      // Asegurar sesión MSAL
+      try {
+        await initMsal()
+        if (!isLoggedIn()) {
+          const ok = await loginOneDrive()
+          if (!ok) throw new Error('No se pudo iniciar sesión en SharePoint')
+        }
+      } catch (e) {
+        setSpState('error')
+        setSpMessage('No hay sesión de SharePoint (se guardó solo local).')
+        throw e
+      }
+
+      const folderPath = carpetaFactura(fecha || new Date())
+      const fileName = nombreArchivoFactura(proveedor, numero, file.name, facturaId)
+
+      await ensureFolder(folderPath)
+
+      const FOUR_MB = 4 * 1024 * 1024
+      const item = file.size < FOUR_MB
+        ? await uploadSmallFile(folderPath, fileName, await file.arrayBuffer())
+        : await uploadLargeFile(folderPath, fileName, file)
+
+      if (!item) throw new Error('Upload no devolvió resultado')
+
+      const shareUrl = await getSharePointShareLink(item.id)
+
+      // Persistir la URL en la factura (no crítico — si falla solo queda local)
+      try {
+        await fetch(`/api/contabilidad/facturas/${facturaId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sharepointUrl: shareUrl }),
+        })
+      } catch (patchErr) {
+        console.warn('No se pudo guardar sharepointUrl en la factura:', patchErr)
+      }
+
+      setSpState('success')
+      setSpMessage(`Subida a SharePoint (${folderPath}/${fileName}).`)
+    } catch (e) {
+      console.error('SP upload error:', e)
+      if (spState !== 'error') setSpState('error')
+      const msg = e instanceof Error ? e.message : 'Error desconocido'
+      setSpMessage(`Subida a SP falló: ${msg}`)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!numero.trim()) { setError('Número de factura es requerido'); return }
@@ -374,6 +436,13 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         throw new Error(`Respuesta inválida del servidor: ${msg}`)
+      }
+
+      // Subida a SharePoint (best-effort). Si falla, la factura ya está
+      // guardada localmente — solo registramos warning.
+      if (archivo && data?.id) {
+        try { await subirASharepoint(data.id, archivo) }
+        catch (spErr) { console.warn('SP upload falló:', spErr) }
       }
 
       // Navegación envuelta en try/catch por si iOS Safari rechaza la URL.
@@ -475,6 +544,24 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
                 : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
             }`}>
               {ocrResult}
+            </div>
+          )}
+
+          {/* Banner SharePoint */}
+          {spState === 'uploading' && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <div className="w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+              <p className="text-xs text-blue-700 dark:text-blue-300">{spMessage || 'Subiendo a SharePoint…'}</p>
+            </div>
+          )}
+          {spState === 'success' && spMessage && (
+            <div className="px-3 py-2 rounded-lg text-xs border bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+              ✓ {spMessage}
+            </div>
+          )}
+          {spState === 'error' && spMessage && (
+            <div className="px-3 py-2 rounded-lg text-xs border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+              ⚠ {spMessage}
             </div>
           )}
 

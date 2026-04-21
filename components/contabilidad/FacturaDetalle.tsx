@@ -31,7 +31,7 @@ interface Factura {
   propinaLegal?: number
   otrosImpuestos?: number
   total: number; montoPagado: number; estado: string
-  archivoUrl: string | null; driveUrl: string | null
+  archivoUrl: string | null; driveUrl: string | null; sharepointUrl?: string | null
   observaciones: string | null
   pagos: Pago[]
 }
@@ -288,7 +288,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
           </div>
 
           {/* File */}
-          {(factura.archivoUrl || factura.driveUrl) && (
+          {(factura.archivoUrl || factura.driveUrl || factura.sharepointUrl) && (
             <div className="bg-card border border-border rounded-xl p-5 space-y-3">
               <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
                 <FileText className="w-4 h-4" /> Documento adjunto
@@ -306,6 +306,17 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
                   <ExternalLink className="w-3.5 h-3.5 ml-auto" />
                 </a>
               ) : null}
+              {factura.sharepointUrl && (
+                <a href={factura.sharepointUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13.5 10.5c0-2.485-2.015-4.5-4.5-4.5S4.5 8.015 4.5 10.5c0 .527.091 1.032.258 1.503-1.276.71-2.258 2.067-2.258 3.747C2.5 18.097 4.903 20 7.5 20c.553 0 1.089-.097 1.595-.277 1.071 1.39 2.827 2.277 4.905 2.277 3.3 0 6-2.7 6-6 0-2.078-.887-3.834-2.277-4.905.18-.506.277-1.042.277-1.595 0-2.597-1.903-5-5-5-1.68 0-3.037.982-3.747 2.258.471-.167.976-.258 1.503-.258 2.485 0 4.5 2.015 4.5 4.5z" fill="#0078D4"/>
+                  </svg>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Ver en SharePoint</span>
+                  <ExternalLink className="w-3.5 h-3.5 ml-auto text-blue-500" />
+                </a>
+              )}
               {factura.driveUrl && (
                 <a href={factura.driveUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"

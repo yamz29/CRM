@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       data = await request.json()
     }
 
-    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, tasaItbis, impuesto, propinaLegal, otrosImpuestos, total, estado, observaciones } = data
+    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, tasaItbis, impuesto, propinaLegal, otrosImpuestos, total, estado, observaciones, sharepointUrl } = data
 
     const updateData: any = {}
     if (numero !== undefined) updateData.numero = numero.toString().trim()
@@ -112,6 +112,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     if (observaciones !== undefined) updateData.observaciones = observaciones || null
     if (archivoUrl !== undefined) updateData.archivoUrl = archivoUrl
     if (driveUrl !== undefined) updateData.driveUrl = driveUrl
+    if (sharepointUrl !== undefined) updateData.sharepointUrl = sharepointUrl || null
 
     const factura = await prisma.factura.update({
       where: { id },
