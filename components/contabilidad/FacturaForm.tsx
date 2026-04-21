@@ -102,8 +102,8 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     setItbis(nuevo > 0 ? nuevo.toString() : '')
   }
 
-  // ── OCR via Gemini Vision API (server-side) ──
-  const runOCR = useCallback(async (file: File) => {
+  // ── OCR multi-provider (server-side: Claude o Gemini) ──
+  const runOCR = useCallback(async (file: File, forceProvider?: 'claude' | 'gemini') => {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
     if (!validTypes.includes(file.type)) {
       setOcrResult('OCR solo funciona con imágenes o PDF')
@@ -117,7 +117,10 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       const formData = new FormData()
       formData.append('archivo', file)
 
-      const res = await fetch('/api/contabilidad/ocr', { method: 'POST', body: formData })
+      const ocrUrl = forceProvider
+        ? `/api/contabilidad/ocr?provider=${forceProvider}`
+        : '/api/contabilidad/ocr'
+      const res = await fetch(ocrUrl, { method: 'POST', body: formData })
       const data = await res.json()
 
       if (!res.ok) {
@@ -536,9 +539,14 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
                 <X className="w-3.5 h-3.5" /> Quitar archivo
               </Button>
               {tipo === 'egreso' && archivo && !ocrLoading && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => runOCR(archivo)}>
-                  🔍 Releer con OCR
-                </Button>
+                <>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => runOCR(archivo, 'claude')}>
+                    🔍 Claude
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => runOCR(archivo, 'gemini')}>
+                    🔍 Gemini
+                  </Button>
+                </>
               )}
             </div>
           )}

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkPermiso } from '@/lib/permisos'
 
-// Modelo configurable vía env (default: gemini-2.5-pro para mejor precisión
-// visual en facturas). Alternativas: gemini-2.5-flash (más rápido/barato).
-const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL || 'gemini-2.5-pro'
+// Provider configurable vía env. Claude tiene mejor precisión en fotos
+// de facturas borrosas/anguladas que Gemini. Default: claude.
+// Valores: 'claude' | 'gemini'
+const OCR_PROVIDER = (process.env.OCR_PROVIDER || 'claude').toLowerCase()
 
-const GEMINI_PROMPT = `Eres un asistente experto en facturas dominicanas (República Dominicana).
+// Modelos configurables (permite ajustar sin redeploy).
+const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL || 'gemini-2.5-pro'
+const CLAUDE_MODEL = process.env.CLAUDE_OCR_MODEL || 'claude-sonnet-4-5-20250929'
+
+const PROMPT = `Eres un asistente experto en facturas dominicanas (República Dominicana).
 Analiza cuidadosamente la imagen/PDF y extrae los campos en JSON.
 
 REGLAS GENERALES:
@@ -32,7 +37,7 @@ DESGLOSE DE MONTOS:
 - otrosImpuestos: ISC, CDT, selectivo, etc.
 - total: lo que paga el cliente final. Debe ser subtotal + impuesto + propinaLegal + otrosImpuestos.
 
-Si solo hay "total" sin desglose, y la factura es claramente de un restaurante/bar (por el nombre del emisor o los productos), deja subtotal/impuesto/propinaLegal en null — el usuario lo desglosará. No asumas valores.
+Si solo hay "total" sin desglose, deja subtotal/impuesto/propinaLegal en null — el usuario lo desglosará. No asumas valores.
 
 Descripción: resume en máximo 80 caracteres los productos/servicios principales.
 
@@ -55,22 +60,99 @@ Campos a extraer:
 
 Responde ÚNICAMENTE con el JSON válido, sin markdown, sin comentarios, sin texto antes o después.`
 
+// ═══════════════════════════════════════════════════════════════════════
+// CLAUDE (Anthropic)
+// ═══════════════════════════════════════════════════════════════════════
+
+async function ocrClaude(
+  apiKey: string,
+  mimeType: string,
+  base64: string,
+  model: string,
+): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mimeType === 'application/pdf' ? 'application/pdf' : mimeType,
+              data: base64,
+            },
+          },
+          { type: 'text', text: PROMPT },
+        ],
+      }],
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Claude ${res.status}: ${err?.error?.message || res.statusText}`)
+  }
+
+  const data = await res.json()
+  const text = data?.content?.[0]?.text || ''
+  return text
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GEMINI
+// ═══════════════════════════════════════════════════════════════════════
+
+async function ocrGemini(
+  apiKey: string,
+  mimeType: string,
+  base64: string,
+  model: string,
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: PROMPT },
+          { inlineData: { mimeType, data: base64 } },
+        ],
+      }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Gemini ${res.status}: ${err?.error?.message || res.statusText}`)
+  }
+
+  const data = await res.json()
+  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  return text
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Handler
+// ═══════════════════════════════════════════════════════════════════════
+
 export async function POST(request: NextRequest) {
   const denied = await checkPermiso(request, 'contabilidad', 'editar')
   if (denied) return denied
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'GEMINI_API_KEY no configurada en el servidor' },
-        { status: 500 }
-      )
-    }
-
     const formData = await request.formData()
     const file = formData.get('archivo') as File | null
-
     if (!file || file.size === 0) {
       return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 })
     }
@@ -82,8 +164,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Límite 10MB. Gemini acepta hasta ~20MB en inlineData.
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
         { error: 'Archivo demasiado grande (máx. 10MB)' },
@@ -91,60 +171,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Provider puede venir forzado por query (?provider=claude|gemini)
+    // para pruebas/reintentos. Default: OCR_PROVIDER env var.
+    const requestedProvider = request.nextUrl.searchParams.get('provider')?.toLowerCase()
+    const provider = requestedProvider && ['claude', 'gemini'].includes(requestedProvider)
+      ? requestedProvider
+      : OCR_PROVIDER
+
     const buffer = Buffer.from(await file.arrayBuffer())
     const base64 = buffer.toString('base64')
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`
-
-    const geminiRes = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: GEMINI_PROMPT },
-            {
-              inlineData: {
-                mimeType: file.type,
-                data: base64,
-              },
-            },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.1, // Baja creatividad → mayor consistencia
-          maxOutputTokens: 1024,
-        },
-      }),
-    })
-
-    if (!geminiRes.ok) {
-      const errData = await geminiRes.json().catch(() => ({}))
-      console.error('Gemini API error:', geminiRes.status, errData)
-      return NextResponse.json(
-        { error: `Error de Gemini: ${errData?.error?.message || geminiRes.statusText}` },
-        { status: 502 }
-      )
+    let textResponse = ''
+    let modelUsed = ''
+    try {
+      if (provider === 'gemini') {
+        const apiKey = process.env.GEMINI_API_KEY
+        if (!apiKey) throw new Error('GEMINI_API_KEY no configurada')
+        textResponse = await ocrGemini(apiKey, file.type, base64, GEMINI_MODEL)
+        modelUsed = GEMINI_MODEL
+      } else {
+        // claude (default)
+        const apiKey = process.env.ANTHROPIC_API_KEY
+        if (!apiKey) throw new Error('ANTHROPIC_API_KEY no configurada')
+        textResponse = await ocrClaude(apiKey, file.type, base64, CLAUDE_MODEL)
+        modelUsed = CLAUDE_MODEL
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error del proveedor'
+      return NextResponse.json({ error: msg }, { status: 502 })
     }
 
-    const geminiData = await geminiRes.json()
-    const textResponse: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-    // responseMimeType debería retornar JSON válido, pero saneamos por si
+    // Limpiar posibles code-fences del output
     const cleanJson = textResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
 
     let extracted: Record<string, unknown>
     try {
       extracted = JSON.parse(cleanJson)
     } catch {
-      console.error('Failed to parse Gemini response:', textResponse.slice(0, 500))
+      console.error('Failed to parse OCR response:', textResponse.slice(0, 500))
       return NextResponse.json(
         { error: 'No se pudo interpretar la respuesta del OCR', raw: textResponse.slice(0, 500) },
         { status: 500 }
       )
     }
 
-    // Normalizar numéricos (por si Gemini devuelve strings "1,525.50")
+    // Normalización de campos numéricos
     const toNum = (v: unknown): number | null => {
       if (v == null) return null
       if (typeof v === 'number') return isNaN(v) ? null : v
@@ -174,7 +245,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      model: GEMINI_MODEL,
+      provider,
+      model: modelUsed,
       extracted,
     })
   } catch (error) {
