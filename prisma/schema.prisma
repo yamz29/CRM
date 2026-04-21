@@ -1408,6 +1408,27 @@ model ComentarioDocumento {
   @@map("comentario_documento")
 }
 
+// ── CATÁLOGO DGII RNC ────────────────────────────────────────────────
+// Base de contribuyentes registrados en la DGII (República Dominicana).
+// Usada SOLO para búsqueda/autocompletado al capturar facturas; los
+// proveedores reales de la empresa viven en el modelo Proveedor.
+// Se importa desde DGII_RNC.TXT (pipe-delimited, ~770k filas, 85MB).
+// Script: scripts/import-dgii-rnc.ts
+model RncDgii {
+  rnc             String    @id              // 9-11 dígitos
+  nombre          String                     // razón social
+  nombreComercial String?
+  actividad       String?
+  estado          String?                    // ACTIVO | SUSPENDIDO | CANCELADO
+  regimen         String?                    // NORMAL | ESPECIAL
+  fechaInicio     DateTime?
+  actualizado     DateTime  @default(now())
+
+  @@index([nombre])
+  @@index([estado])
+  @@map("rnc_dgii")
+}
+
 // ── PROGRAMACIÓN DE COMPRAS Y TAREAS ─────────────────────────────────
 // Lista operativa ligera por proyecto: checklist de compras informales
 // (shopping list previo a OrdenCompra formal) y tareas de día a día

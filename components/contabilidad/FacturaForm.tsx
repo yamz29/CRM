@@ -267,6 +267,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
   }
 
   // ── RNC search ──
+  // Prioridad: Proveedor del catálogo → Cliente → Factura previa → DGII oficial.
   const searchRNC = useCallback(async (rnc: string) => {
     if (rnc.length < 9) { setRncMatch(null); return }
     setRncSearching(true)
@@ -274,21 +275,33 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       const res = await fetch(`/api/contabilidad/rnc-search?rnc=${encodeURIComponent(rnc)}`)
       const data = await res.json()
 
-      if (data.cliente) {
+      if (data.proveedor) {
+        setRncMatch(`Proveedor del catálogo: ${data.proveedor.nombre}`)
+        if (!proveedor) setProveedor(data.proveedor.nombre)
+        if (!proveedorId) setProveedorId(String(data.proveedor.id))
+      } else if (data.cliente) {
         setRncMatch(`Cliente encontrado: ${data.cliente.nombre}`)
         if (!proveedor) setProveedor(data.cliente.nombre)
       } else if (data.proveedorPrevio) {
         setRncMatch(`Proveedor previo: ${data.proveedorPrevio.nombre}`)
         if (!proveedor) setProveedor(data.proveedorPrevio.nombre)
+      } else if (data.dgii) {
+        // Nombre oficial DGII. Si el estado no es ACTIVO, avisamos.
+        const estadoMark = data.dgii.estado && data.dgii.estado !== 'ACTIVO'
+          ? ` (${data.dgii.estado})`
+          : ''
+        const nombreDgii = data.dgii.nombreComercial || data.dgii.nombre
+        setRncMatch(`DGII: ${nombreDgii}${estadoMark}`)
+        if (!proveedor) setProveedor(nombreDgii)
       } else {
-        setRncMatch('RNC no encontrado en el sistema')
+        setRncMatch('RNC no encontrado — se creará nuevo proveedor')
       }
     } catch {
       setRncMatch(null)
     } finally {
       setRncSearching(false)
     }
-  }, [proveedor])
+  }, [proveedor, proveedorId])
 
   const handleRncBlur = () => {
     if (rncProveedor.length >= 9) searchRNC(rncProveedor)
