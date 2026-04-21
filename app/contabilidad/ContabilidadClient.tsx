@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCard } from '@/components/ui/stats-card'
+import { ImportarExtractoModal } from '@/components/contabilidad/ImportarExtractoModal'
 import { formatCurrency } from '@/lib/utils'
 import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
 
@@ -633,11 +634,8 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   const [loading, setLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [showTransferForm, setShowTransferForm] = useState(false)
-  const [showImport, setShowImport] = useState(false)
-  const [importResult, setImportResult] = useState<string | null>(null)
-  const [importing, setImporting] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [facturasDisponibles, setFacturasDisponibles] = useState<any[]>([])
-  const importRef = useRef<HTMLInputElement>(null)
 
   const fetchMovimientos = useCallback(async () => {
     if (!cuentaId) return
@@ -671,33 +669,6 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
     if (res.ok) fetchMovimientos()
   }
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !cuentaId) return
-    setImporting(true)
-    setImportResult(null)
-
-    const formData = new FormData()
-    formData.append('archivo', file)
-    formData.append('cuentaId', cuentaId)
-
-    try {
-      const res = await fetch('/api/contabilidad/importar-extracto', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (res.ok) {
-        setImportResult(`${data.importados} importados, ${data.duplicados} duplicados de ${data.total} líneas`)
-        fetchMovimientos()
-      } else {
-        setImportResult(`Error: ${data.error}`)
-      }
-    } catch (err: any) {
-      setImportResult(`Error: ${err.message}`)
-    } finally {
-      setImporting(false)
-      if (importRef.current) importRef.current.value = ''
-    }
-  }
-
   // Load on mount and when account changes
   useState(() => { if (cuentaId) { fetchMovimientos(); fetchFacturas() } })
 
@@ -718,16 +689,18 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
         <Button variant="outline" onClick={() => { setShowTransferForm(!showTransferForm); setShowAddForm(false) }}>
           <ArrowRightLeft className="w-4 h-4" /> Transferencia
         </Button>
-        <Button variant="outline" onClick={() => importRef.current?.click()} disabled={!cuentaId || importing}>
-          <Upload className="w-4 h-4" /> {importing ? 'Importando...' : 'Importar Extracto'}
+        <Button variant="outline" onClick={() => setShowImportModal(true)} disabled={!cuentaId}>
+          <Upload className="w-4 h-4" /> Importar Extracto
         </Button>
-        <input ref={importRef} type="file" accept=".txt,.csv" onChange={handleImport} className="hidden" />
       </div>
 
-      {importResult && (
-        <div className={`p-3 rounded-lg text-sm ${importResult.startsWith('Error') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'}`}>
-          {importResult}
-        </div>
+      {showImportModal && cuentaId && (
+        <ImportarExtractoModal
+          cuentaId={parseInt(cuentaId)}
+          cuentaNombre={cuentas.find(c => c.id === parseInt(cuentaId))?.nombre || ''}
+          onClose={() => setShowImportModal(false)}
+          onImported={fetchMovimientos}
+        />
       )}
 
       {showAddForm && cuentaId && (
