@@ -298,15 +298,50 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     const method = isEdit ? 'PUT' : 'POST'
 
     try {
-      const res = await fetch(url, { method, body: formData })
-      if (!res.ok) {
-        const d = await res.json()
-        throw new Error(d.error || 'Error al guardar')
+      let res: Response
+      try {
+        res = await fetch(url, { method, body: formData })
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        throw new Error(`Red: ${msg}`)
       }
-      const data = await res.json()
-      router.push(`/contabilidad/facturas/${data.id}`)
-    } catch (err: any) {
-      setError(err.message)
+
+      if (!res.ok) {
+        let errText = 'Error al guardar'
+        try {
+          const d = await res.json()
+          errText = d.error || errText
+        } catch {
+          errText = `Servidor respondió ${res.status}`
+        }
+        throw new Error(errText)
+      }
+
+      let data: { id?: number }
+      try {
+        data = await res.json()
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        throw new Error(`Respuesta inválida del servidor: ${msg}`)
+      }
+
+      // Navegación envuelta en try/catch por si iOS Safari rechaza la URL.
+      try {
+        if (data?.id) {
+          router.push(`/contabilidad/facturas/${data.id}`)
+        } else {
+          router.push('/contabilidad/facturas')
+        }
+      } catch (navErr) {
+        console.error('Router.push falló, usando window.location:', navErr)
+        window.location.href = data?.id
+          ? `/contabilidad/facturas/${data.id}`
+          : '/contabilidad/facturas'
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('Error al guardar factura:', err)
+      setError(msg)
     } finally {
       setLoading(false)
     }

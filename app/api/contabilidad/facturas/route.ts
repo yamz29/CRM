@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
-import { uploadToDrive } from '@/lib/google-drive'
 import { checkPermiso } from '@/lib/permisos'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
@@ -107,24 +106,15 @@ export async function POST(request: NextRequest) {
     let data: any
     let archivoUrl: string | null = null
 
-    let driveUrl: string | null = null
-
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
       const file = formData.get('archivo') as File | null
       if (file && file.size > 0) {
         if (file.size > MAX_SIZE) throw new Error('Archivo supera 10 MB')
-        // Read buffer once, use for both local save and Drive upload
         const buffer = Buffer.from(await file.arrayBuffer())
         archivoUrl = await saveFileBuffer(buffer, file.name)
-        // Upload to Google Drive (best-effort)
-        try {
-          console.log('Uploading to Drive:', file.name, file.type, buffer.length, 'bytes')
-          driveUrl = await uploadToDrive(buffer, file.name, file.type)
-          console.log('Drive result:', driveUrl)
-        } catch (err) {
-          console.error('Drive upload failed (continuing):', err)
-        }
+        // NOTA: Google Drive upload removido. La subida a SharePoint se
+        // hace desde el cliente (Fase 2 pendiente).
       }
       data = Object.fromEntries(formData.entries())
       delete data.archivo
@@ -164,7 +154,6 @@ export async function POST(request: NextRequest) {
         total: parsedTotal,
         observaciones: observaciones || null,
         archivoUrl,
-        driveUrl,
       },
       include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
