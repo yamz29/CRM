@@ -8,7 +8,7 @@ import {
   Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2, Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { compressImage } from '@/lib/compress-image'
+import { compressImage, enhanceForOCR } from '@/lib/compress-image'
 import { carpetaFactura, nombreArchivoFactura } from '@/lib/factura-sp-path'
 import { initMsal, isLoggedIn, loginOneDrive } from '@/lib/onedrive'
 import { ensureFolder, uploadSmallFile, uploadLargeFile, getSharePointShareLink } from '@/lib/sharepoint'
@@ -114,8 +114,14 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     setOcrResult(null)
 
     try {
+      // Pre-procesa la imagen para OCR (corrige EXIF, aumenta contraste,
+      // enfoca texto). PDFs se mandan tal cual.
+      let fileForOcr = file
+      try { fileForOcr = await enhanceForOCR(file) }
+      catch (e) { console.warn('enhanceForOCR falló, usando original:', e) }
+
       const formData = new FormData()
-      formData.append('archivo', file)
+      formData.append('archivo', fileForOcr)
 
       const ocrUrl = forceProvider
         ? `/api/contabilidad/ocr?provider=${forceProvider}`
