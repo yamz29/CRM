@@ -214,6 +214,7 @@ model Presupuesto {
   titulos         PresupuestoTitulo[]
   indirectos      PresupuestoIndirectoLinea[]
   cronogramas     Cronograma[]
+  facturas        Factura[]
 
   @@index([estado])
   @@index([clienteId])
@@ -1190,6 +1191,14 @@ model Factura {
   montoPagado      Float     @default(0)              // sum of pagos
 
   estado           String    @default("pendiente")    // pendiente | parcial | pagada | anulada
+
+  // Factura proforma: sin NCF, emitida desde un presupuesto aprobado.
+  // Puede recibir pagos y convertirse después en factura fiscal al
+  // generar el NCF (mantiene mismo número, agrega ncf).
+  esProforma       Boolean   @default(false)
+  presupuestoId    Int?                              // link al presupuesto origen
+  presupuesto      Presupuesto? @relation(fields: [presupuestoId], references: [id], onDelete: SetNull)
+
   archivoUrl       String?                            // foto o scan (local)
   driveUrl         String?                            // Google Drive link (legacy)
   sharepointUrl    String?                            // SharePoint share link

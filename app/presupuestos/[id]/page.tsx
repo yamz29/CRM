@@ -21,6 +21,7 @@ import { CambiarEstadoButton } from './CambiarEstadoButton'
 import { DuplicarButton } from './DuplicarButton'
 import { ResumenIAPanel } from '@/components/presupuestos/ResumenIAPanel'
 import { DocumentosPresupuesto } from '@/components/presupuestos/DocumentosPresupuesto'
+import { FacturacionPresupuesto } from '@/components/presupuestos/FacturacionPresupuesto'
 
 async function getPresupuesto(id: number) {
   return prisma.presupuesto.findUnique({
@@ -37,6 +38,13 @@ async function getPresupuesto(id: number) {
           partidas: { include: { analisis: true }, orderBy: { orden: 'asc' } },
         },
         orderBy: { orden: 'asc' },
+      },
+      facturas: {
+        orderBy: { fecha: 'desc' },
+        select: {
+          id: true, numero: true, ncf: true, esProforma: true,
+          fecha: true, total: true, montoPagado: true, estado: true,
+        },
       },
     },
   })
@@ -417,6 +425,33 @@ export default async function PresupuestoDetailPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Facturación */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Facturación
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FacturacionPresupuesto
+            presupuestoId={presupuesto.id}
+            presupuestoEstado={presupuesto.estado}
+            presupuestoTotal={presupuesto.total}
+            facturas={presupuesto.facturas.map(f => ({
+              id: f.id,
+              numero: f.numero,
+              ncf: f.ncf,
+              esProforma: f.esProforma,
+              fecha: f.fecha.toISOString(),
+              total: f.total,
+              montoPagado: f.montoPagado,
+              estado: f.estado,
+            }))}
+          />
+        </CardContent>
+      </Card>
 
       {/* Total Summary */}
       {/* Documentos */}

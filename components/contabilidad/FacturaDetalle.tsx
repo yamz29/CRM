@@ -33,6 +33,8 @@ interface Factura {
   total: number; montoPagado: number; estado: string
   archivoUrl: string | null; driveUrl: string | null; sharepointUrl?: string | null
   observaciones: string | null
+  esProforma?: boolean
+  presupuestoId?: number | null
   pagos: Pago[]
 }
 
@@ -53,6 +55,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
   const router = useRouter()
   const [factura, setFactura] = useState(initialFactura)
   const [showPagoForm, setShowPagoForm] = useState(false)
+  const [showConvertirModal, setShowConvertirModal] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const saldoPendiente = factura.total - factura.montoPagado
@@ -90,11 +93,18 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-foreground">Factura #{factura.numero}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold text-foreground">
+                {factura.esProforma ? 'Proforma' : 'Factura'} #{factura.numero}
+              </h1>
               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${badge.color}`}>
                 <BadgeIcon className="w-3 h-3" /> {badge.label}
               </span>
+              {factura.esProforma && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                  PROFORMA (sin NCF)
+                </span>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               {factura.tipo === 'ingreso' ? 'Factura de ingreso' : 'Factura de egreso'}
@@ -102,7 +112,12 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {factura.esProforma && factura.estado !== 'anulada' && (
+            <Button onClick={() => setShowConvertirModal(true)}>
+              <CheckCircle2 className="w-4 h-4" /> Convertir a fiscal
+            </Button>
+          )}
           <Link href={`/contabilidad/facturas/${factura.id}/editar`}>
             <Button variant="outline"><Pencil className="w-4 h-4" /> Editar</Button>
           </Link>
@@ -113,6 +128,18 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
           )}
         </div>
       </div>
+
+      {showConvertirModal && (
+        <ConvertirAFiscalModal
+          factura={factura}
+          onClose={() => setShowConvertirModal(false)}
+          onSuccess={(updated) => {
+            setFactura({ ...factura, ...updated, esProforma: false })
+            setShowConvertirModal(false)
+            router.refresh()
+          }}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Invoice details */}
@@ -196,6 +223,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
               <PagoForm
                 facturaId={factura.id}
                 saldoPendiente={saldoPendiente}
+                totalFactura={factura.total}
                 cuentas={cuentas}
                 onClose={() => setShowPagoForm(false)}
                 onSaved={() => { setShowPagoForm(false); refreshFactura() }}
@@ -343,8 +371,8 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
 
 // ── Pago Form ────────────────────────────────────────────────────────────
 
-function PagoForm({ facturaId, saldoPendiente, cuentas, onClose, onSaved }: {
-  facturaId: number; saldoPendiente: number; cuentas: Cuenta[]; onClose: () => void; onSaved: () => void
+function PagoForm({ facturaId, saldoPendiente, totalFactura, cuentas, onClose, onSaved }: {
+  facturaId: number; saldoPendiente: number; totalFactura: number; cuentas: Cuenta[]; onClose: () => void; onSaved: () => void
 }) {
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
   const [monto, setMonto] = useState(saldoPendiente.toFixed(2))
@@ -354,6 +382,9 @@ function PagoForm({ facturaId, saldoPendiente, cuentas, onClose, onSaved }: {
   const [observaciones, setObservaciones] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Botones rápidos de %: setean monto = total × %
+  const setPorcentaje = (p: number) => setMonto((totalFactura * p / 100).toFixed(2))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -392,6 +423,28 @@ function PagoForm({ facturaId, saldoPendiente, cuentas, onClose, onSaved }: {
         <div>
           <label className="text-xs text-muted-foreground">Monto (pend: {formatCurrency(saldoPendiente)})</label>
           <input type="number" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputCls} required />
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground">Rápido:</span>
+            {[30, 40, 50, 100].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPorcentaje(p)}
+                className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+                title={`${p}% de ${formatCurrency(totalFactura)}`}
+              >
+                {p}%
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setMonto(saldoPendiente.toFixed(2))}
+              className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+              title={`Saldo restante: ${formatCurrency(saldoPendiente)}`}
+            >
+              Saldo
+            </button>
+          </div>
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Método</label>
@@ -422,6 +475,88 @@ function PagoForm({ facturaId, saldoPendiente, cuentas, onClose, onSaved }: {
           <Button type="submit" size="sm" disabled={loading}>{loading ? 'Guardando...' : 'Registrar Pago'}</Button>
         </div>
       </form>
+    </div>
+  )
+}
+
+// ── Modal: Convertir proforma → fiscal ────────────────────────────────
+function ConvertirAFiscalModal({
+  factura, onClose, onSuccess,
+}: {
+  factura: Factura
+  onClose: () => void
+  onSuccess: (updated: { ncf: string }) => void
+}) {
+  const [ncf, setNcf] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = ncf.trim().toUpperCase()
+    if (!trimmed) { setError('NCF requerido'); return }
+    if (!/^[BE]\d{10,12}$/.test(trimmed)) {
+      setError('Formato inválido. Ejemplo: B0100000123 o E310000001')
+      return
+    }
+    setSubmitting(true); setError(null)
+    try {
+      const res = await fetch(`/api/contabilidad/facturas/${factura.id}/convertir-a-fiscal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ncf: trimmed }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al convertir')
+      onSuccess({ ncf: trimmed })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card rounded-xl border border-border max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div>
+          <h3 className="font-semibold text-foreground">Convertir a factura fiscal</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Al agregar el NCF, la factura deja de ser proforma. Los pagos registrados se conservan.
+          </p>
+        </div>
+
+        <div className="rounded-lg bg-muted/40 p-3 text-xs">
+          <p className="font-semibold">{factura.numero}</p>
+          <p className="text-muted-foreground">Este número se conserva; solo agregamos el NCF.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium">NCF (Comprobante Fiscal)</label>
+            <input
+              autoFocus
+              value={ncf}
+              onChange={e => setNcf(e.target.value.toUpperCase())}
+              placeholder="B0100000123"
+              className="w-full h-10 px-3 text-sm font-mono uppercase border border-border rounded-md bg-card"
+              required
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Formato: B (consumidor final) o E (e-CF) + 10-12 dígitos.
+            </p>
+          </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={submitting}>Cancelar</Button>
+            <Button type="submit" size="sm" disabled={submitting}>
+              {submitting ? 'Convirtiendo...' : 'Convertir'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
