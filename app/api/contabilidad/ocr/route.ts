@@ -47,7 +47,8 @@ DESGLOSE DE MONTOS:
 
 Si solo hay "total" sin desglose, deja subtotal/impuesto/propinaLegal en null — el usuario lo desglosará. No asumas valores.
 
-Descripción: resume en máximo 80 caracteres los productos/servicios principales.
+Descripción: resume en máximo 60 caracteres los productos/servicios principales.
+Obligatorio terminar palabras completas y cerrar el JSON correctamente con }.
 
 Campos a extraer:
 {
@@ -94,7 +95,7 @@ async function ocrClaude(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 1024,
+        max_tokens: 4096,
         messages: [{
           role: 'user',
           content: [
@@ -156,7 +157,7 @@ async function ocrGemini(
             { inlineData: { mimeType, data: base64 } },
           ],
         }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
       }),
     })
 
