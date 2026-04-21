@@ -17,7 +17,10 @@ interface FacturaData {
   fecha: string; fechaVencimiento: string; proveedor: string
   rncProveedor: string; clienteId: string; proveedorId?: string
   destinoTipo: string; proyectoId: string
-  descripcion: string; subtotal: number; impuesto: number; total: number
+  descripcion: string
+  subtotal: number; tasaItbis?: number; impuesto: number
+  propinaLegal?: number; otrosImpuestos?: number
+  total: number
   observaciones: string; archivoUrl: string | null
 }
 
@@ -58,7 +61,12 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
   const [proyectoId, setProyectoId] = useState(factura?.proyectoId || '')
   const [descripcion, setDescripcion] = useState(factura?.descripcion || '')
   const [subtotal, setSubtotal] = useState(factura?.subtotal?.toString() || '')
+  const [tasaItbis, setTasaItbis] = useState<number>(factura?.tasaItbis ?? 18)
   const [itbis, setItbis] = useState(factura?.impuesto?.toString() || '')
+  const [propinaLegal, setPropinaLegal] = useState(factura?.propinaLegal?.toString() || '')
+  const [otrosImpuestos, setOtrosImpuestos] = useState(factura?.otrosImpuestos?.toString() || '')
+  const [showPropinaLegal, setShowPropinaLegal] = useState(!!factura?.propinaLegal && factura.propinaLegal > 0)
+  const [showOtrosImpuestos, setShowOtrosImpuestos] = useState(!!factura?.otrosImpuestos && factura.otrosImpuestos > 0)
   const [observaciones, setObservaciones] = useState(factura?.observaciones || '')
   const [archivo, setArchivo] = useState<File | null>(null)
   const [archivoPreview, setArchivoPreview] = useState(factura?.archivoUrl || '')
@@ -74,7 +82,18 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
   const subtotalNum = parseFloat(subtotal) || 0
   const itbisNum = parseFloat(itbis) || 0
-  const total = subtotalNum + itbisNum
+  const propinaLegalNum = parseFloat(propinaLegal) || 0
+  const otrosImpuestosNum = parseFloat(otrosImpuestos) || 0
+  const total = subtotalNum + itbisNum + propinaLegalNum + otrosImpuestosNum
+
+  // Recalcula ITBIS al cambiar subtotal o tasa (solo si el usuario no lo tocó manualmente)
+  // Si el ITBIS actual coincide con subtotal × tasa anterior, lo actualizamos.
+  const recalcItbis = (nuevoSubtotal: string, nuevaTasa?: number) => {
+    const s = parseFloat(nuevoSubtotal) || 0
+    const t = nuevaTasa ?? tasaItbis
+    const nuevo = +((s * t) / 100).toFixed(2)
+    setItbis(nuevo > 0 ? nuevo.toString() : '')
+  }
 
   // ── OCR via Gemini Vision API (server-side) ──
   const runOCR = useCallback(async (file: File) => {
@@ -164,6 +183,24 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       if (ext.descripcion && !descripcion) safeSet(setDescripcion, String(ext.descripcion), 'descripcion')
       if (ext.subtotal && !subtotal) safeSet(setSubtotal, String(ext.subtotal), 'subtotal')
       if (ext.impuesto && !itbis) safeSet(setItbis, String(ext.impuesto), 'impuesto')
+
+      // Tasa ITBIS explícita del OCR (18/16/0)
+      if (ext.tasaItbis != null && [0, 16, 18].includes(Number(ext.tasaItbis))) {
+        safeSet(setTasaItbis, Number(ext.tasaItbis), 'tasaItbis')
+      }
+
+      // Propina Legal 10% (restaurantes/hoteles — Ley 228)
+      if (ext.propinaLegal && Number(ext.propinaLegal) > 0) {
+        safeSet(setPropinaLegal, String(ext.propinaLegal), 'propinaLegal')
+        try { setShowPropinaLegal(true) } catch { /* no-op */ }
+      }
+
+      // Otros impuestos (ISC, CDT, selectivo)
+      if (ext.otrosImpuestos && Number(ext.otrosImpuestos) > 0) {
+        safeSet(setOtrosImpuestos, String(ext.otrosImpuestos), 'otrosImpuestos')
+        try { setShowOtrosImpuestos(true) } catch { /* no-op */ }
+      }
+
       // Si OCR trae solo total (sin desglose), calcula subtotal asumiendo ITBIS 18%
       if (ext.total && !subtotal && !ext.subtotal) {
         try {
@@ -189,7 +226,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     } finally {
       setOcrLoading(false)
     }
-  }, [ncf, rncProveedor, proveedor, numero, fecha, fechaVencimiento, descripcion, subtotal, itbis])
+  }, [ncf, rncProveedor, proveedor, numero, fecha, fechaVencimiento, descripcion, subtotal, itbis, tasaItbis, propinaLegal, otrosImpuestos])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -264,10 +301,6 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     setRncMatch(null)
   }
 
-  const calcITBIS = () => {
-    setItbis((subtotalNum * 0.18).toFixed(2))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!numero.trim()) { setError('Número de factura es requerido'); return }
@@ -289,7 +322,10 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     if (destinoTipo === 'proyecto' && proyectoId) formData.append('proyectoId', proyectoId)
     formData.append('descripcion', descripcion)
     formData.append('subtotal', subtotalNum.toString())
+    formData.append('tasaItbis', tasaItbis.toString())
     formData.append('impuesto', itbisNum.toString())
+    formData.append('propinaLegal', propinaLegalNum.toString())
+    formData.append('otrosImpuestos', otrosImpuestosNum.toString())
     formData.append('total', total.toString())
     formData.append('observaciones', observaciones)
     if (archivo) formData.append('archivo', archivo)
@@ -583,17 +619,43 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
         {/* ── Montos ── */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <h3 className="font-semibold text-foreground">Montos</h3>
-          <div className="grid grid-cols-3 gap-4">
+
+          {/* Fila 1: Subtotal + ITBIS (con selector de tasa) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className={labelCls}>Subtotal</label>
-              <input type="number" step="0.01" value={subtotal} onChange={(e) => setSubtotal(e.target.value)} className={inputCls} placeholder="0.00" />
+              <input
+                type="number"
+                step="0.01"
+                value={subtotal}
+                onChange={(e) => { setSubtotal(e.target.value); recalcItbis(e.target.value) }}
+                className={inputCls}
+                placeholder="0.00"
+              />
             </div>
             <div>
               <label className={labelCls}>
                 ITBIS
-                <button type="button" onClick={calcITBIS} className="ml-2 text-primary text-[10px] hover:underline">Calc. 18%</button>
+                <select
+                  value={tasaItbis}
+                  onChange={(e) => { const v = Number(e.target.value); setTasaItbis(v); recalcItbis(subtotal, v) }}
+                  className="ml-2 text-[10px] border border-border rounded bg-card px-1 py-0.5"
+                  title="Tasa ITBIS"
+                >
+                  <option value={18}>18%</option>
+                  <option value={16}>16%</option>
+                  <option value={0}>0% (exento)</option>
+                </select>
               </label>
-              <input type="number" step="0.01" value={itbis} onChange={(e) => setItbis(e.target.value)} className={inputCls} placeholder="0.00" />
+              <input
+                type="number"
+                step="0.01"
+                value={itbis}
+                onChange={(e) => setItbis(e.target.value)}
+                className={inputCls}
+                placeholder="0.00"
+                disabled={tasaItbis === 0}
+              />
             </div>
             <div>
               <label className={labelCls}>Total</label>
@@ -601,6 +663,70 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
                 RD$ {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
+          </div>
+
+          {/* Fila 2: Propina Legal y Otros Impuestos (opcionales) */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showPropinaLegal}
+                  onChange={(e) => { setShowPropinaLegal(e.target.checked); if (!e.target.checked) setPropinaLegal('') }}
+                  className="rounded border-border"
+                />
+                Propina Legal 10% (Ley 228 — restaurantes/hoteles)
+              </label>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showOtrosImpuestos}
+                  onChange={(e) => { setShowOtrosImpuestos(e.target.checked); if (!e.target.checked) setOtrosImpuestos('') }}
+                  className="rounded border-border"
+                />
+                Otros impuestos (ISC / CDT)
+              </label>
+            </div>
+
+            {(showPropinaLegal || showOtrosImpuestos) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                {showPropinaLegal && (
+                  <div>
+                    <label className={labelCls}>
+                      Propina Legal
+                      <button
+                        type="button"
+                        onClick={() => setPropinaLegal(((subtotalNum) * 0.10).toFixed(2))}
+                        className="ml-2 text-primary text-[10px] hover:underline"
+                      >
+                        Calc. 10%
+                      </button>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={propinaLegal}
+                      onChange={(e) => setPropinaLegal(e.target.value)}
+                      className={inputCls}
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+                {showOtrosImpuestos && (
+                  <div>
+                    <label className={labelCls}>Otros impuestos</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={otrosImpuestos}
+                      onChange={(e) => setOtrosImpuestos(e.target.value)}
+                      className={inputCls}
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

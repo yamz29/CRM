@@ -24,7 +24,12 @@ interface Factura {
   clienteId: number | null; cliente: { id: number; nombre: string } | null
   destinoTipo: string; proyectoId: number | null
   proyecto: { id: number; nombre: string } | null
-  descripcion: string | null; subtotal: number; impuesto: number
+  descripcion: string | null
+  subtotal: number
+  tasaItbis?: number
+  impuesto: number
+  propinaLegal?: number
+  otrosImpuestos?: number
   total: number; montoPagado: number; estado: string
   archivoUrl: string | null; driveUrl: string | null
   observaciones: string | null
@@ -233,10 +238,26 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
               <span className="text-muted-foreground">Subtotal</span>
               <span className="tabular-nums">{formatCurrency(factura.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">ITBIS</span>
-              <span className="tabular-nums">{formatCurrency(factura.impuesto)}</span>
-            </div>
+            {factura.impuesto > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  ITBIS {factura.tasaItbis != null ? `${factura.tasaItbis}%` : ''}
+                </span>
+                <span className="tabular-nums">{formatCurrency(factura.impuesto)}</span>
+              </div>
+            )}
+            {factura.propinaLegal != null && factura.propinaLegal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Propina Legal 10% <span className="text-[10px]">(Ley 228)</span></span>
+                <span className="tabular-nums">{formatCurrency(factura.propinaLegal)}</span>
+              </div>
+            )}
+            {factura.otrosImpuestos != null && factura.otrosImpuestos > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Otros impuestos</span>
+                <span className="tabular-nums">{formatCurrency(factura.otrosImpuestos)}</span>
+              </div>
+            )}
             <div className="border-t border-border pt-3 flex justify-between font-semibold">
               <span>Total</span>
               <span className="tabular-nums text-lg">{formatCurrency(factura.total)}</span>

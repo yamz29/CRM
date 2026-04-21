@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       data = await request.json()
     }
 
-    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, impuesto, total, estado, observaciones } = data
+    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, tasaItbis, impuesto, propinaLegal, otrosImpuestos, total, estado, observaciones } = data
 
     const updateData: any = {}
     if (numero !== undefined) updateData.numero = numero.toString().trim()
@@ -103,7 +103,10 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     if (proyectoId !== undefined) updateData.proyectoId = proyectoId ? parseInt(String(proyectoId)) : null
     if (descripcion !== undefined) updateData.descripcion = descripcion || null
     if (subtotal !== undefined) updateData.subtotal = parseFloat(String(subtotal)) || 0
+    if (tasaItbis !== undefined) updateData.tasaItbis = parseFloat(String(tasaItbis)) || 18
     if (impuesto !== undefined) updateData.impuesto = parseFloat(String(impuesto)) || 0
+    if (propinaLegal !== undefined) updateData.propinaLegal = parseFloat(String(propinaLegal)) || 0
+    if (otrosImpuestos !== undefined) updateData.otrosImpuestos = parseFloat(String(otrosImpuestos)) || 0
     if (total !== undefined) updateData.total = parseFloat(String(total)) || 0
     if (estado !== undefined) updateData.estado = estado
     if (observaciones !== undefined) updateData.observaciones = observaciones || null

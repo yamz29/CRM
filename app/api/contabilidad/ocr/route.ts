@@ -8,17 +8,33 @@ const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL || 'gemini-2.5-pro'
 const GEMINI_PROMPT = `Eres un asistente experto en facturas dominicanas (República Dominicana).
 Analiza cuidadosamente la imagen/PDF y extrae los campos en JSON.
 
-IMPORTANTE:
+REGLAS GENERALES:
 - Si no puedes leer un campo con CERTEZA, ponlo como null. No inventes nunca.
-- Los montos vienen en pesos dominicanos (RD$). Devuelve solo el número (sin símbolo ni comas).
-- El NCF es el comprobante fiscal, formato estricto: empieza con B o E seguido de 10-11 dígitos (ej: B0100000123, E310000001). Si ves "NCF", "Comprobante Fiscal", "e-CF", búscalo ahí.
-- El RNC es el identificador tributario del proveedor (9-11 dígitos, sin guiones). Puede estar cerca del nombre del emisor, como "RNC: 123456789" o "Cédula/RNC".
-- Fechas en formato YYYY-MM-DD (ej: 2026-04-20).
-- "Fecha" es la fecha de emisión. Si hay "Vencimiento", "Vence" o "Fecha Vencimiento", captúrala también.
-- El "subtotal" es sin ITBIS. El "impuesto" es el ITBIS (normalmente 18%). El "total" es subtotal + ITBIS.
-- Si solo hay "total" sin desglose, pon subtotal y impuesto en null, solo total.
-- El "proveedor" es el nombre de la empresa que emite la factura (no el cliente al que va dirigida).
-- Descripción: resume en máximo 80 caracteres los productos/servicios. Si hay varios, menciona los principales.
+- Los montos vienen en pesos dominicanos (RD$). Devuelve solo el número (sin símbolo ni comas, sin texto).
+- Fechas en formato YYYY-MM-DD estricto (ej: 2026-04-20). Si no puedes, null.
+
+IDENTIFICACIÓN:
+- NCF: comprobante fiscal. Formato estricto: empieza con B o E seguido de 10-11 dígitos (ej: B0100000123, E310000001). Busca "NCF", "Comprobante Fiscal", "e-CF".
+- RNC del proveedor: 9-11 dígitos sin guiones. Busca "RNC:", "Cédula/RNC".
+- Proveedor: nombre de la empresa que EMITE la factura (no el cliente).
+
+IMPUESTOS DOMINICANOS (IMPORTANTE):
+- ITBIS: tasa 18% (general), 16% (reducida) o 0% (exento). Devuelve el MONTO en "impuesto" y la TASA en "tasaItbis" (18, 16 o 0).
+- Propina Legal 10% (Ley 228): OBLIGATORIA en restaurantes, hoteles, cafés y bares.
+  Busca líneas "Propina Legal", "10% Ley", "Servicio 10%", "Ley 228". Va en "propinaLegal".
+  NO confundir con "Propina Sugerida" o "Tip" voluntarios — esos se ignoran (null).
+- Otros impuestos (ISC, CDT turístico, selectivo): van en "otrosImpuestos" sumados.
+
+DESGLOSE DE MONTOS:
+- subtotal: monto SIN impuestos ni propina ni otros.
+- impuesto: solo ITBIS.
+- propinaLegal: solo si es la propina legal 10% (no voluntaria).
+- otrosImpuestos: ISC, CDT, selectivo, etc.
+- total: lo que paga el cliente final. Debe ser subtotal + impuesto + propinaLegal + otrosImpuestos.
+
+Si solo hay "total" sin desglose, y la factura es claramente de un restaurante/bar (por el nombre del emisor o los productos), deja subtotal/impuesto/propinaLegal en null — el usuario lo desglosará. No asumas valores.
+
+Descripción: resume en máximo 80 caracteres los productos/servicios principales.
 
 Campos a extraer:
 {
@@ -29,7 +45,10 @@ Campos a extraer:
   "fecha": string|null,
   "fechaVencimiento": string|null,
   "subtotal": number|null,
+  "tasaItbis": number|null,
   "impuesto": number|null,
+  "propinaLegal": number|null,
+  "otrosImpuestos": number|null,
   "total": number|null,
   "descripcion": string|null
 }
@@ -133,9 +152,12 @@ export async function POST(request: NextRequest) {
       const n = parseFloat(s)
       return isNaN(n) ? null : n
     }
-    extracted.subtotal = toNum(extracted.subtotal)
-    extracted.impuesto = toNum(extracted.impuesto)
-    extracted.total    = toNum(extracted.total)
+    extracted.subtotal        = toNum(extracted.subtotal)
+    extracted.tasaItbis       = toNum(extracted.tasaItbis)
+    extracted.impuesto        = toNum(extracted.impuesto)
+    extracted.propinaLegal    = toNum(extracted.propinaLegal)
+    extracted.otrosImpuestos  = toNum(extracted.otrosImpuestos)
+    extracted.total           = toNum(extracted.total)
 
     const toStr = (v: unknown): string | null => {
       if (v == null) return null

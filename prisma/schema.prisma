@@ -1182,8 +1182,11 @@ model Factura {
 
   descripcion      String?
   subtotal         Float     @default(0)
+  tasaItbis        Float     @default(18)             // 18 | 16 | 0 (informativo)
   impuesto         Float     @default(0)              // ITBIS
-  total            Float     @default(0)
+  propinaLegal     Float     @default(0)              // Ley 228 — 10% en restaurantes/hoteles
+  otrosImpuestos   Float     @default(0)              // ISC, CDT turístico, etc.
+  total            Float     @default(0)              // subtotal + impuesto + propinaLegal + otrosImpuestos
   montoPagado      Float     @default(0)              // sum of pagos
 
   estado           String    @default("pendiente")    // pendiente | parcial | pagada | anulada

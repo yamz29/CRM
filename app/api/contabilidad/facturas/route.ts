@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       data = await request.json()
     }
 
-    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, impuesto, total, observaciones, proveedorId } = data
+    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, tasaItbis, impuesto, propinaLegal, otrosImpuestos, total, observaciones, proveedorId } = data
 
     if (!numero?.toString().trim()) {
       return NextResponse.json({ error: 'El número de factura es requerido' }, { status: 400 })
@@ -150,7 +150,10 @@ export async function POST(request: NextRequest) {
         proyectoId: parsedProyectoId,
         descripcion: descripcion || null,
         subtotal: parseFloat(String(subtotal)) || 0,
+        tasaItbis: tasaItbis != null ? parseFloat(String(tasaItbis)) : 18,
         impuesto: parseFloat(String(impuesto)) || 0,
+        propinaLegal: parseFloat(String(propinaLegal)) || 0,
+        otrosImpuestos: parseFloat(String(otrosImpuestos)) || 0,
         total: parsedTotal,
         observaciones: observaciones || null,
         archivoUrl,
