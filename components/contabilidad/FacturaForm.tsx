@@ -8,6 +8,7 @@ import {
   Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2, Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { compressImage } from '@/lib/compress-image'
 
 interface Cliente { id: number; nombre: string }
 interface Proyecto { id: number; nombre: string }
@@ -228,20 +229,34 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     }
   }, [ncf, rncProveedor, proveedor, numero, fecha, fechaVencimiento, descripcion, subtotal, itbis, tasaItbis, propinaLegal, otrosImpuestos])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setArchivo(file)
-      if (file.type.startsWith('image/')) {
-        setArchivoPreview(URL.createObjectURL(file))
-      } else {
-        setArchivoPreview(file.name)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.files?.[0]
+    if (!raw) return
+
+    // Comprime imágenes grandes (fotos de iPhone/Android pesan 5–10MB y
+    // generan HTTP 413 en el servidor). PDFs pasan sin tocar.
+    let file = raw
+    try {
+      file = await compressImage(raw)
+      if (file !== raw) {
+        console.log(`Comprimido: ${(raw.size / 1024).toFixed(0)}KB → ${(file.size / 1024).toFixed(0)}KB`)
       }
-      // OCR automático solo para egresos (gastos de proveedor).
-      // Los ingresos los emite la empresa y ya se conocen los datos.
-      if (tipo === 'egreso') {
-        runOCR(file)
-      }
+    } catch (err) {
+      console.warn('Compresión falló, usando original:', err)
+      file = raw
+    }
+
+    setArchivo(file)
+    if (file.type.startsWith('image/')) {
+      try { setArchivoPreview(URL.createObjectURL(file)) }
+      catch { setArchivoPreview(file.name) }
+    } else {
+      setArchivoPreview(file.name)
+    }
+    // OCR automático solo para egresos (gastos de proveedor).
+    // Los ingresos los emite la empresa y ya se conocen los datos.
+    if (tipo === 'egreso') {
+      runOCR(file)
     }
   }
 
