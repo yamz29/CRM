@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkPermiso } from '@/lib/permisos'
 
+// Timeout del OCR en ms. Claude vision con imágenes grandes puede tardar
+// 20-60s. Si nginx tiene proxy_read_timeout menor (default 60s), la request
+// muere antes. Fijar aquí un timeout que cabe dentro del de nginx (120s).
+const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 90_000
+
+// Aumenta el maxDuration de la función de ruta (Next.js config)
+export const maxDuration = 120 // segundos
+
 // Provider configurable vía env. Claude tiene mejor precisión en fotos
 // de facturas borrosas/anguladas que Gemini. Default: claude.
 // Valores: 'claude' | 'gemini'
@@ -70,41 +78,57 @@ async function ocrClaude(
   base64: string,
   model: string,
 ): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: mimeType === 'application/pdf' ? 'application/pdf' : mimeType,
-              data: base64,
-            },
-          },
-          { type: 'text', text: PROMPT },
-        ],
-      }],
-    }),
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), OCR_TIMEOUT_MS)
+  try {
+    // PDFs usan beta header; imágenes van normal.
+    const isPdf = mimeType === 'application/pdf'
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        ...(isPdf ? { 'anthropic-beta': 'pdfs-2024-09-25' } : {}),
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            isPdf
+              ? {
+                  type: 'document',
+                  source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+                }
+              : {
+                  type: 'image',
+                  source: { type: 'base64', media_type: mimeType, data: base64 },
+                },
+            { type: 'text', text: PROMPT },
+          ],
+        }],
+      }),
+    })
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(`Claude ${res.status}: ${err?.error?.message || res.statusText}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(`Claude ${res.status}: ${err?.error?.message || res.statusText}`)
+    }
+
+    const data = await res.json()
+    const text = data?.content?.[0]?.text || ''
+    return text
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') {
+      throw new Error(`Claude tardó más de ${OCR_TIMEOUT_MS / 1000}s`)
+    }
+    throw e
+  } finally {
+    clearTimeout(timer)
   }
-
-  const data = await res.json()
-  const text = data?.content?.[0]?.text || ''
-  return text
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -117,29 +141,41 @@ async function ocrGemini(
   base64: string,
   model: string,
 ): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: PROMPT },
-          { inlineData: { mimeType, data: base64 } },
-        ],
-      }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
-    }),
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), OCR_TIMEOUT_MS)
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    const res = await fetch(url, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: PROMPT },
+            { inlineData: { mimeType, data: base64 } },
+          ],
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+      }),
+    })
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(`Gemini ${res.status}: ${err?.error?.message || res.statusText}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(`Gemini ${res.status}: ${err?.error?.message || res.statusText}`)
+    }
+
+    const data = await res.json()
+    const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    return text
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') {
+      throw new Error(`Gemini tardó más de ${OCR_TIMEOUT_MS / 1000}s`)
+    }
+    throw e
+  } finally {
+    clearTimeout(timer)
   }
-
-  const data = await res.json()
-  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  return text
 }
 
 // ═══════════════════════════════════════════════════════════════════════
