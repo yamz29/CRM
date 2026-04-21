@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ClienteSchema, zodError } from '@/lib/validations'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('clientes', 'ver', async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
@@ -31,9 +32,9 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching clientes:', error)
     return NextResponse.json({ error: 'Error al obtener clientes' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('clientes', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const parsed = ClienteSchema.safeParse(body)
@@ -60,4 +61,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating cliente:', error)
     return NextResponse.json({ error: 'Error al crear cliente' }, { status: 500 })
   }
-}
+})

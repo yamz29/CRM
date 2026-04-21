@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('oportunidades', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -18,9 +21,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (!oportunidad) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
   return NextResponse.json(oportunidad)
-}
+})
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withPermiso('oportunidades', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -99,13 +102,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   return NextResponse.json(oportunidad)
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withPermiso('oportunidades', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   await prisma.oportunidad.delete({ where: { id: numId } })
   return NextResponse.json({ ok: true })
-}
+})

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = { params: Promise<{ id: string }> }
 
 // GET: list tasks for this opportunity
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withPermiso('oportunidades', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -24,13 +24,10 @@ export async function GET(
   })
 
   return NextResponse.json(tareas)
-}
+})
 
 // POST: create a quick task linked to this opportunity
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const POST = withPermiso('oportunidades', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -69,4 +66,4 @@ export async function POST(
   })
 
   return NextResponse.json(tarea, { status: 201 })
-}
+})

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ClienteSchema, zodError } from '@/lib/validations'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('clientes', 'ver', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -25,12 +25,9 @@ export async function GET(
     console.error('Error fetching cliente:', error)
     return NextResponse.json({ error: 'Error al obtener cliente' }, { status: 500 })
   }
-}
+})
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PUT = withPermiso('clientes', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -62,12 +59,9 @@ export async function PUT(
     console.error('Error updating cliente:', error)
     return NextResponse.json({ error: 'Error al actualizar cliente' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('clientes', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -79,4 +73,4 @@ export async function DELETE(
     console.error('Error deleting cliente:', error)
     return NextResponse.json({ error: 'Error al eliminar cliente' }, { status: 500 })
   }
-}
+})

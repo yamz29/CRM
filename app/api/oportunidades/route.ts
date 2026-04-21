@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { OportunidadSchema, zodError } from '@/lib/validations'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(req: NextRequest) {
+export const GET = withPermiso('oportunidades', 'ver', async (req: NextRequest) => {
   const { searchParams } = new URL(req.url)
   const etapa     = searchParams.get('etapa')
   const clienteId = searchParams.get('clienteId')
@@ -22,9 +23,9 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json(oportunidades)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withPermiso('oportunidades', 'editar', async (req: NextRequest) => {
   try {
     const body   = await req.json()
     const parsed = OportunidadSchema.safeParse(body)
@@ -62,4 +63,4 @@ export async function POST(req: NextRequest) {
     console.error('Error creating oportunidad:', error)
     return NextResponse.json({ error: 'Error al crear oportunidad' }, { status: 500 })
   }
-}
+})

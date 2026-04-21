@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(req: NextRequest) {
+export const GET = withPermiso('oportunidades', 'ver', async (req: NextRequest) => {
   const { searchParams } = new URL(req.url)
   const desde = searchParams.get('desde')
   const hasta = searchParams.get('hasta')
@@ -143,4 +144,4 @@ export async function GET(req: NextRequest) {
     meses,
     porResponsable,
   })
-}
+})
