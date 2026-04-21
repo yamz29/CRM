@@ -201,16 +201,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 502 })
     }
 
-    // Limpiar posibles code-fences del output
-    const cleanJson = textResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    // Parseo robusto: Claude/Gemini a veces incluyen texto antes o después
+    // del JSON, markdown fences, o incluso comentarios //
+    let extracted: Record<string, unknown> | null = null
 
-    let extracted: Record<string, unknown>
-    try {
-      extracted = JSON.parse(cleanJson)
-    } catch {
-      console.error('Failed to parse OCR response:', textResponse.slice(0, 500))
+    const tryParse = (s: string) => {
+      try { return JSON.parse(s) } catch { return null }
+    }
+
+    // Intento 1: directo
+    extracted = tryParse(textResponse.trim())
+
+    // Intento 2: quitar code fences
+    if (!extracted) {
+      const noFences = textResponse
+        .replace(/```(?:json|JSON)?\s*/g, '')
+        .replace(/```/g, '')
+        .trim()
+      extracted = tryParse(noFences)
+    }
+
+    // Intento 3: extraer bloque {...} más grande
+    if (!extracted) {
+      const start = textResponse.indexOf('{')
+      const end = textResponse.lastIndexOf('}')
+      if (start >= 0 && end > start) {
+        extracted = tryParse(textResponse.slice(start, end + 1))
+      }
+    }
+
+    // Intento 4: remover comentarios de línea // y trailing commas
+    if (!extracted) {
+      const sanitized = textResponse
+        .replace(/\/\/[^\n]*/g, '')
+        .replace(/,(\s*[}\]])/g, '$1')
+      const start = sanitized.indexOf('{')
+      const end = sanitized.lastIndexOf('}')
+      if (start >= 0 && end > start) {
+        extracted = tryParse(sanitized.slice(start, end + 1))
+      }
+    }
+
+    if (!extracted) {
+      console.error('Failed to parse OCR response. Raw:', textResponse.slice(0, 1000))
       return NextResponse.json(
-        { error: 'No se pudo interpretar la respuesta del OCR', raw: textResponse.slice(0, 500) },
+        {
+          error: 'No se pudo interpretar la respuesta del OCR',
+          provider,
+          model: modelUsed,
+          raw: textResponse.slice(0, 1500),
+        },
         { status: 500 }
       )
     }

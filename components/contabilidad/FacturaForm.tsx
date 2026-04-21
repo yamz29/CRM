@@ -130,6 +130,11 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       const data = await res.json()
 
       if (!res.ok) {
+        // Si el servidor devolvió la respuesta raw del modelo, loguearla
+        // para diagnóstico (útil cuando falla el parseo JSON).
+        if (data.raw) {
+          console.warn('OCR raw response:', data.raw)
+        }
         setOcrResult(`Error OCR: ${data.error}`)
         return
       }
