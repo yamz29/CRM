@@ -63,6 +63,16 @@ export function CronogramaGanttV2({
           return
         }
 
+        // Sanitizar custom_class: frappe-gantt usa classList.add() que no
+        // acepta espacios. Si llega algo malformado, tomamos solo el primer
+        // token para no romper el Gantt entero.
+        const safeTasks = tasks.map(t => ({
+          ...t,
+          custom_class: t.custom_class
+            ? t.custom_class.trim().split(/\s+/)[0] || ''
+            : '',
+        }))
+
         const GanttCtor = Gantt as unknown as new (
           element: HTMLElement,
           tasks: GanttTask[],
@@ -72,7 +82,7 @@ export function CronogramaGanttV2({
           refresh: (tasks: GanttTask[]) => void
         }
 
-        ganttRef.current = new GanttCtor(container, tasks, {
+        ganttRef.current = new GanttCtor(container, safeTasks, {
           view_mode: viewMode,
           date_format: 'YYYY-MM-DD',
           language: 'es',

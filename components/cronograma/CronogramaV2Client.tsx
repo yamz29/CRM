@@ -63,11 +63,13 @@ export function CronogramaV2Client({
   }
 
   // Convertir actividades → formato frappe-gantt
+  // NOTA: custom_class solo acepta UN nombre de clase (usa classList.add
+  // internamente, que no permite espacios). Prioridad: crítica > hito.
   const tasks: GanttTask[] = useMemo(() => {
     return actividades.map(a => {
-      const classes: string[] = []
-      if (showCritical && a.esCritica) classes.push('critica')
-      if (a.tipo === 'hito') classes.push('hito')
+      let customClass = ''
+      if (showCritical && a.esCritica) customClass = 'critica'
+      else if (a.tipo === 'hito') customClass = 'hito'
       return {
         id: String(a.id),
         name: a.nombre,
@@ -75,7 +77,7 @@ export function CronogramaV2Client({
         end: new Date(a.fechaFin).toISOString().slice(0, 10),
         progress: Math.round(a.pctAvance),
         dependencies: a.dependenciaId ? String(a.dependenciaId) : '',
-        custom_class: classes.join(' '),
+        custom_class: customClass,
       }
     })
   }, [actividades, showCritical])
