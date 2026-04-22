@@ -210,38 +210,48 @@ export function ActividadesSpreadsheet({
     }
   }
 
-  // Reordenar: intercambia `orden` con el vecino arriba o abajo.
+  // Reordenar: mueve una fila arriba o abajo y renumera el campo `orden`
+  // de todas las actividades (base 1). Persistir solo las que cambiaron
+  // garantiza que el nuevo orden gane sobre el tie-breaker por id, incluso
+  // si todas venían con orden=0 por default.
   async function mover(id: number, dir: 'up' | 'down') {
     const idx = actividadesOrdenadas.findIndex(a => a.id === id)
     if (idx === -1) return
     const targetIdx = dir === 'up' ? idx - 1 : idx + 1
     if (targetIdx < 0 || targetIdx >= actividadesOrdenadas.length) return
 
-    const a = actividadesOrdenadas[idx]
-    const b = actividadesOrdenadas[targetIdx]
+    // Construir nuevo orden con el swap aplicado
+    const nuevoOrden = [...actividadesOrdenadas]
+    const [movida] = nuevoOrden.splice(idx, 1)
+    nuevoOrden.splice(targetIdx, 0, movida)
 
+    // Detectar cuáles cambian su `orden` esperado (posición + 1, base 1)
+    const cambios = nuevoOrden
+      .map((a, i) => ({ id: a.id, nuevoOrden: i + 1, prevOrden: a.orden ?? 0 }))
+      .filter(c => c.nuevoOrden !== c.prevOrden)
+
+    if (cambios.length === 0) return
+
+    // Marcar todas como saving para feedback
     setSaving(s => {
       const n = new Set(s)
-      n.add(a.id); n.add(b.id)
+      cambios.forEach(c => n.add(c.id))
       return n
     })
 
     try {
-      await Promise.all([
-        fetch(`/api/cronograma/${cronogramaId}/actividades/${a.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orden: b.orden ?? 0 }),
-        }),
-        fetch(`/api/cronograma/${cronogramaId}/actividades/${b.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orden: a.orden ?? 0 }),
-        }),
-      ])
+      await Promise.all(cambios.map(c =>
+        fetch(`/api/cronograma/${cronogramaId}/actividades/${c.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orden: c.nuevoOrden }),
+        })
+      ))
       router.refresh()
     } finally {
       setSaving(s => {
         const n = new Set(s)
-        n.delete(a.id); n.delete(b.id)
+        cambios.forEach(c => n.delete(c.id))
         return n
       })
     }
