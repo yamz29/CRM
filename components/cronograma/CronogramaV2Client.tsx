@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, GripVertical } from 'lucide-react'
+import { AlertTriangle, GripVertical, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { CronogramaGanttV2, type ViewMode, type GanttTask } from './CronogramaGanttV2'
 import { ActividadesSpreadsheet } from './ActividadesSpreadsheet'
 
 const LS_KEY = 'cronograma-v2-left-width'
+const LS_COLLAPSED = 'cronograma-v2-left-collapsed'
 const MIN_LEFT = 320
 const MIN_RIGHT = 300
 
@@ -51,10 +52,12 @@ export function CronogramaV2Client({
 
   // Ancho del panel izquierdo (resizable). Persistido en localStorage.
   const [leftWidth, setLeftWidth] = useState<number>(520)
+  // Panel izquierdo colapsado (oculto, Gantt full width)
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
 
-  // Cargar ancho persistido al montar
+  // Cargar estado persistido al montar
   useEffect(() => {
     try {
       const v = localStorage.getItem(LS_KEY)
@@ -62,8 +65,16 @@ export function CronogramaV2Client({
         const n = parseInt(v)
         if (!isNaN(n) && n >= MIN_LEFT) setLeftWidth(n)
       }
+      const c = localStorage.getItem(LS_COLLAPSED)
+      if (c === '1') setLeftCollapsed(true)
     } catch { /* noop */ }
   }, [])
+
+  // Persistir colapso
+  useEffect(() => {
+    try { localStorage.setItem(LS_COLLAPSED, leftCollapsed ? '1' : '0') }
+    catch { /* noop */ }
+  }, [leftCollapsed])
 
   // Guardar ancho cuando cambia (debounced vía cleanup)
   useEffect(() => {
@@ -265,6 +276,26 @@ export function CronogramaV2Client({
           />
           Saltar feriados
         </label>
+
+        <div className="h-4 w-px bg-border mx-1 hidden lg:block" />
+
+        <button
+          onClick={() => setLeftCollapsed(v => !v)}
+          className="hidden lg:inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/40 ml-auto transition-colors"
+          title={leftCollapsed ? 'Mostrar lista de actividades' : 'Ocultar lista para ver solo el Gantt'}
+        >
+          {leftCollapsed ? (
+            <>
+              <PanelLeftOpen className="w-3.5 h-3.5" />
+              Mostrar lista
+            </>
+          ) : (
+            <>
+              <PanelLeftClose className="w-3.5 h-3.5" />
+              Solo Gantt
+            </>
+          )}
+        </button>
       </div>
 
       {/* Desktop: layout flex con divisora arrastrable */}
@@ -273,21 +304,25 @@ export function CronogramaV2Client({
         ref={containerRef}
         className="hidden lg:flex gap-0 h-[calc(100vh-340px)] min-h-[500px]"
       >
-        <div
-          style={{ width: leftWidth, flexShrink: 0 }}
-          className="h-full overflow-hidden"
-        >
-          <ActividadesSpreadsheet cronogramaId={cronogramaId} actividades={actividades} />
-        </div>
+        {!leftCollapsed && (
+          <>
+            <div
+              style={{ width: leftWidth, flexShrink: 0 }}
+              className="h-full overflow-hidden"
+            >
+              <ActividadesSpreadsheet cronogramaId={cronogramaId} actividades={actividades} />
+            </div>
 
-        {/* Divisora arrastrable */}
-        <div
-          onMouseDown={startDrag}
-          className="relative w-2 mx-0.5 rounded bg-border hover:bg-primary cursor-col-resize flex items-center justify-center group shrink-0 transition-colors"
-          title="Arrastra para redimensionar"
-        >
-          <GripVertical className="w-3 h-3 text-muted-foreground group-hover:text-primary-foreground absolute" />
-        </div>
+            {/* Divisora arrastrable */}
+            <div
+              onMouseDown={startDrag}
+              className="relative w-2 mx-0.5 rounded bg-border hover:bg-primary cursor-col-resize flex items-center justify-center group shrink-0 transition-colors"
+              title="Arrastra para redimensionar"
+            >
+              <GripVertical className="w-3 h-3 text-muted-foreground group-hover:text-primary-foreground absolute" />
+            </div>
+          </>
+        )}
 
         <div className="flex-1 min-w-[300px] border border-border rounded-lg bg-card overflow-hidden h-full">
           <CronogramaGanttV2
