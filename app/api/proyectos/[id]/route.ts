@@ -132,6 +132,28 @@ export async function PUT(
       },
     })
 
+    // Auto-crear cronograma si el proyecto pasa a Adjudicado o En Ejecución
+    // y aún no tiene ninguno. Sólo un cronograma por proyecto (v1).
+    const estadosConCronograma = ['Adjudicado', 'En Ejecución']
+    if (estadosConCronograma.includes(nuevoEstado) && existing?.estado !== nuevoEstado) {
+      const cronogramaExistente = await prisma.cronograma.findFirst({
+        where: { proyectoId: id },
+        select: { id: true },
+      })
+      if (!cronogramaExistente) {
+        await prisma.cronograma.create({
+          data: {
+            nombre: `Cronograma — ${proyecto.nombre}`,
+            proyectoId: id,
+            fechaInicio: proyecto.fechaInicio ?? new Date(),
+            estado: 'Planificado',
+            usarCalendarioLaboral: true,
+            usarFeriados: false,
+          },
+        })
+      }
+    }
+
     return NextResponse.json(proyecto)
   } catch (error) {
     console.error('Error updating proyecto:', error)
