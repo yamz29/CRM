@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 // frappe-gantt se carga solo en el cliente para evitar SSR con DOM.
 // Lo importamos dinámicamente dentro del useEffect.
-import 'frappe-gantt/dist/frappe-gantt.css'
+// El CSS se importa local porque frappe-gantt no lo expone en su package exports.
+// Si actualizas la librería: copia node_modules/frappe-gantt/dist/frappe-gantt.css
+// a este directorio.
+import './frappe-gantt.css'
 
 export type ViewMode = 'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month' | 'Year'
 
