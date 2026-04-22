@@ -7,6 +7,7 @@ import {
   Landmark, FileText, Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle,
   DollarSign, AlertCircle, Eye, Trash2, CreditCard, Building2, ArrowRightLeft,
   CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCard } from '@/components/ui/stats-card'
@@ -637,6 +638,62 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   const [showImportModal, setShowImportModal] = useState(false)
   const [facturasDisponibles, setFacturasDisponibles] = useState<any[]>([])
 
+  // Filtros
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'sin' | 'conciliados'>('todos')
+  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'credito' | 'debito'>('todos')
+  const [filtroDesde, setFiltroDesde] = useState('')
+  const [filtroHasta, setFiltroHasta] = useState('')
+  const [filtroTexto, setFiltroTexto] = useState('')
+
+  const movimientosFiltrados = movimientos.filter((m: any) => {
+    if (filtroEstado === 'sin' && m.conciliado) return false
+    if (filtroEstado === 'conciliados' && !m.conciliado) return false
+    if (filtroTipo !== 'todos' && m.tipo !== filtroTipo) return false
+    if (filtroDesde) {
+      const f = new Date(m.fecha)
+      const d = new Date(filtroDesde + 'T00:00:00')
+      if (f < d) return false
+    }
+    if (filtroHasta) {
+      const f = new Date(m.fecha)
+      const h = new Date(filtroHasta + 'T23:59:59')
+      if (f > h) return false
+    }
+    if (filtroTexto.trim()) {
+      const q = filtroTexto.toLowerCase()
+      const desc = (m.descripcion || '').toLowerCase()
+      const ref = (m.referencia || '').toLowerCase()
+      if (!desc.includes(q) && !ref.includes(q)) return false
+    }
+    return true
+  })
+
+  const tieneFiltrosActivos =
+    filtroEstado !== 'todos' ||
+    filtroTipo !== 'todos' ||
+    !!filtroDesde || !!filtroHasta ||
+    !!filtroTexto.trim()
+
+  function limpiarFiltros() {
+    setFiltroEstado('todos')
+    setFiltroTipo('todos')
+    setFiltroDesde('')
+    setFiltroHasta('')
+    setFiltroTexto('')
+  }
+
+  function exportarExcel() {
+    if (!cuentaId) return
+    const params = new URLSearchParams()
+    if (filtroDesde) params.set('desde', filtroDesde)
+    if (filtroHasta) params.set('hasta', filtroHasta)
+    if (filtroEstado !== 'todos') params.set('estado', filtroEstado)
+    if (filtroTipo !== 'todos') params.set('tipo', filtroTipo)
+    if (filtroTexto.trim()) params.set('q', filtroTexto.trim())
+    const url = `/api/contabilidad/cuentas/${cuentaId}/movimientos/export?${params.toString()}`
+    window.open(url, '_blank')
+  }
+
   const fetchMovimientos = useCallback(async () => {
     if (!cuentaId) return
     setLoading(true)
@@ -692,7 +749,86 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
         <Button variant="outline" onClick={() => setShowImportModal(true)} disabled={!cuentaId}>
           <Upload className="w-4 h-4" /> Importar Extracto
         </Button>
+        <Button variant="outline" onClick={exportarExcel} disabled={!cuentaId || movimientos.length === 0}>
+          <Download className="w-4 h-4" /> Exportar Excel
+        </Button>
       </div>
+
+      {/* Filtros */}
+      {cuentaId && movimientos.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap bg-card border border-border rounded-lg p-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Estado:</span>
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}
+              className="h-8 text-xs border border-border rounded bg-card px-2"
+            >
+              <option value="todos">Todos</option>
+              <option value="sin">Sin conciliar</option>
+              <option value="conciliados">Conciliados</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Tipo:</span>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value as typeof filtroTipo)}
+              className="h-8 text-xs border border-border rounded bg-card px-2"
+            >
+              <option value="todos">Todos</option>
+              <option value="credito">Créditos</option>
+              <option value="debito">Débitos</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Desde:</span>
+            <input
+              type="date"
+              value={filtroDesde}
+              onChange={(e) => setFiltroDesde(e.target.value)}
+              className="h-8 text-xs border border-border rounded bg-card px-2"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Hasta:</span>
+            <input
+              type="date"
+              value={filtroHasta}
+              onChange={(e) => setFiltroHasta(e.target.value)}
+              className="h-8 text-xs border border-border rounded bg-card px-2"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-1 min-w-[180px]">
+            <Search className="w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Descripción o referencia…"
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+              className="h-8 text-xs border border-border rounded bg-card px-2 flex-1 min-w-0"
+            />
+          </div>
+
+          {tieneFiltrosActivos && (
+            <button
+              onClick={limpiarFiltros}
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/40"
+              title="Limpiar filtros"
+            >
+              <X className="w-3.5 h-3.5 inline" /> Limpiar
+            </button>
+          )}
+
+          <span className="text-xs text-muted-foreground ml-auto">
+            {movimientosFiltrados.length} de {movimientos.length}
+          </span>
+        </div>
+      )}
 
       {showImportModal && cuentaId && (
         <ImportarExtractoModal
@@ -727,19 +863,19 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
         <div className="grid grid-cols-4 gap-3">
           <div className="bg-card border border-border rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">Movimientos</p>
-            <p className="text-lg font-bold">{movimientos.length}</p>
+            <p className="text-lg font-bold">{movimientosFiltrados.length}</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">Créditos</p>
-            <p className="text-lg font-bold text-green-600">{formatCurrency(movimientos.filter((m: any) => m.tipo === 'credito').reduce((s: number, m: any) => s + m.monto, 0))}</p>
+            <p className="text-lg font-bold text-green-600">{formatCurrency(movimientosFiltrados.filter((m: any) => m.tipo === 'credito').reduce((s: number, m: any) => s + m.monto, 0))}</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">Débitos</p>
-            <p className="text-lg font-bold text-red-600">{formatCurrency(movimientos.filter((m: any) => m.tipo === 'debito').reduce((s: number, m: any) => s + m.monto, 0))}</p>
+            <p className="text-lg font-bold text-red-600">{formatCurrency(movimientosFiltrados.filter((m: any) => m.tipo === 'debito').reduce((s: number, m: any) => s + m.monto, 0))}</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">Sin conciliar</p>
-            <p className="text-lg font-bold text-yellow-600">{movimientos.filter((m: any) => !m.conciliado).length}</p>
+            <p className="text-lg font-bold text-yellow-600">{movimientosFiltrados.filter((m: any) => !m.conciliado).length}</p>
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -757,7 +893,12 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {movimientos.map((m: any) => (
+              {movimientosFiltrados.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                  Sin movimientos que coincidan con los filtros
+                </td></tr>
+              )}
+              {movimientosFiltrados.map((m: any) => (
                 <tr key={m.id} className="hover:bg-muted/20">
                   <td className="px-4 py-3 text-muted-foreground">{new Date(m.fecha).toLocaleDateString('es-DO')}</td>
                   <td className="px-4 py-3">
