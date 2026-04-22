@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { rescheduleActividad, cascadeReschedule } from '@/lib/cronograma-scheduling'
+import { diffWorkingDays } from '@/lib/calendario-laboral'
 
 type Params = { params: Promise<{ id: string; aid: string }> }
 
@@ -16,6 +17,29 @@ export async function PUT(req: NextRequest, { params }: Params) {
     orden, capituloNombre, cuadrilla, tipo, wbs,
   } = body
 
+  // Si viene fechaInicio + fechaFin (ej. drag en Gantt), recalcular
+  // duración en días laborales. El scheduler la usará en la cascada.
+  let duracionCalculada: number | undefined
+  if (duracion === undefined && fechaInicio !== undefined && fechaFin !== undefined) {
+    try {
+      const cronId = (await prisma.actividadCronograma.findUnique({
+        where: { id: numId },
+        select: { cronogramaId: true },
+      }))?.cronogramaId
+      const cron = cronId ? await prisma.cronograma.findUnique({
+        where: { id: cronId },
+        select: { usarCalendarioLaboral: true },
+      }) : null
+      const usarLab = (cron as { usarCalendarioLaboral?: boolean } | null)?.usarCalendarioLaboral ?? true
+      duracionCalculada = diffWorkingDays(
+        new Date(fechaInicio),
+        new Date(fechaFin),
+        { usarCalendarioLaboral: usarLab },
+      )
+      if (duracionCalculada < 1) duracionCalculada = 1
+    } catch { /* si falla, se mantiene la duración actual */ }
+  }
+
   // 1. Aplicar cambios del usuario
   await prisma.actividadCronograma.update({
     where: { id: numId },
@@ -24,6 +48,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       ...(descripcion !== undefined && { descripcion }),
       ...(capituloNombre !== undefined && { capituloNombre }),
       ...(duracion !== undefined && { duracion: parseInt(duracion) }),
+      ...(duracionCalculada !== undefined && { duracion: duracionCalculada }),
       ...(fechaInicio !== undefined && { fechaInicio: new Date(fechaInicio) }),
       ...(fechaFin !== undefined && { fechaFin: new Date(fechaFin) }),
       ...(pctAvance !== undefined && { pctAvance: parseFloat(pctAvance) }),

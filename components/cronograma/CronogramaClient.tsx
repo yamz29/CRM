@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { LayoutGrid, List, Wand2, Plus, RefreshCw, Diamond, ChevronDown } from 'lucide-react'
 import { CronogramaGantt } from './CronogramaGantt'
+import { CronogramaV2Client } from './CronogramaV2Client'
 import { ActividadesTable } from './ActividadesTable'
 import { AvanceModal } from './AvanceModal'
 import { GenerarModal } from './GenerarModal'
@@ -53,7 +54,7 @@ interface Props {
 export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles, usuarios }: Props) {
   const router = useRouter()
   const [cronograma, setCronograma] = useState(inicial)
-  const [vista, setVista] = useState<'gantt' | 'tabla'>('gantt')
+  const [vista, setVista] = useState<'ganttV2' | 'gantt' | 'tabla'>('ganttV2')
   const [avanceModal, setAvanceModal] = useState<Actividad | null>(null)
   const [generarModal, setGenerarModal] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -191,12 +192,22 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
           {/* Toggle vista */}
           <div className="flex items-center border border-border rounded-lg overflow-hidden">
             <button
+              onClick={() => setVista('ganttV2')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                vista === 'ganttV2' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+              }`}
+              title="Nueva vista interactiva (arrastra barras para editar)"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Gantt
+            </button>
+            <button
               onClick={() => setVista('gantt')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
                 vista === 'gantt' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
               }`}
+              title="Vista clásica (sólo lectura)"
             >
-              <LayoutGrid className="w-3.5 h-3.5" /> Gantt
+              <LayoutGrid className="w-3.5 h-3.5" /> Clásico
             </button>
             <button
               onClick={() => setVista('tabla')}
@@ -256,7 +267,30 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
         </div>
       </div>
 
-      {/* Vista Gantt */}
+      {/* Vista Gantt V2 (nueva interactiva) */}
+      {vista === 'ganttV2' && (
+        <CronogramaV2Client
+          cronogramaId={cronograma.id}
+          actividades={cronograma.actividades.map(a => ({
+            id: a.id,
+            nombre: a.nombre,
+            duracion: a.duracion,
+            fechaInicio: a.fechaInicio as unknown as string,
+            fechaFin: a.fechaFin as unknown as string,
+            pctAvance: a.pctAvance,
+            estado: a.estado,
+            tipo: a.tipo,
+            dependenciaId: a.dependenciaId,
+            tipoDependencia: a.tipoDependencia,
+            desfaseDias: a.desfaseDias,
+            esCritica: (a as { esCritica?: boolean }).esCritica,
+            holguraDias: (a as { holguraDias?: number }).holguraDias,
+            orden: a.orden,
+          }))}
+        />
+      )}
+
+      {/* Vista Gantt clásica */}
       {vista === 'gantt' && (
         <CronogramaGantt
           actividades={cronograma.actividades}
