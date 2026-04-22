@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { ZoomIn, ZoomOut, Flag, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { CronogramaGanttV2, type ViewMode, type GanttTask } from './CronogramaGanttV2'
+import { ActividadesSpreadsheet } from './ActividadesSpreadsheet'
 
 interface Actividad {
   id: number
@@ -154,56 +154,9 @@ export function CronogramaV2Client({ cronogramaId, actividades, readOnly = false
         </label>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-3">
-        {/* Panel izquierdo: lista de actividades (Fase 5 la hará editable) */}
-        <div className="border border-border rounded-lg bg-card overflow-hidden">
-          <div className="px-3 py-2 border-b border-border bg-muted/30">
-            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
-              Actividades ({actividades.length})
-            </h3>
-          </div>
-          <div className="max-h-[600px] overflow-y-auto divide-y divide-border">
-            {actividades.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground text-center">
-                Sin actividades. Agrega alguna desde la vista clásica.
-              </div>
-            ) : (
-              actividades.map(a => (
-                <div
-                  key={a.id}
-                  data-actividad-id={a.id}
-                  className={`px-3 py-2 hover:bg-muted/40 transition-colors ${
-                    a.esCritica ? 'border-l-2 border-l-red-500' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {a.tipo === 'hito' && <Flag className="w-3 h-3 text-amber-500 shrink-0" />}
-                    <span className="text-sm font-medium text-foreground truncate">
-                      {a.nombre}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                    <span>{a.duracion}d</span>
-                    <span>·</span>
-                    <span>{a.pctAvance}% avance</span>
-                    {a.holguraDias != null && a.holguraDias > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="text-green-600">holgura {a.holguraDias}d</span>
-                      </>
-                    )}
-                    {a.esCritica && (
-                      <>
-                        <span>·</span>
-                        <span className="text-red-600 font-semibold">crítica</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(500px,1fr)_1fr] gap-3">
+        {/* Panel izquierdo: spreadsheet editable */}
+        <ActividadesSpreadsheet cronogramaId={cronogramaId} actividades={actividades} />
 
         {/* Panel derecho: Gantt */}
         <div className="border border-border rounded-lg bg-card overflow-hidden min-h-[400px]">
