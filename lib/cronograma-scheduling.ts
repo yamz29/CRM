@@ -17,6 +17,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { addWorkingDays, type CalendarioOptions } from '@/lib/calendario-laboral'
+import { calcularCriticalPath, type ActividadCpm } from '@/lib/critical-path'
 
 type ActividadRow = {
   id: number
@@ -178,6 +179,7 @@ export async function rescheduleActividad(actividadId: number, optsOverride?: Ca
  * Evita ciclos con un Set de IDs visitados.
  * Carga las opts del cronograma una sola vez (todas las actividades del
  * mismo cronograma comparten calendario/feriados).
+ * Al finalizar, recalcula el Critical Path del cronograma.
  */
 export async function cascadeReschedule(rootActividadId: number): Promise<void> {
   // Obtener cronograma para cargar opts una vez
@@ -185,7 +187,9 @@ export async function cascadeReschedule(rootActividadId: number): Promise<void> 
     where: { id: rootActividadId },
     select: { cronogramaId: true },
   })
-  const opts = root ? await cargarOptsDeCronograma(root.cronogramaId) : {}
+  if (!root) return
+
+  const opts = await cargarOptsDeCronograma(root.cronogramaId)
 
   const visited = new Set<number>()
   const queue: number[] = [rootActividadId]
@@ -206,5 +210,45 @@ export async function cascadeReschedule(rootActividadId: number): Promise<void> 
       await rescheduleActividad(suc.id, opts)
       queue.push(suc.id)
     }
+  }
+
+  // Recalcular Critical Path tras la cascada
+  await recalcularCriticalPath(root.cronogramaId, opts)
+}
+
+/**
+ * Recalcula esCritica y holguraDias de todas las actividades del cronograma.
+ * Usa las fechas actuales (no las recomputa — eso lo hace rescheduleActividad).
+ * Persiste los resultados en DB.
+ */
+export async function recalcularCriticalPath(
+  cronogramaId: number,
+  optsOverride?: CalendarioOptions,
+): Promise<void> {
+  const opts = optsOverride ?? await cargarOptsDeCronograma(cronogramaId)
+
+  const actividades = await prisma.actividadCronograma.findMany({
+    where: { cronogramaId },
+    select: {
+      id: true, duracion: true, fechaInicio: true, fechaFin: true,
+      dependenciaId: true, tipoDependencia: true, desfaseDias: true, tipo: true,
+    },
+  })
+
+  if (actividades.length === 0) return
+
+  try {
+    const cpm = calcularCriticalPath(actividades as ActividadCpm[], opts)
+
+    // Update bulk con valores CPM
+    await Promise.all(cpm.map(c =>
+      prisma.actividadCronograma.update({
+        where: { id: c.id },
+        data: { esCritica: c.esCritica, holguraDias: c.holguraDias },
+      })
+    ))
+  } catch (e) {
+    // Ciclo de dependencias u otro error — no bloquea la operación
+    console.warn(`CPM no pudo calcularse para cronograma ${cronogramaId}:`, e)
   }
 }
