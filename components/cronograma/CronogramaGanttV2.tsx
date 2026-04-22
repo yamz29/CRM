@@ -189,12 +189,12 @@ export function CronogramaGanttV2({
   }
 
   return (
-    <div className="relative cronograma-gantt-v2 overflow-x-auto overflow-y-auto h-full w-full">
-      {/* Botones flotantes de navegación */}
-      <div className="absolute top-2 right-3 z-10 flex gap-1">
+    <div className="relative h-full w-full">
+      {/* Botones flotantes FIJOS (fuera del scroll para que queden siempre visibles) */}
+      <div className="absolute top-2 right-3 z-20 flex gap-1">
         <button
           onClick={scrollToFirstTask}
-          className="px-2 py-1 text-[10px] font-medium rounded bg-card border border-border text-foreground hover:bg-muted/60 shadow-sm transition-colors"
+          className="px-2.5 py-1 text-xs font-medium rounded-md bg-card/95 backdrop-blur border border-border text-foreground hover:bg-muted shadow-md transition-colors"
           title="Ir al inicio de las tareas"
           type="button"
         >
@@ -202,13 +202,14 @@ export function CronogramaGanttV2({
         </button>
         <button
           onClick={scrollToToday}
-          className="px-2 py-1 text-[10px] font-medium rounded bg-card border border-border text-foreground hover:bg-muted/60 shadow-sm transition-colors"
+          className="px-2.5 py-1 text-xs font-medium rounded-md bg-card/95 backdrop-blur border border-border text-foreground hover:bg-muted shadow-md transition-colors"
           title="Ir a la fecha de hoy"
           type="button"
         >
           Hoy
         </button>
       </div>
+      <div className="cronograma-gantt-v2 overflow-x-auto overflow-y-auto h-full w-full">
       <style jsx global>{`
         /* Scrollbar siempre visible en el contenedor del Gantt */
         .cronograma-gantt-v2 {
@@ -300,7 +301,8 @@ export function CronogramaGanttV2({
           fill: #cbd5e1;
         }
       `}</style>
-      <div ref={containerRef} className="w-full" />
+        <div ref={containerRef} className="w-full" />
+      </div>
     </div>
   )
 }

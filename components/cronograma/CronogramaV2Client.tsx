@@ -281,7 +281,7 @@ export function CronogramaV2Client({
 
         <button
           onClick={() => setLeftCollapsed(v => !v)}
-          className="hidden lg:inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/40 ml-auto transition-colors"
+          className="hidden lg:inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted/40 transition-colors"
           title={leftCollapsed ? 'Mostrar lista de actividades' : 'Ocultar lista para ver solo el Gantt'}
         >
           {leftCollapsed ? (
@@ -300,9 +300,12 @@ export function CronogramaV2Client({
 
       {/* Desktop: layout flex con divisora arrastrable */}
       {/* Mobile: apilado vertical (lg breakpoint) */}
+      {/* Altura: min-500px, max-viewport. Así: Gantt pequeño no deja
+          espacio blanco; si hay muchas actividades, el spreadsheet
+          scrolla internamente. */}
       <div
         ref={containerRef}
-        className="hidden lg:flex gap-0 h-[calc(100vh-340px)] min-h-[500px]"
+        className="hidden lg:flex gap-0 min-h-[500px] max-h-[calc(100vh-200px)]"
       >
         {!leftCollapsed && (
           <>
