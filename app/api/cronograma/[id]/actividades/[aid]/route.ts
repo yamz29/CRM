@@ -63,19 +63,28 @@ export async function PUT(req: NextRequest, { params }: Params) {
     },
   })
 
-  // 2. Auto-recalcular fechas si cambió algo relevante al agendamiento
-  //    (duracion, dependenciaId, tipoDependencia, desfaseDias o fechaInicio explícita)
+  // 2. Decidir si re-calcular fechas.
+  //    - Si el cliente envía fechaInicio + fechaFin ambos (drag del Gantt o
+  //      edición directa en el spreadsheet), es un OVERRIDE MANUAL: respetamos
+  //      las fechas y solo propagamos a sucesoras.
+  //    - Si solo cambia duracion/dependencia/desfase/tipo, recalculamos esta
+  //      actividad y propagamos.
+  const manualDateOverride = fechaInicio !== undefined && fechaFin !== undefined
   const schedulingFieldsChanged =
-    duracion !== undefined ||
-    dependenciaId !== undefined ||
-    tipoDependencia !== undefined ||
-    desfaseDias !== undefined ||
-    fechaInicio !== undefined ||
-    tipo !== undefined
+    !manualDateOverride && (
+      duracion !== undefined ||
+      dependenciaId !== undefined ||
+      tipoDependencia !== undefined ||
+      desfaseDias !== undefined ||
+      fechaInicio !== undefined ||
+      tipo !== undefined
+    )
 
-  if (schedulingFieldsChanged) {
+  if (manualDateOverride) {
+    // Solo propagar a sucesoras — no tocar esta actividad.
+    await cascadeReschedule(numId)
+  } else if (schedulingFieldsChanged) {
     await rescheduleActividad(numId)
-    // 3. Propagar cambios en cascada a sucesoras
     await cascadeReschedule(numId)
   }
 

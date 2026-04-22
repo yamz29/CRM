@@ -224,7 +224,7 @@ export function CronogramaV2Client({
       </div>
 
       <div className="text-xs text-muted-foreground px-1">
-        💡 Tip: arrastra el borde derecho de una barra para cambiar duración. Arrastra al centro para mover toda la tarea. La mitad derecha de cada barra es el slider de avance.
+        💡 Tip: arrastra una barra en el Gantt o edita las fechas en la tabla (click en la fecha). Los cambios manuales sobrescriben el cálculo automático de dependencias.
       </div>
     </div>
   )

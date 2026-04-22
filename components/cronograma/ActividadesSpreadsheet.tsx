@@ -133,6 +133,30 @@ export function ActividadesSpreadsheet({
         if (v !== actividad.desfaseDias) body = { desfaseDias: v }
         break
       }
+      case 'fechaInicio': {
+        // Manual override: el servidor respeta fechaInicio+fechaFin juntos.
+        // Calculamos fechaFin preservando la duración actual.
+        if (!draft) break
+        const nueva = new Date(draft + 'T00:00:00Z')
+        if (isNaN(nueva.getTime())) break
+        const diff = new Date(actividad.fechaFin).getTime() - new Date(actividad.fechaInicio).getTime()
+        const nuevoFin = new Date(nueva.getTime() + diff)
+        body = {
+          fechaInicio: nueva.toISOString(),
+          fechaFin: nuevoFin.toISOString(),
+        }
+        break
+      }
+      case 'fechaFin': {
+        if (!draft) break
+        const nueva = new Date(draft + 'T00:00:00Z')
+        if (isNaN(nueva.getTime())) break
+        body = {
+          fechaInicio: new Date(actividad.fechaInicio).toISOString(),
+          fechaFin: nueva.toISOString(),
+        }
+        break
+      }
     }
 
     setEditing(null)
@@ -353,12 +377,37 @@ export function ActividadesSpreadsheet({
                     )}
                   </td>
 
-                  {/* Inicio (read-only, se edita arrastrando la barra del Gantt) */}
-                  <td className="px-1 py-1 text-center text-muted-foreground tabular-nums">
-                    {fmtFecha(a.fechaInicio)}
+                  {/* Inicio (editable — override manual) */}
+                  <td className="px-1 py-1 text-center" onClick={() => beginEdit(a.id, 'fechaInicio', new Date(a.fechaInicio).toISOString().slice(0, 10))}>
+                    {editing?.id === a.id && editing.field === 'fechaInicio' ? (
+                      <input
+                        ref={inputRef as React.RefObject<HTMLInputElement>}
+                        type="date"
+                        value={draft}
+                        onChange={e => setDraft(e.target.value)}
+                        onBlur={commitEdit}
+                        onKeyDown={handleKeyDown}
+                        className="w-full px-1 py-0.5 border border-primary rounded text-xs bg-background"
+                      />
+                    ) : (
+                      <span className="cursor-text tabular-nums">{fmtFecha(a.fechaInicio)}</span>
+                    )}
                   </td>
-                  <td className="px-1 py-1 text-center text-muted-foreground tabular-nums">
-                    {fmtFecha(a.fechaFin)}
+                  {/* Fin (editable) */}
+                  <td className="px-1 py-1 text-center" onClick={() => beginEdit(a.id, 'fechaFin', new Date(a.fechaFin).toISOString().slice(0, 10))}>
+                    {editing?.id === a.id && editing.field === 'fechaFin' ? (
+                      <input
+                        ref={inputRef as React.RefObject<HTMLInputElement>}
+                        type="date"
+                        value={draft}
+                        onChange={e => setDraft(e.target.value)}
+                        onBlur={commitEdit}
+                        onKeyDown={handleKeyDown}
+                        className="w-full px-1 py-0.5 border border-primary rounded text-xs bg-background"
+                      />
+                    ) : (
+                      <span className="cursor-text tabular-nums">{fmtFecha(a.fechaFin)}</span>
+                    )}
                   </td>
 
                   {/* Dependencia */}
