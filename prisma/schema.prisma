@@ -916,6 +916,12 @@ model Cronograma {
   // Planificado | En Ejecución | Terminado | Pausado
   version          Int       @default(1)
   notas            String?
+
+  // Calendario laboral: si true, scheduler salta fines de semana.
+  // Si usarFeriados también es true, además salta días feriados.
+  usarCalendarioLaboral Boolean @default(true)
+  usarFeriados          Boolean @default(false)
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -944,10 +950,15 @@ model ActividadCronograma {
   tipo            String   @default("tarea") // tarea | hito
   wbs             String?  // código WBS ej: 1.1, 1.2.3
   dependenciaId   Int?
-  tipoDependencia String   @default("FS") // FS=Fin-Inicio | SS=Inicio-Inicio | FF=Fin-Fin
+  tipoDependencia String   @default("FS") // FS | SS | FF | SF
   desfaseDias     Int      @default(0)   // lag/lead en días (positivo=espera, negativo=adelanto)
   cuadrilla       String?  // nombre de la cuadrilla asignada
   orden           Int      @default(0)
+
+  // Critical Path (CPM) — se recalcula al editar cualquier actividad
+  esCritica       Boolean  @default(false)  // true = tarea en ruta crítica
+  holguraDias     Int      @default(0)      // float/slack en días laborales
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -1417,6 +1428,23 @@ model ComentarioDocumento {
 
   @@index([documentoId])
   @@map("comentario_documento")
+}
+
+// ── CALENDARIO LABORAL ───────────────────────────────────────────────
+// Días feriados (República Dominicana) que el scheduler de cronograma
+// puede saltar al calcular fechas si el cronograma tiene
+// usarFeriados=true. Fijos (1-ene, 27-feb) y variables (viernes santo,
+// corpus christi) cargados con scripts/seed-feriados.ts.
+model DiaFeriado {
+  id         Int      @id @default(autoincrement())
+  fecha      DateTime @db.Date
+  nombre     String
+  recurrente Boolean  @default(false)   // true = se repite cada año misma fecha (solo para fijos)
+  creadoEn   DateTime @default(now())
+
+  @@unique([fecha])
+  @@index([fecha])
+  @@map("dia_feriado")
 }
 
 // ── CATÁLOGO DGII RNC ────────────────────────────────────────────────
