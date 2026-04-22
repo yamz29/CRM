@@ -324,7 +324,7 @@ export function CronogramaV2Client({
           </>
         )}
 
-        <div className="flex-1 min-w-[300px] border border-border rounded-lg bg-card overflow-hidden h-full">
+        <div className="flex-1 min-w-0 border border-border rounded-lg bg-card overflow-hidden h-full">
           <CronogramaGanttV2
             tasks={tasks}
             viewMode={viewMode}

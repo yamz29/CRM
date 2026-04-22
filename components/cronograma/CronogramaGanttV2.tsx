@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 // frappe-gantt se carga solo en el cliente para evitar SSR con DOM.
 // Lo importamos dinámicamente dentro del useEffect.
 // El CSS se importa local porque frappe-gantt no lo expone en su package exports.
@@ -42,6 +42,30 @@ export function CronogramaGanttV2({
   // Guardamos la instancia de Gantt para poder llamarle métodos
   const ganttRef = useRef<unknown | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Helpers para scrollear a fechas específicas
+  const scrollToFirstTask = useCallback(() => {
+    const container = containerRef.current
+    if (!container) return
+    const firstBar = container.querySelector('.gantt .bar') as SVGRectElement | null
+    if (!firstBar) return
+    const barX = parseFloat(firstBar.getAttribute('x') || '0')
+    const scroller = container.closest('.cronograma-gantt-v2') as HTMLElement | null
+    if (scroller) scroller.scrollTo({ left: Math.max(0, barX - 80), behavior: 'smooth' })
+  }, [])
+
+  const scrollToToday = useCallback(() => {
+    const container = containerRef.current
+    if (!container) return
+    const todayLine = container.querySelector('.gantt .today-highlight') as SVGRectElement | null
+    if (!todayLine) {
+      scrollToFirstTask()
+      return
+    }
+    const x = parseFloat(todayLine.getAttribute('x') || '0')
+    const scroller = container.closest('.cronograma-gantt-v2') as HTMLElement | null
+    if (scroller) scroller.scrollTo({ left: Math.max(0, x - 80), behavior: 'smooth' })
+  }, [scrollToFirstTask])
 
   useEffect(() => {
     let cancelled = false
@@ -114,6 +138,24 @@ export function CronogramaGanttV2({
           },
         })
 
+        // Auto-scroll horizontal al inicio de la primera tarea para que
+        // el usuario no vea un timeline vacío si las fechas están lejanas.
+        // Esperamos a que el DOM del Gantt esté pintado.
+        requestAnimationFrame(() => {
+          if (cancelled || !container) return
+          // Buscar el primer elemento <rect class="bar"> dentro del SVG
+          const firstBar = container.querySelector('.gantt .bar') as SVGRectElement | null
+          if (firstBar) {
+            // Obtener la posición X del bar dentro del SVG
+            const barX = parseFloat(firstBar.getAttribute('x') || '0')
+            // El contenedor con overflow es el wrapper de cronograma-gantt-v2.
+            // Dar unos 80px de margen antes para que no quede pegado al borde.
+            const targetScroll = Math.max(0, barX - 80)
+            const scroller = container.closest('.cronograma-gantt-v2') as HTMLElement | null
+            if (scroller) scroller.scrollLeft = targetScroll
+          }
+        })
+
         setError(null)
       } catch (e) {
         console.error('Error inicializando Gantt:', e)
@@ -147,8 +189,58 @@ export function CronogramaGanttV2({
   }
 
   return (
-    <div className="cronograma-gantt-v2 overflow-auto h-full">
+    <div className="relative cronograma-gantt-v2 overflow-x-auto overflow-y-auto h-full w-full">
+      {/* Botones flotantes de navegación */}
+      <div className="absolute top-2 right-3 z-10 flex gap-1">
+        <button
+          onClick={scrollToFirstTask}
+          className="px-2 py-1 text-[10px] font-medium rounded bg-card border border-border text-foreground hover:bg-muted/60 shadow-sm transition-colors"
+          title="Ir al inicio de las tareas"
+          type="button"
+        >
+          ← Tareas
+        </button>
+        <button
+          onClick={scrollToToday}
+          className="px-2 py-1 text-[10px] font-medium rounded bg-card border border-border text-foreground hover:bg-muted/60 shadow-sm transition-colors"
+          title="Ir a la fecha de hoy"
+          type="button"
+        >
+          Hoy
+        </button>
+      </div>
       <style jsx global>{`
+        /* Scrollbar siempre visible en el contenedor del Gantt */
+        .cronograma-gantt-v2 {
+          scrollbar-width: thin;
+          scrollbar-gutter: stable;
+        }
+        .cronograma-gantt-v2::-webkit-scrollbar {
+          height: 12px;
+          width: 12px;
+        }
+        .cronograma-gantt-v2::-webkit-scrollbar-thumb {
+          background: #c7c7c7;
+          border-radius: 6px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+        .cronograma-gantt-v2::-webkit-scrollbar-thumb:hover {
+          background: #888;
+          background-clip: padding-box;
+          border: 2px solid transparent;
+        }
+        .dark .cronograma-gantt-v2::-webkit-scrollbar-thumb {
+          background: #4b5563;
+          background-clip: padding-box;
+          border: 2px solid transparent;
+        }
+        .dark .cronograma-gantt-v2::-webkit-scrollbar-thumb:hover {
+          background: #6b7280;
+          background-clip: padding-box;
+          border: 2px solid transparent;
+        }
+
         /* Override de colores de frappe-gantt para match con tema */
         .gantt .bar {
           fill: #3b82f6;
