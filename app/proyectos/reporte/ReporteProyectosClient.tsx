@@ -42,6 +42,7 @@ interface Props {
   estadosFiltro: string[]
   tiposFiltro: string[]
   incluirArchivados: boolean
+  incluirPausados: boolean
   tiposExistentes: string[]
   estadosExistentes: string[]
 }
@@ -70,7 +71,7 @@ function fmtFecha(iso: string | null) {
 }
 
 export function ReporteProyectosClient({
-  proyectos, desde, hasta, estadosFiltro, tiposFiltro, incluirArchivados,
+  proyectos, desde, hasta, estadosFiltro, tiposFiltro, incluirArchivados, incluirPausados,
   tiposExistentes, estadosExistentes,
 }: Props) {
   const router = useRouter()
@@ -79,6 +80,7 @@ export function ReporteProyectosClient({
   const [localEstados, setLocalEstados] = useState<string[]>(estadosFiltro)
   const [localTipos, setLocalTipos] = useState<string[]>(tiposFiltro)
   const [localArchivados, setLocalArchivados] = useState(incluirArchivados)
+  const [localPausados, setLocalPausados] = useState(incluirPausados)
   const [filtroSalud, setFiltroSalud] = useState<'todos' | 'ok' | 'alerta' | 'critico'>('todos')
 
   function aplicarFiltros() {
@@ -88,6 +90,7 @@ export function ReporteProyectosClient({
     if (localEstados.length > 0) params.set('estados', localEstados.join(','))
     if (localTipos.length > 0) params.set('tipos', localTipos.join(','))
     if (localArchivados) params.set('archivados', '1')
+    if (localPausados) params.set('pausados', '1')
     router.push(`/proyectos/reporte?${params.toString()}`)
   }
 
@@ -248,10 +251,14 @@ export function ReporteProyectosClient({
               <input type="date" value={localHasta} onChange={e => setLocalHasta(e.target.value)}
                 className="w-full h-8 px-2 text-sm border border-border rounded-lg bg-input" />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-3 flex-wrap">
               <label className="flex items-center gap-2 text-sm text-foreground">
                 <input type="checkbox" checked={localArchivados} onChange={e => setLocalArchivados(e.target.checked)} />
                 Incluir archivados
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input type="checkbox" checked={localPausados} onChange={e => setLocalPausados(e.target.checked)} />
+                Incluir pausados
               </label>
             </div>
           </div>

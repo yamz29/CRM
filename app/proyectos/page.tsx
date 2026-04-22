@@ -48,6 +48,7 @@ const estadoOptions = [
   { value: 'En Cotización', label: 'En Cotización' },
   { value: 'Adjudicado', label: 'Adjudicado' },
   { value: 'En Ejecución', label: 'En Ejecución' },
+  { value: 'Pausado', label: 'Pausado' },
   { value: 'Terminado', label: 'Terminado' },
   { value: 'Cancelado', label: 'Cancelado' },
 ]

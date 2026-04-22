@@ -47,6 +47,8 @@ model Proyecto {
   avanceFisico        Int       @default(0)  // % de avance físico 0-100
   archivada           Boolean   @default(false)
   fechaArchivada      DateTime?
+  razonPausa          String?                 // Razón si el estado es "Pausado"
+  fechaPausa          DateTime?               // Cuándo se pausó
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

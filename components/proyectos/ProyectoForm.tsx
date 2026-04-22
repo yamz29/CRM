@@ -26,11 +26,12 @@ interface ProyectoFormData {
   responsable: string
   presupuestoEstimado: string
   avanceFisico: number
+  razonPausa: string
 }
 
 interface ProyectoFormProps {
   clientes: Cliente[]
-  initialData?: Partial<ProyectoFormData> & { id?: number; avanceFisico?: number }
+  initialData?: Partial<ProyectoFormData> & { id?: number; avanceFisico?: number; razonPausa?: string | null }
   mode?: 'create' | 'edit'
   defaultClienteId?: string
 }
@@ -52,6 +53,7 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
     responsable: initialData?.responsable || '',
     presupuestoEstimado: initialData?.presupuestoEstimado || '',
     avanceFisico: initialData?.avanceFisico ?? 0,
+    razonPausa: initialData?.razonPausa || '',
   })
 
   const handleChange = (
@@ -236,10 +238,28 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
                   <option value="En Cotización">En Cotización</option>
                   <option value="Adjudicado">Adjudicado</option>
                   <option value="En Ejecución">En Ejecución</option>
+                  <option value="Pausado">Pausado</option>
                   <option value="Terminado">Terminado</option>
                   <option value="Cancelado">Cancelado</option>
                 </Select>
               </div>
+
+              {formData.estado === 'Pausado' && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="razonPausa" className="text-orange-700 dark:text-orange-400">
+                    Razón de la pausa <span className="text-xs font-normal text-muted-foreground">(se mostrará en el detalle del proyecto)</span>
+                  </Label>
+                  <textarea
+                    id="razonPausa"
+                    name="razonPausa"
+                    value={formData.razonPausa}
+                    onChange={handleChange}
+                    rows={2}
+                    placeholder="Ej: Esperando aprobación del cliente para continuar fase 3"
+                    className="w-full border border-orange-200 dark:border-orange-800 bg-orange-50/40 dark:bg-orange-900/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="fechaInicio">Fecha de inicio</Label>

@@ -224,6 +224,38 @@ export default async function ProyectoDetailPage({
         </div>
       </div>
 
+      {/* ── Banner de pausa ── */}
+      {proyecto.estado === 'Pausado' && (() => {
+        const p = proyecto as unknown as { fechaPausa: Date | null; razonPausa: string | null }
+        return (
+          <div className="rounded-xl border border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                  Proyecto pausado
+                  {p.fechaPausa && (
+                    <span className="font-normal ml-2 text-orange-700 dark:text-orange-400">
+                      desde {formatDate(p.fechaPausa)}
+                    </span>
+                  )}
+                </p>
+                {p.razonPausa ? (
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">{p.razonPausa}</p>
+                ) : (
+                  <p className="text-xs text-orange-700/70 dark:text-orange-400/70 mt-1 italic">
+                    Sin razón registrada. Edita el proyecto para agregarla.
+                  </p>
+                )}
+                <p className="text-xs text-orange-700/80 dark:text-orange-400/80 mt-2">
+                  Los proyectos pausados no aparecen en reportes ni en el Gantt. Cambia el estado cuando se reanuden.
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Tab bar ── */}
       <div className="border-b border-border">
         <nav className="flex gap-1">

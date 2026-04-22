@@ -3,6 +3,7 @@ import { GanttProyectos } from './GanttProyectos'
 
 interface SearchParams {
   archivados?: string
+  pausados?: string
   estados?: string
 }
 
@@ -11,15 +12,20 @@ export default async function GanttProyectosPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { archivados, estados } = await searchParams
+  const { archivados, pausados, estados } = await searchParams
   const verArchivados = archivados === '1'
+  const verPausados = pausados === '1'
   const estadosFiltro = estados ? estados.split(',').filter(Boolean) : []
 
   const [proyectos, hitos, tareasGantt] = await Promise.all([
     prisma.proyecto.findMany({
       where: {
         ...(verArchivados ? {} : { archivada: false }),
-        ...(estadosFiltro.length > 0 ? { estado: { in: estadosFiltro } } : {}),
+        // Excluir pausados por defecto (como los archivados) salvo que el
+        // usuario los filtre explícitamente o active el toggle.
+        ...(estadosFiltro.length > 0
+          ? { estado: { in: estadosFiltro } }
+          : verPausados ? {} : { estado: { not: 'Pausado' } }),
       },
       select: {
         id: true,

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary'
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary' | 'orange'
 }
 
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
@@ -20,6 +20,8 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
       secondary:
         'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700/60 dark:text-slate-400 dark:border-slate-600',
+      orange:
+        'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
     }
 
     return (
@@ -44,6 +46,7 @@ export function EstadoProyectoBadge({ estado }: { estado: string }) {
     'En Cotización': 'info',
     'Adjudicado': 'warning',
     'En Ejecución': 'success',
+    'Pausado': 'orange',
     'Terminado': 'secondary',
     'Cancelado': 'danger',
   }

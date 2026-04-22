@@ -68,7 +68,12 @@ export async function PUT(
     if (body._patch === true) {
       const data: Record<string, unknown> = {}
       if (body.avanceFisico != null) data.avanceFisico = parseInt(String(body.avanceFisico))
-      if (body.estado !== undefined) data.estado = body.estado
+      if (body.estado !== undefined) {
+        data.estado = body.estado
+        // Si pasa a Pausado, setear fechaPausa si aún no existe
+        if (body.estado === 'Pausado') data.fechaPausa = new Date()
+        if (body.razonPausa !== undefined) data.razonPausa = body.razonPausa || null
+      }
       if (body.responsable !== undefined) data.responsable = body.responsable || null
       if (Object.keys(data).length === 0) {
         return NextResponse.json({ error: 'Sin cambios' }, { status: 400 })
@@ -89,6 +94,7 @@ export async function PUT(
       responsable,
       presupuestoEstimado,
       avanceFisico,
+      razonPausa,
     } = body
 
     if (!nombre || !clienteId) {
@@ -97,6 +103,15 @@ export async function PUT(
         { status: 400 }
       )
     }
+
+    // Detectar transición a / desde Pausado para actualizar fechaPausa y razón
+    const existing = await prisma.proyecto.findUnique({
+      where: { id },
+      select: { estado: true, fechaPausa: true },
+    })
+    const nuevoEstado = estado || 'Prospecto'
+    const entrandoAPausa = nuevoEstado === 'Pausado' && existing?.estado !== 'Pausado'
+    const saliendoDePausa = nuevoEstado !== 'Pausado' && existing?.estado === 'Pausado'
 
     const proyecto = await prisma.proyecto.update({
       where: { id },
@@ -107,11 +122,13 @@ export async function PUT(
         ubicacion: ubicacion || null,
         fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
         fechaEstimada: fechaEstimada ? new Date(fechaEstimada) : null,
-        estado: estado || 'Prospecto',
+        estado: nuevoEstado,
         descripcion: descripcion || null,
         responsable: responsable || null,
         presupuestoEstimado: presupuestoEstimado ? parseFloat(presupuestoEstimado) : null,
         avanceFisico: avanceFisico != null ? parseInt(avanceFisico) : 0,
+        razonPausa: nuevoEstado === 'Pausado' ? (razonPausa || null) : null,
+        fechaPausa: entrandoAPausa ? new Date() : saliendoDePausa ? null : undefined,
       },
     })
 

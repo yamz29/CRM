@@ -7,6 +7,7 @@ interface SearchParams {
   estados?: string   // csv
   tipos?: string     // csv
   archivados?: string
+  pausados?: string
 }
 
 export default async function ReporteProyectosPage({
@@ -29,13 +30,23 @@ export default async function ReporteProyectosPage({
   const estadosFiltro = params.estados ? params.estados.split(',').filter(Boolean) : []
   const tiposFiltro = params.tipos ? params.tipos.split(',').filter(Boolean) : []
   const incluirArchivados = params.archivados === '1'
+  const incluirPausados = params.pausados === '1'
 
   // Condición para el filtro por fecha: si el proyecto tiene fechaInicio, usarla.
   // Si no tiene, usar createdAt.
+  // Por defecto se excluyen archivados y pausados (se consideran fuera de operación
+  // activa — el usuario puede incluirlos con los toggles).
+  const estadoExclusion: string[] = []
+  if (!incluirPausados) estadoExclusion.push('Pausado')
+
   const proyectos = await prisma.proyecto.findMany({
     where: {
       ...(incluirArchivados ? {} : { archivada: false }),
-      ...(estadosFiltro.length > 0 ? { estado: { in: estadosFiltro } } : {}),
+      ...(estadosFiltro.length > 0
+        ? { estado: { in: estadosFiltro } }
+        : estadoExclusion.length > 0
+          ? { estado: { notIn: estadoExclusion } }
+          : {}),
       ...(tiposFiltro.length > 0 ? { tipoProyecto: { in: tiposFiltro } } : {}),
       OR: [
         { fechaInicio: { gte: desde, lte: hasta } },
@@ -99,6 +110,7 @@ export default async function ReporteProyectosPage({
         estadosFiltro={estadosFiltro}
         tiposFiltro={tiposFiltro}
         incluirArchivados={incluirArchivados}
+        incluirPausados={incluirPausados}
         tiposExistentes={tiposExistentes}
         estadosExistentes={estadosExistentes}
       />
