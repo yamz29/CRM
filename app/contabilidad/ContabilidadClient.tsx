@@ -645,6 +645,10 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   const [filtroHasta, setFiltroHasta] = useState('')
   const [filtroTexto, setFiltroTexto] = useState('')
 
+  // Selección masiva
+  const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
+  const [eliminando, setEliminando] = useState(false)
+
   const movimientosFiltrados = movimientos.filter((m: any) => {
     if (filtroEstado === 'sin' && m.conciliado) return false
     if (filtroEstado === 'conciliados' && !m.conciliado) return false
@@ -692,6 +696,55 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
     if (filtroTexto.trim()) params.set('q', filtroTexto.trim())
     const url = `/api/contabilidad/cuentas/${cuentaId}/movimientos/export?${params.toString()}`
     window.open(url, '_blank')
+  }
+
+  // Selección: toggle individual
+  function toggleSeleccion(id: number) {
+    setSeleccion(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // Select all / none (solo sobre movimientos filtrados visibles)
+  function toggleSeleccionarTodos() {
+    if (seleccion.size === movimientosFiltrados.length && movimientosFiltrados.length > 0) {
+      setSeleccion(new Set())
+    } else {
+      setSeleccion(new Set(movimientosFiltrados.map((m: any) => m.id)))
+    }
+  }
+
+  async function eliminarSeleccionados() {
+    if (seleccion.size === 0 || !cuentaId) return
+    const ids = Array.from(seleccion)
+    const concIds = movimientos.filter((m: any) => seleccion.has(m.id) && m.conciliado).map((m: any) => m.id)
+    const aviso = concIds.length > 0
+      ? `¿Eliminar ${ids.length} movimiento(s)? ${concIds.length} está(n) conciliado(s) con facturas — al eliminar se romperá(n) esa(s) conciliación(es).`
+      : `¿Eliminar ${ids.length} movimiento(s)?`
+    if (!confirm(aviso)) return
+
+    setEliminando(true)
+    try {
+      const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (res.ok) {
+        setSeleccion(new Set())
+        fetchMovimientos()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error || 'Error al eliminar')
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error de red')
+    } finally {
+      setEliminando(false)
+    }
   }
 
   const fetchMovimientos = useCallback(async () => {
@@ -878,10 +931,44 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
             <p className="text-lg font-bold text-yellow-600">{movimientosFiltrados.filter((m: any) => !m.conciliado).length}</p>
           </div>
         </div>
+        {seleccion.size > 0 && (
+          <div className="flex items-center justify-between gap-3 bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">
+            <span className="text-sm font-medium text-foreground">
+              {seleccion.size} movimiento{seleccion.size === 1 ? '' : 's'} seleccionado{seleccion.size === 1 ? '' : 's'}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setSeleccion(new Set())} disabled={eliminando}>
+                Cancelar selección
+              </Button>
+              <Button
+                size="sm"
+                onClick={eliminarSeleccionados}
+                disabled={eliminando}
+                className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {eliminando ? 'Eliminando...' : `Eliminar ${seleccion.size}`}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/40">
+                <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={movimientosFiltrados.length > 0 && seleccion.size === movimientosFiltrados.length}
+                    ref={el => {
+                      if (el) el.indeterminate = seleccion.size > 0 && seleccion.size < movimientosFiltrados.length
+                    }}
+                    onChange={toggleSeleccionarTodos}
+                    className="rounded border-border cursor-pointer"
+                    title="Seleccionar todos"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Descripción</th>
@@ -894,12 +981,20 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
             </thead>
             <tbody className="divide-y divide-border">
               {movimientosFiltrados.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-sm">
                   Sin movimientos que coincidan con los filtros
                 </td></tr>
               )}
               {movimientosFiltrados.map((m: any) => (
-                <tr key={m.id} className="hover:bg-muted/20">
+                <tr key={m.id} className={`hover:bg-muted/20 ${seleccion.has(m.id) ? 'bg-primary/5' : ''}`}>
+                  <td className="px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={seleccion.has(m.id)}
+                      onChange={() => toggleSeleccion(m.id)}
+                      className="rounded border-border cursor-pointer"
+                    />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{new Date(m.fecha).toLocaleDateString('es-DO')}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs font-medium ${m.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
