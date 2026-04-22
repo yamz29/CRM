@@ -271,6 +271,8 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
       {vista === 'ganttV2' && (
         <CronogramaV2Client
           cronogramaId={cronograma.id}
+          usarCalendarioLaboral={(cronograma as { usarCalendarioLaboral?: boolean }).usarCalendarioLaboral ?? true}
+          usarFeriados={(cronograma as { usarFeriados?: boolean }).usarFeriados ?? false}
           actividades={cronograma.actividades.map(a => ({
             id: a.id,
             nombre: a.nombre,

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench, Calculator } from 'lucide-react'
+import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench, Calculator, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmpresaForm } from '@/components/configuracion/EmpresaForm'
 import { VendedoresPanel } from '@/components/configuracion/VendedoresPanel'
@@ -10,6 +10,7 @@ import { UnidadesPanel } from '@/components/configuracion/UnidadesPanel'
 import { RespaldoPanel } from '@/components/configuracion/RespaldoPanel'
 import { TiposModuloPanel } from '@/components/configuracion/TiposModuloPanel'
 import { CostosPanel } from '@/components/configuracion/CostosPanel'
+import { FeriadosPanel } from '@/components/configuracion/FeriadosPanel'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 
 const tabs = [
@@ -19,6 +20,7 @@ const tabs = [
   { key: 'usuarios', label: 'Usuarios', icon: Users },
   { key: 'costos', label: 'Costos', icon: Calculator },
   { key: 'unidades', label: 'Unidades', icon: Ruler },
+  { key: 'feriados', label: 'Feriados', icon: CalendarDays },
   { key: 'taller', label: 'Taller', icon: Wrench },
   { key: 'respaldo', label: 'Respaldo', icon: HardDrive },
 ]
@@ -58,6 +60,10 @@ export default async function ConfiguracionPage({
     ? JSON.parse(tiposModuloConfig.valor)
     : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Electrodoméstico', 'Otro']
   const factorCargaSocial = activeTab === 'costos' ? await getFactorCargaSocial() : 1
+
+  const feriados = activeTab === 'feriados'
+    ? await prisma.diaFeriado.findMany({ orderBy: { fecha: 'asc' } })
+    : []
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -108,6 +114,12 @@ export default async function ConfiguracionPage({
           {activeTab === 'usuarios' && <UsuariosPanel initialData={usuarios} />}
           {activeTab === 'costos' && <CostosPanel initialFactor={factorCargaSocial} />}
           {activeTab === 'unidades' && <UnidadesPanel initialData={unidades} />}
+          {activeTab === 'feriados' && <FeriadosPanel initialData={feriados.map(f => ({
+            id: f.id,
+            fecha: f.fecha.toISOString().slice(0, 10),
+            nombre: f.nombre,
+            recurrente: f.recurrente,
+          }))} />}
           {activeTab === 'taller' && <TiposModuloPanel initialTipos={tiposModulo} />}
           {activeTab === 'respaldo' && <RespaldoPanel />}
         </div>

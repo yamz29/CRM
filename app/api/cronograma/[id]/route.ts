@@ -44,7 +44,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   const body = await req.json()
-  const { nombre, proyectoId, presupuestoId, fechaInicio, fechaFinEstimado, estado, notas, version } = body
+  const {
+    nombre, proyectoId, presupuestoId, fechaInicio, fechaFinEstimado,
+    estado, notas, version, usarCalendarioLaboral, usarFeriados,
+  } = body
 
   const cronograma = await prisma.cronograma.update({
     where: { id: numId },
@@ -57,6 +60,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
       ...(estado !== undefined && { estado }),
       ...(notas !== undefined && { notas }),
       ...(version !== undefined && { version }),
+      ...(usarCalendarioLaboral !== undefined && { usarCalendarioLaboral: !!usarCalendarioLaboral }),
+      ...(usarFeriados !== undefined && { usarFeriados: !!usarFeriados }),
     },
   })
 

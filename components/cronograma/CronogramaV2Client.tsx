@@ -27,14 +27,40 @@ interface Props {
   cronogramaId: number
   actividades: Actividad[]
   readOnly?: boolean
+  usarCalendarioLaboral?: boolean
+  usarFeriados?: boolean
 }
 
 const VIEW_MODES: ViewMode[] = ['Day', 'Week', 'Month', 'Quarter Day']
 
-export function CronogramaV2Client({ cronogramaId, actividades, readOnly = false }: Props) {
+export function CronogramaV2Client({
+  cronogramaId, actividades, readOnly = false,
+  usarCalendarioLaboral: initCalLab = true,
+  usarFeriados: initFer = false,
+}: Props) {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>('Day')
   const [showCritical, setShowCritical] = useState(true)
+  const [usarCalLab, setUsarCalLab] = useState(initCalLab)
+  const [usarFer, setUsarFer] = useState(initFer)
+  const [savingCal, setSavingCal] = useState(false)
+
+  async function cambiarCalendario(nuevoCalLab: boolean, nuevoFer: boolean) {
+    setSavingCal(true)
+    try {
+      const res = await fetch(`/api/cronograma/${cronogramaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usarCalendarioLaboral: nuevoCalLab,
+          usarFeriados: nuevoFer,
+        }),
+      })
+      if (res.ok) router.refresh()
+    } finally {
+      setSavingCal(false)
+    }
+  }
 
   // Convertir actividades → formato frappe-gantt
   const tasks: GanttTask[] = useMemo(() => {
@@ -151,6 +177,30 @@ export function CronogramaV2Client({ cronogramaId, actividades, readOnly = false
           />
           <AlertTriangle className="w-3 h-3 text-red-500" />
           Resaltar ruta crítica ({criticasCount})
+        </label>
+
+        <div className="h-4 w-px bg-border mx-1" />
+
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={usarCalLab}
+            disabled={savingCal || readOnly}
+            onChange={e => { setUsarCalLab(e.target.checked); cambiarCalendario(e.target.checked, usarFer) }}
+            className="rounded border-border"
+          />
+          Saltar fines de semana
+        </label>
+
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={usarFer}
+            disabled={savingCal || readOnly || !usarCalLab}
+            onChange={e => { setUsarFer(e.target.checked); cambiarCalendario(usarCalLab, e.target.checked) }}
+            className="rounded border-border"
+          />
+          Saltar feriados
         </label>
       </div>
 
