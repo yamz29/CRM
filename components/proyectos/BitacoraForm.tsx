@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Camera, X, Loader2, Send, Sun, Cloud, CloudRain, CloudLightning, Users } from 'lucide-react'
+import { compressImage } from '@/lib/compress-image'
 
 interface BitacoraFormProps {
   proyectoId: number
@@ -36,20 +37,40 @@ export function BitacoraForm({ proyectoId, avanceFisicoActual, onCreated, onCanc
   const [fotos, setFotos] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [comprimiendo, setComprimiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (fotos.length + files.length > 5) {
       setError('Máximo 5 fotos por entrada')
       return
     }
     setError(null)
-    const newFotos = [...fotos, ...files]
-    setFotos(newFotos)
-    const newPreviews = files.map(f => URL.createObjectURL(f))
-    setPreviews(prev => [...prev, ...newPreviews])
+
+    // Comprimir cada foto en el cliente. Fotos de iPhone pesan 5-10MB cada una;
+    // con 4+ fotos el body total supera el límite del servidor (nginx/Next).
+    // compressImage reduce a ~500KB-1MB manteniendo calidad legible.
+    setComprimiendo(true)
+    try {
+      const comprimidas: File[] = []
+      const nuevosPreviews: string[] = []
+      for (const raw of files) {
+        let f = raw
+        try { f = await compressImage(raw) }
+        catch (err) { console.warn('Compresión falló, usando original:', err); f = raw }
+        comprimidas.push(f)
+        try { nuevosPreviews.push(URL.createObjectURL(f)) }
+        catch { nuevosPreviews.push('') }
+      }
+      setFotos(prev => [...prev, ...comprimidas])
+      setPreviews(prev => [...prev, ...nuevosPreviews])
+    } finally {
+      setComprimiendo(false)
+      // Reset del input para permitir re-seleccionar el mismo archivo
+      if (fileRef.current) fileRef.current.value = ''
+    }
   }
 
   const removeFoto = (idx: number) => {
@@ -79,8 +100,18 @@ export function BitacoraForm({ proyectoId, avanceFisicoActual, onCreated, onCanc
         body: fd,
       })
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Error al guardar')
+        if (res.status === 413) {
+          throw new Error('Fotos muy grandes. Intenta con menos fotos o más pequeñas.')
+        }
+        let msg = `Error ${res.status}`
+        try {
+          const data = await res.json()
+          msg = data.error || msg
+        } catch {
+          // respuesta no-JSON (ej. HTML de nginx)
+          msg = `Servidor respondió ${res.status}`
+        }
+        throw new Error(msg)
       }
 
       previews.forEach(url => URL.revokeObjectURL(url))
@@ -190,21 +221,35 @@ export function BitacoraForm({ proyectoId, avanceFisicoActual, onCreated, onCanc
               <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
                 <img src={src} alt="" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => removeFoto(i)}
-                  className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-3 h-3" />
                 </button>
               </div>
             ))}
             {fotos.length < 5 && (
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-colors">
-                <Camera className="w-5 h-5" />
-                <span className="text-[10px] mt-0.5">Agregar</span>
+              <button type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={comprimiendo}
+                className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-50">
+                {comprimiendo ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-[10px] mt-0.5">Procesando…</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-5 h-5" />
+                    <span className="text-[10px] mt-0.5">Agregar</span>
+                  </>
+                )}
               </button>
             )}
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
             onChange={handleFileChange} />
+          {comprimiendo && (
+            <p className="text-[11px] text-muted-foreground mt-1">Comprimiendo fotos para que la subida sea rápida…</p>
+          )}
         </div>
       </div>
 
@@ -213,7 +258,7 @@ export function BitacoraForm({ proyectoId, avanceFisicoActual, onCreated, onCanc
         <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={loading || !descripcion.trim()}>
+        <Button type="submit" disabled={loading || comprimiendo || !descripcion.trim()}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           Guardar entrada
         </Button>
