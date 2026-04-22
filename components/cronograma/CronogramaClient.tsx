@@ -61,6 +61,13 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
   const [showAddMenu, setShowAddMenu] = useState<'tarea' | 'hito' | null>(null)
   const addMenuRef = useRef<HTMLDivElement>(null)
 
+  // Sincronizar state local con la prop cuando cambia (ej. tras router.refresh).
+  // Sin esto, los cambios guardados no se reflejan en la UI porque el state
+  // local sigue con el snapshot inicial.
+  useEffect(() => {
+    setCronograma(inicial)
+  }, [inicial])
+
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     function handleClick(e: MouseEvent) {
