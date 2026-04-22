@@ -147,7 +147,7 @@ export function CronogramaGanttV2({
   }
 
   return (
-    <div className="cronograma-gantt-v2 overflow-x-auto">
+    <div className="cronograma-gantt-v2 overflow-auto h-full">
       <style jsx global>{`
         /* Override de colores de frappe-gantt para match con tema */
         .gantt .bar {

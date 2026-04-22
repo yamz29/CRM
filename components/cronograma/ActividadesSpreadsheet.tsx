@@ -284,8 +284,8 @@ export function ActividadesSpreadsheet({
   }
 
   return (
-    <div className="border border-border rounded-lg bg-card overflow-hidden">
-      <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
+    <div className="border border-border rounded-lg bg-card overflow-hidden h-full flex flex-col">
+      <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between shrink-0">
         <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
           Actividades ({actividadesOrdenadas.length})
         </h3>
@@ -305,7 +305,7 @@ export function ActividadesSpreadsheet({
         </div>
       </div>
 
-      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+      <div className="overflow-auto flex-1 min-h-0">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-muted/50 backdrop-blur z-10">
             <tr className="border-b border-border">
