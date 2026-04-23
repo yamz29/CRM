@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withPermiso } from '@/lib/with-permiso'
+import { rateLimit } from '@/lib/rate-limit'
 
 const SYSTEM_PROMPT = `Eres el asistente inteligente del CRM de Gonzalva Group, una constructora/remodeladora dominicana especializada en melamina.
 
@@ -88,6 +89,11 @@ ${ordenes.length > 0 ? `**Órdenes de producción activas:**\n${ordenes.map(o =>
 }
 
 export const POST = withPermiso('dashboard', 'ver', async (request: NextRequest) => {
+  // Cada request llama a Gemini y cuesta dinero. Límite por usuario:
+  // 20/min para flujo conversacional normal, 300/día como tope económico.
+  const limited = await rateLimit({ key: 'ai-chat', maxPerMinute: 20, maxPerDay: 300 })
+  if (limited) return limited
+
   try {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {

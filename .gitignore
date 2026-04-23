@@ -38,3 +38,19 @@ npm-debug.log*
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# TypeScript incremental cache (no debe versionarse)
+tsconfig.tsbuildinfo
+
+# Claude Code / agentes
+.claude/
+CLAUDE.md
+AUDIT_PROJECT_PROMPT.md
+
+# Material de análisis y documentos sueltos que no son parte del repo
+IA_Test/
+Auditoría CRM Gonzalva/
+design-preview.html
+design-preview-dashboard.html
+spa.traineddata
+tmp/

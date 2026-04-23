@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withPermiso } from '@/lib/with-permiso'
+import { rateLimit } from '@/lib/rate-limit'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -22,6 +23,11 @@ function formatRD(n: number) {
 }
 
 export const POST = withPermiso('presupuestos', 'editar', async (_request: NextRequest, { params }: Params) => {
+  // Genera el resumen IA con Gemini — cuesta por request. Límite conservador
+  // porque típicamente se usa 1-2 veces por presupuesto: 5/min, 50/día.
+  const limited = await rateLimit({ key: 'resumen-ia', maxPerMinute: 5, maxPerDay: 50 })
+  if (limited) return limited
+
   try {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {

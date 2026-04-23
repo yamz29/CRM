@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkPermiso } from '@/lib/permisos'
+import { rateLimit } from '@/lib/rate-limit'
 
 // Timeout del OCR en ms. Claude vision con imágenes grandes puede tardar
 // 20-60s. Si nginx tiene proxy_read_timeout menor (default 60s), la request
@@ -186,6 +187,11 @@ async function ocrGemini(
 export async function POST(request: NextRequest) {
   const denied = await checkPermiso(request, 'contabilidad', 'editar')
   if (denied) return denied
+
+  // Cada llamada cuesta dinero (Claude + Gemini). Protegemos contra loops
+  // accidentales y abuso intencional: 10/min, 150/día por usuario.
+  const limited = await rateLimit({ key: 'ocr', maxPerMinute: 10, maxPerDay: 150 })
+  if (limited) return limited
 
   try {
     const formData = await request.formData()
