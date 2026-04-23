@@ -5,6 +5,23 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Flag, Loader2, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+// Claves de columnas y anchos default en px
+type ColKey = 'num' | 'nombre' | 'dur' | 'inicio' | 'fin' | 'dep' | 'tipo' | 'desfase' | 'pct' | 'acciones'
+const DEFAULT_WIDTHS: Record<ColKey, number> = {
+  num: 36,
+  nombre: 220,
+  dur: 56,
+  inicio: 80,
+  fin: 80,
+  dep: 140,
+  tipo: 60,
+  desfase: 64,
+  pct: 52,
+  acciones: 64,
+}
+const MIN_COL_WIDTH = 32
+const LS_COL_WIDTHS = 'cronograma-v2-col-widths'
+
 interface Actividad {
   id: number
   nombre: string
@@ -48,6 +65,68 @@ export function ActividadesSpreadsheet({
   const [saving, setSaving] = useState<Set<number>>(new Set())
   const [localAvanzado, setLocalAvanzado] = useState(avanzado)
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null)
+
+  // Anchos de columnas — persistidos en localStorage
+  const [colWidths, setColWidths] = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
+  const resizingRef = useRef<{ col: ColKey; startX: number; startWidth: number } | null>(null)
+
+  // Cargar anchos desde localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_COL_WIDTHS)
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<Record<ColKey, number>>
+        setColWidths(prev => ({ ...prev, ...saved }))
+      }
+    } catch { /* noop */ }
+  }, [])
+
+  // Persistir con debounce
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try { localStorage.setItem(LS_COL_WIDTHS, JSON.stringify(colWidths)) }
+      catch { /* noop */ }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [colWidths])
+
+  // Listeners globales para resize drag
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      const r = resizingRef.current
+      if (!r) return
+      const delta = e.clientX - r.startX
+      const newWidth = Math.max(MIN_COL_WIDTH, r.startWidth + delta)
+      setColWidths(prev => ({ ...prev, [r.col]: newWidth }))
+    }
+    function onMouseUp() {
+      if (resizingRef.current) {
+        resizingRef.current = null
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  function startResize(col: ColKey) {
+    return (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      resizingRef.current = {
+        col,
+        startX: e.clientX,
+        startWidth: colWidths[col],
+      }
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    }
+  }
 
   const mostrarAvanzado = onAvanzadoChange ? avanzado : localAvanzado
   const setAvanzado = onAvanzadoChange ?? setLocalAvanzado
@@ -306,23 +385,35 @@ export function ActividadesSpreadsheet({
       </div>
 
       <div className="overflow-auto max-h-[600px]">
-        <table className="w-full text-xs">
+        <table className="text-xs" style={{ tableLayout: 'fixed', width: 'max-content', minWidth: '100%' }}>
+          <colgroup>
+            <col style={{ width: colWidths.num }} />
+            <col style={{ width: colWidths.nombre }} />
+            <col style={{ width: colWidths.dur }} />
+            <col style={{ width: colWidths.inicio }} />
+            <col style={{ width: colWidths.fin }} />
+            <col style={{ width: colWidths.dep }} />
+            {mostrarAvanzado && <col style={{ width: colWidths.tipo }} />}
+            {mostrarAvanzado && <col style={{ width: colWidths.desfase }} />}
+            <col style={{ width: colWidths.pct }} />
+            <col style={{ width: colWidths.acciones }} />
+          </colgroup>
           <thead className="sticky top-0 bg-muted/50 backdrop-blur z-10">
             <tr className="border-b border-border">
-              <th className="w-8 text-center px-1 py-2 font-semibold text-muted-foreground">#</th>
-              <th className="text-left px-2 py-2 font-semibold text-muted-foreground">Nombre</th>
-              <th className="text-center px-2 py-2 font-semibold text-muted-foreground w-14">Dur</th>
-              <th className="text-center px-2 py-2 font-semibold text-muted-foreground w-20">Inicio</th>
-              <th className="text-center px-2 py-2 font-semibold text-muted-foreground w-20">Fin</th>
-              <th className="text-left px-2 py-2 font-semibold text-muted-foreground w-32">Depende de</th>
+              <ResizableTh col="num"     label="#"           widths={colWidths} startResize={startResize} align="center" />
+              <ResizableTh col="nombre"  label="Nombre"      widths={colWidths} startResize={startResize} align="left" />
+              <ResizableTh col="dur"     label="Dur"         widths={colWidths} startResize={startResize} align="center" />
+              <ResizableTh col="inicio"  label="Inicio"      widths={colWidths} startResize={startResize} align="center" />
+              <ResizableTh col="fin"     label="Fin"         widths={colWidths} startResize={startResize} align="center" />
+              <ResizableTh col="dep"     label="Depende de"  widths={colWidths} startResize={startResize} align="left" />
               {mostrarAvanzado && (
                 <>
-                  <th className="text-center px-2 py-2 font-semibold text-muted-foreground w-16">Tipo</th>
-                  <th className="text-center px-2 py-2 font-semibold text-muted-foreground w-16">Desfase</th>
+                  <ResizableTh col="tipo"     label="Tipo"    widths={colWidths} startResize={startResize} align="center" />
+                  <ResizableTh col="desfase"  label="Desfase" widths={colWidths} startResize={startResize} align="center" />
                 </>
               )}
-              <th className="text-center px-2 py-2 font-semibold text-muted-foreground w-14">%</th>
-              <th className="w-14"></th>
+              <ResizableTh col="pct"       label="%"  widths={colWidths} startResize={startResize} align="center" />
+              <ResizableTh col="acciones"  label=""   widths={colWidths} startResize={startResize} align="center" showHandle={false} />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -540,5 +631,39 @@ export function ActividadesSpreadsheet({
         </table>
       </div>
     </div>
+  )
+}
+
+// Header de columna con handle de resize al lado derecho
+function ResizableTh({
+  col,
+  label,
+  widths,
+  startResize,
+  align = 'left',
+  showHandle = true,
+}: {
+  col: ColKey
+  label: string
+  widths: Record<ColKey, number>
+  startResize: (col: ColKey) => (e: React.MouseEvent) => void
+  align?: 'left' | 'center' | 'right'
+  showHandle?: boolean
+}) {
+  const textAlign = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
+  return (
+    <th
+      className={`relative ${textAlign} px-2 py-2 font-semibold text-muted-foreground select-none`}
+      style={{ width: widths[col] }}
+    >
+      <span className="truncate block">{label}</span>
+      {showHandle && (
+        <span
+          onMouseDown={startResize(col)}
+          className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary transition-colors"
+          title="Arrastra para redimensionar columna"
+        />
+      )}
+    </th>
   )
 }
