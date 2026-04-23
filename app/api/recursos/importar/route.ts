@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 interface RecursoImport {
   codigo: string
@@ -18,7 +19,7 @@ interface RecursoImport {
 
 // POST /api/recursos/importar
 // Body: { recursos: RecursoImport[], modo: 'crear_actualizar'|'solo_crear'|'solo_actualizar', nombreArchivo: string }
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('recursos', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const items: RecursoImport[] = body.recursos ?? []
@@ -148,4 +149,4 @@ export async function POST(request: NextRequest) {
     console.error('[importar recursos]', error)
     return NextResponse.json({ error: 'Error al importar recursos' }, { status: 500 })
   }
-}
+})

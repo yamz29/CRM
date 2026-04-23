@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const POST = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const body = await req.json()
 
@@ -21,4 +24,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   } catch {
     return NextResponse.json({ error: 'Error al agregar item' }, { status: 500 })
   }
-}
+})

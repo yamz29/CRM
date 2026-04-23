@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('tareas', 'ver', async () => {
   try {
     // Auto-archive: completadas hace más de 7 días sin cambios
     const sieteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -37,9 +38,9 @@ export async function GET() {
     console.error('Error fetching tareas:', error)
     return NextResponse.json({ error: 'Error al obtener tareas' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('tareas', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const { titulo, descripcion, clienteId, proyectoId, oportunidadId, asignadoId, fechaLimite, prioridad, estado, avance, responsable } = body
@@ -75,4 +76,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating tarea:', error)
     return NextResponse.json({ error: 'Error al crear tarea' }, { status: 500 })
   }
-}
+})

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
 // ── GET: Full project with walls + placements ─────────────────────────────────
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('cocinas', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const projectId = parseInt(id)
@@ -42,11 +45,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     console.error('Error fetching kitchen project:', error)
     return NextResponse.json({ error: 'Error al obtener proyecto de cocina' }, { status: 500 })
   }
-}
+})
 
 // ── PUT: Update project meta + full walls replacement ─────────────────────────
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export const PUT = withPermiso('cocinas', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const projectId = parseInt(id)
@@ -100,11 +103,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
     console.error('Error updating kitchen project:', error)
     return NextResponse.json({ error: 'Error al actualizar proyecto de cocina' }, { status: 500 })
   }
-}
+})
 
 // ── DELETE: Delete project ────────────────────────────────────────────────────
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('cocinas', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const projectId = parseInt(id)
@@ -117,4 +120,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     console.error('Error deleting kitchen project:', error)
     return NextResponse.json({ error: 'Error al eliminar proyecto de cocina' }, { status: 500 })
   }
-}
+})

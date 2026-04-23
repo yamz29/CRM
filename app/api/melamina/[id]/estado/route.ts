@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const PATCH = withPermiso('melamina', 'editar', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -27,4 +27,4 @@ export async function PATCH(
     console.error('Error updating estado:', error)
     return NextResponse.json({ error: 'Error al actualizar estado' }, { status: 500 })
   }
-}
+})

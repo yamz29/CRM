@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
+import { withPermiso } from '@/lib/with-permiso'
 
 // GET /api/recursos/plantilla
-export async function GET() {
+export const GET = withPermiso('recursos', 'ver', async () => {
   const headers = [
     'codigo', 'nombre', 'tipo', 'categoria', 'subcategoria',
     'unidad', 'costo_unitario', 'moneda', 'proveedor', 'marca', 'observaciones', 'activo',
@@ -97,4 +98,4 @@ export async function GET() {
       'Content-Disposition': 'attachment; filename="plantilla-recursos.xlsx"',
     },
   })
-}
+})

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 const INCLUDE_RECURSOS = {
   recursos: {
@@ -8,7 +9,7 @@ const INCLUDE_RECURSOS = {
   },
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('apus', 'ver', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')
   const capitulo = searchParams.get('capitulo')
@@ -29,9 +30,9 @@ export async function GET(request: NextRequest) {
     console.error(error)
     return NextResponse.json({ error: 'Error al obtener APUs' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('apus', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const { recursos = [], ...apuData } = body
@@ -86,4 +87,4 @@ export async function POST(request: NextRequest) {
     console.error(error)
     return NextResponse.json({ error: 'Error al crear APU' }, { status: 500 })
   }
-}
+})

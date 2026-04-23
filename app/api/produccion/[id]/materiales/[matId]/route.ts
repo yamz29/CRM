@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string; matId: string }> }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { matId } = await params
   const body = await req.json()
 
@@ -27,4 +30,4 @@ export async function PUT(req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al actualizar material' }, { status: 500 })
   }
-}
+})

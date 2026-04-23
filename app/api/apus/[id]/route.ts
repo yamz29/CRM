@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = { params: Promise<{ id: string }> }
 
 // ── Cycle detection ────────────────────────────────────────────────────────────
 // Returns true if `targetId` appears anywhere in the composition tree of `rootId`
@@ -30,10 +33,7 @@ const INCLUDE_RECURSOS = {
   },
 }
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withPermiso('apus', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -45,12 +45,9 @@ export async function GET(
     console.error(error)
     return NextResponse.json({ error: 'Error al obtener APU' }, { status: 500 })
   }
-}
+})
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PUT = withPermiso('apus', 'editar', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -130,12 +127,9 @@ export async function PUT(
     console.error(error)
     return NextResponse.json({ error: 'Error al actualizar APU' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('apus', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -146,4 +140,4 @@ export async function DELETE(
     console.error(error)
     return NextResponse.json({ error: 'Error al eliminar APU' }, { status: 500 })
   }
-}
+})

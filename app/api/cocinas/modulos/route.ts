@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 // ── GET: List modules (no piezas for performance) ─────────────────────────────
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('cocinas', 'ver', async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const tipo = searchParams.get('tipo')
@@ -44,4 +45,4 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching modulos for kitchen:', error)
     return NextResponse.json({ error: 'Error al obtener módulos' }, { status: 500 })
   }
-}
+})

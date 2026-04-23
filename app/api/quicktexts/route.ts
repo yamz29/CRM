@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 // GET /api/quicktexts — lista todas las plantillas
-export async function GET() {
+export const GET = withPermiso('dashboard', 'ver', async () => {
   try {
     const items = await prisma.presupuestoQuickText.findMany({
       orderBy: [{ categoria: 'asc' }, { orden: 'asc' }, { nombre: 'asc' }],
@@ -12,10 +13,10 @@ export async function GET() {
     console.error('Error fetching quicktexts:', e)
     return NextResponse.json({ error: 'Error al cargar plantillas' }, { status: 500 })
   }
-}
+})
 
 // POST /api/quicktexts — crear nueva plantilla
-export async function POST(req: NextRequest) {
+export const POST = withPermiso('dashboard', 'editar', async (req: NextRequest) => {
   try {
     const { nombre, categoria, contenido, orden } = await req.json()
     if (!nombre?.trim() || !contenido?.trim()) {
@@ -34,4 +35,4 @@ export async function POST(req: NextRequest) {
     console.error('Error creating quicktext:', e)
     return NextResponse.json({ error: 'Error al crear plantilla' }, { status: 500 })
   }
-}
+})

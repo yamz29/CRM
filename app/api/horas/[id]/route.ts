@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const PUT = withPermiso('horas', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const body = await request.json()
@@ -40,12 +40,9 @@ export async function PUT(
     console.error('Error updating registro de horas:', error)
     return NextResponse.json({ error: 'Error al actualizar registro' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('horas', 'editar', async (_request: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     await prisma.registroHoras.delete({ where: { id: parseInt(id) } })
@@ -54,4 +51,4 @@ export async function DELETE(
     console.error('Error deleting registro de horas:', error)
     return NextResponse.json({ error: 'Error al eliminar registro' }, { status: 500 })
   }
-}
+})

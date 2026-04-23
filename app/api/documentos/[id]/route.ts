@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('documentos', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const docId = parseInt(id)
   if (isNaN(docId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -16,9 +19,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (!documento) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   return NextResponse.json(documento)
-}
+})
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withPermiso('documentos', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const docId = parseInt(id)
   if (isNaN(docId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -43,13 +46,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   return NextResponse.json(documento)
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withPermiso('documentos', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const docId = parseInt(id)
   if (isNaN(docId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   await prisma.documentoProyecto.delete({ where: { id: docId } })
   return NextResponse.json({ ok: true })
-}
+})

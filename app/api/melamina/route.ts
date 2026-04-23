@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('melamina', 'ver', async () => {
   try {
     const modulos = await prisma.moduloMelaminaV2.findMany({
       include: {
@@ -14,9 +15,9 @@ export async function GET() {
     console.error('Error fetching modulos melamina:', error)
     return NextResponse.json({ error: 'Error al obtener módulos' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('melamina', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const {
@@ -73,4 +74,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating modulo melamina:', error)
     return NextResponse.json({ error: 'Error al crear módulo' }, { status: 500 })
   }
-}
+})

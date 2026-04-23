@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('dashboard', 'ver', async () => {
   try {
     const unidades = await prisma.unidadGlobal.findMany({
       orderBy: [{ tipo: 'asc' }, { codigo: 'asc' }],
@@ -11,9 +12,9 @@ export async function GET() {
     console.error(error)
     return NextResponse.json({ error: 'Error al obtener unidades' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('dashboard', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     if (!body.codigo?.trim()) return NextResponse.json({ error: 'El código es obligatorio' }, { status: 400 })
@@ -34,4 +35,4 @@ export async function POST(request: NextRequest) {
     const msg = error instanceof Error && error.message.includes('Unique') ? 'Ya existe una unidad con ese código' : 'Error al crear unidad'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
-}
+})

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 // ── GET: List all kitchen projects ───────────────────────────────────────────
 
-export async function GET() {
+export const GET = withPermiso('cocinas', 'ver', async () => {
   try {
     const projects = await prisma.kitchenProject.findMany({
       include: {
@@ -31,11 +32,11 @@ export async function GET() {
     console.error('Error fetching kitchen projects:', error)
     return NextResponse.json({ error: 'Error al obtener proyectos de cocina' }, { status: 500 })
   }
-}
+})
 
 // ── POST: Create kitchen project ─────────────────────────────────────────────
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('cocinas', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json() as {
       nombre: string
@@ -78,4 +79,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating kitchen project:', error)
     return NextResponse.json({ error: 'Error al crear proyecto de cocina' }, { status: 500 })
   }
-}
+})

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
 // ── POST: Add a placement to kitchen project ──────────────────────────────────
 
-export async function POST(request: NextRequest, { params }: Params) {
+export const POST = withPermiso('cocinas', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const projectId = parseInt(id)
@@ -67,4 +70,4 @@ export async function POST(request: NextRequest, { params }: Params) {
     console.error('Error creating placement:', error)
     return NextResponse.json({ error: 'Error al crear placement' }, { status: 500 })
   }
-}
+})

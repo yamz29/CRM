@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string; itemId: string }> }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('produccion', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
 
   const asignaciones = await prisma.asignacionProduccion.findMany({
@@ -13,9 +16,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
 
   return NextResponse.json(asignaciones)
-}
+})
 
-export async function POST(req: NextRequest, { params }: Params) {
+export const POST = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const { usuarioId, etapa } = await req.json()
 
@@ -47,9 +50,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al asignar' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const { usuarioId, etapa } = await req.json()
 
@@ -66,4 +69,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al desasignar' }, { status: 500 })
   }
-}
+})

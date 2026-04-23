@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { readFileSync } from 'fs'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ slug: string }> }
 
-export async function GET(_req: Request, { params }: Params) {
+export const GET = withPermiso('dashboard', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   try {
     const { slug } = await params
     // Sanitize: only allow alphanumeric + hyphens
@@ -17,4 +20,4 @@ export async function GET(_req: Request, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Artículo no encontrado' }, { status: 404 })
   }
-}
+})

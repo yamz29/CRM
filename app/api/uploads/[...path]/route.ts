@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile, stat } from 'fs/promises'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = { params: Promise<{ path: string[] }> }
 
 const MIME_TYPES: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -13,10 +16,7 @@ const MIME_TYPES: Record<string, string> = {
 
 const UPLOADS_ROOT = path.resolve(process.cwd(), 'public', 'uploads')
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export const GET = withPermiso('dashboard', 'ver', async (_request: NextRequest, { params }: Ctx) => {
   const segments = (await params).path
 
   // Canonicalización: resolver y verificar que la ruta caiga dentro del root.
@@ -42,4 +42,4 @@ export async function GET(
   } catch {
     return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 })
   }
-}
+})

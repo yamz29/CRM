@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 const SYSTEM_PROMPT = `Eres el asistente inteligente del CRM de Gonzalva Group, una constructora/remodeladora dominicana especializada en melamina.
 
@@ -86,7 +87,7 @@ ${oportunidades.map(o => `- ${o.etapa}: ${o._count} oportunidades — RD$ ${((o.
 ${ordenes.length > 0 ? `**Órdenes de producción activas:**\n${ordenes.map(o => `- ${o.codigo}: ${o.nombre} [${o.estado}] — Prioridad: ${o.prioridad}`).join('\n')}` : ''}`
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('dashboard', 'ver', async (request: NextRequest) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
@@ -161,4 +162,4 @@ export async function POST(request: NextRequest) {
     console.error('AI chat error:', error)
     return NextResponse.json({ error: 'Error interno del asistente' }, { status: 500 })
   }
-}
+})

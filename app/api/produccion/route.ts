@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { DEFAULT_QC_PROCESO, DEFAULT_QC_FINAL } from '@/lib/produccion'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('produccion', 'ver', async () => {
   const ordenes = await prisma.ordenProduccion.findMany({
     include: {
       proyecto: { select: { id: true, nombre: true } },
@@ -15,9 +16,9 @@ export async function GET() {
   })
 
   return NextResponse.json(ordenes)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withPermiso('produccion', 'editar', async (req: NextRequest) => {
   try {
     const body = await req.json()
     const { modo } = body // 'importar-espacio' | 'manual'
@@ -273,4 +274,4 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : 'Error al crear orden'
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
+})

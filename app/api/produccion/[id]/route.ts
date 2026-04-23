@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ETAPAS_PRODUCCION, ETAPA_ORDER } from '@/lib/produccion'
 import type { EtapaLog } from '@/lib/produccion'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -27,7 +30,7 @@ function updateEtapasLog(currentLog: string | null, fromEtapa: string, toEtapa: 
   return JSON.stringify(log)
 }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('produccion', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
 
   const orden = await prisma.ordenProduccion.findUnique({
@@ -53,9 +56,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 
   return NextResponse.json(orden)
-}
+})
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const body = await req.json()
 
@@ -219,9 +222,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al actualizar orden' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('produccion', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
 
   try {
@@ -230,4 +233,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al eliminar orden' }, { status: 500 })
   }
-}
+})

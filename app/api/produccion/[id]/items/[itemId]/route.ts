@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string; itemId: string }> }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { itemId } = await params
   const body = await req.json()
 
@@ -22,9 +25,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const message = error instanceof Error ? error.message : 'Error al actualizar item'
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('produccion', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { itemId } = await params
 
   try {
@@ -33,4 +36,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al eliminar item' }, { status: 500 })
   }
-}
+})

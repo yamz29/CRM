@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 // GET /api/recursos/inventario
 // Devuelve todos los recursos con controlarStock=true, ordenados por nivel de alerta
-export async function GET() {
+export const GET = withPermiso('recursos', 'ver', async () => {
   try {
     const recursos = await prisma.recurso.findMany({
       where: { controlarStock: true, activo: true },
@@ -34,4 +35,4 @@ export async function GET() {
     console.error(error)
     return NextResponse.json({ error: 'Error al obtener inventario' }, { status: 500 })
   }
-}
+})

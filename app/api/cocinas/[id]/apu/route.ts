@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { runNesting, type NestPieceIn } from '@/lib/nesting'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -18,7 +21,7 @@ type Params = { params: Promise<{ id: string }> }
  *
  * Body opcional: { nombre?: string, capitulo?: string }
  */
-export async function POST(request: NextRequest, { params }: Params) {
+export const POST = withPermiso('cocinas', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const projectId = parseInt(id)
@@ -237,4 +240,4 @@ export async function POST(request: NextRequest, { params }: Params) {
     console.error('Error creating APU from kitchen:', error)
     return NextResponse.json({ error: 'Error al crear APU desde la cocina' }, { status: 500 })
   }
-}
+})

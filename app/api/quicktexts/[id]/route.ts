@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
 // PUT /api/quicktexts/[id] — actualizar
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('dashboard', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -23,10 +26,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     console.error('Error updating quicktext:', e)
     return NextResponse.json({ error: 'Error al actualizar plantilla' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/quicktexts/[id]
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('dashboard', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -38,4 +41,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     console.error('Error deleting quicktext:', e)
     return NextResponse.json({ error: 'Error al eliminar plantilla' }, { status: 500 })
   }
-}
+})

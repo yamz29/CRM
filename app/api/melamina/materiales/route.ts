@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('melamina', 'ver', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const tipo = searchParams.get('tipo')
 
@@ -13,9 +14,9 @@ export async function GET(request: NextRequest) {
     orderBy: [{ tipo: 'asc' }, { nombre: 'asc' }],
   })
   return NextResponse.json(materiales)
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('melamina', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const {
@@ -52,4 +53,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating material melamina:', error)
     return NextResponse.json({ error: 'Error al crear material' }, { status: 500 })
   }
-}
+})

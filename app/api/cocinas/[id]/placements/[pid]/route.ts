@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string; pid: string }> }
 
 // ── PUT: Update placement position/nivel ─────────────────────────────────────
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export const PUT = withPermiso('cocinas', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id, pid } = await params
     const projectId = parseInt(id)
@@ -55,11 +58,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
     console.error('Error updating placement:', error)
     return NextResponse.json({ error: 'Error al actualizar placement' }, { status: 500 })
   }
-}
+})
 
 // ── DELETE: Remove placement ──────────────────────────────────────────────────
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('cocinas', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   try {
     const { id, pid } = await params
     const projectId = parseInt(id)
@@ -77,4 +80,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     console.error('Error deleting placement:', error)
     return NextResponse.json({ error: 'Error al eliminar placement' }, { status: 500 })
   }
-}
+})

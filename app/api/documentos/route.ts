@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(req: NextRequest) {
+export const GET = withPermiso('documentos', 'ver', async (req: NextRequest) => {
   const { searchParams } = new URL(req.url)
   const proyectoId = searchParams.get('proyectoId')
   const oportunidadId = searchParams.get('oportunidadId')
@@ -34,9 +35,9 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json(documentos)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withPermiso('documentos', 'editar', async (req: NextRequest) => {
   const body = await req.json()
   const {
     proyectoId, oportunidadId, nombre, categoria,
@@ -63,4 +64,4 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json(documento, { status: 201 })
-}
+})

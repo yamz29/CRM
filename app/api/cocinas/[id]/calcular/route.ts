@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { runNesting, type NestPieceIn } from '@/lib/nesting'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -14,7 +17,7 @@ interface PiezaCorte {
   tapacanto: string[]
 }
 
-export async function POST(_req: NextRequest, { params }: Params) {
+export const POST = withPermiso('cocinas', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   try {
     const { id } = await params
     const projectId = parseInt(id)
@@ -128,4 +131,4 @@ export async function POST(_req: NextRequest, { params }: Params) {
     console.error('Error calculating kitchen nesting:', error)
     return NextResponse.json({ error: 'Error al calcular' }, { status: 500 })
   }
-}
+})

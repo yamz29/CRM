@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('recursos', 'ver', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const tipo = searchParams.get('tipo')
   const activo = searchParams.get('activo')
@@ -21,9 +22,9 @@ export async function GET(request: NextRequest) {
     console.error(error)
     return NextResponse.json({ error: 'Error al obtener recursos' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('recursos', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const recurso = await prisma.recurso.create({
@@ -50,4 +51,4 @@ export async function POST(request: NextRequest) {
     console.error(error)
     return NextResponse.json({ error: 'Error al crear recurso' }, { status: 500 })
   }
-}
+})

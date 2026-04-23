@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('melamina', 'ver', async (_request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -28,12 +28,9 @@ export async function GET(
     console.error('Error fetching modulo:', error)
     return NextResponse.json({ error: 'Error al obtener módulo' }, { status: 500 })
   }
-}
+})
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PUT = withPermiso('melamina', 'editar', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -133,12 +130,9 @@ export async function PUT(
     console.error('Error updating modulo:', error)
     return NextResponse.json({ error: 'Error al actualizar módulo' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('melamina', 'editar', async (_request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -150,4 +144,4 @@ export async function DELETE(
     console.error('Error deleting modulo:', error)
     return NextResponse.json({ error: 'Error al eliminar módulo' }, { status: 500 })
   }
-}
+})

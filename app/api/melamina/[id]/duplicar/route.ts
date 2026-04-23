@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const POST = withPermiso('melamina', 'editar', async (_request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -93,4 +93,4 @@ export async function POST(
     console.error('Error duplicating modulo:', error)
     return NextResponse.json({ error: 'Error al duplicar módulo' }, { status: 500 })
   }
-}
+})

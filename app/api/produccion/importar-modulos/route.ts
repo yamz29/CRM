@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 // Returns available modules from a presupuesto for import selection
-export async function POST(req: NextRequest) {
+export const POST = withPermiso('produccion', 'editar', async (req: NextRequest) => {
   const { presupuestoId } = await req.json()
 
   if (!presupuestoId) {
@@ -37,4 +38,4 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({ presupuesto, modulos })
-}
+})

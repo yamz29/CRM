@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PLANTILLAS_DEFAULT } from '@/lib/plantillas-tareas-pipeline'
+import { withPermiso } from '@/lib/with-permiso'
 
 // GET: list all templates, optionally filtered by etapa
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('tareas', 'ver', async (request: NextRequest) => {
   try {
     const etapa = request.nextUrl.searchParams.get('etapa')
     const plantillas = await prisma.plantillaTareaEtapa.findMany({
@@ -15,10 +16,10 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching plantillas:', error)
     return NextResponse.json({ error: 'Error al obtener plantillas' }, { status: 500 })
   }
-}
+})
 
 // POST: create a template, or seed defaults if body has { _seed: true }
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('tareas', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
 
@@ -59,4 +60,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating plantilla:', error)
     return NextResponse.json({ error: 'Error al crear plantilla' }, { status: 500 })
   }
-}
+})

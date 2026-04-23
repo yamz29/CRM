@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const PUT = withPermiso('dashboard', 'editar', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -24,9 +27,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const msg = error instanceof Error && error.message.includes('Unique') ? 'Ya existe una unidad con ese código' : 'Error al actualizar'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withPermiso('dashboard', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -38,4 +41,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     console.error(error)
     return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
   }
-}
+})

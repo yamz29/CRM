@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('clientes', 'ver', async () => {
   const clientes = await prisma.cliente.findMany({
     include: { _count: { select: { proyectos: true, presupuestos: true } } },
     orderBy: { nombre: 'asc' },
@@ -44,4 +45,4 @@ export async function GET() {
       'Content-Disposition': `attachment; filename="clientes-${fecha}.xlsx"`,
     },
   })
-}
+})

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('recursos', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -16,12 +16,9 @@ export async function GET(
     console.error(error)
     return NextResponse.json({ error: 'Error al obtener recurso' }, { status: 500 })
   }
-}
+})
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PUT = withPermiso('recursos', 'editar', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -77,12 +74,9 @@ export async function PUT(
     console.error(error)
     return NextResponse.json({ error: 'Error al actualizar recurso' }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('recursos', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -93,4 +87,4 @@ export async function DELETE(
     console.error(error)
     return NextResponse.json({ error: 'Error al eliminar recurso' }, { status: 500 })
   }
-}
+})

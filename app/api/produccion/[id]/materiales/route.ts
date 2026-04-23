@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = Params
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('produccion', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
 
   const materiales = await prisma.materialOrdenProduccion.findMany({
@@ -13,9 +16,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
 
   return NextResponse.json(materiales)
-}
+})
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('produccion', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const { updates } = await req.json()
 
@@ -38,4 +41,4 @@ export async function PUT(req: NextRequest, { params }: Params) {
   } catch {
     return NextResponse.json({ error: 'Error al actualizar materiales' }, { status: 500 })
   }
-}
+})
