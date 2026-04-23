@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { addWorkingDays } from '@/lib/calendario-laboral'
 import { recalcularCriticalPath } from '@/lib/cronograma-scheduling'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { params }: Params) => {
   const { id } = await params
   const cronogramaId = parseInt(id)
 
@@ -19,9 +20,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
 
   return NextResponse.json(actividades)
-}
+})
 
-export async function POST(req: NextRequest, { params }: Params) {
+export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const cronogramaId = parseInt(id)
   if (isNaN(cronogramaId)) {
@@ -87,4 +88,4 @@ export async function POST(req: NextRequest, { params }: Params) {
   await recalcularCriticalPath(cronogramaId).catch(() => { /* no bloqueante */ })
 
   return NextResponse.json(actividad, { status: 201 })
-}
+})

@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import path from 'path'
 import fs from 'fs'
 import { execSync } from 'child_process'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 import {
   TEMP_DIR,
   DB_PATH,
@@ -19,7 +20,7 @@ const ALLOWED_EXTENSIONS = ['.db', '.sqlite']
 // Acepta dos acciones via FormData:
 //   action=validar  + file (File)     → valida y guarda en temp
 //   action=importar + tempFile (string) → hace backup y reemplaza la base
-export async function POST(req: Request) {
+export const POST = withPermiso('configuracion', 'editar', async (req: NextRequest) => {
   // 1. Verificar que hay sesión activa (el middleware inyecta x-user-id)
   const userIdHeader = req.headers.get('x-user-id')
   if (!userIdHeader) {
@@ -172,4 +173,4 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ error: 'Acción no reconocida' }, { status: 400 })
-}
+})

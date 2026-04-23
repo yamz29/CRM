@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const PUT = withPermiso('configuracion', 'editar', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   const body = await request.json()
@@ -42,14 +42,11 @@ export async function PUT(
       ? 'Ya existe un usuario con ese correo' : 'Error al actualizar'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('configuracion', 'editar', async (_request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   await prisma.usuario.delete({ where: { id } })
   return NextResponse.json({ ok: true })
-}
+})

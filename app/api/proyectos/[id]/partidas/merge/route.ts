@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -15,7 +16,7 @@ type Params = { params: Promise<{ id: string }> }
  *   - Elimina las partidas fuente
  *   - Opcionalmente actualiza descripción/código de la partida destino
  */
-export async function POST(req: NextRequest, { params }: Params) {
+export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -82,4 +83,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     fusionadas: result.fusionadas,
     gastosReasignados: result.gastosReasignados,
   })
-}
+})

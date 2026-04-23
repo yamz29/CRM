@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest) => {
   const usuarios = await prisma.usuario.findMany({
     orderBy: { nombre: 'asc' },
     select: { id: true, nombre: true, correo: true, rol: true, activo: true, createdAt: true,
@@ -16,9 +17,9 @@ export async function GET() {
     hasPassword: Boolean(u.password),
   }))
   return NextResponse.json(withFlag)
-}
+})
 
-export async function POST(request: Request) {
+export const POST = withPermiso('configuracion', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const { nombre, correo, rol, activo, password, costoHora } = body
@@ -61,4 +62,4 @@ export async function POST(request: Request) {
       ? 'Ya existe un usuario con ese correo' : 'Error al crear usuario'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
-}
+})

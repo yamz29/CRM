@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -7,7 +8,7 @@ type Params = { params: Promise<{ id: string }> }
  * GET: devuelve un preview de los grupos de partidas que se pueden fusionar por código.
  * Solo grupos con 2+ partidas que comparten el mismo código (no null).
  */
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { params }: Params) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -42,14 +43,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     }))
 
   return NextResponse.json({ grupos: candidatos })
-}
+})
 
 /**
  * POST: fusiona todas las partidas que comparten el mismo código.
  * Body (opcional): { codigos?: string[] } — si se omite, fusiona todos los grupos con duplicados.
  * Toma como destino la primera partida de cada grupo (menor orden).
  */
-export async function POST(req: NextRequest, { params }: Params) {
+export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -114,4 +115,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     totalFusionadas,
     gastosReasignados: totalGastos,
   })
-}
+})

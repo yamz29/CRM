@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import path from 'path'
 import fs from 'fs'
+import { withPermiso } from '@/lib/with-permiso'
 
 const BACKUPS_DIR = path.join(process.cwd(), 'backups')
 
@@ -11,7 +12,7 @@ const SAFE_FILENAME = /^backup-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}\.zip$/
 type Params = { params: Promise<{ filename: string }> }
 
 // GET /api/configuracion/backup/[filename] — descargar backup
-export async function GET(_req: Request, { params }: Params) {
+export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest, { params }: Params) => {
   const { filename } = await params
 
   if (!SAFE_FILENAME.test(filename)) {
@@ -37,10 +38,10 @@ export async function GET(_req: Request, { params }: Params) {
     console.error('[backup download]', err)
     return NextResponse.json({ error: 'Error al descargar el backup' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/configuracion/backup/[filename] — eliminar backup
-export async function DELETE(_req: Request, { params }: Params) {
+export const DELETE = withPermiso('configuracion', 'editar', async (_req: NextRequest, { params }: Params) => {
   const { filename } = await params
 
   if (!SAFE_FILENAME.test(filename)) {
@@ -60,4 +61,4 @@ export async function DELETE(_req: Request, { params }: Params) {
     console.error('[backup delete]', err)
     return NextResponse.json({ error: 'Error al eliminar el backup' }, { status: 500 })
   }
-}
+})

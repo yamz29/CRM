@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string; pid: string }> }
 
@@ -8,7 +9,7 @@ type Params = { params: Promise<{ id: string; pid: string }> }
  * Edita campos individuales de una partida: codigo, descripcion, unidad,
  * cantidad, precioUnitario (se recalcula subtotal).
  */
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id, pid } = await params
   const proyectoId = parseInt(id)
   const partidaId = parseInt(pid)
@@ -51,13 +52,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   })
 
   return NextResponse.json(partida)
-}
+})
 
 /**
  * DELETE /api/proyectos/[id]/partidas/[pid]
  * Elimina la partida. Los gastos asociados quedan con partidaId = null (SetNull).
  */
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('proyectos', 'editar', async (_req: NextRequest, { params }: Params) => {
   const { id, pid } = await params
   const proyectoId = parseInt(id)
   const partidaId = parseInt(pid)
@@ -72,4 +73,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   await prisma.proyectoPartida.delete({ where: { id: partidaId } })
   return NextResponse.json({ ok: true })
-}
+})

@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml']
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('configuracion', 'editar', async (request: NextRequest) => {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -54,4 +55,4 @@ export async function POST(request: NextRequest) {
     console.error('Error uploading logo:', error)
     return NextResponse.json({ error: 'Error al subir el archivo' }, { status: 500 })
   }
-}
+})

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { params }: Params) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -36,9 +37,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
 
   return NextResponse.json({ ...cronograma, actividades: actividadesConEstado })
-}
+})
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -66,13 +67,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   })
 
   return NextResponse.json(cronograma)
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('proyectos', 'editar', async (_req: NextRequest, { params }: Params) => {
   const { id } = await params
   const numId = parseInt(id)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   await prisma.cronograma.delete({ where: { id: numId } })
   return NextResponse.json({ ok: true })
-}
+})

@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { rescheduleActividad, cascadeReschedule } from '@/lib/cronograma-scheduling'
 import { diffWorkingDays } from '@/lib/calendario-laboral'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string; aid: string }> }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { aid } = await params
   const numId = parseInt(aid)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -111,13 +112,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   return NextResponse.json({ ...actividad, estado: estadoCalculado })
-}
+})
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('proyectos', 'editar', async (_req: NextRequest, { params }: Params) => {
   const { aid } = await params
   const numId = parseInt(aid)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   await prisma.actividadCronograma.delete({ where: { id: numId } })
   return NextResponse.json({ ok: true })
-}
+})

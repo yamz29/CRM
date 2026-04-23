@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
 // POST /api/cronograma/[id]/avance — registrar avance de una actividad
-export async function POST(req: NextRequest, { params }: Params) {
+export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Params) => {
   const { id } = await params
   const cronogramaId = parseInt(id)
   if (isNaN(cronogramaId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -53,4 +54,4 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   return NextResponse.json({ avance, actividad })
-}
+})

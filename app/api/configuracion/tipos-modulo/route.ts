@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 const CLAVE = 'tipos_modulo_melamina'
 const DEFAULTS = [
@@ -8,13 +9,13 @@ const DEFAULTS = [
   'Electrodoméstico', 'Otro',
 ]
 
-export async function GET() {
+export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest) => {
   const config = await prisma.configuracion.findUnique({ where: { clave: CLAVE } })
   const tipos: string[] = config ? JSON.parse(config.valor) : DEFAULTS
   return NextResponse.json(tipos)
-}
+})
 
-export async function PUT(req: NextRequest) {
+export const PUT = withPermiso('configuracion', 'editar', async (req: NextRequest) => {
   const { tipos } = await req.json()
 
   if (!Array.isArray(tipos) || tipos.length === 0) {
@@ -28,4 +29,4 @@ export async function PUT(req: NextRequest) {
   })
 
   return NextResponse.json(tipos)
-}
+})

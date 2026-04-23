@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET() {
+export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest) => {
   const empresa = await prisma.empresa.findFirst()
   return NextResponse.json(empresa)
-}
+})
 
-export async function POST(request: Request) {
+export const POST = withPermiso('configuracion', 'editar', async (request: NextRequest) => {
   const body = await request.json()
   const { nombre, rut, slogan, direccion, telefono, correo, sitioWeb, logoUrl } = body
 
@@ -24,4 +25,4 @@ export async function POST(request: Request) {
     })
     return NextResponse.json(empresa)
   }
-}
+})

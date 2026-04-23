@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { MODULOS, type NivelPermiso } from '@/lib/permisos'
 import { getSession } from '@/lib/auth'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ userId: string }> }
 
 // GET /api/configuracion/permisos/[userId] → devuelve PermisosMap del usuario
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest, { params }: Params) => {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.rol !== 'Admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -20,11 +21,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
   for (const r of rows) map[r.modulo] = r.nivel as NivelPermiso
 
   return NextResponse.json(map)
-}
+})
 
 // PUT /api/configuracion/permisos/[userId] → guarda permisos completos del usuario
 // body: { dashboard: 'editar', clientes: 'ver', ... }
-export async function PUT(req: NextRequest, { params }: Params) {
+export const PUT = withPermiso('configuracion', 'editar', async (req: NextRequest, { params }: Params) => {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.rol !== 'Admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -51,4 +52,4 @@ export async function PUT(req: NextRequest, { params }: Params) {
   )
 
   return NextResponse.json({ ok: true })
-}
+})

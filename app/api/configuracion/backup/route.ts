@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import path from 'path'
 import fs from 'fs'
 import archiver from 'archiver'
+import { withPermiso } from '@/lib/with-permiso'
 
 // Rutas absolutas basadas en el directorio raíz del proyecto (CRM/)
 const BACKUPS_DIR = path.join(process.cwd(), 'backups')
@@ -15,7 +16,7 @@ function ensureBackupsDir() {
 }
 
 // GET /api/configuracion/backup — listar backups existentes
-export async function GET() {
+export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest) => {
   try {
     ensureBackupsDir()
 
@@ -36,10 +37,10 @@ export async function GET() {
     console.error('[backup GET]', err)
     return NextResponse.json({ error: 'Error al listar los backups' }, { status: 500 })
   }
-}
+})
 
 // POST /api/configuracion/backup — crear nuevo backup
-export async function POST() {
+export const POST = withPermiso('configuracion', 'editar', async (_req: NextRequest) => {
   try {
     ensureBackupsDir()
 
@@ -86,4 +87,4 @@ export async function POST() {
     console.error('[backup POST]', err)
     return NextResponse.json({ error: 'Error al crear el backup' }, { status: 500 })
   }
-}
+})
