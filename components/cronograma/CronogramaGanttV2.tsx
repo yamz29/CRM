@@ -215,12 +215,10 @@ export function CronogramaGanttV2({
       </div>
       <div className="cronograma-gantt-v2 h-full w-full overflow-hidden">
       <style jsx global>{`
-        /* Asegurar que el gantt-container de frappe-gantt tome toda
-           la altura y sea scrollable visiblemente */
+        /* Solo estilar la scrollbar, NO forzar height/width (eso lo hace
+           frappe-gantt internamente calculando --gv-grid-height según
+           número de filas). */
         .cronograma-gantt-v2 .gantt-container {
-          height: 100% !important;
-          max-height: 100% !important;
-          width: 100% !important;
           scrollbar-width: thin;
         }
         .cronograma-gantt-v2 .gantt-container::-webkit-scrollbar {
