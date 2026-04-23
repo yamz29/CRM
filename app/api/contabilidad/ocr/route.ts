@@ -10,10 +10,14 @@ const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 90_000
 // Aumenta el maxDuration de la función de ruta (Next.js config)
 export const maxDuration = 120 // segundos
 
-// Provider configurable vía env. Claude tiene mejor precisión en fotos
-// de facturas borrosas/anguladas que Gemini. Default: claude.
+// Provider primario configurable vía env. Gemini es más barato y rápido;
+// Claude queda como fallback automático si Gemini falla (error de API,
+// timeout o JSON ilegible). Default: gemini.
 // Valores: 'claude' | 'gemini'
-const OCR_PROVIDER = (process.env.OCR_PROVIDER || 'claude').toLowerCase()
+type OcrProvider = 'claude' | 'gemini'
+const OCR_PROVIDER: OcrProvider = (
+  (process.env.OCR_PROVIDER || 'gemini').toLowerCase() === 'claude' ? 'claude' : 'gemini'
+)
 
 // Modelos configurables (permite ajustar sin redeploy).
 const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL || 'gemini-2.5-pro'
@@ -214,89 +218,105 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Provider puede venir forzado por query (?provider=claude|gemini)
-    // para pruebas/reintentos. Default: OCR_PROVIDER env var.
-    const requestedProvider = request.nextUrl.searchParams.get('provider')?.toLowerCase()
-    const provider = requestedProvider && ['claude', 'gemini'].includes(requestedProvider)
-      ? requestedProvider
-      : OCR_PROVIDER
+    // Provider puede venir forzado por query (?provider=claude|gemini) para
+    // pruebas o reintentos desde la UI. Si el usuario fuerza uno, NO hay
+    // fallback automático — lo pidió explícito, respetamos.
+    const rawRequested = request.nextUrl.searchParams.get('provider')?.toLowerCase()
+    const requestedProvider: OcrProvider | null =
+      rawRequested === 'claude' || rawRequested === 'gemini' ? rawRequested : null
+    const primary: OcrProvider = requestedProvider ?? OCR_PROVIDER
+    const secondary: OcrProvider = primary === 'gemini' ? 'claude' : 'gemini'
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const base64 = buffer.toString('base64')
 
-    let textResponse = ''
-    let modelUsed = ''
-    try {
-      if (provider === 'gemini') {
-        const apiKey = process.env.GEMINI_API_KEY
-        if (!apiKey) throw new Error('GEMINI_API_KEY no configurada')
-        textResponse = await ocrGemini(apiKey, file.type, base64, GEMINI_MODEL)
-        modelUsed = GEMINI_MODEL
-      } else {
-        // claude (default)
-        const apiKey = process.env.ANTHROPIC_API_KEY
-        if (!apiKey) throw new Error('ANTHROPIC_API_KEY no configurada')
-        textResponse = await ocrClaude(apiKey, file.type, base64, CLAUDE_MODEL)
-        modelUsed = CLAUDE_MODEL
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Error del proveedor'
-      return NextResponse.json({ error: msg }, { status: 502 })
-    }
-
-    // Parseo robusto: Claude/Gemini a veces incluyen texto antes o después
-    // del JSON, markdown fences, o incluso comentarios //
-    let extracted: Record<string, unknown> | null = null
-
-    const tryParse = (s: string) => {
+    // Parseo robusto: Claude/Gemini a veces incluyen texto antes/después del
+    // JSON, markdown fences, comentarios // o trailing commas.
+    const tryParse = (s: string): Record<string, unknown> | null => {
       try { return JSON.parse(s) } catch { return null }
     }
 
-    // Intento 1: directo
-    extracted = tryParse(textResponse.trim())
-
-    // Intento 2: quitar code fences
-    if (!extracted) {
-      const noFences = textResponse
-        .replace(/```(?:json|JSON)?\s*/g, '')
-        .replace(/```/g, '')
-        .trim()
-      extracted = tryParse(noFences)
+    function parseOcrResponse(text: string): Record<string, unknown> | null {
+      // 1. directo
+      let r = tryParse(text.trim())
+      if (r) return r
+      // 2. sin code fences
+      const noFences = text.replace(/```(?:json|JSON)?\s*/g, '').replace(/```/g, '').trim()
+      r = tryParse(noFences)
+      if (r) return r
+      // 3. bloque {...} más grande
+      const start = text.indexOf('{')
+      const end = text.lastIndexOf('}')
+      if (start >= 0 && end > start) {
+        r = tryParse(text.slice(start, end + 1))
+        if (r) return r
+      }
+      // 4. sin comentarios ni trailing commas
+      const sanitized = text.replace(/\/\/[^\n]*/g, '').replace(/,(\s*[}\]])/g, '$1')
+      const s2 = sanitized.indexOf('{')
+      const e2 = sanitized.lastIndexOf('}')
+      if (s2 >= 0 && e2 > s2) {
+        r = tryParse(sanitized.slice(s2, e2 + 1))
+        if (r) return r
+      }
+      return null
     }
 
-    // Intento 3: extraer bloque {...} más grande
-    if (!extracted) {
-      const start = textResponse.indexOf('{')
-      const end = textResponse.lastIndexOf('}')
-      if (start >= 0 && end > start) {
-        extracted = tryParse(textResponse.slice(start, end + 1))
+    async function runOcr(p: OcrProvider): Promise<{ text: string; model: string }> {
+      if (p === 'gemini') {
+        const apiKey = process.env.GEMINI_API_KEY
+        if (!apiKey) throw new Error('GEMINI_API_KEY no configurada')
+        return { text: await ocrGemini(apiKey, file!.type, base64, GEMINI_MODEL), model: GEMINI_MODEL }
+      } else {
+        const apiKey = process.env.ANTHROPIC_API_KEY
+        if (!apiKey) throw new Error('ANTHROPIC_API_KEY no configurada')
+        return { text: await ocrClaude(apiKey, file!.type, base64, CLAUDE_MODEL), model: CLAUDE_MODEL }
       }
     }
 
-    // Intento 4: remover comentarios de línea // y trailing commas
-    if (!extracted) {
-      const sanitized = textResponse
-        .replace(/\/\/[^\n]*/g, '')
-        .replace(/,(\s*[}\]])/g, '$1')
-      const start = sanitized.indexOf('{')
-      const end = sanitized.lastIndexOf('}')
-      if (start >= 0 && end > start) {
-        extracted = tryParse(sanitized.slice(start, end + 1))
+    // Corre un provider y parsea. Lanza si la API falla O si el JSON es
+    // ilegible — ambos casos deben disparar el fallback.
+    async function runAndParse(p: OcrProvider) {
+      const { text, model } = await runOcr(p)
+      const extracted = parseOcrResponse(text)
+      if (!extracted) {
+        throw new Error(`${p} devolvió JSON ilegible (primeros 300 chars: ${text.slice(0, 300).replace(/\s+/g, ' ')})`)
+      }
+      return { extracted, provider: p, model, raw: text }
+    }
+
+    let result: Awaited<ReturnType<typeof runAndParse>>
+    let fallbackUsed = false
+    let primaryError: string | null = null
+
+    try {
+      result = await runAndParse(primary)
+    } catch (e) {
+      primaryError = e instanceof Error ? e.message : String(e)
+      // Si el usuario forzó provider, respetamos y devolvemos el error.
+      if (requestedProvider) {
+        return NextResponse.json({ error: primaryError, provider: primary }, { status: 502 })
+      }
+      // Fallback al secundario.
+      console.warn(`[ocr] ${primary} falló → fallback a ${secondary}. Error:`, primaryError)
+      try {
+        result = await runAndParse(secondary)
+        fallbackUsed = true
+      } catch (e2) {
+        const secondaryError = e2 instanceof Error ? e2.message : String(e2)
+        console.error(`[ocr] ambos proveedores fallaron. ${primary}: ${primaryError}. ${secondary}: ${secondaryError}`)
+        return NextResponse.json(
+          {
+            error: `Ambos proveedores fallaron. ${primary}: ${primaryError}. ${secondary}: ${secondaryError}`,
+          },
+          { status: 502 }
+        )
       }
     }
 
-    if (!extracted) {
-      console.error('Failed to parse OCR response. Raw:', textResponse.slice(0, 1000))
-      return NextResponse.json(
-        {
-          error: 'No se pudo interpretar la respuesta del OCR',
-          provider,
-          model: modelUsed,
-          raw: textResponse.slice(0, 1500),
-        },
-        { status: 500 }
-      )
-    }
+    const extracted = result.extracted
+    const modelUsed = result.model
+    const providerUsed = result.provider
 
     // Normalización de campos numéricos
     const toNum = (v: unknown): number | null => {
@@ -328,9 +348,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      provider,
+      provider: providerUsed,
       model: modelUsed,
       extracted,
+      ...(fallbackUsed ? { fallbackUsed: true, primaryFailed: primary, primaryError } : {}),
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'desconocido'
