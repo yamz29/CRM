@@ -300,12 +300,11 @@ export function CronogramaV2Client({
 
       {/* Desktop: layout flex con divisora arrastrable */}
       {/* Mobile: apilado vertical (lg breakpoint) */}
-      {/* Altura: min-500px, max-viewport. Así: Gantt pequeño no deja
-          espacio blanco; si hay muchas actividades, el spreadsheet
-          scrolla internamente. */}
+      {/* Altura fija con overflow-hidden para que el Gantt no empuje el
+          ancho de la página. Cada panel scrollea internamente. */}
       <div
         ref={containerRef}
-        className="hidden lg:flex gap-0 min-h-[500px] max-h-[calc(100vh-200px)]"
+        className="hidden lg:flex gap-0 h-[calc(100vh-260px)] min-h-[480px] max-h-[720px] w-full overflow-hidden"
       >
         {!leftCollapsed && (
           <>

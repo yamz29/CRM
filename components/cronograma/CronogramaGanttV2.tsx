@@ -43,28 +43,37 @@ export function CronogramaGanttV2({
   const ganttRef = useRef<unknown | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Helpers para scrollear a fechas específicas
+  // Helpers para scrollear a fechas específicas.
+  // frappe-gantt crea internamente un div.gantt-container con su propio
+  // overflow:auto. Ese es el elemento que debemos scrollear.
+  function getGanttScroller(): HTMLElement | null {
+    const container = containerRef.current
+    if (!container) return null
+    return container.querySelector('.gantt-container') as HTMLElement | null
+  }
+
   const scrollToFirstTask = useCallback(() => {
     const container = containerRef.current
     if (!container) return
     const firstBar = container.querySelector('.gantt .bar') as SVGRectElement | null
-    if (!firstBar) return
+    const scroller = getGanttScroller()
+    if (!firstBar || !scroller) return
     const barX = parseFloat(firstBar.getAttribute('x') || '0')
-    const scroller = container.closest('.cronograma-gantt-v2') as HTMLElement | null
-    if (scroller) scroller.scrollTo({ left: Math.max(0, barX - 80), behavior: 'smooth' })
+    scroller.scrollTo({ left: Math.max(0, barX - 80), behavior: 'smooth' })
   }, [])
 
   const scrollToToday = useCallback(() => {
     const container = containerRef.current
     if (!container) return
     const todayLine = container.querySelector('.gantt .today-highlight') as SVGRectElement | null
+    const scroller = getGanttScroller()
+    if (!scroller) return
     if (!todayLine) {
       scrollToFirstTask()
       return
     }
     const x = parseFloat(todayLine.getAttribute('x') || '0')
-    const scroller = container.closest('.cronograma-gantt-v2') as HTMLElement | null
-    if (scroller) scroller.scrollTo({ left: Math.max(0, x - 80), behavior: 'smooth' })
+    scroller.scrollTo({ left: Math.max(0, x - 80), behavior: 'smooth' })
   }, [scrollToFirstTask])
 
   useEffect(() => {
@@ -140,19 +149,14 @@ export function CronogramaGanttV2({
 
         // Auto-scroll horizontal al inicio de la primera tarea para que
         // el usuario no vea un timeline vacío si las fechas están lejanas.
-        // Esperamos a que el DOM del Gantt esté pintado.
+        // frappe-gantt crea su propio div.gantt-container scrollable.
         requestAnimationFrame(() => {
           if (cancelled || !container) return
-          // Buscar el primer elemento <rect class="bar"> dentro del SVG
           const firstBar = container.querySelector('.gantt .bar') as SVGRectElement | null
-          if (firstBar) {
-            // Obtener la posición X del bar dentro del SVG
+          const scroller = container.querySelector('.gantt-container') as HTMLElement | null
+          if (firstBar && scroller) {
             const barX = parseFloat(firstBar.getAttribute('x') || '0')
-            // El contenedor con overflow es el wrapper de cronograma-gantt-v2.
-            // Dar unos 80px de margen antes para que no quede pegado al borde.
-            const targetScroll = Math.max(0, barX - 80)
-            const scroller = container.closest('.cronograma-gantt-v2') as HTMLElement | null
-            if (scroller) scroller.scrollLeft = targetScroll
+            scroller.scrollLeft = Math.max(0, barX - 80)
           }
         })
 
@@ -209,35 +213,33 @@ export function CronogramaGanttV2({
           Hoy
         </button>
       </div>
-      <div className="cronograma-gantt-v2 overflow-x-auto overflow-y-auto h-full w-full">
+      <div className="cronograma-gantt-v2 h-full w-full overflow-hidden">
       <style jsx global>{`
-        /* Scrollbar siempre visible en el contenedor del Gantt */
-        .cronograma-gantt-v2 {
+        /* Asegurar que el gantt-container de frappe-gantt tome toda
+           la altura y sea scrollable visiblemente */
+        .cronograma-gantt-v2 .gantt-container {
+          height: 100% !important;
+          max-height: 100% !important;
+          width: 100% !important;
           scrollbar-width: thin;
-          scrollbar-gutter: stable;
         }
-        .cronograma-gantt-v2::-webkit-scrollbar {
+        .cronograma-gantt-v2 .gantt-container::-webkit-scrollbar {
           height: 12px;
           width: 12px;
         }
-        .cronograma-gantt-v2::-webkit-scrollbar-thumb {
+        .cronograma-gantt-v2 .gantt-container::-webkit-scrollbar-thumb {
           background: #c7c7c7;
           border-radius: 6px;
           border: 2px solid transparent;
           background-clip: padding-box;
         }
-        .cronograma-gantt-v2::-webkit-scrollbar-thumb:hover {
+        .cronograma-gantt-v2 .gantt-container::-webkit-scrollbar-thumb:hover {
           background: #888;
           background-clip: padding-box;
           border: 2px solid transparent;
         }
-        .dark .cronograma-gantt-v2::-webkit-scrollbar-thumb {
+        .dark .cronograma-gantt-v2 .gantt-container::-webkit-scrollbar-thumb {
           background: #4b5563;
-          background-clip: padding-box;
-          border: 2px solid transparent;
-        }
-        .dark .cronograma-gantt-v2::-webkit-scrollbar-thumb:hover {
-          background: #6b7280;
           background-clip: padding-box;
           border: 2px solid transparent;
         }
