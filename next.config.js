@@ -5,6 +5,11 @@ const nextConfig = {
   images: {
     formats: ['image/webp'],
   },
+  // jspdf y html2canvas se usan solo en el cliente (dynamic import en
+  // CronogramaV2Client para exportar el Gantt a PDF). Sin esto, Turbopack
+  // intenta trazar fflate/lib/node.cjs que usa `new Worker(c, { eval: true })`
+  // y falla con "Module not found: Can't resolve <dynamic>".
+  serverExternalPackages: ['jspdf', 'html2canvas', 'fflate'],
   // Nota sobre "Failed to find Server Action" errors en logs:
   // Next.js lee NEXT_SERVER_ACTIONS_ENCRYPTION_KEY de env vars automáticamente.
   // Definirlo en .env.server hace que los IDs de Server Actions sean estables
