@@ -52,28 +52,44 @@ export function CronogramaGanttV2({
     return container.querySelector('.gantt-container') as HTMLElement | null
   }
 
+  /**
+   * Calcula la posición horizontal de un elemento dentro del scroller,
+   * usando getBoundingClientRect. Funciona aunque el elemento esté dentro
+   * de <g transform="..."> u otro contenedor con transform.
+   */
+  function scrollToElement(el: Element | null, offset = 80) {
+    const scroller = getGanttScroller()
+    if (!el || !scroller) return
+    const elRect = el.getBoundingClientRect()
+    const scrRect = scroller.getBoundingClientRect()
+    // Posición del elemento relativa al scrollable, más scroll actual = posición absoluta dentro del scroll
+    const absoluteX = elRect.left - scrRect.left + scroller.scrollLeft
+    scroller.scrollTo({ left: Math.max(0, absoluteX - offset), behavior: 'smooth' })
+  }
+
   const scrollToFirstTask = useCallback(() => {
     const container = containerRef.current
     if (!container) return
-    const firstBar = container.querySelector('.gantt .bar') as SVGRectElement | null
-    const scroller = getGanttScroller()
-    if (!firstBar || !scroller) return
-    const barX = parseFloat(firstBar.getAttribute('x') || '0')
-    scroller.scrollTo({ left: Math.max(0, barX - 80), behavior: 'smooth' })
+    // frappe-gantt usa .bar o .bar-wrapper para las barras
+    const firstBar = container.querySelector('.gantt .bar-wrapper, .gantt .bar') as Element | null
+    scrollToElement(firstBar)
   }, [])
 
   const scrollToToday = useCallback(() => {
     const container = containerRef.current
     if (!container) return
-    const todayLine = container.querySelector('.gantt .today-highlight') as SVGRectElement | null
-    const scroller = getGanttScroller()
-    if (!scroller) return
-    if (!todayLine) {
+    // En frappe-gantt v1.2+ la línea de hoy se llama .current-highlight
+    // (no .today-highlight como en versiones anteriores).
+    const todayLine =
+      container.querySelector('.current-highlight') ||
+      container.querySelector('.gantt .current-highlight') ||
+      container.querySelector('.today-highlight')
+    if (todayLine) {
+      scrollToElement(todayLine)
+    } else {
+      // Si no hay línea de hoy (fecha fuera del rango) → scroll a primera tarea
       scrollToFirstTask()
-      return
     }
-    const x = parseFloat(todayLine.getAttribute('x') || '0')
-    scroller.scrollTo({ left: Math.max(0, x - 80), behavior: 'smooth' })
   }, [scrollToFirstTask])
 
   useEffect(() => {
@@ -149,14 +165,16 @@ export function CronogramaGanttV2({
 
         // Auto-scroll horizontal al inicio de la primera tarea para que
         // el usuario no vea un timeline vacío si las fechas están lejanas.
-        // frappe-gantt crea su propio div.gantt-container scrollable.
+        // Usa getBoundingClientRect (robusto con SVG transforms).
         requestAnimationFrame(() => {
           if (cancelled || !container) return
-          const firstBar = container.querySelector('.gantt .bar') as SVGRectElement | null
+          const firstBar = container.querySelector('.gantt .bar-wrapper, .gantt .bar') as Element | null
           const scroller = container.querySelector('.gantt-container') as HTMLElement | null
           if (firstBar && scroller) {
-            const barX = parseFloat(firstBar.getAttribute('x') || '0')
-            scroller.scrollLeft = Math.max(0, barX - 80)
+            const barRect = firstBar.getBoundingClientRect()
+            const scrRect = scroller.getBoundingClientRect()
+            const absoluteX = barRect.left - scrRect.left + scroller.scrollLeft
+            scroller.scrollLeft = Math.max(0, absoluteX - 80)
           }
         })
 
