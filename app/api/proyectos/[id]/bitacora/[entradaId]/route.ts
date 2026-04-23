@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { unlink } from 'fs/promises'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string; entradaId: string }> }
-) {
+type Ctx = { params: Promise<{ id: string; entradaId: string }> }
+
+export const DELETE = withPermiso('proyectos', 'editar', async (_request: NextRequest, { params }: Ctx) => {
   try {
     const { entradaId: eidStr } = await params
     const entradaId = parseInt(eidStr)
@@ -33,4 +33,4 @@ export async function DELETE(
     console.error('Error eliminando entrada bitácora:', error)
     return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
   }
-}
+})

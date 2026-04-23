@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recalcValorOportunidad } from '@/lib/oportunidad-valor'
+import { withPermiso } from '@/lib/with-permiso'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ function calcTotals(capitulos: any[], indirectoLineas: any[], descuentoTipo = 'n
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('presupuestos', 'ver', async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const proyectoId = searchParams.get('proyectoId')
@@ -61,11 +62,11 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching presupuestos:', error)
     return NextResponse.json({ error: 'Error al obtener presupuestos' }, { status: 500 })
   }
-}
+})
 
 // ── POST ──────────────────────────────────────────────────────────────────────
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('presupuestos', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const { clienteId, proyectoId, oportunidadId, estado, notas, capitulos = [], titulos = [], indirectoLineas = [], descuentoTipo = 'ninguno', descuentoValor = 0, itbisActivo = false, itbisPorcentaje = 18 } = body
@@ -189,4 +190,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating presupuesto v2:', error)
     return NextResponse.json({ error: 'Error al crear presupuesto' }, { status: 500 })
   }
-}
+})

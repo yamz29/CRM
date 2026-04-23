@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ProyectoSchema, zodError } from '@/lib/validations'
 import { generarCodigoProyecto } from '@/lib/codigo-proyecto'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('proyectos', 'ver', async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const estado    = searchParams.get('estado')
@@ -26,9 +27,9 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching proyectos:', error)
     return NextResponse.json({ error: 'Error al obtener proyectos' }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('proyectos', 'editar', async (request: NextRequest) => {
   try {
     const body   = await request.json()
     const parsed = ProyectoSchema.safeParse(body)
@@ -90,4 +91,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating proyecto:', error)
     return NextResponse.json({ error: 'Error al crear proyecto' }, { status: 500 })
   }
-}
+})

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('presupuestos', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const numId = parseInt(idStr)
   if (isNaN(numId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -200,4 +203,4 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
   })
-}
+})

@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withPermiso } from '@/lib/with-permiso'
 
-type Params = { params: Promise<{ id: string }> }
+type Ctx = { params: Promise<{ id: string }> }
 
 // POST /api/proyectos/[id]/poblar-presupuesto
 // Body: { presupuestoId: number, reemplazar?: boolean }
-export async function POST(req: Request, { params }: Params) {
+export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -173,10 +174,10 @@ export async function POST(req: Request, { params }: Params) {
     console.error('[poblar-presupuesto]', err)
     return NextResponse.json({ error: 'Error al importar el presupuesto' }, { status: 500 })
   }
-}
+})
 
 // DELETE /api/proyectos/[id]/poblar-presupuesto — limpia toda la estructura
-export async function DELETE(_req: Request, { params }: Params) {
+export const DELETE = withPermiso('proyectos', 'editar', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -197,4 +198,4 @@ export async function DELETE(_req: Request, { params }: Params) {
     console.error('[delete poblar-presupuesto]', err)
     return NextResponse.json({ error: 'Error al limpiar la estructura' }, { status: 500 })
   }
-}
+})

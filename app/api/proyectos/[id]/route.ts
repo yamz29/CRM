@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('proyectos', 'ver', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -37,12 +37,9 @@ export async function GET(
       { status: 500 }
     )
   }
-}
+})
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PUT = withPermiso('proyectos', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -162,12 +159,9 @@ export async function PUT(
       { status: 500 }
     )
   }
-}
+})
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = withPermiso('proyectos', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -185,4 +179,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-}
+})

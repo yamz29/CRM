@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const POST = withPermiso('presupuestos', 'editar', async (_request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -137,4 +137,4 @@ export async function POST(
     console.error('Error duplicando presupuesto:', error)
     return NextResponse.json({ error: 'Error al duplicar presupuesto' }, { status: 500 })
   }
-}
+})

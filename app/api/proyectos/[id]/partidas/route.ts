@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withPermiso } from '@/lib/with-permiso'
 
-type Params = { params: Promise<{ id: string }> }
+type Ctx = { params: Promise<{ id: string }> }
 
-export async function GET(_req: Request, { params }: Params) {
+export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -22,4 +23,4 @@ export async function GET(_req: Request, { params }: Params) {
   })
 
   return NextResponse.json(partidas)
-}
+})

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(request: NextRequest) {
+export const GET = withPermiso('presupuestos', 'ver', async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const estado = searchParams.get('estado')
@@ -32,9 +33,9 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withPermiso('presupuestos', 'editar', async (request: NextRequest) => {
   try {
     const body = await request.json()
     const { clienteId, proyectoId, estado, notas, partidas, modulosMelamina } = body
@@ -140,4 +141,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

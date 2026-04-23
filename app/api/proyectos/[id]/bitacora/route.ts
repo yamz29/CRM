@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { withPermiso } from '@/lib/with-permiso'
+
+type Ctx = { params: Promise<{ id: string }> }
 
 // ── GET /api/proyectos/[id]/bitacora ─────────────────────────────────
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withPermiso('proyectos', 'ver', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const proyectoId = parseInt(idStr)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -22,13 +22,10 @@ export async function GET(
   })
 
   return NextResponse.json(entradas)
-}
+})
 
 // ── POST /api/proyectos/[id]/bitacora ────────────────────────────────
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const POST = withPermiso('proyectos', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const proyectoId = parseInt(idStr)
@@ -99,4 +96,4 @@ export async function POST(
     console.error('Error creando entrada bitácora:', error)
     return NextResponse.json({ error: 'Error al crear entrada' }, { status: 500 })
   }
-}
+})

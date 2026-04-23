@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -12,9 +15,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   })
 
   return NextResponse.json(documentos)
-}
+})
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -41,9 +44,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   })
 
   return NextResponse.json(documento, { status: 201 })
-}
+})
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withPermiso('proyectos', 'editar', async (req: NextRequest, { params }: Ctx) => {
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -68,13 +71,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 
   return NextResponse.json(documento)
-}
+})
 
-export async function DELETE(req: NextRequest) {
+export const DELETE = withPermiso('proyectos', 'editar', async (req: NextRequest) => {
   const { searchParams } = new URL(req.url)
   const documentoId = parseInt(searchParams.get('documentoId') ?? '')
   if (isNaN(documentoId)) return NextResponse.json({ error: 'documentoId requerido' }, { status: 400 })
 
   await prisma.documentoProyecto.delete({ where: { id: documentoId } })
   return NextResponse.json({ ok: true })
-}
+})

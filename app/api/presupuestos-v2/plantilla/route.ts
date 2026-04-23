@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
+import { withPermiso } from '@/lib/with-permiso'
 
 // GET /api/presupuestos-v2/plantilla
 // Returns a downloadable .xlsx template for bulk import
-export async function GET() {
+export const GET = withPermiso('presupuestos', 'ver', async (_req: NextRequest) => {
   // ── Sheet 1: Presupuesto (data template) ──────────────────────────────────
   const headers = [
     'titulo',
@@ -97,4 +98,4 @@ export async function GET() {
       'Content-Disposition': 'attachment; filename="plantilla-presupuesto.xlsx"',
     },
   })
-}
+})

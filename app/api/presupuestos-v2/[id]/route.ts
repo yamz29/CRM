@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recalcValorOportunidad } from '@/lib/oportunidad-valor'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -32,7 +33,7 @@ function calcTotals(capitulos: any[], indirectoLineas: any[], descuentoTipo = 'n
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export const GET = withPermiso('presupuestos', 'ver', async (_req: NextRequest, { params }: Params) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -59,11 +60,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     console.error('Error fetching presupuesto:', error)
     return NextResponse.json({ error: 'Error al obtener presupuesto' }, { status: 500 })
   }
-}
+})
 
 // ── PUT ───────────────────────────────────────────────────────────────────────
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export const PUT = withPermiso('presupuestos', 'editar', async (request: NextRequest, { params }: Params) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -189,11 +190,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
     console.error('Error updating presupuesto v2:', error)
     return NextResponse.json({ error: 'Error al actualizar presupuesto' }, { status: 500 })
   }
-}
+})
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export const DELETE = withPermiso('presupuestos', 'editar', async (_req: NextRequest, { params }: Params) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -205,4 +206,4 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     console.error('Error deleting presupuesto:', error)
     return NextResponse.json({ error: 'Error al eliminar presupuesto' }, { status: 500 })
   }
-}
+})

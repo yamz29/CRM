@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withPermiso } from '@/lib/with-permiso'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -20,7 +21,7 @@ function formatRD(n: number) {
   return 'RD$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export async function POST(_request: NextRequest, { params }: Params) {
+export const POST = withPermiso('presupuestos', 'editar', async (_request: NextRequest, { params }: Params) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
@@ -169,4 +170,4 @@ export async function POST(_request: NextRequest, { params }: Params) {
     console.error('Error generando resumen IA:', error)
     return NextResponse.json({ error: 'Error interno al generar el resumen' }, { status: 500 })
   }
-}
+})

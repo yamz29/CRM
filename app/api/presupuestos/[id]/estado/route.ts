@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recalcValorOportunidad } from '@/lib/oportunidad-valor'
+import { withPermiso } from '@/lib/with-permiso'
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> }
+
+export const PATCH = withPermiso('presupuestos', 'editar', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
     const id = parseInt(idStr)
@@ -47,4 +47,4 @@ export async function PATCH(
       { status: 500 }
     )
   }
-}
+})
