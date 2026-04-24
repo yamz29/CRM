@@ -236,10 +236,17 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
         } catch (e) { console.warn('No se pudo calcular subtotal:', e) }
       }
 
+      // Si el primario falló y el backend cayó al secundario, avisamos al
+      // usuario para que sepa que la lectura se hizo con el modelo de respaldo
+      // (útil para diagnosticar por qué un OCR tardó más o salió distinto).
+      const fallbackMsg = data.fallbackUsed
+        ? ` · ⚠ ${data.primaryFailed} falló, se usó ${data.provider} como respaldo`
+        : ''
       setOcrResult(
-        filled > 0
+        (filled > 0
           ? `OCR completado — ${filled} campo${filled > 1 ? 's' : ''} autocompletado${filled > 1 ? 's' : ''}. Verifica los datos.`
-          : 'OCR completado — no se detectaron datos nuevos.'
+          : 'OCR completado — no se detectaron datos nuevos.')
+        + fallbackMsg
       )
     } catch (err: any) {
       console.error('OCR error:', err)
