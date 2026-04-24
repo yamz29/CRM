@@ -346,7 +346,12 @@ export function ActividadesSpreadsheet({
   }
 
   function fmtFecha(iso: string): string {
-    return new Date(iso).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })
+    // timeZone: 'UTC' evita el bug de retroceso de día — las fechas se guardan
+    // como UTC midnight y sin este flag el navegador las muestra un día antes
+    // en husos negativos (ej. Santo Domingo UTC-4).
+    return new Date(iso).toLocaleDateString('es-DO', {
+      day: '2-digit', month: 'short', timeZone: 'UTC',
+    })
   }
 
   // Numeración # basada en la posición en la lista ordenada (no el id de DB)

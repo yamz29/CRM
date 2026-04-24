@@ -17,10 +17,16 @@ export function formatCurrency(amount: number | null | undefined): string {
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '-'
   const d = typeof date === 'string' ? new Date(date) : date
+  // timeZone: 'UTC' es CRÍTICO: en el CRM las fechas "de calendario"
+  // (proyectos, cronograma, facturas) se guardan como UTC midnight
+  // (ej. "2026-04-24T00:00:00Z"). Sin forzar UTC, el navegador las convierte
+  // a hora local (Santo Domingo UTC-4) y retrocede un día — el usuario
+  // pone "24 abr" y ve "23 abr".
   return d.toLocaleDateString('es-DO', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+    timeZone: 'UTC',
   })
 }
 

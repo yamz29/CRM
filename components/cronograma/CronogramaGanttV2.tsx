@@ -140,8 +140,9 @@ export function CronogramaGanttV2({
           padding: 16,
           readonly: readOnly,
           custom_popup_html: (task: GanttTask) => {
-            const start = new Date(task.start).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })
-            const end = new Date(task.end).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })
+            // timeZone: 'UTC' — ver comentario en lib/utils.ts formatDate.
+            const start = new Date(task.start).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', timeZone: 'UTC' })
+            const end = new Date(task.end).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })
             const isCritical = task.custom_class?.includes('critica')
             return `
               <div class="gantt-popup" style="padding: 10px 14px; background: #1e293b; color: #fff; border-radius: 6px; font-size: 12px; min-width: 200px;">
