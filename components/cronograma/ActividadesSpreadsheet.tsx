@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Flag, Loader2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Flag, Loader2, ChevronUp, ChevronDown, StickyNote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 // Claves de columnas y anchos default en px
-type ColKey = 'num' | 'nombre' | 'dur' | 'inicio' | 'fin' | 'dep' | 'tipo' | 'desfase' | 'pct' | 'acciones'
+type ColKey = 'num' | 'nombre' | 'dur' | 'inicio' | 'fin' | 'dep' | 'tipo' | 'desfase' | 'pct' | 'nota' | 'acciones'
 const DEFAULT_WIDTHS: Record<ColKey, number> = {
   num: 36,
   nombre: 220,
@@ -17,6 +17,7 @@ const DEFAULT_WIDTHS: Record<ColKey, number> = {
   tipo: 60,
   desfase: 64,
   pct: 52,
+  nota: 160,
   acciones: 64,
 }
 const MIN_COL_WIDTH = 32
@@ -37,6 +38,7 @@ interface Actividad {
   esCritica?: boolean
   holguraDias?: number
   orden?: number
+  descripcion?: string | null
 }
 
 interface Props {
@@ -187,6 +189,13 @@ export function ActividadesSpreadsheet({
       case 'nombre': {
         const v = draft.trim()
         if (v && v !== actividad.nombre) body = { nombre: v }
+        break
+      }
+      case 'descripcion': {
+        // Notas son opcionales: permitimos vaciar (envía cadena vacía → null).
+        const v = draft
+        const actual = actividad.descripcion ?? ''
+        if (v !== actual) body = { descripcion: v.trim() === '' ? null : v }
         break
       }
       case 'duracion': {
@@ -401,6 +410,7 @@ export function ActividadesSpreadsheet({
             {mostrarAvanzado && <col style={{ width: colWidths.tipo }} />}
             {mostrarAvanzado && <col style={{ width: colWidths.desfase }} />}
             <col style={{ width: colWidths.pct }} />
+            <col style={{ width: colWidths.nota }} />
             <col style={{ width: colWidths.acciones }} />
           </colgroup>
           <thead className="sticky top-0 bg-muted/50 backdrop-blur z-10">
@@ -417,13 +427,14 @@ export function ActividadesSpreadsheet({
                   <ResizableTh col="desfase"  label="Desfase" widths={colWidths} startResize={startResize} align="center" />
                 </>
               )}
-              <ResizableTh col="pct"       label="%"  widths={colWidths} startResize={startResize} align="center" />
-              <ResizableTh col="acciones"  label=""   widths={colWidths} startResize={startResize} align="center" showHandle={false} />
+              <ResizableTh col="pct"       label="%"     widths={colWidths} startResize={startResize} align="center" />
+              <ResizableTh col="nota"      label="Nota"  widths={colWidths} startResize={startResize} align="left" />
+              <ResizableTh col="acciones"  label=""      widths={colWidths} startResize={startResize} align="center" showHandle={false} />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {actividadesOrdenadas.length === 0 && (
-              <tr><td colSpan={mostrarAvanzado ? 11 : 9} className="px-4 py-8 text-center text-muted-foreground">
+              <tr><td colSpan={mostrarAvanzado ? 12 : 10} className="px-4 py-8 text-center text-muted-foreground">
                 Sin actividades. Click en &ldquo;Nueva&rdquo; para agregar la primera.
               </td></tr>
             )}
@@ -597,6 +608,48 @@ export function ActividadesSpreadsheet({
                       />
                     ) : (
                       <span className="cursor-text tabular-nums">{Math.round(a.pctAvance)}%</span>
+                    )}
+                  </td>
+
+                  {/* Nota (descripcion) — editable como textarea para permitir
+                      múltiples líneas. Al click se expande en un textarea; al
+                      perder foco guarda. Muestra primera línea truncada cuando
+                      no está en edición. */}
+                  <td
+                    className="px-1 py-1 align-top"
+                    onClick={() => beginEdit(a.id, 'descripcion', a.descripcion ?? '')}
+                  >
+                    {editing?.id === a.id && editing.field === 'descripcion' ? (
+                      <textarea
+                        ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                        value={draft}
+                        onChange={e => setDraft(e.target.value)}
+                        onBlur={commitEdit}
+                        onKeyDown={(e) => {
+                          // En textarea usamos Enter para nueva línea; Ctrl+Enter
+                          // o Escape para commit/cancel. Evitamos el handleKeyDown
+                          // estándar que hace commit en Enter.
+                          if (e.key === 'Escape') { e.preventDefault(); setEditing(null) }
+                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            e.preventDefault(); commitEdit()
+                          }
+                        }}
+                        rows={3}
+                        placeholder="Agregar nota… (Ctrl+Enter para guardar, Esc para cancelar)"
+                        className="w-full px-1 py-0.5 border border-primary rounded text-xs bg-background resize-y min-h-[48px]"
+                      />
+                    ) : a.descripcion?.trim() ? (
+                      <div
+                        className="cursor-text flex items-start gap-1 px-1 py-0.5 text-[11px] text-foreground"
+                        title={a.descripcion}
+                      >
+                        <StickyNote className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                        <span className="truncate">{a.descripcion.split('\n')[0]}</span>
+                      </div>
+                    ) : (
+                      <div className="cursor-text px-1 py-0.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                        + nota
+                      </div>
                     )}
                   </td>
 

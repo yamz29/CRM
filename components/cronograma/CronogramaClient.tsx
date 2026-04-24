@@ -297,6 +297,7 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
             esCritica: (a as { esCritica?: boolean }).esCritica,
             holguraDias: (a as { holguraDias?: number }).holguraDias,
             orden: a.orden,
+            descripcion: a.descripcion ?? null,
           }))}
         />
       )}

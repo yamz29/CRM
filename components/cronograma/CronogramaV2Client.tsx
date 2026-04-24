@@ -21,6 +21,7 @@ interface Actividad {
   esCritica?: boolean
   holguraDias?: number
   orden?: number
+  descripcion?: string | null
 }
 
 interface Props {
