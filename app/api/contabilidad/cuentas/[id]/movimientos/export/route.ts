@@ -110,6 +110,28 @@ export async function GET(
     { wch: 30 }, // Proveedor
     { wch: 14 }, // Total factura
   ]
+
+  // Formato de moneda en columnas Monto (C) y Total factura (J).
+  // SheetJS community edition soporta number format vía cell.z sin necesidad
+  // de la licencia Pro. `"RD$"\ #,##0.00` muestra "RD$ 1,234.56".
+  const MONEY_FMT = '"RD$ "#,##0.00;[Red]-"RD$ "#,##0.00'
+  const range = XLSX.utils.decode_range(ws1['!ref'] ?? 'A1')
+  for (let r = range.s.r + 1; r <= range.e.r; r++) {
+    // Columna C (Monto, índice 2) y J (Total factura, índice 9)
+    for (const c of [2, 9]) {
+      const addr = XLSX.utils.encode_cell({ r, c })
+      const cell = ws1[addr]
+      if (cell && typeof cell.v === 'number') {
+        cell.z = MONEY_FMT
+        cell.t = 'n'
+      }
+    }
+  }
+
+  // Congelar primera fila (header siempre visible al scrollear) + auto-filter.
+  ws1['!views'] = [{ ySplit: 1 }]
+  ws1['!autofilter'] = { ref: ws1['!ref'] ?? 'A1' }
+
   XLSX.utils.book_append_sheet(workbook, ws1, 'Movimientos')
 
   // Hoja 2: Resumen
@@ -133,6 +155,16 @@ export async function GET(
   ]
   const ws2 = XLSX.utils.json_to_sheet(resumen, { header: ['Concepto', 'Valor'] })
   ws2['!cols'] = [{ wch: 24 }, { wch: 44 }]
+  // Formato moneda en las filas de totales (índices dependen del orden del array)
+  const MONEY_ROWS = [9, 10, 11] // totalCreditos, totalDebitos, balance (0-indexed + header)
+  for (const r of MONEY_ROWS) {
+    const addr = XLSX.utils.encode_cell({ r: r + 1, c: 1 }) // +1 por header
+    const cell = ws2[addr]
+    if (cell && typeof cell.v === 'number') {
+      cell.z = MONEY_FMT
+      cell.t = 'n'
+    }
+  }
   XLSX.utils.book_append_sheet(workbook, ws2, 'Resumen')
 
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
-import { ArrowLeft, FolderOpen, FileText, CalendarRange } from 'lucide-react'
+import { ArrowLeft, FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react'
 import { CronogramaClient } from '@/components/cronograma/CronogramaClient'
 
 export default async function CronogramaDetailPage({
@@ -18,7 +18,7 @@ export default async function CronogramaDetailPage({
   const cronograma = await prisma.cronograma.findUnique({
     where: { id: numId },
     include: {
-      proyecto: { select: { id: true, nombre: true } },
+      proyecto: { select: { id: true, nombre: true, fechaEstimada: true } },
       presupuesto: { select: { id: true, numero: true } },
       actividades: {
         include: {
@@ -61,6 +61,23 @@ export default async function CronogramaDetailPage({
         ? (new Date(a.fechaFin) < hoy ? 'Atrasado' : 'En Ejecución')
         : (new Date(a.fechaFin) < hoy ? 'Atrasado' : 'Pendiente'),
   }))
+
+  // Alerta de desbordamiento: ¿el cronograma termina después de la fecha
+  // estimada del proyecto? Avisa al usuario para que ajuste presupuesto,
+  // renegocie la fecha con el cliente o acelere tareas críticas.
+  let desbordamiento: { fechaFinCronograma: Date; fechaEstimada: Date; diasExceso: number } | null = null
+  if (cronograma.proyecto?.fechaEstimada && actividades.length > 0) {
+    const fechaFinCronograma = actividades.reduce(
+      (max, a) => (new Date(a.fechaFin) > max ? new Date(a.fechaFin) : max),
+      new Date(0)
+    )
+    const fechaEst = new Date(cronograma.proyecto.fechaEstimada)
+    if (fechaFinCronograma > fechaEst) {
+      const MS_DAY = 86_400_000
+      const diasExceso = Math.ceil((fechaFinCronograma.getTime() - fechaEst.getTime()) / MS_DAY)
+      desbordamiento = { fechaFinCronograma, fechaEstimada: fechaEst, diasExceso }
+    }
+  }
 
   const stats = {
     total: actividades.length,
@@ -105,6 +122,23 @@ export default async function CronogramaDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Aviso de desbordamiento de fecha del proyecto */}
+      {desbordamiento && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              El cronograma excede la fecha estimada del proyecto en {desbordamiento.diasExceso} día{desbordamiento.diasExceso !== 1 ? 's' : ''}
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+              Fecha estimada del proyecto: <strong>{formatDate(desbordamiento.fechaEstimada)}</strong>.
+              Última actividad termina: <strong>{formatDate(desbordamiento.fechaFinCronograma)}</strong>.
+              Considera ajustar la fecha del proyecto, acortar la ruta crítica, o renegociar el plazo con el cliente.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

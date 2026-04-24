@@ -80,6 +80,9 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
   // OCR state
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrResult, setOcrResult] = useState<string | null>(null)
+  // Provider que se usó en la última corrida exitosa — para ofrecer al usuario
+  // reintentar con el otro si la lectura no se ve bien.
+  const [ocrLastProvider, setOcrLastProvider] = useState<'claude' | 'gemini' | null>(null)
   // SharePoint upload state
   const [spState, setSpState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [spMessage, setSpMessage] = useState<string | null>(null)
@@ -111,7 +114,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     }
 
     setOcrLoading(true)
-    setOcrResult(null)
+    setOcrResult(null); setOcrLastProvider(null)
 
     try {
       // Pre-procesa la imagen para OCR (corrige EXIF, aumenta contraste,
@@ -248,6 +251,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
           : 'OCR completado — no se detectaron datos nuevos.')
         + fallbackMsg
       )
+      setOcrLastProvider(data.provider === 'claude' || data.provider === 'gemini' ? data.provider : null)
     } catch (err: any) {
       console.error('OCR error:', err)
       setOcrResult(`Error OCR: ${err.message}`)
@@ -553,7 +557,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
           {(archivo || archivoPreview) && (
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); setOcrResult(null); if (fileRef.current) fileRef.current.value = ''; }}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setArchivo(null); setArchivoPreview(''); setOcrResult(null); setOcrLastProvider(null); if (fileRef.current) fileRef.current.value = ''; }}>
                 <X className="w-3.5 h-3.5" /> Quitar archivo
               </Button>
               {tipo === 'egreso' && archivo && !ocrLoading && (
@@ -577,12 +581,25 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
             </div>
           )}
           {!ocrLoading && ocrResult && (
-            <div className={`px-3 py-2 rounded-lg text-xs border ${
+            <div className={`px-3 py-2 rounded-lg text-xs border flex items-center justify-between gap-3 flex-wrap ${
               ocrResult.startsWith('Error')
                 ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
                 : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
             }`}>
-              {ocrResult}
+              <span className="flex-1">{ocrResult}</span>
+              {/* Reintentar con el otro proveedor si la lectura no se ve bien.
+                  Visible tanto en éxito como en error, mientras haya un archivo cargado. */}
+              {archivo && ocrLastProvider && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs shrink-0"
+                  onClick={() => runOCR(archivo, ocrLastProvider === 'gemini' ? 'claude' : 'gemini')}
+                >
+                  🔄 Reintentar con {ocrLastProvider === 'gemini' ? 'Claude' : 'Gemini'}
+                </Button>
+              )}
             </div>
           )}
 

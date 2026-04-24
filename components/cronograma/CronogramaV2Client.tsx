@@ -71,6 +71,15 @@ export function CronogramaV2Client({
       const fullWidth = Math.max(wrap.scrollWidth, svgRect?.width ?? 0)
       const fullHeight = Math.max(wrap.scrollHeight, svgRect?.height ?? 0)
 
+      // Escalar adaptativamente: Chrome limita canvas a ~16.384 px por lado
+      // y ~268M píxeles totales. Con scale:2 un cronograma muy largo se sale.
+      // Bajamos el scale cuando el área estimada excede ~50M píxeles
+      // (suficiente para impresión A4 decente sin reventar memoria).
+      const estimatedPixels = fullWidth * fullHeight * 4 // scale:2 → ×4 área
+      let scale = 2
+      if (estimatedPixels > 50_000_000) scale = 1.5
+      if (estimatedPixels > 100_000_000) scale = 1
+
       const [{ default: html2canvas }, jsPdfMod] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
@@ -79,7 +88,7 @@ export function CronogramaV2Client({
 
       const canvas = await html2canvas(wrap, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale,
         width: fullWidth,
         height: fullHeight,
         windowWidth: fullWidth,
@@ -143,6 +152,11 @@ export function CronogramaV2Client({
           const pageImgH = (sh * imgW) / canvas.width
           drawHeader(i + 1, totalPages)
           pdf.addImage(pageImg, 'PNG', margin, margin + headerH, imgW, pageImgH)
+          // Liberar canvas intermedio para que el GC lo reclame entre páginas
+          // (crítico con cronogramas grandes — si no, el navegador se queda
+          // con 500 MB+ de canvas huérfanos hasta terminar).
+          pageCanvas.width = 0
+          pageCanvas.height = 0
         }
       }
 
