@@ -16,6 +16,7 @@ import { EVMTab } from '@/components/proyectos/EVMTab'
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
 import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
 import { VincularPresupuestoButton } from '@/components/proyectos/VincularPresupuestoModal'
+import { ConvertirEnAdicionalButton } from '@/components/proyectos/ConvertirEnAdicionalButton'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
@@ -1002,9 +1003,13 @@ export default async function ProyectoDetailPage({
                       <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(p.createdAt)}</td>
                       <td className="px-4 py-3 text-sm font-bold text-foreground">{formatCurrency(p.total)}</td>
                       <td className="px-4 py-3"><EstadoPresupuestoBadge estado={p.estado} /></td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-3 flex gap-2 flex-wrap">
                         <Link href={`/presupuestos/${p.id}`}><Button variant="ghost" size="sm">Ver</Button></Link>
                         <Link href={`/presupuestos/${p.id}/imprimir`}><Button variant="ghost" size="sm">Imprimir</Button></Link>
+                        <ConvertirEnAdicionalButton
+                          proyectoId={proyecto.id}
+                          presupuesto={{ id: p.id, numero: p.numero, total: p.total, estado: p.estado }}
+                        />
                       </td>
                     </tr>
                   ))}
