@@ -15,6 +15,7 @@ import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
 import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
+import { VincularPresupuestoButton } from '@/components/proyectos/VincularPresupuestoModal'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
@@ -959,11 +960,14 @@ export default async function ProyectoDetailPage({
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 Presupuestos del Proyecto
               </CardTitle>
-              <Link href={`/presupuestos/nuevo?proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}>
-                <Button size="sm">
-                  <Plus className="w-3.5 h-3.5" /> Nuevo presupuesto
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <VincularPresupuestoButton proyectoId={proyecto.id} />
+                <Link href={`/presupuestos/nuevo?proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}>
+                  <Button size="sm">
+                    <Plus className="w-3.5 h-3.5" /> Nuevo presupuesto
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -971,9 +975,12 @@ export default async function ProyectoDetailPage({
               <div className="flex flex-col items-center py-16 text-center">
                 <FileText className="w-12 h-12 text-muted-foreground/70 mb-3" />
                 <p className="text-muted-foreground text-sm">Sin presupuestos para este proyecto</p>
-                <Link href={`/presupuestos/nuevo?proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`} className="mt-3">
-                  <Button size="sm"><Plus className="w-3.5 h-3.5" /> Crear presupuesto</Button>
-                </Link>
+                <div className="flex items-center gap-2 mt-3">
+                  <VincularPresupuestoButton proyectoId={proyecto.id} />
+                  <Link href={`/presupuestos/nuevo?proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}>
+                    <Button size="sm"><Plus className="w-3.5 h-3.5" /> Crear presupuesto</Button>
+                  </Link>
+                </div>
               </div>
             ) : (
               <table className="w-full">
