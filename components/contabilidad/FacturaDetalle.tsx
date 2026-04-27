@@ -58,7 +58,11 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
   const [showConvertirModal, setShowConvertirModal] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const saldoPendiente = factura.total - factura.montoPagado
+  // Calculamos el saldo desde la SUMA real de pagos en vez de confiar
+  // en factura.montoPagado, que podría estar desincronizado tras editar
+  // o eliminar pagos manualmente. Defensa en profundidad.
+  const totalPagado = factura.pagos.reduce((s, p) => s + p.monto, 0)
+  const saldoPendiente = Math.max(0, factura.total - totalPagado)
   const badge = ESTADOS_BADGE[factura.estado] || ESTADOS_BADGE.pendiente
   const BadgeIcon = badge.icon
 
@@ -80,7 +84,10 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
   }
 
   const refreshFactura = async () => {
-    const res = await fetch(`/api/contabilidad/facturas/${factura.id}`)
+    // cache: 'no-store' es CRÍTICO acá: sin esto, después de registrar un pago
+    // el navegador puede servir la respuesta cacheada y mostrar saldoPendiente
+    // viejo, haciendo que parezca que "no se puede agregar más pagos".
+    const res = await fetch(`/api/contabilidad/facturas/${factura.id}`, { cache: 'no-store' })
     if (res.ok) setFactura(await res.json())
   }
 
@@ -209,10 +216,21 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
           {/* Pagos section */}
           <div className="bg-card border border-border rounded-xl p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> Pagos registrados ({factura.pagos.length})
-              </h3>
-              {factura.estado !== 'anulada' && factura.estado !== 'pagada' && (
+              <div>
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" /> Pagos registrados ({factura.pagos.length})
+                </h3>
+                {factura.estado !== 'anulada' && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Pagado: <strong className="text-foreground">{formatCurrency(totalPagado)}</strong>
+                    {' · '}
+                    Saldo: <strong className={saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}>
+                      {formatCurrency(saldoPendiente)}
+                    </strong>
+                  </p>
+                )}
+              </div>
+              {factura.estado !== 'anulada' && saldoPendiente > 0.01 && (
                 <Button size="sm" onClick={() => setShowPagoForm(!showPagoForm)}>
                   <Plus className="w-3.5 h-3.5" /> Registrar Pago
                 </Button>
@@ -220,7 +238,11 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
             </div>
 
             {showPagoForm && (
+              // key forzar remount cuando cambia la cantidad de pagos: así el
+              // useState(saldoPendiente.toFixed(2)) interno se re-ejecuta con
+              // el saldo actualizado en cada apertura.
               <PagoForm
+                key={`pagoform-${factura.pagos.length}`}
                 facturaId={factura.id}
                 saldoPendiente={saldoPendiente}
                 totalFactura={factura.total}
