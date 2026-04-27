@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, ArrowUpCircle, ArrowDownCircle, Plus, FileText,
   CheckCircle2, Clock, XCircle, ArrowRightLeft, CreditCard,
-  ExternalLink, Trash2, Ban, Pencil, FolderOpen,
+  ExternalLink, Trash2, Ban, Pencil, FolderOpen, Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -125,6 +125,9 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
               <CheckCircle2 className="w-4 h-4" /> Convertir a fiscal
             </Button>
           )}
+          <Link href={`/contabilidad/facturas/${factura.id}/imprimir`} target="_blank">
+            <Button variant="outline"><Printer className="w-4 h-4" /> Imprimir</Button>
+          </Link>
           <Link href={`/contabilidad/facturas/${factura.id}/editar`}>
             <Button variant="outline"><Pencil className="w-4 h-4" /> Editar</Button>
           </Link>
