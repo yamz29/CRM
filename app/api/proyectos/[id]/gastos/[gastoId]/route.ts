@@ -3,14 +3,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { withPermiso } from '@/lib/with-permiso'
+import { validarProyectoNoCerrado } from '@/lib/proyecto-cerrado'
 
 type Params = { params: Promise<{ id: string; gastoId: string }> }
 
 // ── PUT /api/proyectos/[id]/gastos/[gastoId] ──────────────────────────
 export const PUT = withPermiso('gastos', 'editar', async (req: NextRequest, { params }: Params) => {
-  const { gastoId } = await params
+  const { id: idStr, gastoId } = await params
   const id = parseInt(gastoId)
+  const proyectoIdParam = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+  const cerrado = await validarProyectoNoCerrado(isNaN(proyectoIdParam) ? null : proyectoIdParam)
+  if (cerrado) return cerrado
 
   const contentType = req.headers.get('content-type') ?? ''
   let body: Record<string, string>
@@ -118,9 +123,13 @@ export const PUT = withPermiso('gastos', 'editar', async (req: NextRequest, { pa
 
 // ── DELETE /api/proyectos/[id]/gastos/[gastoId] ───────────────────────
 export const DELETE = withPermiso('gastos', 'editar', async (_req: NextRequest, { params }: Params) => {
-  const { gastoId } = await params
+  const { id: idStr, gastoId } = await params
   const id = parseInt(gastoId)
+  const proyectoIdParam = parseInt(idStr)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+  const cerrado = await validarProyectoNoCerrado(isNaN(proyectoIdParam) ? null : proyectoIdParam)
+  if (cerrado) return cerrado
 
   const gasto = await prisma.gastoProyecto.findUnique({
     where: { id },

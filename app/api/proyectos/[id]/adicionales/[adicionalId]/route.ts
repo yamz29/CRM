@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkPermiso } from '@/lib/permisos'
+import { validarProyectoNoCerrado } from '@/lib/proyecto-cerrado'
 
 // PUT /api/proyectos/[id]/adicionales/[adicionalId] — actualizar
 export async function PUT(
@@ -10,11 +11,15 @@ export async function PUT(
   const denied = await checkPermiso(request, 'proyectos', 'editar')
   if (denied) return denied
 
-  const { adicionalId: aidStr } = await params
+  const { id: pidStr, adicionalId: aidStr } = await params
   const adicionalId = parseInt(aidStr)
+  const proyectoId = parseInt(pidStr)
   if (isNaN(adicionalId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
   }
+
+  const cerrado = await validarProyectoNoCerrado(isNaN(proyectoId) ? null : proyectoId)
+  if (cerrado) return cerrado
 
   try {
     const body = await request.json()
@@ -78,11 +83,15 @@ export async function DELETE(
   const denied = await checkPermiso(request, 'proyectos', 'editar')
   if (denied) return denied
 
-  const { adicionalId: aidStr } = await params
+  const { id: pidStr, adicionalId: aidStr } = await params
   const adicionalId = parseInt(aidStr)
+  const proyectoId = parseInt(pidStr)
   if (isNaN(adicionalId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
   }
+
+  const cerrado = await validarProyectoNoCerrado(isNaN(proyectoId) ? null : proyectoId)
+  if (cerrado) return cerrado
 
   try {
     await prisma.adicionalProyecto.delete({ where: { id: adicionalId } })

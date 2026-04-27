@@ -49,6 +49,13 @@ model Proyecto {
   fechaArchivada      DateTime?
   razonPausa          String?                 // Razón si el estado es "Pausado"
   fechaPausa          DateTime?               // Cuándo se pausó
+  // Cierre formal del proyecto: estado = 'Cerrado' es terminal. Solo Admin
+  // puede reabrir (devuelve a 'En Ejecución'). Mientras está cerrado el
+  // sistema bloquea modificaciones de gastos, facturas, adicionales y
+  // cronograma para preservar la integridad del informe de cierre.
+  fechaCierre         DateTime?
+  cerradoPorId        Int?                    // ID del usuario que ejecutó el cierre
+  observacionesCierre String?                 // Texto libre del informe (lecciones, qué salió bien/mal)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

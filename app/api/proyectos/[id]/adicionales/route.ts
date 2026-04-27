@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkPermiso } from '@/lib/permisos'
+import { validarProyectoNoCerrado } from '@/lib/proyecto-cerrado'
 
 // GET /api/proyectos/[id]/adicionales — lista de adicionales del proyecto
 export async function GET(
@@ -37,6 +38,9 @@ export async function POST(
   if (isNaN(proyectoId)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
   }
+
+  const cerrado = await validarProyectoNoCerrado(proyectoId)
+  if (cerrado) return cerrado
 
   try {
     const body = await request.json()

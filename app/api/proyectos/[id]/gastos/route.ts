@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { withPermiso } from '@/lib/with-permiso'
+import { validarProyectoNoCerrado } from '@/lib/proyecto-cerrado'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -27,6 +28,9 @@ export const POST = withPermiso('gastos', 'editar', async (req: NextRequest, { p
   const { id } = await params
   const proyectoId = parseInt(id)
   if (isNaN(proyectoId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+  const cerrado = await validarProyectoNoCerrado(proyectoId)
+  if (cerrado) return cerrado
 
   const contentType = req.headers.get('content-type') ?? ''
   let body: Record<string, unknown>

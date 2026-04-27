@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkPermiso } from '@/lib/permisos'
+import { validarProyectoNoCerrado } from '@/lib/proyecto-cerrado'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -37,6 +38,10 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     if (factura.estado === 'anulada') {
       return NextResponse.json({ error: 'No se puede pagar una factura anulada' }, { status: 400 })
     }
+
+    // Si la factura está vinculada a un proyecto cerrado, bloqueamos.
+    const cerrado = await validarProyectoNoCerrado(factura.proyectoId)
+    if (cerrado) return cerrado
 
     const body = await request.json()
     const { fecha, monto, metodoPago, referencia, cuentaBancariaId, observaciones } = body
