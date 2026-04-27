@@ -17,6 +17,9 @@ import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
 import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
 import { VincularPresupuestoButton } from '@/components/proyectos/VincularPresupuestoModal'
 import { ConvertirEnAdicionalButton } from '@/components/proyectos/ConvertirEnAdicionalButton'
+import { CerrarProyectoButton } from '@/components/proyectos/CerrarProyectoModal'
+import { ReabrirProyectoButton } from '@/components/proyectos/ReabrirProyectoButton'
+import { headers } from 'next/headers'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
@@ -122,6 +125,10 @@ export default async function ProyectoDetailPage({
   ])
   if (!proyecto) notFound()
 
+  // Rol del usuario para mostrar/ocultar acciones de admin (reabrir, etc.)
+  const hdrs = await headers()
+  const esAdmin = hdrs.get('x-user-rol') === 'Admin'
+
   const tab = sp.tab ?? 'resumen'
   const { total: totalGastado, cantidad: cantidadGastos, costoHoras, costoHorasBase, totalHoras, factorCargaSocial } = gastosResumen
   const costoTotal = totalGastado + costoHoras
@@ -212,17 +219,29 @@ export default async function ProyectoDetailPage({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {proyecto.estado === 'Cerrado' ? (
+            <>
+              <Link href={`/proyectos/${proyecto.id}/cierre/imprimir`} target="_blank">
+                <Button variant="primary"><FileText className="w-4 h-4" /> Ver informe</Button>
+              </Link>
+              <ReabrirProyectoButton proyectoId={proyecto.id} esAdmin={esAdmin} />
+            </>
+          ) : (
+            <CerrarProyectoButton proyectoId={proyecto.id} />
+          )}
           <ArchivarProyectoButton
             id={proyecto.id}
             nombre={proyecto.nombre}
             archivada={(proyecto as { archivada?: boolean }).archivada ?? false}
           />
-          <Link href={`/proyectos/${proyecto.id}/editar`}>
-            <Button variant="secondary">
-              <Pencil className="w-4 h-4" /> Editar
-            </Button>
-          </Link>
+          {proyecto.estado !== 'Cerrado' && (
+            <Link href={`/proyectos/${proyecto.id}/editar`}>
+              <Button variant="secondary">
+                <Pencil className="w-4 h-4" /> Editar
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
