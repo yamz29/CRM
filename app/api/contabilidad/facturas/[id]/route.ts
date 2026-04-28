@@ -4,6 +4,7 @@ import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { uploadToDrive } from '@/lib/google-drive'
 import { checkPermiso } from '@/lib/permisos'
+import { recalcularEstadoFactura } from '@/lib/factura-estado'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024
@@ -108,7 +109,10 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     if (propinaLegal !== undefined) updateData.propinaLegal = parseFloat(String(propinaLegal)) || 0
     if (otrosImpuestos !== undefined) updateData.otrosImpuestos = parseFloat(String(otrosImpuestos)) || 0
     if (total !== undefined) updateData.total = parseFloat(String(total)) || 0
-    if (estado !== undefined) updateData.estado = estado
+    // Solo aceptamos cambios de estado a 'anulada' desde el body. Los demás
+    // estados (pendiente/parcial/pagada) se derivan de los pagos y se
+    // recalculan al final del handler. Evita drift entre estado y montoPagado.
+    if (estado === 'anulada') updateData.estado = 'anulada'
     if (observaciones !== undefined) updateData.observaciones = observaciones || null
     if (archivoUrl !== undefined) updateData.archivoUrl = archivoUrl
     if (driveUrl !== undefined) updateData.driveUrl = driveUrl
@@ -119,6 +123,12 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
       data: updateData,
       include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
+
+    // Re-sincronizar montoPagado y estado contra la suma real de pagos.
+    // Crítico cuando cambia `total` — sin esto, una factura con pagos al 100%
+    // del total viejo queda en estado='parcial' al subir el total. No-op si
+    // la factura quedó como 'anulada'.
+    await recalcularEstadoFactura(id)
 
     // Sync linked gasto when factura changes
     if (factura.tipo === 'egreso') {
