@@ -55,8 +55,12 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
     select: { id: true, numero: true, tipo: true, total: true, montoPagado: true, esProforma: true },
   })
 
+  // Para el cierre del proyecto miramos flujo de caja real, no estado fiscal:
+  // si una proforma fue pagada, el dinero entró igual. Si tiene saldo, bloquea
+  // igual que una factura fiscal. La distinción esProforma solo importa para
+  // reportes DGII, no para cerrar el proyecto.
   const facturasIngresoPendientes = facturas.filter(f =>
-    f.tipo === 'ingreso' && !f.esProforma && (f.total - f.montoPagado) > 0.01
+    f.tipo === 'ingreso' && (f.total - f.montoPagado) > 0.01
   )
   const facturasEgresoPendientes = facturas.filter(f =>
     f.tipo === 'egreso' && (f.total - f.montoPagado) > 0.01
@@ -98,8 +102,9 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
   })
 
   // ── Margen: ingresos cobrados vs gastos reales ───────────────────────
+  // Incluimos proformas: si están pagadas, el dinero entró al proyecto.
   const totalCobrado = facturas
-    .filter(f => f.tipo === 'ingreso' && !f.esProforma)
+    .filter(f => f.tipo === 'ingreso')
     .reduce((s, f) => s + f.montoPagado, 0)
   const gastosAgg = await prisma.gastoProyecto.aggregate({
     where: { proyectoId, estado: { not: 'Anulado' } },

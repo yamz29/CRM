@@ -43,8 +43,10 @@ export const POST = withPermiso('proyectos', 'editar', async (req: NextRequest, 
     where: { proyectoId, estado: { not: 'anulada' } },
     select: { tipo: true, total: true, montoPagado: true, esProforma: true },
   })
+  // Para el cierre miramos flujo de caja, no estado fiscal: proformas pagadas
+  // suman, proformas con saldo bloquean igual que facturas fiscales.
   const ingresoPendCount = facturasPend.filter(
-    f => f.tipo === 'ingreso' && !f.esProforma && (f.total - f.montoPagado) > 0.01
+    f => f.tipo === 'ingreso' && (f.total - f.montoPagado) > 0.01
   ).length
   const egresoPendCount = facturasPend.filter(
     f => f.tipo === 'egreso' && (f.total - f.montoPagado) > 0.01

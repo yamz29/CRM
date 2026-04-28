@@ -62,7 +62,9 @@ export default async function InformeCierreProyectoPage({
   const presupuestoBase = proyecto.presupuestoEstimado ?? 0
   const presupuestoVigente = presupuestoBase + montoAdicionales
 
-  const facturasIngreso = proyecto.facturas.filter(f => f.tipo === 'ingreso' && !f.esProforma)
+  // Incluimos proformas: si fueron pagadas, el dinero entró igual. Para el
+  // informe de cierre miramos flujo de caja real, no estado fiscal.
+  const facturasIngreso = proyecto.facturas.filter(f => f.tipo === 'ingreso')
   const totalFacturado = facturasIngreso.reduce((s, f) => s + f.total, 0)
   const totalCobrado = facturasIngreso.reduce((s, f) => s + f.montoPagado, 0)
 
