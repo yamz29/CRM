@@ -75,7 +75,28 @@ export const PUT = withPermiso('proyectos', 'editar', async (request: NextReques
       if (Object.keys(data).length === 0) {
         return NextResponse.json({ error: 'Sin cambios' }, { status: 400 })
       }
+
+      // Capturar estado anterior para notificar si cambió
+      const previo = body.estado !== undefined
+        ? await prisma.proyecto.findUnique({ where: { id }, select: { estado: true, nombre: true } })
+        : null
+
       const proyecto = await prisma.proyecto.update({ where: { id }, data })
+
+      if (previo && body.estado && previo.estado !== body.estado) {
+        try {
+          const { enviarNotificacionAInteresados } = await import('@/lib/push')
+          await enviarNotificacionAInteresados({
+            title: `Proyecto: ${previo.nombre}`,
+            body: `Cambió de "${previo.estado}" → "${body.estado}"`,
+            url: `/proyectos/${id}`,
+            tag: `proyecto-${id}-estado`,
+          })
+        } catch (e) {
+          console.error('[notif] error notificando cambio de estado (patch):', e)
+        }
+      }
+
       return NextResponse.json(proyecto)
     }
 
@@ -128,6 +149,22 @@ export const PUT = withPermiso('proyectos', 'editar', async (request: NextReques
         fechaPausa: entrandoAPausa ? new Date() : saliendoDePausa ? null : undefined,
       },
     })
+
+    // Notificación push si cambió el estado (trigger inmediato).
+    if (existing?.estado && existing.estado !== nuevoEstado) {
+      try {
+        const { enviarNotificacionAInteresados } = await import('@/lib/push')
+        await enviarNotificacionAInteresados({
+          title: `Proyecto: ${proyecto.nombre}`,
+          body: `Cambió de "${existing.estado}" → "${nuevoEstado}"`,
+          url: `/proyectos/${id}`,
+          tag: `proyecto-${id}-estado`,
+        })
+      } catch (e) {
+        // No bloquear la respuesta si push falla
+        console.error('[notif] error notificando cambio de estado:', e)
+      }
+    }
 
     // Auto-crear cronograma si el proyecto pasa a Adjudicado o En Ejecución
     // y aún no tiene ninguno. Sólo un cronograma por proyecto (v1).
