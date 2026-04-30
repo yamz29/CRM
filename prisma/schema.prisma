@@ -690,6 +690,10 @@ model Usuario {
   rol       String   @default("Usuario")
   activo    Boolean  @default(true)
   costoHora Float    @default(0)  // costo por hora para calcular mano de obra interna
+  // Notificaciones push: si está activo y tiene PushSubscription registrada,
+  // recibe avisos del sistema (factura vence, proyecto cambia estado, etc.)
+  // El admin marca quién es "interesado" desde Configuración.
+  esInteresadoNotificaciones Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -699,6 +703,24 @@ model Usuario {
   bitacora       BitacoraEntrada[]
   asignacionesProduccion AsignacionProduccion[]
   comentariosDocumento   ComentarioDocumento[]
+  pushSubscriptions      PushSubscription[]
+}
+
+// Subscription Web Push del navegador del usuario. Un mismo usuario puede
+// tener varias (una por dispositivo/navegador). Se elimina automáticamente
+// cuando el endpoint devuelve 410 Gone (suscripción caducada).
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  endpoint  String   @unique  // URL única del proveedor (FCM, Mozilla, etc.)
+  p256dh    String              // clave pública del cliente
+  auth      String              // secret de autenticación
+  userAgent String?             // info para que el user identifique el dispositivo
+  createdAt DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
 }
 
 model PermisoUsuario {
