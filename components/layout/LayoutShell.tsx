@@ -2,6 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from 'react'
 import { Sidebar } from './Sidebar'
+import { CommandPalette } from './CommandPalette'
 import { Menu } from 'lucide-react'
 import { type PermisosMap } from '@/lib/permisos'
 
@@ -134,6 +135,9 @@ export function LayoutShell({
             {children}
           </div>
         </main>
+
+        {/* Búsqueda global Cmd+K / Ctrl+K — montada una vez para toda la app */}
+        <CommandPalette />
       </div>
     </SidebarContext.Provider>
   )
