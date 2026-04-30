@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench, Calculator, CalendarDays } from 'lucide-react'
+import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench, Calculator, CalendarDays, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmpresaForm } from '@/components/configuracion/EmpresaForm'
 import { VendedoresPanel } from '@/components/configuracion/VendedoresPanel'
@@ -103,6 +103,18 @@ export default async function ConfiguracionPage({
                 </Link>
               )
             })}
+
+            {/* Sub-página separada (no es un tab del switch de abajo) */}
+            <Link
+              href="/configuracion/notificaciones"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                'text-muted-foreground hover:text-foreground hover:bg-muted'
+              )}
+            >
+              <Bell className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              Notificaciones
+            </Link>
           </nav>
         </aside>
 
