@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { X, FileText, AlertTriangle, Link2, Loader2 } from 'lucide-react'
+import { X, FileText, AlertTriangle, Link2, Loader2, Users } from 'lucide-react'
 
 interface PresupuestoVinculable {
   id: number
@@ -14,6 +14,8 @@ interface PresupuestoVinculable {
   createdAt: string
   enOtroProyecto: boolean
   proyectoActualNombre: string | null
+  clienteCoincide: boolean
+  clienteActualNombre: string | null
 }
 
 interface Props {
@@ -28,11 +30,15 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [vinculando, setVinculando] = useState<number | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'sin-proyecto' | 'con-otro'>('todos')
+  const [mostrarTodosSistema, setMostrarTodosSistema] = useState(false)
 
   const fetchPresupuestos = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/proyectos/${proyectoId}/presupuestos-vinculables`)
+      const url = mostrarTodosSistema
+        ? `/api/proyectos/${proyectoId}/presupuestos-vinculables?todos=1`
+        : `/api/proyectos/${proyectoId}/presupuestos-vinculables`
+      const res = await fetch(url, { cache: 'no-store' })
       if (res.ok) {
         setPresupuestos(await res.json())
       } else {
@@ -41,13 +47,14 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [proyectoId])
+  }, [proyectoId, mostrarTodosSistema])
 
   useEffect(() => {
     if (open) fetchPresupuestos()
   }, [open, fetchPresupuestos])
 
   async function vincular(p: PresupuestoVinculable) {
+    // Confirmaciones encadenadas según los conflictos detectados.
     if (p.enOtroProyecto) {
       const ok = confirm(
         `Este presupuesto está vinculado a "${p.proyectoActualNombre}".\n\n` +
@@ -57,12 +64,32 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
       if (!ok) return
     }
 
+    let forzarClienteDistinto = false
+    let actualizarClientePresupuesto = false
+    if (!p.clienteCoincide) {
+      const detalle = p.clienteActualNombre
+        ? `El presupuesto está asociado al cliente "${p.clienteActualNombre}".`
+        : `El presupuesto no tiene cliente asignado.`
+      const ok = confirm(
+        `${detalle}\n\n` +
+        `Vincularlo a este proyecto va a asociarlo al cliente del proyecto.\n\n` +
+        `¿Continuar?`
+      )
+      if (!ok) return
+      forzarClienteDistinto = true
+      actualizarClientePresupuesto = true
+    }
+
     setVinculando(p.id)
     try {
       const res = await fetch(`/api/proyectos/${proyectoId}/vincular-presupuesto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presupuestoId: p.id }),
+        body: JSON.stringify({
+          presupuestoId: p.id,
+          forzarClienteDistinto,
+          actualizarClientePresupuesto,
+        }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -104,25 +131,36 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
         </div>
 
         {/* Filtros */}
-        <div className="px-5 py-3 border-b border-border flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground">Mostrar:</span>
-          {([
-            { value: 'todos', label: `Todos (${presupuestos.length})` },
-            { value: 'sin-proyecto', label: `Sin proyecto (${presupuestos.filter(p => !p.enOtroProyecto).length})` },
-            { value: 'con-otro', label: `En otro proyecto (${presupuestos.filter(p => p.enOtroProyecto).length})` },
-          ] as const).map(f => (
-            <button
-              key={f.value}
-              onClick={() => setFiltroEstado(f.value)}
-              className={`px-2 py-1 rounded transition-colors ${
-                filtroEstado === f.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background border border-border hover:bg-muted/40'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="px-5 py-3 border-b border-border space-y-2">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
+            <span className="text-muted-foreground">Mostrar:</span>
+            {([
+              { value: 'todos', label: `Todos (${presupuestos.length})` },
+              { value: 'sin-proyecto', label: `Sin proyecto (${presupuestos.filter(p => !p.enOtroProyecto).length})` },
+              { value: 'con-otro', label: `En otro proyecto (${presupuestos.filter(p => p.enOtroProyecto).length})` },
+            ] as const).map(f => (
+              <button
+                key={f.value}
+                onClick={() => setFiltroEstado(f.value)}
+                className={`px-2 py-1 rounded transition-colors ${
+                  filtroEstado === f.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background border border-border hover:bg-muted/40'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-xs cursor-pointer text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={mostrarTodosSistema}
+              onChange={e => setMostrarTodosSistema(e.target.checked)}
+            />
+            <Users className="w-3 h-3" />
+            Mostrar presupuestos de cualquier cliente (escape hatch para casos donde el clienteId del presupuesto no quedó bien seteado)
+          </label>
         </div>
 
         {/* Lista */}
@@ -136,7 +174,9 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
               <FileText className="w-10 h-10 mb-2 opacity-40" />
               <p className="text-sm">
                 {presupuestos.length === 0
-                  ? 'No hay presupuestos del cliente para vincular.'
+                  ? mostrarTodosSistema
+                    ? 'No hay presupuestos disponibles en el sistema.'
+                    : 'No hay presupuestos del cliente para vincular. Activa "Mostrar presupuestos de cualquier cliente" abajo si crees que faltan.'
                   : 'No hay presupuestos que coincidan con el filtro.'}
               </p>
             </div>
@@ -153,7 +193,9 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
                     className={`w-full text-left flex items-center justify-between px-4 py-3 rounded-lg border transition-colors ${
                       isVinc
                         ? 'border-primary bg-primary/5 cursor-wait'
-                        : 'border-border hover:border-primary/50 hover:bg-muted/40'
+                        : !p.clienteCoincide
+                          ? 'border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                          : 'border-border hover:border-primary/50 hover:bg-muted/40'
                     }`}
                   >
                     <div className="flex-1 min-w-0">
@@ -170,6 +212,12 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
                           <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="w-3 h-3" />
                             En: {p.proyectoActualNombre}
+                          </span>
+                        )}
+                        {!p.clienteCoincide && (
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <Users className="w-3 h-3" />
+                            Cliente: {p.clienteActualNombre ?? 'sin asignar'}
                           </span>
                         )}
                       </div>

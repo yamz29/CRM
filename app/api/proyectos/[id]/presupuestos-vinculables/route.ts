@@ -5,14 +5,18 @@ import { withPermiso } from '@/lib/with-permiso'
 type Ctx = { params: Promise<{ id: string }> }
 
 /**
- * GET /api/proyectos/[id]/presupuestos-vinculables
+ * GET /api/proyectos/[id]/presupuestos-vinculables[?todos=1]
  *
- * Lista presupuestos del MISMO cliente del proyecto que NO estén ya
- * vinculados a este proyecto. Incluye presupuestos sin proyecto y los
- * que están en otro proyecto (con flag `enOtroProyecto` para advertir
- * en la UI antes de robarles el vínculo).
+ * Por default lista presupuestos del MISMO cliente del proyecto, NO ya
+ * vinculados a este proyecto. Incluye los sin proyecto y los que están
+ * en otro proyecto (flag `enOtroProyecto`).
+ *
+ * Con ?todos=1 muestra TODOS los presupuestos del sistema (escape hatch
+ * para casos donde el clienteId no quedó bien seteado en el presupuesto
+ * o se creó desde otro flujo). Devuelve un flag `clienteCoincide` por
+ * cada uno para que la UI pueda advertir cuando el cliente no calza.
  */
-export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { params }: Ctx) => {
+export const GET = withPermiso('proyectos', 'ver', async (req: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const proyectoId = parseInt(idStr)
   if (isNaN(proyectoId)) {
@@ -27,12 +31,12 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
     return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
   }
 
-  // Presupuestos del mismo cliente, NO ya vinculados a ESTE proyecto.
+  const todos = req.nextUrl.searchParams.get('todos') === '1'
+
   const presupuestos = await prisma.presupuesto.findMany({
-    where: {
-      clienteId: proyecto.clienteId,
-      NOT: { proyectoId },
-    },
+    where: todos
+      ? { NOT: { proyectoId } }
+      : { clienteId: proyecto.clienteId, NOT: { proyectoId } },
     select: {
       id: true,
       numero: true,
@@ -40,10 +44,12 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
       estado: true,
       createdAt: true,
       proyectoId: true,
+      clienteId: true,
+      cliente: { select: { id: true, nombre: true } },
       proyecto: { select: { id: true, nombre: true } },
     },
     orderBy: { createdAt: 'desc' },
-    take: 50,
+    take: todos ? 200 : 50,
   })
 
   return NextResponse.json(presupuestos.map(p => ({
@@ -54,5 +60,7 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
     createdAt: p.createdAt,
     enOtroProyecto: p.proyectoId != null,
     proyectoActualNombre: p.proyecto?.nombre ?? null,
+    clienteCoincide: p.clienteId === proyecto.clienteId,
+    clienteActualNombre: p.cliente?.nombre ?? null,
   })))
 })
