@@ -2,7 +2,6 @@
 
 import { useState, useEffect, createContext, useContext } from 'react'
 import { Sidebar } from './Sidebar'
-import { ChatWidget } from '@/components/ai/ChatWidget'
 import { Menu } from 'lucide-react'
 import { type PermisosMap } from '@/lib/permisos'
 
@@ -135,8 +134,6 @@ export function LayoutShell({
             {children}
           </div>
         </main>
-
-        <ChatWidget />
       </div>
     </SidebarContext.Provider>
   )
