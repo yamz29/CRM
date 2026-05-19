@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoProyectoBadge } from '@/components/ui/badge'
 import { StatsCard } from '@/components/ui/stats-card'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle, BarChart2, GanttChart } from 'lucide-react'
+import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle, BarChart2, GanttChart, Kanban } from 'lucide-react'
 import { DeleteProyectoButton } from './DeleteProyectoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
@@ -81,6 +81,11 @@ export default async function ProyectosPage({
           <Link href="/proyectos/gantt">
             <Button variant="secondary">
               <GanttChart className="w-4 h-4" /> Gantt
+            </Button>
+          </Link>
+          <Link href="/proyectos/kanban">
+            <Button variant="secondary">
+              <Kanban className="w-4 h-4" /> Pipeline
             </Button>
           </Link>
           <Link href="/proyectos/reporte">
