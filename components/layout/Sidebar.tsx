@@ -34,6 +34,7 @@ import {
   Banknote,
   Truck,
   ShoppingCart,
+  Search,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, Fragment } from 'react'
@@ -270,9 +271,32 @@ export function Sidebar({
         </div>
       </div>
 
+      {/* Búsqueda global (Cmd+K / Ctrl+K) */}
+      <div className={cn('pt-3 pb-1', collapsed ? 'px-1.5' : 'px-3')}>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+          title={collapsed ? 'Buscar (Ctrl+K)' : undefined}
+          className={cn(
+            'flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors text-white/60 hover:text-white hover:bg-white/5',
+            collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'
+          )}
+        >
+          <Search className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && (
+            <>
+              <span className="flex-1 text-left">Buscar</span>
+              <kbd className="text-[10px] text-white/40 font-mono border border-white/10 rounded px-1.5 py-0.5">
+                Ctrl+K
+              </kbd>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Dashboard (visible si tiene permiso) */}
       {getNivel(permisos, 'dashboard', esAdmin) !== 'ninguno' && (
-        <div className={cn('pt-3 pb-1', collapsed ? 'px-1.5' : 'px-3')}>
+        <div className={cn('pb-1', collapsed ? 'px-1.5' : 'px-3')}>
           <NavLink href="/" label="Dashboard" icon={LayoutDashboard} collapsed={collapsed} onNavClick={onNavClick} />
         </div>
       )}

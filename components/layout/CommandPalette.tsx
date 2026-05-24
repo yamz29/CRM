@@ -60,7 +60,10 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // ── Atajo global Cmd+K / Ctrl+K ────────────────────────────────────
+  // ── Atajo global Cmd+K / Ctrl+K + custom event ─────────────────────
+  // Cualquier componente puede abrir el palette con:
+  //   window.dispatchEvent(new Event('open-command-palette'))
+  // Útil para botones de búsqueda en el sidebar / header.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
@@ -69,8 +72,15 @@ export function CommandPalette() {
         setOpen(o => !o)
       }
     }
+    function onOpenEvent() {
+      setOpen(true)
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('open-command-palette', onOpenEvent)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('open-command-palette', onOpenEvent)
+    }
   }, [])
 
   // ── Foco automático al abrir + reset ────────────────────────────────
