@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useRef, Fragment } from 'react'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
@@ -471,6 +472,22 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
   const [showImportModal, setShowImportModal] = useState(false)
   const [showQuickTextPicker, setShowQuickTextPicker] = useState(false)
 
+  // ── Detección de cambios sin guardar ───────────────────────────────────────
+  // Marca dirty=true en cuanto el usuario toca cualquier campo. Se resetea al
+  // guardar exitosamente. Si dirty, el hook avisa antes de cerrar tab, hacer
+  // back, o clickear cualquier link del sidebar/header.
+  const [dirty, setDirty] = useState(false)
+  const isFirstRenderRef = useRef(true)
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
+      return
+    }
+    setDirty(true)
+  }, [clienteId, proyectoId, estado, notas, descuentoTipo, descuentoValor,
+      itbisActivo, itbisPorcentaje, titulos, capitulos, indirectoLineas])
+  useUnsavedChangesWarning(dirty)
+
   // ── Excel import handler ───────────────────────────────────────────────────
 
   const handleImport = useCallback((result: ImportResult) => {
@@ -687,6 +704,8 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
         { method: mode === 'create' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
       )
       if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Error al guardar') }
+      // Resetear dirty ANTES del push para que el hook no intercepte la navegación
+      setDirty(false)
       router.push(mode === 'create' ? '/presupuestos?msg=creado' : '/presupuestos?msg=actualizado')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado al guardar')
