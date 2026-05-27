@@ -792,12 +792,25 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                         <tr key={p._key ?? `idx-${ci}-${pi}`} className="border-b border-amber-200 bg-amber-50/60 hover:bg-amber-50 group">
                           <td className="px-2 py-1 text-center text-xs text-amber-700 select-none font-bold" title="Nota informativa">★</td>
                           <td colSpan={6} className="px-1 py-0.5">
-                            <input
-                              type="text"
+                            <textarea
                               value={p.descripcion}
                               onChange={(e) => updatePartida(ci, pi, 'descripcion', e.target.value)}
-                              placeholder="Nota informativa (no suma al total)..."
-                              className="w-full px-2 py-1.5 text-sm italic text-amber-900 border border-transparent rounded focus:outline-none focus:border-amber-400 focus:bg-card focus:ring-1 focus:ring-amber-300 hover:border-amber-300 bg-transparent transition-colors"
+                              placeholder="Nota informativa (no suma al total)... Enter para nueva línea."
+                              rows={1}
+                              ref={(el) => {
+                                // Auto-resize: ajusta la altura al contenido para
+                                // que se vean todas las líneas sin scroll interno.
+                                if (el) {
+                                  el.style.height = 'auto'
+                                  el.style.height = `${el.scrollHeight}px`
+                                }
+                              }}
+                              onInput={(e) => {
+                                const el = e.currentTarget
+                                el.style.height = 'auto'
+                                el.style.height = `${el.scrollHeight}px`
+                              }}
+                              className="w-full px-2 py-1.5 text-sm italic text-amber-900 border border-transparent rounded focus:outline-none focus:border-amber-400 focus:bg-card focus:ring-1 focus:ring-amber-300 hover:border-amber-300 bg-transparent transition-colors resize-none leading-snug"
                             />
                           </td>
                           <td className="px-1 py-0.5">

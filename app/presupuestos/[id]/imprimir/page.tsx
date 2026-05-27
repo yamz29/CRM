@@ -484,8 +484,8 @@ function CapBlock({ cap }: { cap: Cap }) {
                 if (p.esNota) {
                   return (
                     <tr key={p.id} style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a' }}>
-                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#b45309', textAlign: 'center' }}>—</td>
-                      <td colSpan={5} style={{ padding: '4px 8px', fontSize: 9, color: '#78350f', fontStyle: 'italic' }}>
+                      <td style={{ padding: '4px 8px', fontSize: 9, color: '#b45309', textAlign: 'center', verticalAlign: 'top' }}>—</td>
+                      <td colSpan={5} style={{ padding: '4px 8px', fontSize: 9, color: '#78350f', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                         {p.descripcion}
                       </td>
                     </tr>
