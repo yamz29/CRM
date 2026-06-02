@@ -6,6 +6,7 @@ import {
   Lock, TrendingDown, FolderOpen, ChevronRight, CheckCircle2, Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
+import { TourBanner } from '@/components/onboarding/TourBanner'
 
 const MS_DAY = 86_400_000
 
@@ -303,6 +304,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Banner de onboarding (solo visible primera vez por usuario) */}
+      <TourBanner />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>

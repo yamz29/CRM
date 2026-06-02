@@ -42,12 +42,29 @@ export default function AyudaPage() {
       </div>
 
       {/* Search hint */}
-      <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-xl px-4 py-3 mb-8">
+      <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-xl px-4 py-3 mb-4">
         <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         <span className="text-muted-foreground text-sm">
           Usa <kbd className="bg-card border border-border rounded px-1.5 py-0.5 text-xs font-mono">Ctrl+F</kbd> para buscar dentro de un artículo, o navega por los módulos abajo.
         </span>
       </div>
+
+      {/* CTA: Primeros pasos (destacado) */}
+      <Link
+        href="/ayuda/primeros-pasos"
+        className="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-5 py-4 mb-8 hover:shadow-md transition-shadow"
+      >
+        <div className="flex items-center justify-center w-11 h-11 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+          <BookOpen className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-foreground">¿Es tu primera vez? Empieza aquí</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Guía paso a paso por rol (vendedor, supervisor, contable) con checklist de progreso real.
+          </p>
+        </div>
+        <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">Abrir →</span>
+      </Link>
 
       {/* Module cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
