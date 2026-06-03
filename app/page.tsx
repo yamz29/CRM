@@ -6,6 +6,7 @@ import {
   Lock, TrendingDown, FolderOpen, ChevronRight, CheckCircle2, Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { TourBanner } from '@/components/onboarding/TourBanner'
 
 const MS_DAY = 86_400_000
@@ -300,7 +301,8 @@ async function getOperacionData() {
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const data = await getOperacionData()
+  const [data, hdrs] = await Promise.all([getOperacionData(), headers()])
+  const esAdmin = hdrs.get('x-user-rol') === 'Admin'
 
   return (
     <div className="space-y-6">
@@ -308,11 +310,21 @@ export default async function DashboardPage() {
       <TourBanner />
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Lo que necesita tu atención hoy.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Lo que necesita tu atención hoy.
+          </p>
+        </div>
+        {esAdmin && (
+          <Link
+            href="/dashboard/ejecutivo"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+          >
+            🔒 Vista ejecutiva (admin)
+          </Link>
+        )}
       </div>
 
       {/* ── Sección 1: Acciones pendientes ─────────────────────────── */}
