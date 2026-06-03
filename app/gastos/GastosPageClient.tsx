@@ -7,6 +7,7 @@ import { GastoForm, type GastoData } from '@/components/gastos/GastoForm'
 import { Plus, Search, Pencil, Trash2, Paperclip, Building2, Wrench, LayoutGrid, HelpCircle, FolderOpen, Receipt } from 'lucide-react'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
 import { ExportButton } from '@/components/ui/export-button'
+import { ImportarGastosMasivoButton } from '@/components/gastos/ImportarGastosMasivoButton'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
         </div>
         <div className="flex items-center gap-2">
           <HelpDrawer slug="gastos" titulo="Gastos" />
+          <ImportarGastosMasivoButton />
           <ExportButton href="/api/export/gastos" label="Exportar" />
           <Button onClick={openNew} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
