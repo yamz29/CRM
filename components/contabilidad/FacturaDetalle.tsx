@@ -168,7 +168,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Fecha</p>
-                <p className="font-medium">{new Date(factura.fecha).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="font-medium">{new Date(factura.fecha).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{factura.tipo === 'ingreso' ? 'Cliente' : 'Proveedor'}</p>
@@ -185,7 +185,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
               {factura.fechaVencimiento && (
                 <div>
                   <p className="text-xs text-muted-foreground">Vencimiento</p>
-                  <p className="font-medium">{new Date(factura.fechaVencimiento).toLocaleDateString('es-DO')}</p>
+                  <p className="font-medium">{new Date(factura.fechaVencimiento).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</p>
                 </div>
               )}
               {(factura.destinoTipo !== 'general' || factura.proyecto) && (
@@ -262,7 +262,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
                     <div>
                       <p className="text-sm font-medium">{formatCurrency(p.monto)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(p.fecha).toLocaleDateString('es-DO')} — {p.metodoPago}
+                        {new Date(p.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })} — {p.metodoPago}
                         {p.referencia && <span className="ml-1 font-mono">({p.referencia})</span>}
                         {p.cuentaBancaria && <span className="ml-1">— {p.cuentaBancaria.nombre}</span>}
                       </p>

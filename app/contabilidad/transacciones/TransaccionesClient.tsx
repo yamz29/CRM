@@ -107,7 +107,7 @@ export function TransaccionesClient({ proyectos, clientes, proveedores }: Props)
   function exportCSV() {
     const headers = ['Fecha', 'Tipo', 'Fuente', 'Número', 'NCF', 'Descripción', 'Proveedor/Cliente', 'Proyecto', 'Monto', 'Pagado', 'Estado']
     const rows = transacciones.map(t => [
-      new Date(t.fecha).toLocaleDateString('es-DO'),
+      new Date(t.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' }),
       t.tipo,
       FUENTE_CONFIG[t.fuente]?.label ?? t.fuente,
       t.numero ?? '',
@@ -265,7 +265,7 @@ export function TransaccionesClient({ proyectos, clientes, proveedores }: Props)
                     return (
                       <tr key={t.id} className="hover:bg-muted/20">
                         <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(t.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit' })}
+                          {new Date(t.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' })}
                         </td>
                         <td className="px-3 py-2">
                           {t.tipo === 'ingreso' ? (

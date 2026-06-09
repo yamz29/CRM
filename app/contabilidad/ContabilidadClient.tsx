@@ -121,21 +121,21 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Landmark className="w-6 h-6" /> Contabilidad
           </h1>
           <p className="text-sm text-muted-foreground">Facturas, pagos y conciliación bancaria</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
           {tab === 'facturas' && (
             <>
-              <Link href="/contabilidad/facturas/importar">
-                <Button variant="secondary"><Upload className="w-4 h-4" /> Importar CSV</Button>
+              <Link href="/contabilidad/facturas/importar" className="flex-1 sm:flex-none">
+                <Button variant="secondary" className="w-full"><Upload className="w-4 h-4" /> Importar CSV</Button>
               </Link>
-              <Link href="/contabilidad/facturas/nueva">
-                <Button><Plus className="w-4 h-4" /> Nueva Factura</Button>
+              <Link href="/contabilidad/facturas/nueva" className="flex-1 sm:flex-none">
+                <Button className="w-full"><Plus className="w-4 h-4" /> Nueva Factura</Button>
               </Link>
             </>
           )}
@@ -216,7 +216,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                           #{f.numero} — {f.tipo === 'ingreso' ? f.cliente?.nombre || 'Sin cliente' : f.proveedor || 'Sin proveedor'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(f.fecha).toLocaleDateString('es-DO')}
+                          {new Date(f.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}
                           {f.ncf && <span className="ml-2 font-mono">{f.ncf}</span>}
                         </p>
                       </div>
@@ -342,7 +342,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                             {f.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{new Date(f.fecha).toLocaleDateString('es-DO')}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{new Date(f.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</td>
                         <td className="px-4 py-3">{f.tipo === 'ingreso' ? f.cliente?.nombre || '—' : f.proveedor || '—'}</td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{f.ncf || '—'}</td>
                         <td className="px-4 py-3 text-xs">
@@ -509,7 +509,7 @@ function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancaria; o
                 <tbody className="divide-y divide-border">
                   {movimientos.map((m: any) => (
                     <tr key={m.id} className="hover:bg-muted/20">
-                      <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">{new Date(m.fecha).toLocaleDateString('es-DO')}</td>
+                      <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">{new Date(m.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</td>
                       <td className="px-4 py-2">
                         <span className={`text-xs font-medium ${m.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
                           {m.tipo === 'credito' ? 'Crédito' : 'Débito'}
@@ -995,7 +995,7 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
                       className="rounded border-border cursor-pointer"
                     />
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(m.fecha).toLocaleDateString('es-DO')}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{new Date(m.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs font-medium ${m.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
                       {m.tipo === 'credito' ? 'Crédito' : 'Débito'}
