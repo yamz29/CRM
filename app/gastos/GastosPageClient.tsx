@@ -78,12 +78,16 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   const [filtroDestino, setFiltroDestino]   = useState('')
   const [filtroProyecto, setFiltroProyecto] = useState('')
   const [filtroEstado, setFiltroEstado]     = useState('')
+  const [soloSinPartida, setSoloSinPartida] = useState(false)
+
+  const esSinPartida = (g: Gasto) => g.proyectoId != null && g.partida == null
 
   const filtered = useMemo(() => {
     return gastos.filter(g => {
       if (filtroDestino  && g.destinoTipo !== filtroDestino) return false
       if (filtroProyecto && String(g.proyectoId) !== filtroProyecto) return false
       if (filtroEstado   && g.estado !== filtroEstado) return false
+      if (soloSinPartida && !esSinPartida(g)) return false
       if (q) {
         const lq = q.toLowerCase()
         if (
@@ -95,7 +99,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
       }
       return true
     })
-  }, [gastos, q, filtroDestino, filtroProyecto, filtroEstado])
+  }, [gastos, q, filtroDestino, filtroProyecto, filtroEstado, soloSinPartida])
 
   async function reload() {
     const res = await fetch('/api/gastos')
@@ -140,6 +144,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   }
 
   const totalFiltrado = filtered.reduce((s, g) => s + g.monto, 0)
+  const sinPartidaCount = gastos.filter(esSinPartida).length
 
   return (
     <div className="space-y-5">
@@ -188,6 +193,25 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
             </p>
           </button>
         ))}
+        {sinPartidaCount > 0 && (
+          <button
+            onClick={() => setSoloSinPartida(!soloSinPartida)}
+            className={`rounded-xl border p-3 text-left transition-all ${
+              soloSinPartida
+                ? 'ring-2 ring-primary border-primary/50 bg-card'
+                : 'bg-card border-border hover:border-border/60'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <HelpCircle className="w-3 h-3" />
+                Sin partida
+              </span>
+            </div>
+            <p className="text-lg font-bold text-foreground tabular-nums">{sinPartidaCount}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">pendientes de asignar partida</p>
+          </button>
+        )}
       </div>
 
       {/* Total card */}
@@ -223,8 +247,8 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
           <option value="">Todos los estados</option>
           {['Registrado', 'Revisado', 'Anulado'].map(e => <option key={e} value={e}>{e}</option>)}
         </select>
-        {(q || filtroDestino || filtroProyecto || filtroEstado) && (
-          <button onClick={() => { setQ(''); setFiltroDestino(''); setFiltroProyecto(''); setFiltroEstado('') }}
+        {(q || filtroDestino || filtroProyecto || filtroEstado || soloSinPartida) && (
+          <button onClick={() => { setQ(''); setFiltroDestino(''); setFiltroProyecto(''); setFiltroEstado(''); setSoloSinPartida(false) }}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors">Limpiar</button>
         )}
         <span className="text-xs text-muted-foreground ml-auto">
@@ -263,7 +287,15 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
                       {g.referencia && <div className="text-xs text-muted-foreground">{g.referencia}</div>}
                     </td>
                     <td className="px-4 py-2.5">
-                      <DestinoBadge destino={g.destinoTipo} proyecto={g.proyecto} />
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <DestinoBadge destino={g.destinoTipo} proyecto={g.proyecto} />
+                        {esSinPartida(g) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <HelpCircle className="w-3 h-3" />
+                            Sin partida
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{g.tipoGasto}</td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{g.suplidor ?? '—'}</td>
