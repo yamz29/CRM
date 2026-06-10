@@ -114,7 +114,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   function openEdit(g: Gasto) {
     setEditing({
       id: g.id,
-      fecha: g.fecha.split('T')[0],
+      fecha: new Date(g.fecha).toISOString().split('T')[0],
       tipoGasto: g.tipoGasto,
       referencia: g.referencia ?? '',
       descripcion: g.descripcion,
