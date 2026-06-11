@@ -26,9 +26,9 @@ async function getPresupuestos(estado?: string, q?: string, page = 1) {
     ...(q
       ? {
           OR: [
-            { numero: { contains: q } },
-            { cliente: { nombre: { contains: q } } },
-            { proyecto: { nombre: { contains: q } } },
+            { numero: { contains: q, mode: 'insensitive' as const } },
+            { cliente: { nombre: { contains: q, mode: 'insensitive' as const } } },
+            { proyecto: { nombre: { contains: q, mode: 'insensitive' as const } } },
           ],
         }
       : {}),
