@@ -175,7 +175,7 @@ export const GUIAS: Guia[] = [
         slug: 'registrar-factura',
         titulo: '2. Registrar facturas (cobros y gastos)',
         descripcion:
-          'Hay 2 tipos:\n\n• **Ingreso** (cobro al cliente): vincúlala al proyecto y cliente. Usa la sección Facturación.\n• **Egreso** (gasto al proveedor): vincúlala al proyecto si aplica. Puedes subir la foto/PDF y el OCR de IA extrae los datos (proveedor, RNC, NCF, totales, ITBIS, propina legal).',
+          'Hay 2 tipos:\n\n• **Ingreso** (cobro al cliente): vincúlala al proyecto y cliente. Usa la sección Cobros.\n• **Egreso** (gasto al proveedor): vincúlala al proyecto si aplica. Puedes subir la foto/PDF y el OCR de IA extrae los datos (proveedor, RNC, NCF, totales, ITBIS, propina legal).',
         ctaHref: '/contabilidad/facturas/nueva',
         ctaLabel: 'Nueva factura',
         imagen: 'contable-02-factura.png',
