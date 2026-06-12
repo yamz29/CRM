@@ -189,7 +189,7 @@ async function getOperacionData() {
       label: `${adicionalesPropuestos} adicional${adicionalesPropuestos !== 1 ? 'es' : ''} sin decidir`,
       detalle: 'Aprueba o rechaza para que se reflejen en el presupuesto.',
       count: adicionalesPropuestos,
-      href: '/proyectos',
+      href: '/proyectos?adicionales=propuesto',
       Icon: FilePlus,
       tono: 'amber',
     })
