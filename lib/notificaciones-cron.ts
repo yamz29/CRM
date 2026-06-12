@@ -126,7 +126,7 @@ export async function correrNotificacionesDiarias(): Promise<{
     where: {
       estado: 'propuesto',
       fechaPropuesta: { lt: hace7Dias },
-      proyecto: { archivada: false },
+      proyecto: { estado: { not: 'Cerrado' }, archivada: false },
     },
   })
 

@@ -90,9 +90,9 @@ async function getOperacionData() {
         fechaVencimiento: { gte: hoyMidnight, lte: en7Dias },
       },
     }),
-    // Adicionales en estado propuesto (sin decidir)
+    // Adicionales en estado propuesto (sin decidir) — mismo universo que /proyectos?adicionales=propuesto
     prisma.adicionalProyecto.count({
-      where: { estado: 'propuesto' },
+      where: { estado: 'propuesto', proyecto: { archivada: false } },
     }),
     // Cronogramas con actividades atrasadas (no completadas con fechaFin < hoy)
     prisma.actividadCronograma.groupBy({
