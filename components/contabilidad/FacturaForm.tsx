@@ -149,7 +149,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
       // otro formato con DOMException, por eso validamos año/mes/día.
       const normalizaFecha = (s: unknown): string | null => {
         if (!s || typeof s !== 'string') return null
-        let txt = s.trim()
+        const txt = s.trim()
 
         let y = 0, mo = 0, d = 0
         if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(txt)) {

@@ -180,7 +180,11 @@ ModuloMelaminaV2 ──< PiezaModulo
 - Vista detalle con proyectos y presupuestos relacionados
 
 ### 5.3 Proyectos (`/proyectos`)
-Detalle con **4 pestañas**: Resumen / Gastos / Control Presupuestario / Melamina
+Detalle con **4 grupos de pestañas** con sub-navegación (los deep-links `?tab=` originales siguen funcionando):
+- **Resumen**
+- **Dinero**: Gastos / Control presupuestario / Adicionales / EVM-Curva S
+- **Ejecución**: Programación / Punchlist / Bitácora
+- **Archivo**: Presupuestos / Documentos
 
 **Tab Resumen**: Info del proyecto, cards financieros (presupuestado/gastado/disponible), rentabilidad real (ingresos - costos reales, margen %)
 
@@ -372,6 +376,9 @@ Melamina:
 - Popovers inline para asignación sin modal
 - Preview de impresión A4 (shell gris en pantalla)
 - Flash de confirmación "✓ Guardado" 1.5s
+- Toasts globales de éxito/error (`useToast`, `components/ui/toast.tsx`) — patrón estándar para feedback de acciones
+- `ConfirmDialog` reutilizable (`components/ui/confirm-dialog.tsx`) — reemplazo de `confirm()` nativo en acciones destructivas/críticas (aprobar presupuesto avisa que el proyecto pasa a "En Ejecución")
+- Alertas del dashboard usan `lib/resumen-financiero.ts` (fuente única: snapshot de control si está poblado, si no estimado) y etiquetan el origen del dato
 - Datalist nativo para búsquedas en selectores (APU, materiales melamina)
 - Barras de progreso visuales (% costos, % uso plancha, semáforo de ejecución)
 

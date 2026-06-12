@@ -7,6 +7,8 @@ import { enviarNotificacionAInteresados } from './push'
  * Detecta:
  *   1. Facturas que vencen en los próximos 3 días (o vencidas hoy mismo).
  *   2. Cronogramas con actividades atrasadas (fechaFin < hoy y avance < 100).
+ *   3. Partidas del snapshot con gasto > presupuestado.
+ *   4. Adicionales propuestos hace más de 7 días sin decidir.
  *
  * Diseñado para correr una vez al día. La idempotencia por día se logra
  * usando `tag` en la notificación: si el SW ya mostró una con el mismo
@@ -21,6 +23,8 @@ import { enviarNotificacionAInteresados } from './push'
 export async function correrNotificacionesDiarias(): Promise<{
   facturasVencen: number
   cronogramasAtrasados: number
+  partidasSobrecosto: number
+  adicionalesEstancados: number
 }> {
   const hoy = new Date()
   const en3Dias = new Date(hoy.getTime() + 3 * 86_400_000)
@@ -81,7 +85,66 @@ export async function correrNotificacionesDiarias(): Promise<{
     })
   }
 
-  return { facturasVencen: facturasVenciendo + facturasVencidas, cronogramasAtrasados: actividadesAtrasadas }
+  // ── 3. Partidas con sobrecosto (gastado > presupuestado en el snapshot) ──
+  const gastosPorPartida = await prisma.gastoProyecto.groupBy({
+    by: ['partidaId'],
+    where: { partidaId: { not: null }, estado: { not: 'Anulado' } },
+    _sum: { monto: true },
+  })
+  const partidaIds = gastosPorPartida
+    .map(g => g.partidaId)
+    .filter((id): id is number => id != null)
+  const partidas = partidaIds.length > 0
+    ? await prisma.proyectoPartida.findMany({
+        where: {
+          id: { in: partidaIds },
+          proyecto: { estado: { not: 'Cerrado' }, archivada: false },
+        },
+        select: { id: true, subtotalPresupuestado: true, proyectoId: true },
+      })
+    : []
+  const gastadoPorPartida = new Map<number | null, number>(
+    gastosPorPartida.map(g => [g.partidaId, g._sum.monto ?? 0])
+  )
+  const partidasEnRojo = partidas.filter(
+    p => p.subtotalPresupuestado > 0 && (gastadoPorPartida.get(p.id) ?? 0) > p.subtotalPresupuestado
+  )
+  const proyectosConSobrecosto = new Set(partidasEnRojo.map(p => p.proyectoId)).size
+
+  if (partidasEnRojo.length > 0) {
+    await enviarNotificacionAInteresados({
+      title: 'Partidas sobre presupuesto',
+      body: `${partidasEnRojo.length} partida${partidasEnRojo.length > 1 ? 's' : ''} excede${partidasEnRojo.length > 1 ? 'n' : ''} su presupuesto en ${proyectosConSobrecosto} proyecto${proyectosConSobrecosto > 1 ? 's' : ''}. Revisa el control presupuestario.`,
+      url: '/proyectos',
+      tag: 'partidas-sobrecosto',
+    })
+  }
+
+  // ── 4. Adicionales propuestos hace más de 7 días sin decidir ──────
+  const hace7Dias = new Date(hoy.getTime() - 7 * 86_400_000)
+  const adicionalesEstancados = await prisma.adicionalProyecto.count({
+    where: {
+      estado: 'propuesto',
+      fechaPropuesta: { lt: hace7Dias },
+      proyecto: { estado: { not: 'Cerrado' }, archivada: false },
+    },
+  })
+
+  if (adicionalesEstancados > 0) {
+    await enviarNotificacionAInteresados({
+      title: 'Adicionales sin decidir',
+      body: `${adicionalesEstancados} adicional${adicionalesEstancados > 1 ? 'es' : ''} lleva${adicionalesEstancados > 1 ? 'n' : ''} más de 7 días propuestos sin aprobar ni rechazar.`,
+      url: '/proyectos?adicionales=propuesto',
+      tag: 'adicionales-estancados',
+    })
+  }
+
+  return {
+    facturasVencen: facturasVenciendo + facturasVencidas,
+    cronogramasAtrasados: actividadesAtrasadas,
+    partidasSobrecosto: partidasEnRojo.length,
+    adicionalesEstancados,
+  }
 }
 
 /**

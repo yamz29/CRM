@@ -196,6 +196,7 @@ export default async function PresupuestoDetailPage({
               <CambiarEstadoButton
                 presupuestoId={presupuesto.id}
                 estadoActual={presupuesto.estado}
+                nombreProyecto={presupuesto.proyecto?.nombre ?? null}
               />
             </div>
           </div>

@@ -477,6 +477,18 @@ function InteractivePlanSVG({
   const padX = 70, padY = 70
   const wallThick = 8
 
+  const [hoverPos, setHoverPos] = useState<{ segIdx: number; posMm: number } | null>(null)
+  const [hoverIsland, setHoverIsland] = useState<{ x: number; y: number } | null>(null) // SVG px
+  const [planDrag, setPlanDrag] = useState<{
+    id: number; type: 'wall' | 'island'
+    segIdx: number
+    startCX: number; startCY: number
+    startPosicion: number
+    startPX: number; startPY: number
+    currentPosicion: number
+    currentPX: number; currentPY: number
+  } | null>(null)
+
   if (!walls.length) {
     return (
       <div className="flex items-center justify-center h-[340px] bg-slate-900 dark:bg-slate-900 rounded-lg text-muted-foreground text-sm">
@@ -495,18 +507,6 @@ function InteractivePlanSVG({
   const floorY1 = padY + profBase * scale + 4
   const floorX2 = PLAN_W - padX / 2
   const floorY2 = PLAN_H - padY / 2
-
-  const [hoverPos, setHoverPos] = useState<{ segIdx: number; posMm: number } | null>(null)
-  const [hoverIsland, setHoverIsland] = useState<{ x: number; y: number } | null>(null) // SVG px
-  const [planDrag, setPlanDrag] = useState<{
-    id: number; type: 'wall' | 'island'
-    segIdx: number
-    startCX: number; startCY: number
-    startPosicion: number
-    startPX: number; startPY: number
-    currentPosicion: number
-    currentPX: number; currentPY: number
-  } | null>(null)
 
   function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
     const svgRect = e.currentTarget.getBoundingClientRect()

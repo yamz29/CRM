@@ -170,6 +170,7 @@ export function ImportarGastosMasivoButton() {
                         Excel con los nombres exactos de columnas y ejemplos. Pega tus datos en la hoja &ldquo;Gastos&rdquo;.
                       </p>
                     </div>
+                    {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- descarga de archivo servida por API route, no navegación */}
                     <a
                       href="/api/gastos/importar/plantilla"
                       className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"

@@ -59,7 +59,7 @@ export async function POST(
     const yaFacturado = facturadoPrevio._sum.total ?? 0
     const pendiente = Math.max(0, presupuesto.total - yaFacturado)
 
-    let total = montoCustom != null && !isNaN(montoCustom) && montoCustom > 0
+    const total = montoCustom != null && !isNaN(montoCustom) && montoCustom > 0
       ? montoCustom
       : pendiente
 

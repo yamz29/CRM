@@ -15,12 +15,14 @@ interface SearchParams {
   estado?: string
   msg?: string
   archivados?: string
+  adicionales?: string
 }
 
-async function getProyectos(estado?: string, verArchivados = false) {
+async function getProyectos(estado?: string, verArchivados = false, soloConAdicionales = false) {
   return prisma.proyecto.findMany({
     where: {
       ...(estado ? { estado } : {}),
+      ...(soloConAdicionales ? { adicionales: { some: { estado: 'propuesto' } } } : {}),
       archivada: verArchivados,
     },
     include: {
@@ -58,10 +60,11 @@ export default async function ProyectosPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { estado, msg, archivados } = await searchParams
+  const { estado, msg, archivados, adicionales } = await searchParams
   const verArchivados = archivados === '1'
+  const soloConAdicionales = adicionales === 'propuesto'
   const [proyectos, stats] = await Promise.all([
-    getProyectos(estado, verArchivados),
+    getProyectos(estado, verArchivados, soloConAdicionales),
     getStats(),
   ])
 
@@ -130,6 +133,17 @@ export default async function ProyectosPage({
           colorClass="bg-blue-500/10 text-blue-500"
         />
       </div>
+
+      {soloConAdicionales && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+          <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+            Mostrando solo proyectos con adicionales sin decidir.
+          </p>
+          <Link href="/proyectos" className="text-sm font-medium text-amber-700 dark:text-amber-400 hover:underline shrink-0">
+            Quitar filtro
+          </Link>
+        </div>
+      )}
 
       {/* Filter */}
       <Card>

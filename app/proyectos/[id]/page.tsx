@@ -26,6 +26,7 @@ import {
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
   TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
   FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink, FolderOpen, ListTodo,
+  type LucideIcon,
 } from 'lucide-react'
 
 async function getProyecto(id: number) {
@@ -168,18 +169,41 @@ export default async function ProyectoDetailPage({
     ? avanceFisico - pctEjecucionFin  // positivo = bajo presupuesto, negativo = sobreejecutando
     : null
 
-  const tabs = [
-    { key: 'resumen', label: 'Resumen' },
-    { key: 'presupuestos', label: `Presupuestos (${proyecto.presupuestos.length})` },
-    { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
-    { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
-    { key: 'punchlist', label: `Punchlist (${proyecto._count.punchlist})`, icon: ClipboardCheck },
-    { key: 'programa', label: 'Programación', icon: ListTodo },
-    { key: 'documentos', label: `Documentos (${proyecto._count.documentos})`, icon: FolderOpen },
-    { key: 'evm', label: 'EVM / Curva S', icon: TrendingUp },
-    { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
-    { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
+  type TabDef = { key: string; label: string; icon?: LucideIcon }
+  type GrupoDef = { key: string; label: string; icon?: LucideIcon; tabs: TabDef[] }
+
+  const grupos: GrupoDef[] = [
+    {
+      key: 'resumen', label: 'Resumen',
+      tabs: [{ key: 'resumen', label: 'Resumen' }],
+    },
+    {
+      key: 'dinero', label: 'Dinero', icon: BarChart2,
+      tabs: [
+        { key: 'gastos', label: `Gastos (${cantidadGastos})`, icon: TrendingDownIcon },
+        { key: 'control', label: 'Control presupuestario', icon: BarChart2 },
+        { key: 'adicionales', label: `Adicionales (${proyecto._count.adicionales})`, icon: FilePlus },
+        { key: 'evm', label: 'EVM / Curva S', icon: TrendingUp },
+      ],
+    },
+    {
+      key: 'ejecucion', label: 'Ejecución', icon: ListTodo,
+      tabs: [
+        { key: 'programa', label: 'Programación', icon: ListTodo },
+        { key: 'punchlist', label: `Punchlist (${proyecto._count.punchlist})`, icon: ClipboardCheck },
+        { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
+      ],
+    },
+    {
+      key: 'archivo', label: 'Archivo', icon: FolderOpen,
+      tabs: [
+        { key: 'presupuestos', label: `Presupuestos (${proyecto.presupuestos.length})` },
+        { key: 'documentos', label: `Documentos (${proyecto._count.documentos})`, icon: FolderOpen },
+      ],
+    },
   ]
+
+  const grupoActivo = grupos.find(g => g.tabs.some(t => t.key === tab)) ?? grupos[0]
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -277,25 +301,45 @@ export default async function ProyectoDetailPage({
         )
       })()}
 
-      {/* ── Tab bar ── */}
+      {/* ── Barra de grupos ── */}
       <div className="border-b border-border">
-        <nav className="flex gap-1">
-          {tabs.map(t => {
-            const active = tab === t.key
+        <nav className="flex gap-1 overflow-x-auto">
+          {grupos.map(g => {
+            const active = g.key === grupoActivo.key
             return (
-              <Link key={t.key} href={`/proyectos/${proyecto.id}?tab=${t.key}`}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              <Link key={g.key} href={`/proyectos/${proyecto.id}?tab=${g.tabs[0].key}`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   active
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                }`}>
+                {g.icon && <g.icon className="w-3.5 h-3.5" />}
+                {g.label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* ── Sub-tabs del grupo activo ── */}
+      {grupoActivo.tabs.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {grupoActivo.tabs.map(t => {
+            const active = tab === t.key
+            return (
+              <Link key={t.key} href={`/proyectos/${proyecto.id}?tab=${t.key}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                 }`}>
                 {t.icon && <t.icon className="w-3.5 h-3.5" />}
                 {t.label}
               </Link>
             )
           })}
-        </nav>
-      </div>
+        </div>
+      )}
 
       {/* ── Tab content ── */}
 

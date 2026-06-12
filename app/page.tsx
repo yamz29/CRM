@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { getResumenFinancieroBatch } from '@/lib/resumen-financiero'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
@@ -89,9 +90,9 @@ async function getOperacionData() {
         fechaVencimiento: { gte: hoyMidnight, lte: en7Dias },
       },
     }),
-    // Adicionales en estado propuesto (sin decidir)
+    // Adicionales en estado propuesto (sin decidir) — mismo universo que /proyectos?adicionales=propuesto
     prisma.adicionalProyecto.count({
-      where: { estado: 'propuesto' },
+      where: { estado: 'propuesto', proyecto: { archivada: false } },
     }),
     // Cronogramas con actividades atrasadas (no completadas con fechaFin < hoy)
     prisma.actividadCronograma.groupBy({
@@ -117,16 +118,8 @@ async function getOperacionData() {
         archivada: false,
       },
       select: {
-        id: true, codigo: true, nombre: true, estado: true, presupuestoEstimado: true,
+        id: true, codigo: true, nombre: true, estado: true,
         cliente: { select: { nombre: true } },
-        gastos: {
-          where: { estado: { not: 'Anulado' } },
-          select: { monto: true },
-        },
-        adicionales: {
-          where: { estado: { in: ['aprobado', 'facturado'] } },
-          select: { monto: true },
-        },
       },
     }),
     // Próximos hitos: actividades de cronograma que terminan en próximos 7 días
@@ -196,7 +189,7 @@ async function getOperacionData() {
       label: `${adicionalesPropuestos} adicional${adicionalesPropuestos !== 1 ? 'es' : ''} sin decidir`,
       detalle: 'Aprueba o rechaza para que se reflejen en el presupuesto.',
       count: adicionalesPropuestos,
-      href: '/proyectos',
+      href: '/proyectos?adicionales=propuesto',
       Icon: FilePlus,
       tono: 'amber',
     })
@@ -225,22 +218,23 @@ async function getOperacionData() {
     })
   }
 
-  // ── Proyectos en alerta (variación presupuesto vs gasto) ──────────────
+  // ── Proyectos en alerta (fuente única: lib/resumen-financiero) ─────────
+  const resumenes = await getResumenFinancieroBatch(proyectos.map(p => p.id))
   const enAlerta: ProyectoEnAlerta[] = proyectos
     .map(p => {
-      const gastado = p.gastos.reduce((s, g) => s + g.monto, 0)
-      const adicionales = p.adicionales.reduce((s, a) => s + a.monto, 0)
-      const presupuesto = (p.presupuestoEstimado ?? 0) + adicionales
+      const r = resumenes.get(p.id)
+      const presupuesto = r?.presupuesto ?? 0
+      const gastado = r?.gastado ?? 0
       const variacionPct = presupuesto > 0
         ? ((gastado - presupuesto) / presupuesto) * 100
         : (gastado > 0 ? Infinity : 0)
-      // Solo nos importan los que están sobre o muy cerca del límite
+      const etiquetaFuente = r?.fuente === 'control' ? 'vs control presupuestario' : 'vs estimado inicial'
       const motivo = variacionPct > 100
-        ? 'Más del doble del presupuesto'
+        ? `Más del doble del presupuesto · ${etiquetaFuente}`
         : variacionPct > 0
-          ? `Excede presupuesto en ${variacionPct.toFixed(1)}%`
+          ? `Excede presupuesto en ${variacionPct.toFixed(1)}% · ${etiquetaFuente}`
           : variacionPct > -10
-            ? `Quedan menos del 10% (${(-variacionPct).toFixed(1)}%)`
+            ? `Quedan menos del 10% (${(-variacionPct).toFixed(1)}%) · ${etiquetaFuente}`
             : ''
       return {
         id: p.id,
