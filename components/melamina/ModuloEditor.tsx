@@ -521,7 +521,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
     () => (tab === 'nesting' && piezas.length > 0
       ? runNesting(piezas, materialTablero ?? null, tableros, nestKerf, nestRotation)
       : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [tab, piezas, materialTablero, tableros, nestKerf, nestRotation],
   )
 
@@ -836,7 +836,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
               ) : (
                 <p className="text-xs text-amber-600 mt-1">
                   Sin tablero seleccionado — el despiece usará 18mm por defecto.{' '}
-                  {tableros.length === 0 && <a href="/melamina/materiales" className="underline">Agregar tableros en Materiales</a>}
+                  {tableros.length === 0 && <Link href="/melamina/materiales" className="underline">Agregar tableros en Materiales</Link>}
                 </p>
               )}
             </div>
@@ -1263,7 +1263,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
             <div className="px-5 pt-4 pb-0">
               <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                 No hay cantos ni herrajes en el catálogo.{' '}
-                <a href="/melamina/materiales" className="underline font-medium">Agregar en Materiales</a>
+                <Link href="/melamina/materiales" className="underline font-medium">Agregar en Materiales</Link>
               </p>
             </div>
           )}

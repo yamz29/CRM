@@ -294,7 +294,7 @@ export function RespaldoPanel() {
             <HardDrive className="w-10 h-10 text-muted-foreground/70 mb-3" />
             <p className="text-muted-foreground text-sm font-medium">No hay backups todavía</p>
             <p className="text-muted-foreground text-xs mt-1">
-              Haz clic en "Crear backup ahora" para generar el primero.
+              Haz clic en &ldquo;Crear backup ahora&rdquo; para generar el primero.
             </p>
           </div>
         ) : (

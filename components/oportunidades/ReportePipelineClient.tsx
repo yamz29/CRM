@@ -190,7 +190,7 @@ export function ReportePipelineClient() {
               <BarChart data={meses}>
                 <XAxis dataKey="mes" tickFormatter={formatMes} tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                { }
                 <Tooltip
                   formatter={(value: any, name: any) => [Number(value), name === 'ganadas' ? 'Ganadas' : 'Perdidas']}
                   labelFormatter={(label: any) => formatMes(String(label))}

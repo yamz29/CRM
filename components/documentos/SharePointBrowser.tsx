@@ -191,7 +191,7 @@ export function SharePointBrowser({
     // Determine the relative path for upload
     // If we're in a subfolder (breadcrumb > 1), we need the current folder ID
     // For root-level or rootPath, build the relative path
-    let relativePath = rootPath || ''
+    const relativePath = rootPath || ''
 
     // If browsing deeper via breadcrumb, we use the folder ID approach
     const currentFolderId = breadcrumb[breadcrumb.length - 1].id

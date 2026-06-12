@@ -457,7 +457,7 @@ export function PresupuestoBuilder({
                 {partidas.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground text-sm">
-                      No hay partidas. Haz clic en "Agregar Partida" para comenzar.
+                      No hay partidas. Haz clic en &ldquo;Agregar Partida&rdquo; para comenzar.
                     </td>
                   </tr>
                 )}

@@ -166,7 +166,7 @@ function evalExpr(raw: string): number {
   if (!cleaned) return 0
   if (!/^[\d\s+\-*/.()\t]+$/.test(cleaned)) return parseFloat(cleaned) || 0
   try {
-    // eslint-disable-next-line no-new-func
+     
     const result = Function(`'use strict'; return (${cleaned})`)() as unknown
     return typeof result === 'number' && isFinite(result) && result >= 0 ? result : 0
   } catch {
@@ -1063,7 +1063,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
               <div className="p-3 space-y-3 bg-amber-50/30">
                 {capsInTitulo.length === 0 ? (
                   <div className="text-center py-4 text-xs text-amber-500 border border-dashed border-amber-200 rounded-lg">
-                    Sin capítulos. Usa "+ Cap." para agregar uno aquí, o asigna un capítulo existente a este título.
+                    Sin capítulos. Usa &ldquo;+ Cap.&rdquo; para agregar uno aquí, o asigna un capítulo existente a este título.
                   </div>
                 ) : (
                   capsInTitulo.map(({ cap, ci }) => renderCapitulo(cap, ci))

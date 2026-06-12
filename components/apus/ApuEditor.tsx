@@ -168,7 +168,7 @@ function evalFormula(expr: string): number | null {
   // Only allow digits, decimal points, operators, parentheses and spaces
   if (!/^[\d\s+\-*/.()]+$/.test(clean)) return null
   try {
-    // eslint-disable-next-line no-new-func
+     
     const result = new Function('return ' + clean)() as unknown
     if (typeof result !== 'number' || !isFinite(result)) return null
     return Math.round(result * 1_000_000) / 1_000_000

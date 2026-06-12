@@ -111,7 +111,7 @@ export function GastoForm({
       .then(r => r.ok ? r.json() : [])
       .then(d => setRecursosStock(Array.isArray(d) ? d : []))
       .catch(() => {})
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [proyectoId, form.proyectoIdSeleccionado, form.destinoTipo])
 
   function set(key: keyof GastoData, value: string) {
