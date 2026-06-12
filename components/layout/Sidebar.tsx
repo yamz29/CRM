@@ -35,6 +35,7 @@ import {
   Truck,
   ShoppingCart,
   Search,
+  Files,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, Fragment } from 'react'
@@ -54,7 +55,7 @@ const NAV_GROUPS = [
       { href: '/presupuestos',  label: 'Presupuestos',  icon: FileText,       modulo: 'presupuestos'  as ModuloKey },
       { href: '/proyectos',     label: 'Proyectos',     icon: FolderOpen,     modulo: 'proyectos'     as ModuloKey },
       { href: '/cronograma',    label: 'Cronogramas',   icon: GanttChart,     modulo: 'cronogramas'   as ModuloKey },
-      { href: '/documentos',    label: 'Documentos',    icon: FolderOpen,     modulo: 'documentos'    as ModuloKey },
+      { href: '/documentos',    label: 'Documentos',    icon: Files,          modulo: 'documentos'    as ModuloKey },
       { href: '/gastos',        label: 'Gastos',        icon: Receipt,        modulo: 'gastos'        as ModuloKey },
       { href: '/recursos',      label: 'Recursos',      icon: Package,        modulo: 'recursos'      as ModuloKey },
       { href: '/apus',          label: 'Catálogo APU',  icon: FileSpreadsheet, modulo: 'apus'         as ModuloKey },
@@ -87,7 +88,7 @@ const NAV_GROUPS = [
     icon: Wrench,
     items: [
       { href: '/melamina',    label: 'Módulos Melamina',     icon: Box,     modulo: 'melamina'    as ModuloKey },
-      { href: '/cocinas',     label: 'Espacios (Modulares)', icon: ChefHat, modulo: 'cocinas'     as ModuloKey },
+      { href: '/cocinas',     label: 'Espacios modulares',   icon: ChefHat, modulo: 'cocinas'     as ModuloKey },
       { href: '/produccion',  label: 'Producción',           icon: Factory, modulo: 'produccion'  as ModuloKey },
     ],
   },

@@ -96,7 +96,7 @@ export default async function PresupuestosPage({
         <Link href="/presupuestos/nuevo-v2">
           <Button>
             <Plus className="w-4 h-4" />
-            Nueva Cotización
+            Nuevo Presupuesto
           </Button>
         </Link>
       </div>
