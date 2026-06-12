@@ -14,6 +14,12 @@ export interface ResumenFinanciero {
  * Calcula presupuesto-vs-gastado para varios proyectos en 4 queries
  * (sin N+1). Única fuente de verdad: dashboard, reportes y cron de
  * notificaciones deben usar esto en vez de recalcular por su cuenta.
+ *
+ * Convención (difiere a propósito del tab Control Presupuestario, que
+ * mide ejecución por partida): `gastado` incluye TODOS los gastos no
+ * anulados aunque no tengan partida asignada, y `presupuesto` suma los
+ * adicionales aprobados/facturados sobre la base. Un snapshot poblado
+ * cuyas partidas suman $0 cuenta como "sin snapshot" (cae a estimado).
  */
 export async function getResumenFinancieroBatch(
   proyectoIds: number[]
