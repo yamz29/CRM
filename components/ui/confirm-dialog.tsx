@@ -74,9 +74,9 @@ export function ConfirmDialog({
           </Button>
           <Button
             size="sm"
+            variant={variante === 'peligro' ? 'danger' : 'primary'}
             onClick={onConfirmar}
             disabled={cargando}
-            className={variante === 'peligro' ? 'bg-red-600 hover:bg-red-700 text-white' : undefined}
           >
             {cargando && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             {textoConfirmar}
