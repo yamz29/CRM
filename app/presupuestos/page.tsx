@@ -176,17 +176,20 @@ export default async function PresupuestosPage({
                       <td className="px-4 py-3">
                         <Link
                           href={`/clientes/${p.cliente.id}`}
-                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                          title={p.cliente.nombre}
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors block max-w-[200px] truncate"
                         >
-                          {p.cliente.nombre.split(' ').slice(0, 2).join(' ')}
+                          {p.cliente.nombre}
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {p.proyecto ? (
-                          <Link href={`/proyectos/${p.proyecto.id}`} className="hover:text-primary transition-colors">
-                            {p.proyecto.nombre.length > 30
-                              ? p.proyecto.nombre.substring(0, 30) + '...'
-                              : p.proyecto.nombre}
+                          <Link
+                            href={`/proyectos/${p.proyecto.id}`}
+                            title={p.proyecto.nombre}
+                            className="hover:text-primary transition-colors block max-w-[220px] truncate"
+                          >
+                            {p.proyecto.nombre}
                           </Link>
                         ) : (
                           <span className="text-muted-foreground/50">-</span>
