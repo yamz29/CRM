@@ -189,8 +189,13 @@ async function ocrGemini(
 // ═══════════════════════════════════════════════════════════════════════
 
 export async function POST(request: NextRequest) {
-  const denied = await checkPermiso(request, 'contabilidad', 'editar')
-  if (denied) return denied
+  // El OCR lo usan tanto contabilidad (facturas) como obra (gastos con foto).
+  // Basta tener permiso de edicion en cualquiera de los dos modulos.
+  const deniedContabilidad = await checkPermiso(request, 'contabilidad', 'editar')
+  if (deniedContabilidad) {
+    const deniedGastos = await checkPermiso(request, 'gastos', 'editar')
+    if (deniedGastos) return deniedGastos
+  }
 
   // Cada llamada cuesta dinero (Claude + Gemini). Protegemos contra loops
   // accidentales y abuso intencional: 10/min, 150/día por usuario.
