@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Shield, Save, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { MODULOS, NIVELES, type NivelPermiso, type PermisosMap, type ModuloKey } from '@/lib/permisos'
+import { MODULOS, NIVELES, PLANTILLAS_ROL, type NivelPermiso, type PermisosMap, type ModuloKey } from '@/lib/permisos'
 
 interface Props {
   usuario: { id: number; nombre: string; rol: string }
@@ -48,6 +48,12 @@ export function PermisosModal({ usuario, onClose }: Props) {
     const all: PermisosMap = {}
     for (const m of MODULOS) all[m.key] = nivel
     setPermisos(all)
+  }
+
+  function aplicarPlantilla(plantilla: PermisosMap) {
+    const todo: PermisosMap = {}
+    for (const m of MODULOS) todo[m.key] = plantilla[m.key] ?? 'ninguno'
+    setPermisos(todo)
   }
 
   async function handleSave() {
@@ -100,6 +106,29 @@ export function PermisosModal({ usuario, onClose }: Props) {
                 Puedes configurarlos para cuando cambie su rol.
               </div>
             )}
+
+            {/* Plantillas de rol */}
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Aplicar plantilla
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {PLANTILLAS_ROL.map(p => (
+                  <button
+                    key={p.nombre}
+                    type="button"
+                    title={p.descripcion}
+                    onClick={() => aplicarPlantilla(p.permisos)}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                  >
+                    {p.nombre}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                La plantilla precarga los niveles; ajusta lo que necesites y pulsa Guardar.
+              </p>
+            </div>
 
             {/* Accesos rápidos globales */}
             <div className="flex items-center gap-2 flex-wrap">

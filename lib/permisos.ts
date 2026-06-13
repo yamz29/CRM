@@ -33,6 +33,46 @@ export const NIVELES: { value: NivelPermiso; label: string; color: string }[] = 
   { value: 'admin',   label: 'Admin',      color: 'text-purple-500' },
 ]
 
+// ── Plantillas de rol ──────────────────────────────────────────────────────────
+// Perfiles típicos de una constructora. Aplicar una plantilla precarga el
+// PermisosMap completo (módulos no listados = 'ninguno'); el admin puede
+// ajustar antes de guardar.
+
+export const PLANTILLAS_ROL: { nombre: string; descripcion: string; permisos: PermisosMap }[] = [
+  {
+    nombre: 'Contabilidad',
+    descripcion: 'Finanzas completas; lectura de proyectos y clientes',
+    permisos: {
+      dashboard: 'ver', contabilidad: 'admin', proveedores: 'editar', compras: 'editar',
+      gastos: 'editar', proyectos: 'ver', clientes: 'ver', presupuestos: 'ver',
+    },
+  },
+  {
+    nombre: 'Taller',
+    descripcion: 'Melamina y producción; lectura de proyectos y recursos',
+    permisos: {
+      dashboard: 'ver', melamina: 'editar', cocinas: 'editar', produccion: 'editar',
+      recursos: 'ver', proyectos: 'ver', tareas: 'editar', horas: 'editar',
+    },
+  },
+  {
+    nombre: 'Presupuestos',
+    descripcion: 'Presupuestos, APUs y catálogos; sin acceso a finanzas',
+    permisos: {
+      dashboard: 'ver', presupuestos: 'editar', apus: 'editar', recursos: 'editar',
+      clientes: 'editar', oportunidades: 'editar', proyectos: 'ver', documentos: 'ver',
+    },
+  },
+  {
+    nombre: 'Encargado de obra',
+    descripcion: 'Gastos, avance y cronograma en campo; lectura del resto',
+    permisos: {
+      dashboard: 'ver', gastos: 'editar', proyectos: 'editar', cronogramas: 'editar',
+      tareas: 'editar', documentos: 'editar', horas: 'editar',
+    },
+  },
+]
+
 const NIVEL_ORDER: Record<NivelPermiso, number> = {
   ninguno: 0, ver: 1, editar: 2, admin: 3,
 }
