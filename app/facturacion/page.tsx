@@ -4,6 +4,45 @@ import { FacturacionClient } from './FacturacionClient'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText } from 'lucide-react'
 
+const PER_PAGE = 50
+
+interface SearchParams {
+  estado?: string   // pendiente | parcial | pagada | anulada | proforma | (vacío = todas)
+  q?: string
+  desde?: string    // YYYY-MM-DD
+  hasta?: string    // YYYY-MM-DD
+  page?: string
+}
+
+function buildWhere({ estado, q, desde, hasta }: SearchParams) {
+  return {
+    tipo: 'ingreso' as const,
+    ...(estado === 'proforma'
+      ? { esProforma: true }
+      : estado
+        ? { estado }
+        : {}),
+    ...(q
+      ? {
+          OR: [
+            { numero: { contains: q, mode: 'insensitive' as const } },
+            { ncf: { contains: q, mode: 'insensitive' as const } },
+            { descripcion: { contains: q, mode: 'insensitive' as const } },
+            { cliente: { nombre: { contains: q, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {}),
+    ...(desde || hasta
+      ? {
+          fecha: {
+            ...(desde ? { gte: new Date(desde + 'T00:00:00') } : {}),
+            ...(hasta ? { lte: new Date(hasta + 'T23:59:59') } : {}),
+          },
+        }
+      : {}),
+  }
+}
+
 /**
  * /facturacion — vista enfocada en EMISIÓN de facturas a clientes (ingresos).
  *
@@ -13,26 +52,49 @@ import { Plus, FileText } from 'lucide-react'
  *
  * Permiso: 'contabilidad' (mismo que el resto del módulo financiero).
  */
-export default async function FacturacionPage() {
-  const facturas = await prisma.factura.findMany({
-    where: { tipo: 'ingreso' },
-    include: {
-      cliente: { select: { id: true, nombre: true } },
-      proyecto: { select: { id: true, nombre: true, codigo: true } },
-    },
-    orderBy: [{ fecha: 'desc' }, { id: 'desc' }],
-    take: 200,
-  })
+export default async function FacturacionPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const sp = await searchParams
+  const page = Math.max(1, parseInt(sp.page ?? '1') || 1)
+  const where = buildWhere(sp)
 
-  // Resumen para los cards superiores
-  const totalFacturado = facturas
-    .filter(f => f.estado !== 'anulada')
-    .reduce((s, f) => s + f.total, 0)
-  const totalCobrado = facturas
-    .filter(f => f.estado !== 'anulada')
-    .reduce((s, f) => s + f.montoPagado, 0)
-  const porCobrar = totalFacturado - totalCobrado
-  const proformas = facturas.filter(f => f.esProforma && f.estado !== 'anulada').length
+  const [facturas, total, agregados, proformasCount, porEstado] = await Promise.all([
+    prisma.factura.findMany({
+      where,
+      include: {
+        cliente: { select: { id: true, nombre: true } },
+        proyecto: { select: { id: true, nombre: true, codigo: true } },
+      },
+      orderBy: [{ fecha: 'desc' }, { id: 'desc' }],
+      take: PER_PAGE,
+      skip: (page - 1) * PER_PAGE,
+    }),
+    prisma.factura.count({ where }),
+    prisma.factura.aggregate({
+      where: { tipo: 'ingreso', estado: { not: 'anulada' } },
+      _sum: { total: true, montoPagado: true },
+    }),
+    prisma.factura.count({ where: { tipo: 'ingreso', esProforma: true, estado: { not: 'anulada' } } }),
+    prisma.factura.groupBy({
+      by: ['estado'],
+      where: { tipo: 'ingreso' },
+      _count: { _all: true },
+    }),
+  ])
+
+  const totalFacturado = agregados._sum.total ?? 0
+  const totalCobrado = agregados._sum.montoPagado ?? 0
+  const resumen = {
+    totalFacturado,
+    totalCobrado,
+    porCobrar: totalFacturado - totalCobrado,
+    proformas: proformasCount,
+  }
+  const conteos = Object.fromEntries(porEstado.map(e => [e.estado, e._count._all])) as Record<string, number>
+  const totalPages = Math.ceil(total / PER_PAGE)
 
   return (
     <div className="space-y-6">
@@ -69,7 +131,10 @@ export default async function FacturacionPage() {
           proyecto: f.proyecto ? { id: f.proyecto.id, nombre: f.proyecto.nombre, codigo: f.proyecto.codigo } : null,
           descripcion: f.descripcion,
         }))}
-        resumen={{ totalFacturado, totalCobrado, porCobrar, proformas }}
+        resumen={resumen}
+        filtros={{ estado: sp.estado ?? '', q: sp.q ?? '', desde: sp.desde ?? '', hasta: sp.hasta ?? '' }}
+        conteos={conteos}
+        paginacion={{ page, totalPages, total }}
       />
     </div>
   )

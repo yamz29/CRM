@@ -43,7 +43,7 @@ export async function correrNotificacionesDiarias(): Promise<{
     await enviarNotificacionAInteresados({
       title: 'Facturas próximas a vencer',
       body: `${facturasVenciendo} factura${facturasVenciendo > 1 ? 's' : ''} de cobro vence${facturasVenciendo > 1 ? 'n' : ''} en los próximos 3 días.`,
-      url: '/facturacion?filtroEstado=pendiente',
+      url: '/facturacion?estado=pendiente',
       tag: 'facturas-venciendo',
     })
   }
@@ -61,7 +61,7 @@ export async function correrNotificacionesDiarias(): Promise<{
     await enviarNotificacionAInteresados({
       title: 'Facturas vencidas sin cobrar',
       body: `${facturasVencidas} factura${facturasVencidas > 1 ? 's' : ''} venció${facturasVencidas > 1 ? 'eron' : ''} sin cobrar. Hay que dar seguimiento al cliente.`,
-      url: '/facturacion?filtroEstado=pendiente',
+      url: '/facturacion?estado=pendiente',
       tag: 'facturas-vencidas',
     })
   }
