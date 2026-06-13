@@ -178,18 +178,20 @@ export function GastoForm({
       fd.append('archivo', file)
       const res = await fetch('/api/contabilidad/ocr', { method: 'POST', body: fd })
       const data = await res.json().catch(() => null)
-      if (!res.ok || !data) {
+      // La ruta devuelve los campos dentro de `extracted` (ver FacturaForm).
+      const ext = data?.extracted
+      if (!res.ok || !ext) {
         toast.error(data?.error ?? 'No se pudo leer la factura. Completa los campos a mano.')
         return
       }
       // Solo rellenar campos que el usuario no haya escrito todavia
       setForm(prev => ({
         ...prev,
-        monto: prev.monto || (data.total != null ? String(data.total) : prev.monto),
-        fecha: prev.fecha || (data.fecha ?? prev.fecha),
-        suplidor: prev.suplidor || (data.proveedor ?? prev.suplidor),
-        referencia: prev.referencia || (data.ncf ?? data.numero ?? prev.referencia),
-        descripcion: prev.descripcion || (data.descripcion ?? prev.descripcion),
+        monto: prev.monto || (ext.total != null ? String(ext.total) : prev.monto),
+        fecha: prev.fecha || (ext.fecha ?? prev.fecha),
+        suplidor: prev.suplidor || (ext.proveedor ?? prev.suplidor),
+        referencia: prev.referencia || (ext.ncf ?? ext.numero ?? prev.referencia),
+        descripcion: prev.descripcion || (ext.descripcion ?? prev.descripcion),
       }))
       toast.exito('Factura leida — revisa los campos antes de guardar')
     } catch {
