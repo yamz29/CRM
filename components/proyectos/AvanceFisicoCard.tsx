@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/toast'
 import { Pencil, Check, X, Loader2 } from 'lucide-react'
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 
 export function AvanceFisicoCard({ proyectoId, avanceActual }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [valor, setValor] = useState(avanceActual)
   const [saving, setSaving] = useState(false)
@@ -29,12 +31,13 @@ export function AvanceFisicoCard({ proyectoId, avanceActual }: Props) {
       })
       if (res.ok) {
         setEditing(false)
+        toast.exito('Avance actualizado')
         router.refresh()
       } else {
-        alert('Error al actualizar el avance')
+        toast.error('Error al actualizar el avance')
       }
     } catch {
-      alert('Error al actualizar el avance')
+      toast.error('Error al actualizar el avance')
     } finally {
       setSaving(false)
     }

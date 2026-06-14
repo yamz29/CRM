@@ -7,6 +7,8 @@ import {
   Tag, Calendar, User, Link2, Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { SharePointUploader, guessCategory } from '@/components/documentos/SharePointUploader'
 import { SharePointFileManager } from '@/components/documentos/SharePointFileManager'
 import { sanitizeFolderName } from '@/lib/sharepoint'
@@ -70,6 +72,7 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
   clienteNombre?: string
   proyectoNombre?: string
 }) {
+  const toast = useToast()
   const spFolderPath = clienteNombre && proyectoNombre
     ? `CRM/${sanitizeFolderName(clienteNombre)}/${sanitizeFolderName(proyectoNombre)}`
     : null
@@ -83,6 +86,7 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
 
   async function load() {
     const res = await fetch(`/api/documentos?proyectoId=${proyectoId}`)
@@ -181,11 +185,19 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este registro de documento?')) return
     setDeleting(id)
-    await fetch(`/api/documentos/${id}`, { method: 'DELETE' })
-    setDeleting(null)
-    load()
+    try {
+      const res = await fetch(`/api/documentos/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.exito('Documento eliminado')
+      } else {
+        toast.error('Error al eliminar el documento')
+      }
+    } finally {
+      setDeleting(null)
+      setBorrarId(null)
+      load()
+    }
   }
 
   if (loading) {
@@ -383,7 +395,7 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(doc.id)}
+                            onClick={() => setBorrarId(doc.id)}
                             disabled={deleting === doc.id}
                             className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             title="Eliminar"
@@ -520,6 +532,16 @@ export function DocumentosTab({ proyectoId, clienteNombre, proyectoNombre }: {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este registro de documento?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting !== null}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

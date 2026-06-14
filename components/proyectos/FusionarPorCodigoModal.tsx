@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { X, Combine, AlertTriangle, Loader2, CheckCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function FusionarPorCodigoModal({ proyectoId, onClose, onSuccess }: Props) {
+  const toast = useToast()
   const [grupos, setGrupos] = useState<GrupoDuplicado[]>([])
   const [loading, setLoading] = useState(true)
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set())
@@ -60,10 +62,11 @@ export function FusionarPorCodigoModal({ proyectoId, onClose, onSuccess }: Props
       body: JSON.stringify({ codigos: Array.from(seleccionados) }),
     })
     if (res.ok) {
+      toast.exito('Partidas fusionadas')
       onSuccess()
       onClose()
     } else {
-      alert('Error al fusionar las partidas')
+      toast.error('Error al fusionar las partidas')
       setFusionando(false)
     }
   }

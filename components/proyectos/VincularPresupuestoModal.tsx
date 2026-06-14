@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { X, FileText, AlertTriangle, Link2, Loader2, Users } from 'lucide-react'
 
@@ -26,11 +28,18 @@ interface Props {
 
 export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [presupuestos, setPresupuestos] = useState<PresupuestoVinculable[]>([])
   const [loading, setLoading] = useState(false)
   const [vinculando, setVinculando] = useState<number | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'sin-proyecto' | 'con-otro'>('todos')
   const [mostrarTodosSistema, setMostrarTodosSistema] = useState(false)
+  const [confirmando, setConfirmando] = useState<{
+    paso: 'otroProyecto' | 'clienteDistinto'
+    presupuesto: PresupuestoVinculable
+    forzarClienteDistinto: boolean
+    actualizarClientePresupuesto: boolean
+  } | null>(null)
 
   const fetchPresupuestos = useCallback(async () => {
     setLoading(true)
@@ -53,33 +62,24 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
     if (open) fetchPresupuestos()
   }, [open, fetchPresupuestos])
 
-  async function vincular(p: PresupuestoVinculable) {
-    // Confirmaciones encadenadas según los conflictos detectados.
+  // Confirmaciones encadenadas según los conflictos detectados.
+  function vincular(p: PresupuestoVinculable) {
     if (p.enOtroProyecto) {
-      const ok = confirm(
-        `Este presupuesto está vinculado a "${p.proyectoActualNombre}".\n\n` +
-        `Si continúas, el vínculo cambia a este proyecto y dejará de aparecer en el otro.\n\n` +
-        `¿Confirmas?`
-      )
-      if (!ok) return
+      setConfirmando({ paso: 'otroProyecto', presupuesto: p, forzarClienteDistinto: false, actualizarClientePresupuesto: false })
+      return
     }
+    checkCliente(p, false, false)
+  }
 
-    let forzarClienteDistinto = false
-    let actualizarClientePresupuesto = false
+  function checkCliente(p: PresupuestoVinculable, forzar: boolean, actualizar: boolean) {
     if (!p.clienteCoincide) {
-      const detalle = p.clienteActualNombre
-        ? `El presupuesto está asociado al cliente "${p.clienteActualNombre}".`
-        : `El presupuesto no tiene cliente asignado.`
-      const ok = confirm(
-        `${detalle}\n\n` +
-        `Vincularlo a este proyecto va a asociarlo al cliente del proyecto.\n\n` +
-        `¿Continuar?`
-      )
-      if (!ok) return
-      forzarClienteDistinto = true
-      actualizarClientePresupuesto = true
+      setConfirmando({ paso: 'clienteDistinto', presupuesto: p, forzarClienteDistinto: true, actualizarClientePresupuesto: true })
+      return
     }
+    doVincular(p, forzar, actualizar)
+  }
 
+  async function doVincular(p: PresupuestoVinculable, forzarClienteDistinto: boolean, actualizarClientePresupuesto: boolean) {
     setVinculando(p.id)
     try {
       const res = await fetch(`/api/proyectos/${proyectoId}/vincular-presupuesto`, {
@@ -93,13 +93,14 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        alert(err.error || 'No se pudo vincular el presupuesto')
+        toast.error(err.error || 'No se pudo vincular el presupuesto')
         return
       }
+      toast.exito('Presupuesto vinculado')
       router.refresh()
       onClose()
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error de red')
+      toast.error(e instanceof Error ? e.message : 'Error de red')
     } finally {
       setVinculando(null)
     }
@@ -243,6 +244,40 @@ export function VincularPresupuestoModal({ proyectoId, open, onClose }: Props) {
           <Button variant="ghost" size="sm" onClick={onClose}>Cerrar</Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmando?.paso === 'otroProyecto'}
+        titulo={`Este presupuesto está vinculado a "${confirmando?.presupuesto.proyectoActualNombre}"`}
+        descripcion="Si continúas, el vínculo cambia a este proyecto y dejará de aparecer en el otro. ¿Confirmas?"
+        textoConfirmar="Confirmar"
+        cargando={vinculando !== null}
+        onConfirmar={() => {
+          if (!confirmando) return
+          const p = confirmando.presupuesto
+          setConfirmando(null)
+          checkCliente(p, false, false)
+        }}
+        onCancelar={() => setConfirmando(null)}
+      />
+
+      <ConfirmDialog
+        abierto={confirmando?.paso === 'clienteDistinto'}
+        titulo={
+          confirmando?.presupuesto.clienteActualNombre
+            ? `El presupuesto está asociado al cliente "${confirmando.presupuesto.clienteActualNombre}"`
+            : 'El presupuesto no tiene cliente asignado'
+        }
+        descripcion="Vincularlo a este proyecto va a asociarlo al cliente del proyecto. ¿Continuar?"
+        textoConfirmar="Continuar"
+        cargando={vinculando !== null}
+        onConfirmar={() => {
+          if (!confirmando) return
+          const p = confirmando.presupuesto
+          setConfirmando(null)
+          doVincular(p, true, true)
+        }}
+        onCancelar={() => setConfirmando(null)}
+      />
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { X, Combine, AlertTriangle, Loader2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function FusionarManualModal({ proyectoId, partidas, onClose, onSuccess }: Props) {
+  const toast = useToast()
   const [targetId, setTargetId] = useState<number>(partidas[0]?.id ?? 0)
   const [descripcion, setDescripcion] = useState(partidas[0]?.descripcion ?? '')
   const [codigo, setCodigo] = useState(partidas[0]?.codigo ?? '')
@@ -49,10 +51,11 @@ export function FusionarManualModal({ proyectoId, partidas, onClose, onSuccess }
       }),
     })
     if (res.ok) {
+      toast.exito('Partidas fusionadas')
       onSuccess()
       onClose()
     } else {
-      alert('Error al fusionar las partidas')
+      toast.error('Error al fusionar las partidas')
       setFusionando(false)
     }
   }

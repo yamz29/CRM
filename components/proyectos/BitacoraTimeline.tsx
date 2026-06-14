@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { BitacoraForm } from './BitacoraForm'
 import { formatDate } from '@/lib/utils'
 import {
@@ -46,11 +48,14 @@ const CLIMA_ICON: Record<string, typeof Sun> = {
 }
 
 export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTimelineProps) {
+  const toast = useToast()
   const [entradas, setEntradas] = useState<Entrada[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [borrando, setBorrando] = useState(false)
 
   const fetchEntradas = useCallback(async () => {
     setLoading(true)
@@ -62,9 +67,19 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
   useEffect(() => { fetchEntradas() }, [fetchEntradas])
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar esta entrada?')) return
-    await fetch(`/api/proyectos/${proyectoId}/bitacora/${id}`, { method: 'DELETE' })
-    fetchEntradas()
+    setBorrando(true)
+    try {
+      const res = await fetch(`/api/proyectos/${proyectoId}/bitacora/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.exito('Entrada eliminada')
+        fetchEntradas()
+      } else {
+        toast.error('Error al eliminar la entrada')
+      }
+    } finally {
+      setBorrando(false)
+      setBorrarId(null)
+    }
   }
 
   const toggleExpand = (id: number) => {
@@ -209,7 +224,7 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
                         <span className="text-xs text-muted-foreground">
                           {new Date(entry.createdAt).toLocaleString('es-DO', { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }}
+                        <button onClick={(e) => { e.stopPropagation(); setBorrarId(entry.id) }}
                           className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors">
                           <Trash2 className="w-3 h-3" /> Eliminar
                         </button>
@@ -230,6 +245,16 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
           <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar esta entrada?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={borrando}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

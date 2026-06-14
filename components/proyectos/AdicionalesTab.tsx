@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   Plus, Pencil, Trash2, Check, X, FileText, Loader2,
@@ -36,6 +38,7 @@ const emptyForm = { numero: '', titulo: '', descripcion: '', monto: '', notas: '
 
 export function AdicionalesTab({ proyectoId }: { proyectoId: number }) {
   const router = useRouter()
+  const toast = useToast()
   const [adicionales, setAdicionales] = useState<Adicional[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -43,6 +46,8 @@ export function AdicionalesTab({ proyectoId }: { proyectoId: number }) {
   const [editId, setEditId] = useState<number | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [submitting, setSubmitting] = useState(false)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [borrando, setBorrando] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -138,15 +143,21 @@ export function AdicionalesTab({ proyectoId }: { proyectoId: number }) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este adicional? Esta acción no se puede deshacer.')) return
     setError(null)
+    setBorrando(true)
     try {
       const res = await fetch(`/api/proyectos/${proyectoId}/adicionales/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Error al eliminar')
       await fetchData()
       router.refresh()
+      toast.exito('Adicional eliminado')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar')
+      const msg = e instanceof Error ? e.message : 'Error al eliminar'
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setBorrando(false)
+      setBorrarId(null)
     }
   }
 
@@ -328,7 +339,7 @@ export function AdicionalesTab({ proyectoId }: { proyectoId: number }) {
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(a.id)}
+                    onClick={() => setBorrarId(a.id)}
                     className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                     title="Eliminar"
                   >
@@ -340,6 +351,17 @@ export function AdicionalesTab({ proyectoId }: { proyectoId: number }) {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este adicional?"
+        descripcion="Esta acción no se puede deshacer."
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={borrando}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

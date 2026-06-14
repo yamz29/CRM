@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { formatDate } from '@/lib/utils'
 import {
   Plus, Pencil, Trash2, Check, X, Loader2,
@@ -49,6 +51,7 @@ const emptyForm = { titulo: '', descripcion: '', ubicacion: '', categoria: '', p
 
 export function PunchlistTab({ proyectoId }: { proyectoId: number }) {
   const router = useRouter()
+  const toast = useToast()
   const [items, setItems] = useState<PunchItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -57,6 +60,8 @@ export function PunchlistTab({ proyectoId }: { proyectoId: number }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<string>('')
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [borrando, setBorrando] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -123,9 +128,19 @@ export function PunchlistTab({ proyectoId }: { proyectoId: number }) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este item?')) return
-    await fetch(`/api/proyectos/${proyectoId}/punchlist/${id}`, { method: 'DELETE' })
-    await fetchData(); router.refresh()
+    setBorrando(true)
+    try {
+      const res = await fetch(`/api/proyectos/${proyectoId}/punchlist/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        await fetchData(); router.refresh()
+        toast.exito('Item eliminado')
+      } else {
+        toast.error('Error al eliminar')
+      }
+    } finally {
+      setBorrando(false)
+      setBorrarId(null)
+    }
   }
 
   const filteredItems = filtroEstado ? items.filter(i => i.estado === filtroEstado) : items
@@ -297,7 +312,7 @@ export function PunchlistTab({ proyectoId }: { proyectoId: number }) {
                     <button onClick={() => startEdit(item)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="Editar">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(item.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Eliminar">
+                    <button onClick={() => setBorrarId(item.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Eliminar">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -307,6 +322,16 @@ export function PunchlistTab({ proyectoId }: { proyectoId: number }) {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este item?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={borrando}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }
