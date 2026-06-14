@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import {
   Plus, Pencil, Trash2, Check, X, Loader2, Calendar,
   ShoppingCart, ClipboardList, ArrowRight, ExternalLink, ChevronDown,
@@ -328,8 +330,10 @@ function ItemRow({ item, onRefresh, onPromover }: {
   onRefresh: () => void
   onPromover: (item: Item) => void
 }) {
+  const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   const isDone = item.estado === 'Completado' || item.estado === 'Cancelado'
   const fb = fechaBadge(item.fechaObjetivo, item.estado)
 
@@ -348,13 +352,18 @@ function ItemRow({ item, onRefresh, onPromover }: {
   }
 
   async function handleDelete() {
-    if (!confirm(`¿Eliminar "${item.descripcion}"?`)) return
     setBusy(true)
     try {
       const res = await fetch(`/api/programa/${item.id}`, { method: 'DELETE' })
-      if (res.ok) onRefresh()
+      if (res.ok) {
+        onRefresh()
+        toast.exito('Item eliminado')
+      } else {
+        toast.error('Error al eliminar')
+      }
     } finally {
       setBusy(false)
+      setConfirmarBorrar(false)
     }
   }
 
@@ -430,7 +439,7 @@ function ItemRow({ item, onRefresh, onPromover }: {
           <Pencil className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={handleDelete}
+          onClick={() => setConfirmarBorrar(true)}
           disabled={busy}
           className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
           title="Eliminar"
@@ -438,6 +447,16 @@ function ItemRow({ item, onRefresh, onPromover }: {
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmarBorrar}
+        titulo={`¿Eliminar "${item.descripcion}"?`}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={busy}
+        onConfirmar={handleDelete}
+        onCancelar={() => setConfirmarBorrar(false)}
+      />
     </div>
   )
 }

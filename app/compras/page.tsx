@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { ComprasPageClient } from '@/components/compras/ComprasPageClient'
+import { FinanzasNav } from '@/components/contabilidad/FinanzasNav'
 
 export default async function ComprasPage() {
   const [ordenes, proveedores, proyectos] = await Promise.all([
@@ -24,10 +25,13 @@ export default async function ComprasPage() {
   ])
 
   return (
-    <ComprasPageClient
-      ordenesIniciales={JSON.parse(JSON.stringify(ordenes))}
-      proveedores={proveedores}
-      proyectos={proyectos}
-    />
+    <div className="space-y-4">
+      <FinanzasNav activo="compras" />
+      <ComprasPageClient
+        ordenesIniciales={JSON.parse(JSON.stringify(ordenes))}
+        proveedores={proveedores}
+        proyectos={proyectos}
+      />
+    </div>
   )
 }

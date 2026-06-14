@@ -12,6 +12,8 @@ import { SharePointUploader, guessCategory } from './SharePointUploader'
 import { SharePointFileManager } from './SharePointFileManager'
 import { sanitizeFolderName, resolveShareLinkPreview } from '@/lib/sharepoint'
 import { formatFileSize, type OneDriveItem } from '@/lib/onedrive'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -78,6 +80,7 @@ const emptyForm = {
 // ── Main Component ───────────────────────────────────────────────────────
 
 export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
+  const toast = useToast()
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEntity, setSelectedEntity] = useState<{ tipo: 'oportunidad' | 'proyecto'; id: number; nombre: string; clienteNombre: string } | null>(null)
@@ -92,6 +95,8 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const commentEndRef = useRef<HTMLDivElement>(null)
 
   // ── Load documents ─────────────────────────────────────────────────
@@ -192,10 +197,16 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este registro de documento?')) return
-    await fetch(`/api/documentos/${id}`, { method: 'DELETE' })
-    if (selectedDoc?.id === id) setSelectedDoc(null)
-    load()
+    setDeleting(true)
+    try {
+      await fetch(`/api/documentos/${id}`, { method: 'DELETE' })
+      if (selectedDoc?.id === id) setSelectedDoc(null)
+      toast.exito('Documento eliminado')
+      load()
+    } finally {
+      setDeleting(false)
+      setBorrarId(null)
+    }
   }
 
   if (loading) {
@@ -351,7 +362,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                     className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir original">
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
-                  <button onClick={() => handleDelete(selectedDoc.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Eliminar">
+                  <button onClick={() => setBorrarId(selectedDoc.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Eliminar">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -619,6 +630,16 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este registro de documento?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

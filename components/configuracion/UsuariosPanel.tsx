@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Users, Plus, Pencil, Trash2, X, Check, ShieldCheck, ShieldOff, KeyRound, Shield } from 'lucide-react'
 import { PermisosModal } from './PermisosModal'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Usuario {
   id: number
@@ -30,6 +32,7 @@ const ROL_COLORS: Record<string, string> = {
 }
 
 export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
+  const toast = useToast()
   const [usuarios, setUsuarios] = useState<Usuario[]>(initialData)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState(emptyForm)
@@ -38,6 +41,8 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [permisosUsuario, setPermisosUsuario] = useState<{ id: number; nombre: string; rol: string } | null>(null)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   async function refreshData() {
     const res = await fetch('/api/configuracion/usuarios')
@@ -101,9 +106,15 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return
-    await fetch(`/api/configuracion/usuarios/${id}`, { method: 'DELETE' })
-    await refreshData()
+    setDeleting(true)
+    try {
+      await fetch(`/api/configuracion/usuarios/${id}`, { method: 'DELETE' })
+      await refreshData()
+      toast.exito('Usuario eliminado')
+    } finally {
+      setDeleting(false)
+      setBorrarId(null)
+    }
   }
 
   function startEdit(u: Usuario) {
@@ -258,7 +269,7 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
                         <button onClick={() => startEdit(u)} className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(u.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
+                        <button onClick={() => setBorrarId(u.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -331,6 +342,17 @@ export function UsuariosPanel({ initialData }: { initialData: Usuario[] }) {
         onClose={() => setPermisosUsuario(null)}
       />
     )}
+
+    <ConfirmDialog
+      abierto={borrarId !== null}
+      titulo="¿Eliminar este usuario?"
+      descripcion="Esta acción no se puede deshacer."
+      textoConfirmar="Sí, eliminar"
+      variante="peligro"
+      cargando={deleting}
+      onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+      onCancelar={() => setBorrarId(null)}
+    />
   </>
   )
 }

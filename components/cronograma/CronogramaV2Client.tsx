@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AlertTriangle, FileDown } from 'lucide-react'
 import { CronogramaGanttV2, type ViewMode, type GanttTask } from './CronogramaGanttV2'
 import { ActividadesSpreadsheet } from './ActividadesSpreadsheet'
+import { useToast } from '@/components/ui/toast'
 
 interface Actividad {
   id: number
@@ -44,6 +45,7 @@ export function CronogramaV2Client({
   cronogramaNombre,
 }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [viewMode, setViewMode] = useState<ViewMode>('Day')
   const [showCritical, setShowCritical] = useState(true)
   const [usarCalLab, setUsarCalLab] = useState(initCalLab)
@@ -165,7 +167,7 @@ export function CronogramaV2Client({
       pdf.save(fname)
     } catch (e) {
       console.error('export PDF:', e)
-      alert('Error al exportar PDF: ' + (e instanceof Error ? e.message : 'desconocido'))
+      toast.error('Error al exportar PDF: ' + (e instanceof Error ? e.message : 'desconocido'))
     } finally {
       setExportingPdf(false)
     }
@@ -224,7 +226,7 @@ export function CronogramaV2Client({
         })
         if (!res.ok) {
           const d = await res.json().catch(() => ({}))
-          alert(d.error || 'Error al actualizar fechas')
+          toast.error(d.error || 'Error al actualizar fechas')
         } else {
           router.refresh()
         }
@@ -232,7 +234,7 @@ export function CronogramaV2Client({
         console.error('onDateChange:', e)
       }
     },
-    [cronogramaId, router]
+    [cronogramaId, router, toast]
   )
 
   const onProgressChange = useCallback(

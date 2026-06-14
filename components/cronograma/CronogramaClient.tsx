@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LayoutGrid, List, Wand2, Plus, RefreshCw, Diamond, ChevronDown } from 'lucide-react'
 import { CronogramaGantt } from './CronogramaGantt'
 import { CronogramaV2Client } from './CronogramaV2Client'
@@ -59,6 +60,8 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
   const [generarModal, setGenerarModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState<'tarea' | 'hito' | null>(null)
+  const [eliminarActividadId, setEliminarActividadId] = useState<number | null>(null)
+  const [eliminandoActividad, setEliminandoActividad] = useState(false)
   const addMenuRef = useRef<HTMLDivElement>(null)
 
   // Sincronizar state local con la prop cuando cambia (ej. tras router.refresh).
@@ -114,15 +117,26 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
   }
 
   async function handleEliminarActividad(actividadId: number) {
-    if (!window.confirm('¿Eliminar esta actividad?')) return
-    const res = await fetch(`/api/cronograma/${cronograma.id}/actividades/${actividadId}`, {
-      method: 'DELETE',
-    })
-    if (res.ok) {
-      setCronograma(prev => ({
-        ...prev,
-        actividades: prev.actividades.filter(a => a.id !== actividadId),
-      }))
+    setEliminarActividadId(actividadId)
+  }
+
+  async function confirmarEliminarActividad() {
+    if (eliminarActividadId === null) return
+    const actividadId = eliminarActividadId
+    setEliminandoActividad(true)
+    try {
+      const res = await fetch(`/api/cronograma/${cronograma.id}/actividades/${actividadId}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        setCronograma(prev => ({
+          ...prev,
+          actividades: prev.actividades.filter(a => a.id !== actividadId),
+        }))
+      }
+    } finally {
+      setEliminandoActividad(false)
+      setEliminarActividadId(null)
     }
   }
 
@@ -341,6 +355,17 @@ export function CronogramaClient({ cronograma: inicial, presupuestosDisponibles,
           loading={loading}
         />
       )}
+
+      {/* Confirmación eliminar actividad */}
+      <ConfirmDialog
+        abierto={eliminarActividadId !== null}
+        titulo="¿Eliminar esta actividad?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={eliminandoActividad}
+        onConfirmar={confirmarEliminarActividad}
+        onCancelar={() => setEliminarActividadId(null)}
+      />
     </div>
   )
 }

@@ -7,6 +7,8 @@ import { ESTADO_COLORS, PRIORIDAD_COLORS, ETAPA_COLORS } from '@/lib/produccion'
 import { Search, X, Eye, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Orden {
   id: number
@@ -27,10 +29,12 @@ interface Props {
 
 export function ProduccionPageClient({ ordenes }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [filtroTexto, setFiltroTexto] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroPrioridad, setFiltroPrioridad] = useState('')
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
 
   const filtered = ordenes.filter((o) => {
     if (filtroTexto) {
@@ -49,11 +53,15 @@ export function ProduccionPageClient({ ordenes }: Props) {
   const hasFilters = filtroTexto || filtroEstado || filtroPrioridad
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar esta orden de producción?')) return
     setDeleting(id)
-    await fetch(`/api/produccion/${id}`, { method: 'DELETE' })
-    router.refresh()
-    setDeleting(null)
+    try {
+      await fetch(`/api/produccion/${id}`, { method: 'DELETE' })
+      toast.exito('Orden de producción eliminada')
+      router.refresh()
+    } finally {
+      setDeleting(null)
+      setBorrarId(null)
+    }
   }
 
   return (
@@ -169,7 +177,7 @@ export function ProduccionPageClient({ ordenes }: Props) {
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2 text-red-500 hover:text-red-600"
-                            onClick={() => handleDelete(o.id)}
+                            onClick={() => setBorrarId(o.id)}
                             disabled={deleting === o.id}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -184,6 +192,16 @@ export function ProduccionPageClient({ ordenes }: Props) {
           </table>
         </div>
       </Card>
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar esta orden de producción?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting !== null}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

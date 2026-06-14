@@ -19,6 +19,8 @@ import {
   createFolder, moveItem, renameItem, deleteItem, uploadToFolder,
   sanitizeFolderName, getRootFolder,
 } from '@/lib/sharepoint'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // ── Icon map ─────────────────────────────────────────────────────────────
 
@@ -55,6 +57,7 @@ interface BreadcrumbItem {
 // ── Component ────────────────────────────────────────────────────────────
 
 export function SharePointFileManager({ rootPath, onFileUploaded, onSelectFile, selectedFileId, fillHeight }: Props) {
+  const toast = useToast()
   const rootName = rootPath.split('/').pop() || getRootFolder()
   const [loggedIn, setLoggedIn] = useState(false)
   const [initialized, setInitialized] = useState(false)
@@ -73,6 +76,8 @@ export function SharePointFileManager({ rootPath, onFileUploaded, onSelectFile, 
   const [renameValue, setRenameValue] = useState('')
   const [movingItem, setMovingItem] = useState<OneDriveItem | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [borrarItem, setBorrarItem] = useState<OneDriveItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const renameInputRef = useRef<HTMLInputElement>(null)
 
@@ -223,11 +228,15 @@ export function SharePointFileManager({ rootPath, onFileUploaded, onSelectFile, 
 
   // ── Delete ────────────────────────────────────────────────────────
   async function handleDelete(item: OneDriveItem) {
-    const type = item.folder ? 'carpeta' : 'archivo'
-    if (!confirm(`¿Eliminar ${type} "${item.name}"?`)) return
-    setContextMenu(null)
-    await deleteItem(item.id)
-    refresh()
+    setDeleting(true)
+    try {
+      await deleteItem(item.id)
+      toast.exito(item.folder ? 'Carpeta eliminada' : 'Archivo eliminado')
+      refresh()
+    } finally {
+      setDeleting(false)
+      setBorrarItem(null)
+    }
   }
 
   // ── Move (drag & drop) ────────────────────────────────────────────
@@ -486,7 +495,7 @@ export function SharePointFileManager({ rootPath, onFileUploaded, onSelectFile, 
               <Pencil className="w-3 h-3" /> Renombrar
             </button>
             <button
-              onClick={() => handleDelete(contextMenu.item)}
+              onClick={() => { setBorrarItem(contextMenu.item); setContextMenu(null) }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               <Trash2 className="w-3 h-3" /> Eliminar
@@ -502,6 +511,16 @@ export function SharePointFileManager({ rootPath, onFileUploaded, onSelectFile, 
           Arrastra &quot;{movingItem.name}&quot; a una carpeta para moverlo
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarItem !== null}
+        titulo={`¿Eliminar ${borrarItem?.folder ? 'carpeta' : 'archivo'} "${borrarItem?.name}"?`}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrarItem) handleDelete(borrarItem) }}
+        onCancelar={() => setBorrarItem(null)}
+      />
     </div>
   )
 }

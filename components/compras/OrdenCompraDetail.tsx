@@ -10,6 +10,8 @@ import {
   ArrowLeft, ShoppingCart, Plus, Trash2, Check, X, Pencil, Save,
   Truck, Building2, PackageCheck, Send, FileText, Loader2,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Item {
   id: number
@@ -68,6 +70,7 @@ export function OrdenCompraDetail({
   proyectos: Proyecto[]
 }) {
   const router = useRouter()
+  const toast = useToast()
   const [orden, setOrden] = useState(ordenInicial)
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItem, setNewItem] = useState(emptyItem)
@@ -76,6 +79,8 @@ export function OrdenCompraDetail({
   const [submitting, setSubmitting] = useState(false)
   const [showRecibir, setShowRecibir] = useState(false)
   const [recibidos, setRecibidos] = useState<Record<number, string>>({})
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<number | null>(null)
+  const [confirmCancelarOC, setConfirmCancelarOC] = useState(false)
 
   const refreshOrden = useCallback(async () => {
     const res = await fetch(`/api/compras/${orden.id}`)
@@ -105,7 +110,7 @@ export function OrdenCompraDetail({
       setShowAddItem(false)
       setNewItem(emptyItem)
       await refreshOrden()
-    } catch { alert('Error al agregar item') }
+    } catch { toast.error('Error al agregar item') }
     finally { setSubmitting(false) }
   }
 
@@ -136,12 +141,11 @@ export function OrdenCompraDetail({
       })
       setEditingItemId(null)
       await refreshOrden()
-    } catch { alert('Error al actualizar') }
+    } catch { toast.error('Error al actualizar') }
     finally { setSubmitting(false) }
   }
 
   async function handleDeleteItem(itemId: number) {
-    if (!confirm('¿Eliminar esta línea?')) return
     await fetch(`/api/compras/${orden.id}/items/${itemId}`, { method: 'DELETE' })
     await refreshOrden()
   }
@@ -173,7 +177,7 @@ export function OrdenCompraDetail({
         setOrden(await res.json())
         setShowRecibir(false)
       }
-    } catch { alert('Error al registrar recepción') }
+    } catch { toast.error('Error al registrar recepción') }
     finally { setSubmitting(false) }
   }
 
@@ -229,7 +233,7 @@ export function OrdenCompraDetail({
             </Button>
           )}
           {esBorrador && (
-            <Button size="sm" variant="danger" onClick={() => { if (confirm('¿Cancelar esta OC?')) cambiarEstado('cancelada') }}>
+            <Button size="sm" variant="danger" onClick={() => setConfirmCancelarOC(true)}>
               <X className="w-3.5 h-3.5" /> Cancelar OC
             </Button>
           )}
@@ -412,7 +416,7 @@ export function OrdenCompraDetail({
                       <td className="px-4 py-2.5 text-right">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => startEditItem(item)} className="p-1 text-muted-foreground hover:text-blue-600 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => handleDeleteItem(item.id)} className="p-1 text-muted-foreground hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setConfirmDeleteItemId(item.id)} className="p-1 text-muted-foreground hover:text-red-600 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </td>
                     )}
@@ -440,6 +444,27 @@ export function OrdenCompraDetail({
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        abierto={confirmDeleteItemId !== null}
+        titulo="¿Eliminar esta línea?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        onConfirmar={async () => {
+          if (confirmDeleteItemId !== null) await handleDeleteItem(confirmDeleteItemId)
+          setConfirmDeleteItemId(null)
+        }}
+        onCancelar={() => setConfirmDeleteItemId(null)}
+      />
+
+      <ConfirmDialog
+        abierto={confirmCancelarOC}
+        titulo="¿Cancelar esta orden de compra?"
+        textoConfirmar="Sí, cancelar OC"
+        variante="peligro"
+        onConfirmar={() => { setConfirmCancelarOC(false); cambiarEstado('cancelada') }}
+        onCancelar={() => setConfirmCancelarOC(false)}
+      />
     </div>
   )
 }

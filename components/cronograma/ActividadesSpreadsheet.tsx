@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Flag, Loader2, ChevronUp, ChevronDown, StickyNote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // Claves de columnas y anchos default en px
 type ColKey = 'num' | 'nombre' | 'dur' | 'inicio' | 'fin' | 'dep' | 'tipo' | 'desfase' | 'pct' | 'nota' | 'acciones'
@@ -62,10 +64,12 @@ export function ActividadesSpreadsheet({
   onAvanzadoChange,
 }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [editing, setEditing] = useState<{ id: number; field: string } | null>(null)
   const [draft, setDraft] = useState<string>('')
   const [saving, setSaving] = useState<Set<number>>(new Set())
   const [localAvanzado, setLocalAvanzado] = useState(avanzado)
+  const [eliminando, setEliminando] = useState<{ id: number } | null>(null)
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null)
 
   // Anchos de columnas — persistidos en localStorage
@@ -166,7 +170,7 @@ export function ActividadesSpreadsheet({
         router.refresh()
       } else {
         const d = await res.json().catch(() => ({}))
-        alert(d.error || 'Error al guardar')
+        toast.error(d.error || 'Error al guardar')
       }
     } finally {
       setSaving(s => {
@@ -256,14 +260,20 @@ export function ActividadesSpreadsheet({
     setDraft('')
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar esta actividad?')) return
+  function handleDelete(id: number) {
+    setEliminando({ id })
+  }
+
+  async function confirmarEliminar() {
+    if (!eliminando) return
+    const { id } = eliminando
     setSaving(s => new Set(s).add(id))
     try {
       const res = await fetch(`/api/cronograma/${cronogramaId}/actividades/${id}`, { method: 'DELETE' })
       if (res.ok) router.refresh()
     } finally {
       setSaving(s => { const n = new Set(s); n.delete(id); return n })
+      setEliminando(null)
     }
   }
 
@@ -285,7 +295,7 @@ export function ActividadesSpreadsheet({
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        alert(d.error || 'Error al crear actividad')
+        toast.error(d.error || 'Error al crear actividad')
         return
       }
       const data = await res.json()
@@ -294,7 +304,7 @@ export function ActividadesSpreadsheet({
       setTimeout(() => beginEdit(data.id, 'nombre', 'Nueva actividad'), 150)
     } catch (e) {
       console.error(e)
-      alert('Error de red')
+      toast.error('Error de red')
     }
   }
 
@@ -688,6 +698,16 @@ export function ActividadesSpreadsheet({
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        abierto={eliminando !== null}
+        titulo="¿Eliminar esta actividad?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={eliminando !== null && saving.has(eliminando.id)}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setEliminando(null)}
+      />
     </div>
   )
 }

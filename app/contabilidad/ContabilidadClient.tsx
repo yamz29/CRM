@@ -14,6 +14,8 @@ import { StatsCard } from '@/components/ui/stats-card'
 import { ImportarExtractoModal } from '@/components/contabilidad/ImportarExtractoModal'
 import { formatCurrency } from '@/lib/utils'
 import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -60,9 +62,18 @@ const ESTADOS_BADGE: Record<string, { color: string; icon: any }> = {
 
 export function ContabilidadClient({ facturasIniciales, cuentasIniciales, clientes, resumen }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [tab, setTab] = useState<Tab>('dashboard')
   const [facturas, setFacturas] = useState(facturasIniciales)
   const [cuentas, setCuentas] = useState(cuentasIniciales)
+
+  // Confirmación genérica para reemplazar el diálogo nativo del navegador
+  const [confirmacion, setConfirmacion] = useState<{
+    titulo: string
+    descripcion?: string
+    textoConfirmar?: string
+    onConfirmar: () => void
+  } | null>(null)
 
   // Filters
   const [busqueda, setBusqueda] = useState('')
@@ -91,22 +102,43 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
   })
 
   // ── Delete factura ──
-  const handleDeleteFactura = async (id: number) => {
-    if (!confirm('¿Eliminar esta factura? Se eliminarán sus pagos también.')) return
-    const res = await fetch(`/api/contabilidad/facturas/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setFacturas((prev) => prev.filter((f) => f.id !== id))
-      router.refresh()
-    }
+  const handleDeleteFactura = (id: number) => {
+    setConfirmacion({
+      titulo: '¿Eliminar esta factura?',
+      descripcion: 'Se eliminarán sus pagos también.',
+      textoConfirmar: 'Sí, eliminar',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        const res = await fetch(`/api/contabilidad/facturas/${id}`, { method: 'DELETE' })
+        if (res.ok) {
+          setFacturas((prev) => prev.filter((f) => f.id !== id))
+          toast.exito('Factura eliminada')
+          router.refresh()
+        } else {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error ?? 'No se pudo eliminar la factura')
+        }
+      },
+    })
   }
 
   // ── Delete cuenta ──
-  const handleDeleteCuenta = async (id: number) => {
-    if (!confirm('¿Desactivar esta cuenta bancaria?')) return
-    const res = await fetch(`/api/contabilidad/cuentas/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setCuentas((prev) => prev.filter((c) => c.id !== id))
-    }
+  const handleDeleteCuenta = (id: number) => {
+    setConfirmacion({
+      titulo: '¿Desactivar esta cuenta bancaria?',
+      textoConfirmar: 'Sí, desactivar',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        const res = await fetch(`/api/contabilidad/cuentas/${id}`, { method: 'DELETE' })
+        if (res.ok) {
+          setCuentas((prev) => prev.filter((c) => c.id !== id))
+          toast.exito('Cuenta desactivada')
+        } else {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error ?? 'No se pudo desactivar la cuenta')
+        }
+      },
+    })
   }
 
   // ── Tabs ──
@@ -422,6 +454,16 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
       {tab === 'proveedores' && (
         <ProveedoresTab />
       )}
+
+      <ConfirmDialog
+        abierto={confirmacion !== null}
+        titulo={confirmacion?.titulo ?? ''}
+        descripcion={confirmacion?.descripcion}
+        textoConfirmar={confirmacion?.textoConfirmar ?? 'Confirmar'}
+        variante="peligro"
+        onConfirmar={() => confirmacion?.onConfirmar()}
+        onCancelar={() => setConfirmacion(null)}
+      />
     </div>
   )
 }
@@ -630,6 +672,7 @@ function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria
 // ── Conciliación Tab ─────────────────────────────────────────────────────
 
 function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
+  const toast = useToast()
   const [cuentaId, setCuentaId] = useState(cuentas[0]?.id?.toString() || '')
   const [movimientos, setMovimientos] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -648,6 +691,14 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   // Selección masiva
   const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
   const [eliminando, setEliminando] = useState(false)
+
+  // Confirmación genérica para reemplazar el diálogo nativo del navegador
+  const [confirmacion, setConfirmacion] = useState<{
+    titulo: string
+    descripcion?: string
+    textoConfirmar?: string
+    onConfirmar: () => void
+  } | null>(null)
 
   const movimientosFiltrados = movimientos.filter((m: any) => {
     if (filtroEstado === 'sin' && m.conciliado) return false
@@ -717,34 +768,41 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
     }
   }
 
-  async function eliminarSeleccionados() {
+  function eliminarSeleccionados() {
     if (seleccion.size === 0 || !cuentaId) return
     const ids = Array.from(seleccion)
     const concIds = movimientos.filter((m: any) => seleccion.has(m.id) && m.conciliado).map((m: any) => m.id)
     const aviso = concIds.length > 0
       ? `¿Eliminar ${ids.length} movimiento(s)? ${concIds.length} está(n) conciliado(s) con facturas — al eliminar se romperá(n) esa(s) conciliación(es).`
       : `¿Eliminar ${ids.length} movimiento(s)?`
-    if (!confirm(aviso)) return
 
-    setEliminando(true)
-    try {
-      const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos/bulk-delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids }),
-      })
-      if (res.ok) {
-        setSeleccion(new Set())
-        fetchMovimientos()
-      } else {
-        const d = await res.json().catch(() => ({}))
-        alert(d.error || 'Error al eliminar')
-      }
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error de red')
-    } finally {
-      setEliminando(false)
-    }
+    setConfirmacion({
+      titulo: '¿Eliminar movimientos?',
+      descripcion: aviso,
+      textoConfirmar: 'Sí, eliminar',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        setEliminando(true)
+        try {
+          const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos/bulk-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids }),
+          })
+          if (res.ok) {
+            setSeleccion(new Set())
+            fetchMovimientos()
+          } else {
+            const d = await res.json().catch(() => ({}))
+            toast.error(d.error || 'Error al eliminar')
+          }
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : 'Error de red')
+        } finally {
+          setEliminando(false)
+        }
+      },
+    })
   }
 
   const fetchMovimientos = useCallback(async () => {
@@ -773,10 +831,21 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
     if (res.ok) fetchMovimientos()
   }
 
-  const handleDeleteMovimiento = async (movId: number) => {
-    if (!confirm('¿Eliminar este movimiento?')) return
-    const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos/${movId}`, { method: 'DELETE' })
-    if (res.ok) fetchMovimientos()
+  const handleDeleteMovimiento = (movId: number) => {
+    setConfirmacion({
+      titulo: '¿Eliminar este movimiento?',
+      textoConfirmar: 'Sí, eliminar',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos/${movId}`, { method: 'DELETE' })
+        if (res.ok) {
+          fetchMovimientos()
+        } else {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error ?? 'No se pudo eliminar el movimiento')
+        }
+      },
+    })
   }
 
   // Load on mount and when account changes
@@ -1073,6 +1142,16 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
           <p>No hay movimientos registrados en esta cuenta</p>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={confirmacion !== null}
+        titulo={confirmacion?.titulo ?? ''}
+        descripcion={confirmacion?.descripcion}
+        textoConfirmar={confirmacion?.textoConfirmar ?? 'Confirmar'}
+        variante="peligro"
+        onConfirmar={() => confirmacion?.onConfirmar()}
+        onCancelar={() => setConfirmacion(null)}
+      />
     </div>
   )
 }

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CalendarDays, Plus, Trash2, Download, Loader2, AlertCircle } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Feriado {
   id: number
@@ -20,12 +22,15 @@ interface Props {
 
 export function FeriadosPanel({ initialData }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [feriados, setFeriados] = useState(initialData)
   const [nuevaFecha, setNuevaFecha] = useState('')
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [saving, setSaving] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Agrupar por año
   const porAnio: Record<string, Feriado[]> = {}
@@ -78,14 +83,18 @@ export function FeriadosPanel({ initialData }: Props) {
   }
 
   async function eliminar(id: number) {
-    if (!confirm('¿Eliminar este feriado?')) return
+    setDeleting(true)
     try {
       const res = await fetch(`/api/configuracion/feriados/${id}`, { method: 'DELETE' })
       if (res.ok) {
         setFeriados(prev => prev.filter(f => f.id !== id))
+        toast.exito('Feriado eliminado')
         router.refresh()
       }
-    } catch { /* noop */ }
+    } catch { /* noop */ } finally {
+      setDeleting(false)
+      setBorrarId(null)
+    }
   }
 
   async function seedOficiales() {
@@ -103,7 +112,7 @@ export function FeriadosPanel({ initialData }: Props) {
         return
       }
       const data = await res.json()
-      alert(`Creados: ${data.creados} · Ya existentes: ${data.existentes}`)
+      toast.exito(`Creados: ${data.creados} · Ya existentes: ${data.existentes}`)
       router.refresh()
       // Recargar la lista desde server (via refresh, pero forzamos fetch local)
       const list = await fetch('/api/configuracion/feriados')
@@ -225,7 +234,7 @@ export function FeriadosPanel({ initialData }: Props) {
                     <p className="text-xs text-muted-foreground mt-0.5">{fmt(f.fecha)}</p>
                   </div>
                   <button
-                    onClick={() => eliminar(f.id)}
+                    onClick={() => setBorrarId(f.id)}
                     className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                     title="Eliminar"
                   >
@@ -237,6 +246,16 @@ export function FeriadosPanel({ initialData }: Props) {
           </div>
         ))
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este feriado?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrarId !== null) eliminar(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

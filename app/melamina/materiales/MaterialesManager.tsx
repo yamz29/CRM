@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, X, Check, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 type Tipo = 'tablero' | 'canto' | 'herraje'
 
@@ -79,6 +81,7 @@ function dimLabel(m: Material) {
 
 export function MaterialesManager({ initialMateriales }: { initialMateriales: Material[] }) {
   const router = useRouter()
+  const toast = useToast()
   const [tab, setTab] = useState<Tipo>('tablero')
   const [materiales, setMateriales] = useState<Material[]>(initialMateriales)
   const [showForm, setShowForm] = useState(false)
@@ -87,6 +90,8 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
   const [editForm, setEditForm] = useState<FormState | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [borrar, setBorrar] = useState<{ id: number; nombre: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const byTipo = materiales.filter((m) => m.tipo === tab)
 
@@ -197,15 +202,19 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
     }
   }
 
-  async function handleDelete(id: number, nombre: string) {
-    if (!confirm(`¿Eliminar "${nombre}"?`)) return
+  async function handleDelete(id: number) {
+    setDeleting(true)
     try {
       const res = await fetch(`/api/melamina/materiales/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Error al eliminar')
       setMateriales((prev) => prev.filter((m) => m.id !== id))
+      toast.exito('Material eliminado')
       router.refresh()
     } catch (err: any) {
-      alert(err.message)
+      toast.error(err.message)
+    } finally {
+      setDeleting(false)
+      setBorrar(null)
     }
   }
 
@@ -351,7 +360,7 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(m.id, m.nombre)}
+                          onClick={() => setBorrar({ id: m.id, nombre: m.nombre })}
                           className="p-1 text-slate-400 hover:text-red-500 transition-colors"
                           title="Eliminar"
                         >
@@ -366,6 +375,16 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={borrar !== null}
+        titulo={`¿Eliminar "${borrar?.nombre}"?`}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrar) handleDelete(borrar.id) }}
+        onCancelar={() => setBorrar(null)}
+      />
     </div>
   )
 }

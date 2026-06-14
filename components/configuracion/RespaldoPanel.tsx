@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, Trash2, HardDrive, RefreshCw, Plus, AlertTriangle, CheckCircle, Upload, ShieldAlert, Database } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Backup {
   filename: string
@@ -45,6 +46,7 @@ export function RespaldoPanel() {
   const [creating, setCreating] = useState(false)
   const [deletingFile, setDeletingFile] = useState<string | null>(null)
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [borrarFilename, setBorrarFilename] = useState<string | null>(null)
 
   // Estado de importación
   const [imp, setImp] = useState<ImportState>({
@@ -102,7 +104,6 @@ export function RespaldoPanel() {
   }
 
   async function eliminarBackup(filename: string) {
-    if (!confirm(`¿Eliminar el backup "${filename}"? Esta acción no se puede deshacer.`)) return
     setDeletingFile(filename)
     try {
       const res = await fetch(`/api/configuracion/backup/${filename}`, { method: 'DELETE' })
@@ -117,6 +118,7 @@ export function RespaldoPanel() {
       mostrarMensaje('error', 'No se pudo eliminar el backup')
     } finally {
       setDeletingFile(null)
+      setBorrarFilename(null)
     }
   }
 
@@ -341,7 +343,7 @@ export function RespaldoPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => eliminarBackup(b.filename)}
+                        onClick={() => setBorrarFilename(b.filename)}
                         disabled={deletingFile === b.filename}
                         className="text-red-500 hover:text-red-600 hover:bg-red-50"
                         title="Eliminar backup"
@@ -484,6 +486,17 @@ export function RespaldoPanel() {
 
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={borrarFilename !== null}
+        titulo={`¿Eliminar el backup "${borrarFilename}"?`}
+        descripcion="Esta acción no se puede deshacer."
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deletingFile === borrarFilename}
+        onConfirmar={() => { if (borrarFilename !== null) eliminarBackup(borrarFilename) }}
+        onCancelar={() => setBorrarFilename(null)}
+      />
     </div>
   )
 }

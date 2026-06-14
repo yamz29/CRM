@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Plus, Pencil, Trash2, Search, FileText, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -24,6 +26,7 @@ interface Props {
 // ── Component ────────────────────────────────────────────────────────────
 
 export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
+  const toast = useToast()
   const [items, setItems] = useState<QuickText[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -32,6 +35,8 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
   const [form, setForm] = useState({ nombre: '', categoria: '', contenido: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // ── Load ─────────────────────────────────────────────────────────
   async function load() {
@@ -108,9 +113,15 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar esta plantilla?')) return
-    await fetch(`/api/quicktexts/${id}`, { method: 'DELETE' })
-    load()
+    setDeleting(true)
+    try {
+      await fetch(`/api/quicktexts/${id}`, { method: 'DELETE' })
+      toast.exito('Plantilla eliminada')
+      load()
+    } finally {
+      setDeleting(false)
+      setBorrarId(null)
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────
@@ -237,7 +248,7 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
                                 <Pencil className="w-3 h-3" />
                               </button>
                               <button
-                                onClick={() => handleDelete(item.id)}
+                                onClick={() => setBorrarId(item.id)}
                                 className="p-1 text-muted-foreground hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
                                 title="Eliminar"
                               >
@@ -264,6 +275,16 @@ export function QuickTextPicker({ onInsert, onClose, currentText }: Props) {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar esta plantilla?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

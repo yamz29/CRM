@@ -167,7 +167,7 @@ async function getOperacionData() {
       label: `${facturasVencidas.length} factura${facturasVencidas.length !== 1 ? 's' : ''} vencida${facturasVencidas.length !== 1 ? 's' : ''} sin cobrar`,
       detalle: `Saldo por cobrar: ${formatCurrency(saldoVencido)}`,
       count: facturasVencidas.length,
-      href: '/facturacion?filtroEstado=pendiente',
+      href: '/facturacion?estado=pendiente',
       Icon: AlertOctagon,
       tono: 'rojo',
     })

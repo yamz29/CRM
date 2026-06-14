@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { parseRecursosRows, ParseRecursosResult } from '@/lib/excel-parser-recursos'
 import { X, Upload, Download, CheckCircle, AlertCircle, RefreshCw, PlusCircle, Settings2 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 const TIPO_LABELS: Record<string, string> = {
   materiales: 'Materiales', manoObra: 'Mano de Obra', equipos: 'Equipos',
@@ -35,6 +36,7 @@ const MODOS: { value: Modo; label: string; desc: string }[] = [
 ]
 
 export default function ImportarRecursosModal({ onClose, onImported }: Props) {
+  const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep]               = useState<Step>('upload')
   const [loading, setLoading]         = useState(false)
@@ -57,7 +59,7 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
       setParseResult(parseRecursosRows(rawRows))
       setStep('preview')
     } catch {
-      alert('No se pudo leer el archivo. Usa un .xlsx o .xls válido.')
+      toast.error('No se pudo leer el archivo. Usa un .xlsx o .xls válido.')
     } finally {
       setLoading(false)
     }
@@ -81,12 +83,12 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
         body: JSON.stringify({ recursos: parseResult.recursos, modo, nombreArchivo: fileName }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.error || 'Error al importar'); return }
+      if (!res.ok) { toast.error(data.error || 'Error al importar'); return }
       setSummary(data)
       setStep('done')
       onImported()
     } catch {
-      alert('Error de conexión al importar')
+      toast.error('Error de conexión al importar')
     } finally {
       setImporting(false)
     }

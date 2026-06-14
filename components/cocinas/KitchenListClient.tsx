@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChefHat, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface KitchenProjectSummary {
   id: number
@@ -35,10 +37,12 @@ const LAYOUT_LABELS: Record<string, string> = {
 
 export function KitchenListClient({ initialProjects }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [projects, setProjects] = useState(initialProjects)
   const [showModal, setShowModal] = useState(false)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
 
   // New project form state
   const [nombre, setNombre] = useState('')
@@ -133,13 +137,14 @@ export function KitchenListClient({ initialProjects }: Props) {
   }
 
   async function handleDelete(projectId: number) {
-    if (!confirm('¿Eliminar este proyecto de cocina? Se borrarán todas las paredes y módulos colocados.')) return
     setDeleting(projectId)
     try {
       await fetch(`/api/cocinas/${projectId}`, { method: 'DELETE' })
       setProjects(projects.filter((p) => p.id !== projectId))
+      toast.exito('Proyecto de cocina eliminado')
     } finally {
       setDeleting(null)
+      setBorrarId(null)
     }
   }
 
@@ -190,7 +195,7 @@ export function KitchenListClient({ initialProjects }: Props) {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleDelete(p.id)}
+                  onClick={() => setBorrarId(p.id)}
                   disabled={deleting === p.id}
                   className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
                   title="Eliminar proyecto"
@@ -329,6 +334,17 @@ export function KitchenListClient({ initialProjects }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este proyecto de cocina?"
+        descripcion="Se borrarán todas las paredes y módulos colocados."
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting !== null}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </>
   )
 }

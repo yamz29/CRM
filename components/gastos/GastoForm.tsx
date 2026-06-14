@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Paperclip, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { X, Paperclip, Trash2, Camera, Loader2 } from 'lucide-react'
 
 export interface GastoData {
   id?: number
@@ -87,12 +88,15 @@ export function GastoForm({
     : emptyForm
   const [form, setForm] = useState<GastoData>(initial ?? defaultForm)
   const modoGeneral = !proyectoId  // true = sin proyecto fijo
+  const toast = useToast()
   const [archivo, setArchivo] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [partidas, setPartidas] = useState<PartidaOption[]>([])
   const [recursosStock, setRecursosStock] = useState<{ id: number; nombre: string; unidad: string; stock: number; tipo: string }[]>([])
+  const [ocrLoading, setOcrLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const ocrInputRef = useRef<HTMLInputElement>(null)
 
   const isEdit = Boolean(initial?.id)
 
@@ -163,6 +167,41 @@ export function GastoForm({
     }
   }
 
+  async function handleEscanearFactura(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // La foto sirve doble: se adjunta al gasto y se manda al OCR
+    setArchivo(file)
+    setOcrLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('archivo', file)
+      const res = await fetch('/api/contabilidad/ocr', { method: 'POST', body: fd })
+      const data = await res.json().catch(() => null)
+      // La ruta devuelve los campos dentro de `extracted` (ver FacturaForm).
+      const ext = data?.extracted
+      if (!res.ok || !ext) {
+        toast.error(data?.error ?? 'No se pudo leer la factura. Completa los campos a mano.')
+        return
+      }
+      // Solo rellenar campos que el usuario no haya escrito todavia
+      setForm(prev => ({
+        ...prev,
+        monto: prev.monto || (ext.total != null ? String(ext.total) : prev.monto),
+        fecha: prev.fecha || (ext.fecha ?? prev.fecha),
+        suplidor: prev.suplidor || (ext.proveedor ?? prev.suplidor),
+        referencia: prev.referencia || (ext.ncf ?? ext.numero ?? prev.referencia),
+        descripcion: prev.descripcion || (ext.descripcion ?? prev.descripcion),
+      }))
+      toast.exito('Factura leida — revisa los campos antes de guardar')
+    } catch {
+      toast.error('Error de conexion al leer la factura')
+    } finally {
+      setOcrLoading(false)
+      if (ocrInputRef.current) ocrInputRef.current.value = ''
+    }
+  }
+
   // Group partidas by chapter for optgroup
   const gruposPartidas = partidas.reduce((acc, p) => {
     const g = p.capituloNombre ?? 'Sin capítulo'
@@ -189,6 +228,31 @@ export function GastoForm({
           {error && (
             <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>
           )}
+
+          {/* Escanear factura con OCR */}
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-border bg-muted/30">
+            <input
+              ref={ocrInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              capture="environment"
+              className="hidden"
+              onChange={handleEscanearFactura}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={ocrLoading}
+              onClick={() => ocrInputRef.current?.click()}
+            >
+              {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              {ocrLoading ? 'Leyendo factura…' : 'Escanear factura'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Toma una foto de la factura: el monto, suplidor, NCF y fecha se rellenan solos.
+            </p>
+          </div>
 
           {/* Destino / Centro de costo — solo en modo general */}
           {modoGeneral && (

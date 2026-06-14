@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { X, Pencil, Loader2, Trash2, AlertTriangle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -24,6 +26,7 @@ interface Props {
 }
 
 export function EditarPartidaModal({ proyectoId, partida, onClose, onSuccess }: Props) {
+  const toast = useToast()
   const [codigo, setCodigo] = useState(partida.codigo ?? '')
   const [descripcion, setDescripcion] = useState(partida.descripcion)
   const [unidad, setUnidad] = useState(partida.unidad)
@@ -32,6 +35,7 @@ export function EditarPartidaModal({ proyectoId, partida, onClose, onSuccess }: 
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
 
   const subtotal = (parseFloat(cantidad) || 0) * (parseFloat(precioUnitario) || 0)
   const tieneGastos = partida.gastoReal > 0
@@ -69,24 +73,30 @@ export function EditarPartidaModal({ proyectoId, partida, onClose, onSuccess }: 
     }
   }
 
+  const mensajeBorrado = tieneGastos
+    ? `Esta partida tiene ${formatCurrency(partida.gastoReal)} en gastos registrados. Si la eliminas, esos gastos quedarán sin clasificar.`
+    : '¿Eliminar esta partida?'
+
   async function handleDelete() {
-    const msg = tieneGastos
-      ? `Esta partida tiene ${formatCurrency(partida.gastoReal)} en gastos registrados.\n\n¿Eliminar la partida? Los gastos quedarán sin clasificar.`
-      : '¿Eliminar esta partida?'
-    if (!confirm(msg)) return
     setDeleting(true)
     try {
       const res = await fetch(`/api/proyectos/${proyectoId}/partidas/${partida.id}`, { method: 'DELETE' })
       if (res.ok) {
+        toast.exito('Partida eliminada')
         onSuccess()
         onClose()
       } else {
-        setError('Error al eliminar')
+        const msg = 'Error al eliminar'
+        setError(msg)
+        toast.error(msg)
       }
     } catch {
-      setError('Error al eliminar')
+      const msg = 'Error al eliminar'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setDeleting(false)
+      setConfirmarBorrar(false)
     }
   }
 
@@ -178,7 +188,7 @@ export function EditarPartidaModal({ proyectoId, partida, onClose, onSuccess }: 
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleDelete}
+            onClick={() => setConfirmarBorrar(true)}
             disabled={saving || deleting}
             className="text-red-500 hover:text-red-700 hover:bg-red-50"
           >
@@ -193,6 +203,17 @@ export function EditarPartidaModal({ proyectoId, partida, onClose, onSuccess }: 
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmarBorrar}
+        titulo="¿Eliminar esta partida?"
+        descripcion={tieneGastos ? mensajeBorrado : undefined}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={handleDelete}
+        onCancelar={() => setConfirmarBorrar(false)}
+      />
     </div>
   )
 }

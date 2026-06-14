@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Search, Printer, Eye, FileText, AlertTriangle, CheckCircle2, Clock, Ban } from 'lucide-react'
+import { Search, Printer, Eye, FileText, AlertTriangle, CheckCircle2, Clock, Ban, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Factura {
   id: number
@@ -30,9 +32,10 @@ interface Resumen {
 interface Props {
   facturas: Factura[]
   resumen: Resumen
+  filtros: { estado: string; q: string; desde: string; hasta: string }
+  conteos: Record<string, number>
+  paginacion: { page: number; totalPages: number; total: number }
 }
-
-type FiltroEstado = 'todas' | 'pendiente' | 'parcial' | 'pagada' | 'anulada' | 'proforma'
 
 const ESTADO_CONFIG: Record<string, { color: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
   pendiente: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', label: 'Pendiente', icon: Clock },
@@ -41,54 +44,31 @@ const ESTADO_CONFIG: Record<string, { color: string; label: string; icon: React.
   anulada:   { color: 'bg-red-100   text-red-800   dark:bg-red-900/30   dark:text-red-300',    label: 'Anulada',   icon: Ban },
 }
 
-export function FacturacionClient({ facturas, resumen }: Props) {
-  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todas')
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroDesde, setFiltroDesde] = useState('')
-  const [filtroHasta, setFiltroHasta] = useState('')
+export function FacturacionClient({ facturas, resumen, filtros, conteos, paginacion }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [q, setQ] = useState(filtros.q)
 
-  const filtradas = useMemo(() => {
-    return facturas.filter(f => {
-      if (filtroEstado === 'proforma') {
-        if (!f.esProforma) return false
-      } else if (filtroEstado !== 'todas') {
-        if (f.estado !== filtroEstado) return false
-      }
+  function navegar(cambios: Partial<{ estado: string; q: string; desde: string; hasta: string; page: string }>) {
+    const params = new URLSearchParams()
+    const merged = { estado: filtros.estado, q, desde: filtros.desde, hasta: filtros.hasta, page: '', ...cambios }
+    if (merged.estado) params.set('estado', merged.estado)
+    if (merged.q) params.set('q', merged.q)
+    if (merged.desde) params.set('desde', merged.desde)
+    if (merged.hasta) params.set('hasta', merged.hasta)
+    if (merged.page) params.set('page', merged.page)
+    const s = params.toString()
+    router.push(`${pathname}${s ? `?${s}` : ''}`)
+  }
 
-      if (filtroDesde) {
-        const d = new Date(filtroDesde + 'T00:00:00')
-        if (new Date(f.fecha) < d) return false
-      }
-      if (filtroHasta) {
-        const h = new Date(filtroHasta + 'T23:59:59')
-        if (new Date(f.fecha) > h) return false
-      }
+  function handleBusqueda(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value
+    setQ(val)
+    clearTimeout((window as any)._factSearchTimer)
+    ;(window as any)._factSearchTimer = setTimeout(() => navegar({ q: val }), 400)
+  }
 
-      if (busqueda.trim()) {
-        const q = busqueda.toLowerCase()
-        const haystack = [
-          f.numero,
-          f.ncf ?? '',
-          f.cliente?.nombre ?? '',
-          f.proyecto?.nombre ?? '',
-          f.proyecto?.codigo ?? '',
-          f.descripcion ?? '',
-        ].join(' ').toLowerCase()
-        if (!haystack.includes(q)) return false
-      }
-
-      return true
-    })
-  }, [facturas, filtroEstado, busqueda, filtroDesde, filtroHasta])
-
-  const counts = useMemo(() => ({
-    todas: facturas.length,
-    pendiente: facturas.filter(f => f.estado === 'pendiente').length,
-    parcial: facturas.filter(f => f.estado === 'parcial').length,
-    pagada: facturas.filter(f => f.estado === 'pagada').length,
-    anulada: facturas.filter(f => f.estado === 'anulada').length,
-    proforma: facturas.filter(f => f.esProforma).length,
-  }), [facturas])
+  const totalCount = Object.values(conteos).reduce((s, c) => s + c, 0)
 
   return (
     <>
@@ -118,18 +98,18 @@ export function FacturacionClient({ facturas, resumen }: Props) {
       <div className="bg-card border border-border rounded-xl p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           {([
-            { v: 'todas', label: `Todas (${counts.todas})` },
-            { v: 'pendiente', label: `Pendientes (${counts.pendiente})` },
-            { v: 'parcial', label: `Parciales (${counts.parcial})` },
-            { v: 'pagada', label: `Pagadas (${counts.pagada})` },
-            { v: 'proforma', label: `Proformas (${counts.proforma})` },
-            { v: 'anulada', label: `Anuladas (${counts.anulada})` },
+            { v: '', label: `Todas (${totalCount})` },
+            { v: 'pendiente', label: `Pendientes (${conteos.pendiente ?? 0})` },
+            { v: 'parcial', label: `Parciales (${conteos.parcial ?? 0})` },
+            { v: 'pagada', label: `Pagadas (${conteos.pagada ?? 0})` },
+            { v: 'proforma', label: `Proformas (${resumen.proformas})` },
+            { v: 'anulada', label: `Anuladas (${conteos.anulada ?? 0})` },
           ] as const).map(f => (
             <button
               key={f.v}
-              onClick={() => setFiltroEstado(f.v)}
+              onClick={() => navegar({ estado: f.v })}
               className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                filtroEstado === f.v
+                filtros.estado === f.v
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-background border border-border hover:bg-muted/40'
               }`}
@@ -144,29 +124,29 @@ export function FacturacionClient({ facturas, resumen }: Props) {
             <Search className="w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="text"
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
+              value={q}
+              onChange={handleBusqueda}
               placeholder="Buscar por número, NCF, cliente, proyecto…"
               className="flex-1 bg-transparent text-sm outline-none"
             />
           </div>
           <input
             type="date"
-            value={filtroDesde}
-            onChange={e => setFiltroDesde(e.target.value)}
+            defaultValue={filtros.desde}
+            onChange={e => navegar({ desde: e.target.value })}
             className="border border-border rounded-md px-2 py-1 text-xs bg-background"
             title="Desde"
           />
           <input
             type="date"
-            value={filtroHasta}
-            onChange={e => setFiltroHasta(e.target.value)}
+            defaultValue={filtros.hasta}
+            onChange={e => navegar({ hasta: e.target.value })}
             className="border border-border rounded-md px-2 py-1 text-xs bg-background"
             title="Hasta"
           />
-          {(busqueda || filtroDesde || filtroHasta) && (
+          {(filtros.q || filtros.desde || filtros.hasta) && (
             <button
-              onClick={() => { setBusqueda(''); setFiltroDesde(''); setFiltroHasta('') }}
+              onClick={() => { setQ(''); navegar({ estado: filtros.estado, q: '', desde: '', hasta: '' }) }}
               className="text-xs text-muted-foreground hover:text-foreground px-2"
             >
               Limpiar
@@ -177,11 +157,11 @@ export function FacturacionClient({ facturas, resumen }: Props) {
 
       {/* Tabla */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {filtradas.length === 0 ? (
+        {facturas.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <FileText className="w-12 h-12 text-muted-foreground/40 mb-3" />
             <p className="text-muted-foreground text-sm">
-              {facturas.length === 0
+              {paginacion.total === 0
                 ? 'No hay facturas emitidas. Crea la primera con "Nueva factura".'
                 : 'No hay facturas que coincidan con los filtros.'}
             </p>
@@ -201,7 +181,7 @@ export function FacturacionClient({ facturas, resumen }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtradas.map(f => {
+              {facturas.map(f => {
                 const cfg = ESTADO_CONFIG[f.estado] ?? ESTADO_CONFIG.pendiente
                 const Icon = cfg.icon
                 const saldo = f.total - f.montoPagado
@@ -271,6 +251,25 @@ export function FacturacionClient({ facturas, resumen }: Props) {
           </table>
         )}
       </div>
+
+      {/* Paginación */}
+      {paginacion.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-muted-foreground">
+            Página {paginacion.page} de {paginacion.totalPages} · {paginacion.total} facturas
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" disabled={paginacion.page <= 1}
+              onClick={() => navegar({ page: String(paginacion.page - 1) })}>
+              <ChevronLeft className="w-4 h-4" /> Anterior
+            </Button>
+            <Button variant="secondary" size="sm" disabled={paginacion.page >= paginacion.totalPages}
+              onClick={() => navegar({ page: String(paginacion.page + 1) })}>
+              Siguiente <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   )
 }

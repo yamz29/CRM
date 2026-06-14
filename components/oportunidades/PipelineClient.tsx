@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, LayoutGrid, List, Search, TrendingUp, DollarSign, Target, Archive, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { useToast } from '@/components/ui/toast'
 import { OportunidadForm } from './OportunidadForm'
 import { OportunidadDrawer } from './OportunidadDrawer'
 import { MarcarPerdidaModal } from './MarcarPerdidaModal'
@@ -191,6 +192,7 @@ function KanbanColumn({
 
 export function PipelineClient({ oportunidades: initial, clientes, presupuestos, usuarios }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [oportunidades, setOportunidades] = useState<Oportunidad[]>(initial)
   const [view, setView] = useState<'kanban' | 'lista'>('kanban')
   const [q, setQ] = useState('')
@@ -283,7 +285,7 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
       // Rollback: restaurar la etapa anterior.
       setOportunidades((prev) => prev.map((o) => o.id === idArrastrado ? { ...o, etapa: prevEtapa } : o))
       console.error('No se pudo mover la oportunidad', err)
-      alert('No se pudo mover la oportunidad. Verifique su conexión e intente de nuevo.')
+      toast.error('No se pudo mover la oportunidad. Verifique su conexión e intente de nuevo.')
     }
   }
 

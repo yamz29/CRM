@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   Plus, Upload, Search, Filter, Paperclip, Pencil, Trash2,
@@ -323,6 +325,7 @@ export function GastosTab({
   proyectoId: number
   presupuestoEstimado?: number | null
 }) {
+  const toast = useToast()
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [partidas, setPartidas] = useState<PartidaOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -331,6 +334,8 @@ export function GastosTab({
   const [showImport, setShowImport] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [cols, setCols] = useState<Record<string, boolean>>(DEFAULT_COLS)
+  const [confirmacion, setConfirmacion] = useState<{ tipo: 'eliminar' | 'anular'; gastoId: number } | null>(null)
+  const [confirmando, setConfirmando] = useState(false)
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
@@ -429,9 +434,19 @@ export function GastosTab({
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('¿Eliminar este gasto? Esta acción no se puede deshacer.')) return
-    await fetch(`/api/proyectos/${proyectoId}/gastos/${id}`, { method: 'DELETE' })
-    loadGastos()
+    setConfirmando(true)
+    try {
+      const res = await fetch(`/api/proyectos/${proyectoId}/gastos/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.exito('Gasto eliminado')
+        loadGastos()
+      } else {
+        toast.error('Error al eliminar el gasto')
+      }
+    } finally {
+      setConfirmando(false)
+      setConfirmacion(null)
+    }
   }
 
   async function handleBulkAssign() {
@@ -454,13 +469,23 @@ export function GastosTab({
   }
 
   async function handleAnular(id: number) {
-    if (!window.confirm('¿Anular este gasto?')) return
-    await fetch(`/api/proyectos/${proyectoId}/gastos/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: 'Anulado' }),
-    })
-    loadGastos()
+    setConfirmando(true)
+    try {
+      const res = await fetch(`/api/proyectos/${proyectoId}/gastos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'Anulado' }),
+      })
+      if (res.ok) {
+        toast.exito('Gasto anulado')
+        loadGastos()
+      } else {
+        toast.error('Error al anular el gasto')
+      }
+    } finally {
+      setConfirmando(false)
+      setConfirmacion(null)
+    }
   }
 
   function startEdit(g: Gasto) {
@@ -837,12 +862,12 @@ export function GastosTab({
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           {g.estado !== 'Anulado' && (
-                            <button onClick={() => handleAnular(g.id)}
+                            <button onClick={() => setConfirmacion({ tipo: 'anular', gastoId: g.id })}
                               className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded transition-colors" title="Anular">
                               <AlertTriangle className="w-3.5 h-3.5" />
                             </button>
                           )}
-                          <button onClick={() => handleDelete(g.id)}
+                          <button onClick={() => setConfirmacion({ tipo: 'eliminar', gastoId: g.id })}
                             className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -888,6 +913,21 @@ export function GastosTab({
           onImported={loadGastos}
         />
       )}
+
+      <ConfirmDialog
+        abierto={confirmacion !== null}
+        titulo={confirmacion?.tipo === 'anular' ? '¿Anular este gasto?' : '¿Eliminar este gasto?'}
+        descripcion={confirmacion?.tipo === 'eliminar' ? 'Esta acción no se puede deshacer.' : undefined}
+        textoConfirmar={confirmacion?.tipo === 'anular' ? 'Sí, anular' : 'Sí, eliminar'}
+        variante="peligro"
+        cargando={confirmando}
+        onConfirmar={() => {
+          if (!confirmacion) return
+          if (confirmacion.tipo === 'anular') handleAnular(confirmacion.gastoId)
+          else handleDelete(confirmacion.gastoId)
+        }}
+        onCancelar={() => setConfirmacion(null)}
+      />
     </div>
   )
 }

@@ -8,6 +8,8 @@ import {
   Plus, Pencil, Trash2, Check, X, Search, Building2, Loader2,
   Phone, Mail, User, FileText,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Proveedor {
   id: number
@@ -29,6 +31,7 @@ const emptyForm = {
 }
 
 export function ProveedoresTab() {
+  const toast = useToast()
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
@@ -38,6 +41,8 @@ export function ProveedoresTab() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showInactivos, setShowInactivos] = useState(false)
+  const [confirmDesactivar, setConfirmDesactivar] = useState<number | null>(null)
+  const [desactivando, setDesactivando] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -106,11 +111,22 @@ export function ProveedoresTab() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Desactivar este proveedor? Las facturas asociadas no se afectan.')) return
+    setDesactivando(true)
     try {
-      await fetch(`/api/proveedores/${id}`, { method: 'DELETE' })
-      await fetchData()
-    } catch {}
+      const res = await fetch(`/api/proveedores/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.exito('Proveedor desactivado')
+        await fetchData()
+      } else {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? 'No se pudo desactivar el proveedor')
+      }
+    } catch {
+      toast.error('Error de conexión al desactivar el proveedor')
+    } finally {
+      setDesactivando(false)
+      setConfirmDesactivar(null)
+    }
   }
 
   async function handleReactivar(id: number) {
@@ -257,7 +273,7 @@ export function ProveedoresTab() {
                         <Pencil className="w-4 h-4" />
                       </button>
                       {p.activo ? (
-                        <button onClick={() => handleDelete(p.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Desactivar">
+                        <button onClick={() => setConfirmDesactivar(p.id)} className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Desactivar">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       ) : (
@@ -273,6 +289,17 @@ export function ProveedoresTab() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={confirmDesactivar !== null}
+        titulo="¿Desactivar este proveedor?"
+        descripcion="Las facturas asociadas no se afectan."
+        textoConfirmar="Sí, desactivar"
+        variante="primario"
+        cargando={desactivando}
+        onConfirmar={() => { if (confirmDesactivar !== null) handleDelete(confirmDesactivar) }}
+        onCancelar={() => setConfirmDesactivar(null)}
+      />
     </div>
   )
 }

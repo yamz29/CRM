@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { formatCurrency } from '@/lib/utils'
 import { X, FilePlus, Loader2 } from 'lucide-react'
 
@@ -24,6 +25,7 @@ interface Props {
  */
 export function ConvertirEnAdicionalButton({ proyectoId, presupuesto }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [open, setOpen] = useState(false)
   const [estado, setEstado] = useState<'propuesto' | 'aprobado'>('propuesto')
   const [enviando, setEnviando] = useState(false)
@@ -38,13 +40,14 @@ export function ConvertirEnAdicionalButton({ proyectoId, presupuesto }: Props) {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        alert(err.error || 'No se pudo convertir')
+        toast.error(err.error || 'No se pudo convertir')
         return
       }
+      toast.exito('Adicional creado')
       router.refresh()
       setOpen(false)
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error de red')
+      toast.error(e instanceof Error ? e.message : 'Error de red')
     } finally {
       setEnviando(false)
     }
