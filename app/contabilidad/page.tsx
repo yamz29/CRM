@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { ContabilidadClient } from './ContabilidadClient'
+import { FinanzasNav } from '@/components/contabilidad/FinanzasNav'
 
 export default async function ContabilidadPage() {
   const [facturas, cuentasRaw, clientes] = await Promise.all([
@@ -58,7 +59,8 @@ export default async function ContabilidadPage() {
 
   return (
     <>
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+      <FinanzasNav activo="contabilidad" />
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 mb-4 mt-4 flex items-center justify-between">
         <p className="text-sm text-blue-900 dark:text-blue-200">
           ✨ <strong>Nuevo:</strong> Ahora puedes ver facturas y gastos de proyectos unificados en una sola vista.
         </p>

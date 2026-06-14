@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { TransaccionesClient } from './TransaccionesClient'
+import { FinanzasNav } from '@/components/contabilidad/FinanzasNav'
 
 export default async function TransaccionesPage() {
   // Cargar datos auxiliares para filtros y formulario
@@ -21,6 +22,7 @@ export default async function TransaccionesPage() {
 
   return (
     <div className="space-y-4">
+      <FinanzasNav activo="transacciones" />
       <TransaccionesClient
         proyectos={proyectos}
         clientes={clientes}

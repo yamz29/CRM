@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { FacturacionClient } from './FacturacionClient'
+import { FinanzasNav } from '@/components/contabilidad/FinanzasNav'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText } from 'lucide-react'
 
@@ -100,6 +101,7 @@ export default async function FacturacionPage({
 
   return (
     <div className="space-y-6">
+      <FinanzasNav activo="cobros" />
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
