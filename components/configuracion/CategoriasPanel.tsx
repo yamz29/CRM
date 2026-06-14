@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tag, Plus, Pencil, Trash2, X, Check } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Categoria {
   id: number
@@ -25,12 +27,15 @@ const emptyForm = { nombre: '', tipo: 'Proyecto', color: '#3b82f6', descripcion:
 const TIPOS = ['Proyecto', 'Cliente', 'Presupuesto']
 
 export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
+  const toast = useToast()
   const [categorias, setCategorias] = useState<Categoria[]>(initialData)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState(emptyForm)
   const [editId, setEditId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
+  const [borrarId, setBorrarId] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   async function refreshData() {
     const res = await fetch('/api/configuracion/categorias')
@@ -73,9 +78,15 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('¿Eliminar esta categoría?')) return
-    await fetch(`/api/configuracion/categorias/${id}`, { method: 'DELETE' })
-    await refreshData()
+    setDeleting(true)
+    try {
+      await fetch(`/api/configuracion/categorias/${id}`, { method: 'DELETE' })
+      await refreshData()
+      toast.exito('Categoría eliminada')
+    } finally {
+      setDeleting(false)
+      setBorrarId(null)
+    }
   }
 
   function startEdit(c: Categoria) {
@@ -216,7 +227,7 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(c.id)}
+                          onClick={() => setBorrarId(c.id)}
                           className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Eliminar"
                         >
@@ -300,6 +311,16 @@ export function CategoriasPanel({ initialData }: CategoriasPanelProps) {
           </div>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar esta categoría?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </Card>
   )
 }

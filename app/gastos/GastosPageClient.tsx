@@ -8,6 +8,8 @@ import { Plus, Search, Pencil, Trash2, Paperclip, Building2, Wrench, LayoutGrid,
 import { HelpDrawer } from '@/components/help/HelpDrawer'
 import { ExportButton } from '@/components/ui/export-button'
 import { ImportarGastosMasivoButton } from '@/components/gastos/ImportarGastosMasivoButton'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,12 +68,14 @@ function DestinoBadge({ destino, proyecto }: { destino: string; proyecto?: { nom
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, porDestinoInicial }: Props) {
+  const toast = useToast()
   const [gastos, setGastos]         = useState<Gasto[]>(gastosIniciales)
   const [total, setTotal]           = useState(totalInicial)
   const [porDestino, setPorDestino] = useState(porDestinoInicial)
   const [formOpen, setFormOpen]     = useState(false)
   const [editing, setEditing]       = useState<GastoData | null>(null)
   const [deleting, setDeleting]     = useState<number | null>(null)
+  const [borrarId, setBorrarId]     = useState<number | null>(null)
 
   // Filters
   const [q, setQ]                           = useState('')
@@ -136,10 +140,11 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este gasto?')) return
     setDeleting(id)
     await fetch(`/api/gastos/${id}`, { method: 'DELETE' })
     setDeleting(null)
+    setBorrarId(null)
+    toast.exito('Gasto eliminado')
     reload()
   }
 
@@ -321,7 +326,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
                           className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleDelete(g.id)} disabled={deleting === g.id}
+                        <button onClick={() => setBorrarId(g.id)} disabled={deleting === g.id}
                           className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -344,6 +349,16 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
           onSaved={() => { setFormOpen(false); setEditing(null); reload() }}
         />
       )}
+
+      <ConfirmDialog
+        abierto={borrarId !== null}
+        titulo="¿Eliminar este gasto?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting !== null}
+        onConfirmar={() => { if (borrarId !== null) handleDelete(borrarId) }}
+        onCancelar={() => setBorrarId(null)}
+      />
     </div>
   )
 }

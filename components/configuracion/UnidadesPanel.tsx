@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Ruler, Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface UnidadGlobal {
   id: number
@@ -29,6 +31,7 @@ const TIPOS = [
 const emptyForm = { codigo: '', nombre: '', simbolo: '', tipo: 'otro', activo: true }
 
 export function UnidadesPanel({ initialData }: { initialData: UnidadGlobal[] }) {
+  const toast = useToast()
   const [unidades, setUnidades] = useState<UnidadGlobal[]>(initialData)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState(emptyForm)
@@ -36,6 +39,8 @@ export function UnidadesPanel({ initialData }: { initialData: UnidadGlobal[] }) 
   const [editForm, setEditForm] = useState(emptyForm)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [borrar, setBorrar] = useState<{ id: number; nombre: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleCreate = async () => {
     if (!addForm.codigo.trim() || !addForm.nombre.trim()) { setError('Código y nombre son obligatorios'); return }
@@ -96,12 +101,18 @@ export function UnidadesPanel({ initialData }: { initialData: UnidadGlobal[] }) 
     } catch {/* ignore */}
   }
 
-  const handleDelete = async (id: number, nombre: string) => {
-    if (!confirm(`¿Eliminar la unidad "${nombre}"?`)) return
+  const handleDelete = async (id: number) => {
+    setDeleting(true)
     try {
       const res = await fetch(`/api/unidades/${id}`, { method: 'DELETE' })
-      if (res.ok) setUnidades((prev) => prev.filter((u) => u.id !== id))
-    } catch {/* ignore */}
+      if (res.ok) {
+        setUnidades((prev) => prev.filter((u) => u.id !== id))
+        toast.exito('Unidad eliminada')
+      }
+    } catch {/* ignore */} finally {
+      setDeleting(false)
+      setBorrar(null)
+    }
   }
 
   const grouped = unidades.reduce<Record<string, UnidadGlobal[]>>((acc, u) => {
@@ -239,7 +250,7 @@ export function UnidadesPanel({ initialData }: { initialData: UnidadGlobal[] }) 
                                 className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
-                              <button onClick={() => handleDelete(u.id, u.nombre)}
+                              <button onClick={() => setBorrar({ id: u.id, nombre: u.nombre })}
                                 className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -255,6 +266,16 @@ export function UnidadesPanel({ initialData }: { initialData: UnidadGlobal[] }) 
           ))}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        abierto={borrar !== null}
+        titulo={`¿Eliminar la unidad "${borrar?.nombre}"?`}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={() => { if (borrar) handleDelete(borrar.id) }}
+        onCancelar={() => setBorrar(null)}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { parseExcelRows, ParseResult, ParsedTitulo, ParsedCapitulo, ParsedPartida } from '@/lib/excel-parser'
+import { useToast } from '@/components/ui/toast'
 
 // ── Types that match PresupuestoV2Builder's internal state ─────────────────
 
@@ -78,6 +79,7 @@ function fmtNum(n: number) {
 type Step = 'upload' | 'preview' | 'done'
 
 export default function ImportarExcelModal({ onClose, onImport }: Props) {
+  const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<Step>('upload')
   const [loading, setLoading] = useState(false)
@@ -100,7 +102,7 @@ export default function ImportarExcelModal({ onClose, onImport }: Props) {
       setStep('preview')
     } catch (err) {
       console.error(err)
-      alert('No se pudo leer el archivo. Asegúrate de que sea un archivo .xlsx o .xls válido.')
+      toast.error('No se pudo leer el archivo. Asegúrate de que sea un archivo .xlsx o .xls válido.')
     } finally {
       setLoading(false)
     }

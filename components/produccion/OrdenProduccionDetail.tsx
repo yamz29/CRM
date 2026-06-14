@@ -16,6 +16,8 @@ import {
   Loader2, FileDown, Check, AlertCircle, CheckCircle2, Circle,
   Download, Clock,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 const STAGE_ICONS: Record<string, React.ElementType> = {
   'ShoppingCart': ShoppingCart, 'PackageCheck': PackageCheck, 'Scissors': Scissors,
@@ -117,10 +119,13 @@ function formatDuration(start: string, end: string | null): string {
 
 export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
   const router = useRouter()
+  const toast = useToast()
   const [tab, setTab] = useState<'etapa' | 'tiempos' | 'config'>('etapa')
   const [saving, setSaving] = useState(false)
   const [advancing, setAdvancing] = useState(false)
   const [error, setError] = useState('')
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
+  const [deletingOrder, setDeletingOrder] = useState(false)
 
   const [estado, setEstado] = useState(orden.estado)
   const [prioridad, setPrioridad] = useState(orden.prioridad)
@@ -193,9 +198,15 @@ export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
   }
 
   async function handleDeleteOrder() {
-    if (!confirm('¿Eliminar esta orden y todos sus items?')) return
-    await fetch(`/api/produccion/${orden.id}`, { method: 'DELETE' })
-    router.push('/produccion?msg=eliminado')
+    setDeletingOrder(true)
+    try {
+      await fetch(`/api/produccion/${orden.id}`, { method: 'DELETE' })
+      toast.exito('Orden de producción eliminada')
+      router.push('/produccion?msg=eliminado')
+    } finally {
+      setDeletingOrder(false)
+      setConfirmarBorrar(false)
+    }
   }
 
   return (
@@ -420,7 +431,7 @@ export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
               <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg border border-border bg-input text-foreground text-sm resize-none" />
             </div>
             <div className="flex gap-3 justify-between">
-              <Button variant="danger" onClick={handleDeleteOrder}><Trash2 className="w-4 h-4" /> Eliminar</Button>
+              <Button variant="danger" onClick={() => setConfirmarBorrar(true)}><Trash2 className="w-4 h-4" /> Eliminar</Button>
               <Button onClick={handleSaveConfig} disabled={saving}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar
               </Button>
@@ -428,6 +439,16 @@ export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        abierto={confirmarBorrar}
+        titulo="¿Eliminar esta orden y todos sus items?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deletingOrder}
+        onConfirmar={handleDeleteOrder}
+        onCancelar={() => setConfirmarBorrar(false)}
+      />
     </div>
   )
 }

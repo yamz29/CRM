@@ -7,6 +7,7 @@ import {
   ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer, Grid3x3, Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatCurrency } from '@/lib/utils'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -416,6 +417,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [confirmDuplicar, setConfirmDuplicar] = useState(false)
 
   // Datos generales (proyectoId kept silently for DB)
   const proyectoId = String(modulo.proyectoId || '')
@@ -683,7 +685,6 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
   }
 
   const handleDuplicate = async () => {
-    if (!confirm('¿Duplicar este módulo con todas sus piezas y materiales?')) return
     setLoading(true); setError(null)
     try {
       const res = await fetch(`/api/melamina/${modulo.id}/duplicar`, { method: 'POST' })
@@ -697,6 +698,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
       setError(err.message || 'Error inesperado')
     } finally {
       setLoading(false)
+      setConfirmDuplicar(false)
     }
   }
 
@@ -722,7 +724,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleDuplicate} disabled={loading}>
+          <Button variant="outline" onClick={() => setConfirmDuplicar(true)} disabled={loading}>
             <Copy className="w-4 h-4" />
             Duplicar
           </Button>
@@ -1667,6 +1669,16 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
           {loading ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmDuplicar}
+        titulo="¿Duplicar este módulo con todas sus piezas y materiales?"
+        textoConfirmar="Sí, duplicar"
+        variante="primario"
+        cargando={loading}
+        onConfirmar={handleDuplicate}
+        onCancelar={() => setConfirmDuplicar(false)}
+      />
     </div>
   )
 }

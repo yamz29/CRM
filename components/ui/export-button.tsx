@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { Download, Loader2 } from 'lucide-react'
 
 interface ExportButtonProps {
@@ -10,6 +11,7 @@ interface ExportButtonProps {
 }
 
 export function ExportButton({ href, label = 'Exportar Excel' }: ExportButtonProps) {
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
 
   const handleExport = async () => {
@@ -27,7 +29,7 @@ export function ExportButton({ href, label = 'Exportar Excel' }: ExportButtonPro
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      alert('Error al exportar')
+      toast.error('Error al exportar')
     } finally {
       setLoading(false)
     }
