@@ -66,11 +66,10 @@ const NAV_GROUPS = [
     label: 'Finanzas',
     icon: Banknote,
     items: [
-      { href: '/contabilidad/transacciones', label: 'Transacciones', icon: Receipt,      modulo: 'contabilidad' as ModuloKey },
-      { href: '/facturacion',  label: 'Cobros',       icon: FileText,      modulo: 'contabilidad' as ModuloKey },
+      // Cobros y Transacciones se alcanzan vía la sub-nav (FinanzasNav) dentro de Contabilidad.
       { href: '/contabilidad', label: 'Contabilidad', icon: Landmark,     modulo: 'contabilidad' as ModuloKey },
-      { href: '/proveedores',  label: 'Proveedores',  icon: Truck,        modulo: 'proveedores'  as ModuloKey },
       { href: '/compras',      label: 'Compras',      icon: ShoppingCart,  modulo: 'compras'      as ModuloKey },
+      { href: '/proveedores',  label: 'Proveedores',  icon: Truck,        modulo: 'proveedores'  as ModuloKey },
     ],
   },
   {
