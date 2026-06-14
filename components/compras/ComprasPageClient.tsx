@@ -9,6 +9,7 @@ import {
   ShoppingCart, Plus, Search, FileText, Truck, Building2, Calendar,
   Check, X, Loader2, Eye, ChevronDown, Package,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 interface Proveedor { id: number; nombre: string; condicionesPago: string | null }
 interface Proyecto { id: number; nombre: string }
@@ -52,6 +53,7 @@ export function ComprasPageClient({
   proyectos: Proyecto[]
 }) {
   const router = useRouter()
+  const toast = useToast()
   const [ordenes, setOrdenes] = useState(ordenesIniciales)
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('todos')
@@ -88,7 +90,7 @@ export function ComprasPageClient({
       // Navegar al detalle para agregar items
       router.push(`/compras/${nueva.id}`)
     } catch {
-      alert('Error al crear orden de compra')
+      toast.error('Error al crear orden de compra')
     } finally {
       setSubmitting(false)
     }

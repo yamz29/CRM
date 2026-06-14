@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Cuenta { id: number; nombre: string; banco: string }
 interface Pago {
@@ -53,10 +55,19 @@ function fileUrl(archivoUrl: string | null) {
 
 export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: Factura; cuentas: Cuenta[] }) {
   const router = useRouter()
+  const toast = useToast()
   const [factura, setFactura] = useState(initialFactura)
   const [showPagoForm, setShowPagoForm] = useState(false)
   const [showConvertirModal, setShowConvertirModal] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // Confirmación genérica para reemplazar el diálogo nativo del navegador
+  const [confirmacion, setConfirmacion] = useState<{
+    titulo: string
+    descripcion?: string
+    textoConfirmar?: string
+    onConfirmar: () => void
+  } | null>(null)
 
   // Calculamos el saldo desde la SUMA real de pagos en vez de confiar
   // en factura.montoPagado, que podría estar desincronizado tras editar
@@ -66,21 +77,45 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
   const badge = ESTADOS_BADGE[factura.estado] || ESTADOS_BADGE.pendiente
   const BadgeIcon = badge.icon
 
-  const handleAnular = async () => {
-    if (!confirm('¿Anular esta factura? No se podrán registrar más pagos.')) return
-    const res = await fetch(`/api/contabilidad/facturas/${factura.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: 'anulada' }),
+  const handleAnular = () => {
+    setConfirmacion({
+      titulo: '¿Anular esta factura?',
+      descripcion: 'No se podrán registrar más pagos.',
+      textoConfirmar: 'Sí, anular',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        const res = await fetch(`/api/contabilidad/facturas/${factura.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: 'anulada' }),
+        })
+        if (res.ok) {
+          toast.exito('Factura anulada')
+          router.refresh()
+        } else {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error ?? 'No se pudo anular la factura')
+        }
+      },
     })
-    if (res.ok) router.refresh()
   }
 
-  const handleDeletePago = async (pagoId: number) => {
-    if (!confirm('¿Eliminar este pago? Se recalculará el saldo de la factura.')) return
-    const res = await fetch(`/api/contabilidad/facturas/${factura.id}/pagos/${pagoId}`, { method: 'DELETE' })
-    if (res.ok) refreshFactura()
-    else alert('Error al eliminar pago')
+  const handleDeletePago = (pagoId: number) => {
+    setConfirmacion({
+      titulo: '¿Eliminar este pago?',
+      descripcion: 'Se recalculará el saldo de la factura.',
+      textoConfirmar: 'Sí, eliminar',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        const res = await fetch(`/api/contabilidad/facturas/${factura.id}/pagos/${pagoId}`, { method: 'DELETE' })
+        if (res.ok) {
+          toast.exito('Pago eliminado')
+          refreshFactura()
+        } else {
+          toast.error('Error al eliminar pago')
+        }
+      },
+    })
   }
 
   const refreshFactura = async () => {
@@ -390,6 +425,16 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmacion !== null}
+        titulo={confirmacion?.titulo ?? ''}
+        descripcion={confirmacion?.descripcion}
+        textoConfirmar={confirmacion?.textoConfirmar ?? 'Confirmar'}
+        variante="peligro"
+        onConfirmar={() => confirmacion?.onConfirmar()}
+        onCancelar={() => setConfirmacion(null)}
+      />
     </div>
   )
 }
