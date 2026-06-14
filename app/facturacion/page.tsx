@@ -29,6 +29,8 @@ function buildWhere({ estado, q, desde, hasta }: SearchParams) {
             { ncf: { contains: q, mode: 'insensitive' as const } },
             { descripcion: { contains: q, mode: 'insensitive' as const } },
             { cliente: { nombre: { contains: q, mode: 'insensitive' as const } } },
+            { proyecto: { nombre: { contains: q, mode: 'insensitive' as const } } },
+            { proyecto: { codigo: { contains: q, mode: 'insensitive' as const } } },
           ],
         }
       : {}),
