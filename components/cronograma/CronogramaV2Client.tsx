@@ -234,7 +234,7 @@ export function CronogramaV2Client({
         console.error('onDateChange:', e)
       }
     },
-    [cronogramaId, router]
+    [cronogramaId, router, toast]
   )
 
   const onProgressChange = useCallback(
