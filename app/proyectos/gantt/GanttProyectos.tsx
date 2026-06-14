@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Calendar, Filter, AlertCircle, Briefcase, Flag, Plus, X, Loader2, Trash2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Proyecto {
   id: number
@@ -998,6 +999,7 @@ function HitoModal({ hito, proyectos, onClose, onSaved }: HitoModalProps) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function handleSave() {
     if (!nombre.trim()) { setError('Nombre requerido'); return }
@@ -1029,14 +1031,20 @@ function HitoModal({ hito, proyectos, onClose, onSaved }: HitoModalProps) {
     }
   }
 
-  async function handleDelete() {
-    if (!hito || !confirm(`¿Eliminar el hito "${hito.nombre}"?`)) return
+  function handleDelete() {
+    if (!hito) return
+    setConfirmDelete(true)
+  }
+
+  async function confirmarEliminar() {
+    if (!hito) return
     setDeleting(true)
     try {
       const res = await fetch(`/api/hitos/${hito.id}`, { method: 'DELETE' })
       if (res.ok) onSaved()
     } finally {
       setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -1165,6 +1173,16 @@ function HitoModal({ hito, proyectos, onClose, onSaved }: HitoModalProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmDelete}
+        titulo={`¿Eliminar el hito "${hito?.nombre ?? ''}"?`}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }
@@ -1197,6 +1215,7 @@ function TareaModal({ tarea, proyectos, onClose, onSaved }: TareaModalProps) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function handleSave() {
     if (!nombre.trim()) { setError('Nombre requerido'); return }
@@ -1232,14 +1251,20 @@ function TareaModal({ tarea, proyectos, onClose, onSaved }: TareaModalProps) {
     }
   }
 
-  async function handleDelete() {
-    if (!tarea || !confirm(`¿Eliminar la tarea "${tarea.nombre}"?`)) return
+  function handleDelete() {
+    if (!tarea) return
+    setConfirmDelete(true)
+  }
+
+  async function confirmarEliminar() {
+    if (!tarea) return
     setDeleting(true)
     try {
       const res = await fetch(`/api/tareas-gantt/${tarea.id}`, { method: 'DELETE' })
       if (res.ok) onSaved()
     } finally {
       setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -1365,6 +1390,16 @@ function TareaModal({ tarea, proyectos, onClose, onSaved }: TareaModalProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmDelete}
+        titulo={`¿Eliminar la tarea "${tarea?.nombre ?? ''}"?`}
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={deleting}
+        onConfirmar={confirmarEliminar}
+        onCancelar={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

@@ -7,6 +7,8 @@ import {
   Search, FileText, DollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -345,12 +347,15 @@ function BlockPopup({
 // ── Main Component ─────────────────────────────────────────────────────
 
 export function HorasPageClient({ registros: init, proyectos, usuarios, clientes, currentUserId }: Props) {
+  const toast = useToast()
   const [registros, setRegistros] = useState<RegistroHoras[]>(init)
   const [tab, setTab]             = useState<'grid' | 'reportes'>('grid')
   const [monday, setMonday]       = useState(getMondayOf(todayStr()))
   const [filterUsr, setFilterUsr] = useState(currentUserId ? String(currentUserId) : '')
 
   const [popup,     setPopup]     = useState<PopupState | null>(null)
+  const [eliminarBloque, setEliminarBloque] = useState(false)
+  const [eliminandoBloque, setEliminandoBloque] = useState(false)
 
   // ── Derived ────────────────────────────────────────────────────────
 
@@ -423,7 +428,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
         horaInicio:    data.horaInicio,
       }),
     })
-    if (!res.ok) { alert('Error al guardar'); return }
+    if (!res.ok) { toast.error('Error al guardar'); return }
     const saved: RegistroHoras = await res.json()
 
     if (isEdit) {
@@ -438,11 +443,21 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
 
   async function handleDelete() {
     if (!popup?.registro) return
-    if (!confirm('¿Eliminar este bloque?')) return
-    const res = await fetch(`/api/horas/${popup.registro.id}`, { method: 'DELETE' })
-    if (!res.ok) { alert('Error al eliminar'); return }
-    setRegistros((prev) => prev.filter((r) => r.id !== popup.registro!.id))
-    setPopup(null)
+    setEliminarBloque(true)
+  }
+
+  async function confirmarEliminarBloque() {
+    if (!popup?.registro) return
+    setEliminandoBloque(true)
+    try {
+      const res = await fetch(`/api/horas/${popup.registro.id}`, { method: 'DELETE' })
+      if (!res.ok) { toast.error('Error al eliminar'); return }
+      setRegistros((prev) => prev.filter((r) => r.id !== popup.registro!.id))
+      setPopup(null)
+    } finally {
+      setEliminandoBloque(false)
+      setEliminarBloque(false)
+    }
   }
 
   // ── Report data ────────────────────────────────────────────────────
@@ -835,6 +850,17 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
           onClose={() => setPopup(null)}
         />
       )}
+
+      {/* Confirmación eliminar bloque */}
+      <ConfirmDialog
+        abierto={eliminarBloque}
+        titulo="¿Eliminar este bloque?"
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={eliminandoBloque}
+        onConfirmar={confirmarEliminarBloque}
+        onCancelar={() => setEliminarBloque(false)}
+      />
     </div>
   )
 }
