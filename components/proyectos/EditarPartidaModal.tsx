@@ -74,7 +74,7 @@ export function EditarPartidaModal({ proyectoId, partida, onClose, onSuccess }: 
   }
 
   const mensajeBorrado = tieneGastos
-    ? `Esta partida tiene ${formatCurrency(partida.gastoReal)} en gastos registrados.\n\n¿Eliminar la partida? Los gastos quedarán sin clasificar.`
+    ? `Esta partida tiene ${formatCurrency(partida.gastoReal)} en gastos registrados. Si la eliminas, esos gastos quedarán sin clasificar.`
     : '¿Eliminar esta partida?'
 
   async function handleDelete() {
