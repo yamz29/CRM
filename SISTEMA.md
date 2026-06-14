@@ -280,6 +280,7 @@ Detalle con **4 grupos de pestañas** con sub-navegación (los deep-links `?tab=
 
 ### 5.9 Configuración (`/configuracion`)
 - Empresa, Usuarios, Vendedores, Categorías, Unidades
+- **Permisos por usuario/módulo** (`PermisoUsuario` + `PermisosModal`): nivel ninguno/ver/editar/admin por módulo. Plantillas de rol predefinidas (`PLANTILLAS_ROL` en `lib/permisos.ts`: Contabilidad, Taller, Presupuestos, Encargado de obra) que precargan el mapa de permisos con un clic.
 
 ### 5.10 Reporte de Control Presupuestario (`/proyectos/[id]/reporte`)
 - Server component sin sidebar, layout A4
@@ -377,8 +378,11 @@ Melamina:
 - Preview de impresión A4 (shell gris en pantalla)
 - Flash de confirmación "✓ Guardado" 1.5s
 - Toasts globales de éxito/error (`useToast`, `components/ui/toast.tsx`) — patrón estándar para feedback de acciones
-- `ConfirmDialog` reutilizable (`components/ui/confirm-dialog.tsx`) — reemplazo de `confirm()` nativo en acciones destructivas/críticas (aprobar presupuesto avisa que el proyecto pasa a "En Ejecución")
+- `ConfirmDialog` reutilizable (`components/ui/confirm-dialog.tsx`) — reemplazo de `confirm()` nativo en acciones destructivas/críticas (aprobar presupuesto avisa que el proyecto pasa a "En Ejecución"). **Ya no quedan `alert()`/`confirm()` nativos** en la app (el único `confirm(` es la implementación interna del propio componente)
 - Alertas del dashboard usan `lib/resumen-financiero.ts` (fuente única: snapshot de control si está poblado, si no estimado) y etiquetan el origen del dato
+- Sub-navegación de Finanzas (`FinanzasNav`): Contabilidad / Cobros / Transacciones / Compras / Proveedores comparten una barra; el sidebar agrupa Finanzas en 3 items
+- Registro de gastos con **escaneo OCR** de la factura (`GastoForm` reusa `/api/contabilidad/ocr`): foto/PDF → autocompleta monto, suplidor, NCF y fecha
+- `/facturacion` (Cobros) con filtros y paginación **server-side** (50/pág) y tarjetas de resumen por agregados de BD
 - Datalist nativo para búsquedas en selectores (APU, materiales melamina)
 - Barras de progreso visuales (% costos, % uso plancha, semáforo de ejecución)
 
@@ -390,10 +394,10 @@ Melamina:
 |---|---|
 | Validación de inputs | No usa Zod. Solo validaciones manuales básicas |
 | Tests | Sin tests automatizados |
-| Roles y permisos | Solo rol "Admin". Sin permisos granulares |
+| Roles y permisos | Permisos por usuario/módulo (ninguno/ver/editar/admin) con plantillas de rol; el campo `Usuario.rol` sigue siendo informativo (no hay jerarquía de roles más allá de "Admin") |
 | Multi-moneda | Gastos soportan RD$/USD/EUR pero sin conversión automática |
 | Archivos adjuntos | `/public/uploads/` — sin cloud storage |
-| Paginación | Sin paginación server-side |
+| Paginación | Server-side en `/presupuestos` y `/facturacion`; el resto de listados aún sin paginar |
 | Presupuesto V1 | Modelo legacy `Partida` coexiste con V2 |
 | APU en partidas | No se recalcula si cambia el recurso origen |
 | Melamina V1 legacy | `ModuloMelamina` (ligado a presupuesto) coexiste con `ModuloMelaminaV2` |
