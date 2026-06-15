@@ -4,12 +4,13 @@ import { useState, useMemo } from 'react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { GastoForm, type GastoData } from '@/components/gastos/GastoForm'
-import { Plus, Search, Pencil, Trash2, Paperclip, Building2, Wrench, LayoutGrid, HelpCircle, FolderOpen, Receipt } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Paperclip, Building2, Wrench, LayoutGrid, HelpCircle, FolderOpen, Receipt, BarChart3, List } from 'lucide-react'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
 import { ExportButton } from '@/components/ui/export-button'
 import { ImportarGastosMasivoButton } from '@/components/gastos/ImportarGastosMasivoButton'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { GastosInforme } from '@/components/gastos/GastosInforme'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   const [editing, setEditing]       = useState<GastoData | null>(null)
   const [deleting, setDeleting]     = useState<number | null>(null)
   const [borrarId, setBorrarId]     = useState<number | null>(null)
+  const [vista, setVista] = useState<'lista' | 'informe'>('lista')
 
   // Filters
   const [q, setQ]                           = useState('')
@@ -163,6 +165,20 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
           <p className="text-muted-foreground text-sm mt-0.5">Registro general de gastos operativos</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border overflow-hidden mr-1">
+            <button onClick={() => setVista('lista')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                vista === 'lista' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}>
+              <List className="w-3.5 h-3.5" /> Lista
+            </button>
+            <button onClick={() => setVista('informe')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                vista === 'informe' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}>
+              <BarChart3 className="w-3.5 h-3.5" /> Informe
+            </button>
+          </div>
           <HelpDrawer slug="gastos" titulo="Gastos" />
           <ImportarGastosMasivoButton />
           <ExportButton href="/api/export/gastos" label="Exportar" />
@@ -173,6 +189,10 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
         </div>
       </div>
 
+      {vista === 'informe' ? (
+        <GastosInforme gastos={gastos as any} proyectos={proyectos} />
+      ) : (
+      <>
       {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {Object.entries(DESTINO_CONFIG).map(([key, cfg]) => (
@@ -339,6 +359,8 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* GastoForm modal */}
       {formOpen && (
