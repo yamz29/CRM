@@ -131,14 +131,21 @@ export const POST = withPermiso('gastos', 'editar', async (req: NextRequest) => 
   const sheet = workbook.Sheets[sheetName]
   const rows: FilaRaw[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
 
-  // ── Pre-cargar proyectos por código para validar ────────────────────────
+  // ── Pre-cargar proyectos para validar (por código y por nombre) ──────────
   const proyectos = await prisma.proyecto.findMany({
     select: { id: true, codigo: true, nombre: true },
-    where: { codigo: { not: null } },
   })
   const proyectoPorCodigo = new Map<string, { id: number; nombre: string }>()
+  // Índice por nombre (case-insensitive). Como `nombre` NO es único en el
+  // modelo (solo `codigo` lo es), los nombres repetidos se marcan 'AMBIGUO'
+  // para forzar al usuario a desambiguar con el código.
+  const proyectoPorNombre = new Map<string, { id: number; nombre: string } | 'AMBIGUO'>()
   for (const p of proyectos) {
     if (p.codigo) proyectoPorCodigo.set(p.codigo.toUpperCase(), { id: p.id, nombre: p.nombre })
+    const nombreKey = p.nombre.toUpperCase().trim()
+    if (nombreKey) {
+      proyectoPorNombre.set(nombreKey, proyectoPorNombre.has(nombreKey) ? 'AMBIGUO' : { id: p.id, nombre: p.nombre })
+    }
   }
 
   // ── Validar fila por fila ─────────────────────────────────────────────
@@ -173,9 +180,19 @@ export const POST = withPermiso('gastos', 'editar', async (req: NextRequest) => 
     let proyectoId: number | null = null
     let proyectoNombre: string | null = null
     if (proyectoCodigo) {
-      const found = proyectoPorCodigo.get(proyectoCodigo)
-      if (!found) errores.push(`Proyecto "${proyectoCodigo}" no encontrado`)
-      else { proyectoId = found.id; proyectoNombre = found.nombre }
+      // Aceptamos tanto el código (R-0042) como el nombre exacto del proyecto.
+      // proyectoCodigo ya viene en mayúsculas y sin espacios extra (getCelda + toUpperCase).
+      const porCodigo = proyectoPorCodigo.get(proyectoCodigo)
+      const porNombre = porCodigo ? undefined : proyectoPorNombre.get(proyectoCodigo)
+      if (porCodigo) {
+        proyectoId = porCodigo.id; proyectoNombre = porCodigo.nombre
+      } else if (porNombre === 'AMBIGUO') {
+        errores.push(`Varios proyectos se llaman "${proyectoCodigo}" — usa el código (ej. R-0042) para desambiguar`)
+      } else if (porNombre) {
+        proyectoId = porNombre.id; proyectoNombre = porNombre.nombre
+      } else {
+        errores.push(`Proyecto "${proyectoCodigo}" no encontrado`)
+      }
     }
 
     // destino_tipo: si hay proyecto y no se especificó, default 'proyecto'. Si no, 'general'.
