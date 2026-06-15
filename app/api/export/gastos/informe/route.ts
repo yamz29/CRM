@@ -4,14 +4,16 @@ import * as XLSX from 'xlsx'
 import { withPermiso } from '@/lib/with-permiso'
 import {
   MONEDA_DEFAULT, filtrarGastos, agruparPorDestino, agruparPorMes,
+  gastosEnOtrasMonedas, agruparPorProyecto, presetRango, DESTINO_LABEL,
   type GastoInput,
 } from '@/lib/gastos-informe'
 
 export const GET = withPermiso('gastos', 'ver', async (req: NextRequest) => {
   const { searchParams } = new URL(req.url)
   const moneda     = searchParams.get('moneda') || MONEDA_DEFAULT
-  const desde      = searchParams.get('desde') || null
-  const hasta      = searchParams.get('hasta') || null
+  const fallback   = presetRango('este-anio')
+  const desde      = searchParams.get('desde') || fallback.desde
+  const hasta      = searchParams.get('hasta') || fallback.hasta
   const destino    = searchParams.get('destino') || null
   const proyectoId = searchParams.get('proyectoId')
 
@@ -32,6 +34,11 @@ export const GET = withPermiso('gastos', 'ver', async (req: NextRequest) => {
     proyectoId: proyectoId ? Number(proyectoId) : null,
   })
 
+  const otrasMonedas = gastosEnOtrasMonedas(gastos, {
+    moneda, desde, hasta, destino,
+    proyectoId: proyectoId ? Number(proyectoId) : null,
+  })
+
   const wb = XLSX.utils.book_new()
 
   // Hoja Resumen
@@ -39,15 +46,19 @@ export const GET = withPermiso('gastos', 'ver', async (req: NextRequest) => {
   const resumenRows: (string | number)[][] = [
     ['Informe de Gastos'],
     ['Moneda', moneda],
-    ['Desde', desde ?? '—', 'Hasta', hasta ?? '—'],
+    ['Desde', desde, 'Hasta', hasta],
     ['Total del periodo', total],
     ['# de gastos', filtrados.length],
+    ['Gastos en otra moneda no incluidos', otrasMonedas],
     [],
     ['Por destino', 'Total', '% del total', '# gastos'],
     ...agruparPorDestino(filtrados).map(d => [d.label, d.total, Number((d.pct * 100).toFixed(1)), d.count]),
     [],
     ['Por mes', 'Total'],
     ...agruparPorMes(filtrados).map(m => [m.label, m.total]),
+    [],
+    ['Por proyecto', 'Total', '# gastos'],
+    ...agruparPorProyecto(filtrados).map(p => [p.nombre, p.total, p.count]),
   ]
   const wsResumen = XLSX.utils.aoa_to_sheet(resumenRows)
   wsResumen['!cols'] = [{ wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 10 }]
@@ -56,7 +67,7 @@ export const GET = withPermiso('gastos', 'ver', async (req: NextRequest) => {
   // Hoja Detalle
   const detalleRows = filtrados.map(g => ({
     'Fecha':       new Date(g.fecha).toISOString().slice(0, 10),
-    'Destino':     g.destinoTipo,
+    'Destino':     DESTINO_LABEL[g.destinoTipo] ?? g.destinoTipo,
     'Proyecto':    g.proyecto?.nombre ?? '',
     'Descripción': g.descripcion ?? '',
     'Categoría':   g.categoria ?? '',

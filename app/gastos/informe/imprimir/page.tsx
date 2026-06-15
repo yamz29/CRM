@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import {
   MONEDA_DEFAULT, filtrarGastos, agruparPorDestino, agruparPorMes, agruparPorProyecto,
   calcularKpis, rangoPeriodoAnterior, formatMonto, presetRango,
+  gastosEnOtrasMonedas, DESTINO_LABEL,
   type GastoInput,
 } from '@/lib/gastos-informe'
 import { PrintButton } from './PrintButton'
@@ -35,6 +36,7 @@ export default async function ImprimirInformeGastosPage({
   const filtrados = filtrarGastos(gastos, filtro)
   const prev = rangoPeriodoAnterior(desde, hasta)
   const anteriores = filtrarGastos(gastos, { ...filtro, desde: prev.desde, hasta: prev.hasta })
+  const otrasMonedas = gastosEnOtrasMonedas(gastos, filtro)
 
   const kpis = calcularKpis(filtrados, anteriores)
   const porDestino = agruparPorDestino(filtrados)
@@ -54,9 +56,15 @@ export default async function ImprimirInformeGastosPage({
         <p className="text-lg font-semibold mt-1">Informe de Gastos</p>
         <p className="text-xs text-slate-500 mt-1">
           {desde} a {hasta} · Moneda: {moneda}
-          {destino ? ` · Destino: ${destino}` : ''}
+          {destino ? ` · Destino: ${DESTINO_LABEL[destino] ?? destino}` : ''}
         </p>
       </header>
+
+      {otrasMonedas > 0 && (
+        <p className="text-xs text-amber-700 border border-amber-300 bg-amber-50 rounded px-3 py-2 mb-4">
+          Hay {otrasMonedas} gasto(s) en otra moneda no incluidos en este informe.
+        </p>
+      )}
 
       <section className="grid grid-cols-4 gap-3 mb-6">
         <KpiBox label="Total" valor={formatMonto(kpis.total, moneda)} />
