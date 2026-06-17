@@ -16,13 +16,26 @@ async function main() {
   })
   console.log(`Pagos de ingreso a migrar: ${pagos.length}`)
 
+  // Set EXACTO de pagos ya migrados (parseando los marcadores de recibos
+  // existentes). NO usar `contains` por pago dentro del loop: 'pago#5' es
+  // subcadena de 'pago#52', lo que provoca falsos positivos y salta pagos.
+  const yaMigrados = new Set<number>()
+  const recibosConMarca = await prisma.recibo.findMany({
+    where: { observaciones: { contains: MARCA } },
+    select: { observaciones: true },
+  })
+  for (const r of recibosConMarca) {
+    for (const tok of r.observaciones?.match(/pago#(\d+)/g) ?? []) {
+      yaMigrados.add(parseInt(tok.slice('pago#'.length), 10))
+    }
+  }
+
   const contadorAnio = new Map<number, number>()
   let creados = 0
 
   for (const p of pagos) {
     const obs = `${MARCA} pago#${p.id}`
-    const ya = await prisma.recibo.findFirst({ where: { observaciones: { contains: `pago#${p.id}` } } })
-    if (ya) continue
+    if (yaMigrados.has(p.id)) continue
     if (!p.factura.clienteId) { console.warn(`Pago ${p.id} sin clienteId — omitido`); continue }
 
     const anio = p.fecha.getFullYear()
