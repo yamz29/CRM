@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { FacturacionClient } from './FacturacionClient'
 import { FinanzasNav } from '@/components/contabilidad/FinanzasNav'
 import { Button } from '@/components/ui/button'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, Download } from 'lucide-react'
+import { ImportarPagosButton } from '@/components/contabilidad/ImportarPagosButton'
 
 const PER_PAGE = 50
 
@@ -64,6 +65,13 @@ export default async function FacturacionPage({
   const page = Math.max(1, parseInt(sp.page ?? '1') || 1)
   const where = buildWhere(sp)
 
+  // Query para el export de historial de pagos (respeta filtros de búsqueda/fecha)
+  const historialQuery = new URLSearchParams({
+    ...(sp.q ? { q: sp.q } : {}),
+    ...(sp.desde ? { desde: sp.desde } : {}),
+    ...(sp.hasta ? { hasta: sp.hasta } : {}),
+  }).toString()
+
   const [facturas, total, agregados, proformasCount, porEstado] = await Promise.all([
     prisma.factura.findMany({
       where,
@@ -112,11 +120,20 @@ export default async function FacturacionPage({
             Facturas emitidas a clientes (cobros). Para gastos de proveedores ve a <Link href="/contabilidad" className="text-primary hover:underline">Contabilidad</Link>.
           </p>
         </div>
-        <Link href="/contabilidad/facturas/nueva?tipo=ingreso">
-          <Button>
-            <Plus className="w-4 h-4" /> Nueva factura
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ImportarPagosButton />
+          <a href="/api/export/cobros/plantilla">
+            <Button variant="outline" size="sm"><Download className="w-4 h-4" /> Plantilla de cobros</Button>
+          </a>
+          <a href={`/api/export/cobros/pagos${historialQuery ? `?${historialQuery}` : ''}`}>
+            <Button variant="outline" size="sm"><Download className="w-4 h-4" /> Historial de pagos</Button>
+          </a>
+          <Link href="/contabilidad/facturas/nueva?tipo=ingreso">
+            <Button>
+              <Plus className="w-4 h-4" /> Nueva factura
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Cards resumen */}
