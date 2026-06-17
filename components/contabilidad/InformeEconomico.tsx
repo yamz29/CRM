@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { Info, TrendingUp, TrendingDown, Loader2 } from 'lucide-react'
+import { Info, TrendingUp, TrendingDown, Loader2, Download, Printer, ChevronRight } from 'lucide-react'
 import {
   DESTINOS, MONEDA_DEFAULT, presetRango, formatMonto, type PresetRango,
 } from '@/lib/gastos-informe'
@@ -33,6 +33,9 @@ export function InformeEconomico() {
   const [data, setData] = useState<InformeEconomicoData | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandido, setExpandido] = useState<string | null>(null)
+
+  const queryExport = new URLSearchParams({ desde, hasta }).toString()
 
   function aplicarPreset(p: PresetRango) {
     setPreset(p)
@@ -90,6 +93,16 @@ export function InformeEconomico() {
         <input type="date" value={hasta} onChange={e => { setPreset('personalizado'); setHasta(e.target.value) }}
           className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground" />
         {cargando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        <div className="ml-auto flex gap-2">
+          <a href={`/api/export/contabilidad/informe-economico?${queryExport}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+            <Download className="w-3.5 h-3.5" /> Excel
+          </a>
+          <a href={`/contabilidad/informe-economico/imprimir?${queryExport}`} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity">
+            <Printer className="w-3.5 h-3.5" /> PDF
+          </a>
+        </div>
       </div>
 
       {error && (
@@ -166,17 +179,42 @@ export function InformeEconomico() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {data.porProyecto.map(p => (
-                          <tr key={p.proyectoId ?? 'sin'} className="hover:bg-muted/30">
-                            <td className="px-4 py-2 font-medium text-foreground">{p.nombre}</td>
-                            <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{formatMonto(p.ingresos, MONEDA_DEFAULT)}</td>
-                            <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{formatMonto(p.gastos, MONEDA_DEFAULT)}</td>
-                            <td className={`px-4 py-2 text-right tabular-nums font-semibold ${p.resultado >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                              {formatMonto(p.resultado, MONEDA_DEFAULT)}
-                            </td>
-                            <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{pct(p.margen)}</td>
-                          </tr>
-                        ))}
+                        {data.porProyecto.map(p => {
+                          const key = p.proyectoId != null ? String(p.proyectoId) : 'sin'
+                          const tienePartidas = p.partidas.length > 0
+                          const abierto = expandido === key
+                          return (
+                            <Fragment key={key}>
+                              <tr
+                                className={`hover:bg-muted/30 ${tienePartidas ? 'cursor-pointer' : ''}`}
+                                onClick={() => tienePartidas && setExpandido(abierto ? null : key)}
+                              >
+                                <td className="px-4 py-2 font-medium text-foreground">
+                                  <span className="flex items-center gap-1">
+                                    {tienePartidas
+                                      ? <ChevronRight className={`w-3.5 h-3.5 transition-transform ${abierto ? 'rotate-90' : ''}`} />
+                                      : <span className="w-3.5" />}
+                                    {p.nombre}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{formatMonto(p.ingresos, MONEDA_DEFAULT)}</td>
+                                <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{formatMonto(p.gastos, MONEDA_DEFAULT)}</td>
+                                <td className={`px-4 py-2 text-right tabular-nums font-semibold ${p.resultado >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {formatMonto(p.resultado, MONEDA_DEFAULT)}
+                                </td>
+                                <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{pct(p.margen)}</td>
+                              </tr>
+                              {abierto && p.partidas.map(pt => (
+                                <tr key={`${key}-${pt.partidaId ?? 'sin'}`} className="bg-muted/20 text-xs">
+                                  <td className="px-4 py-1.5 pl-11 text-muted-foreground">{pt.codigo ? `${pt.codigo} · ` : ''}{pt.descripcion}</td>
+                                  <td></td>
+                                  <td className="px-4 py-1.5 text-right tabular-nums text-muted-foreground">{formatMonto(pt.total, MONEDA_DEFAULT)}</td>
+                                  <td colSpan={2}></td>
+                                </tr>
+                              ))}
+                            </Fragment>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

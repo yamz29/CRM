@@ -20,6 +20,7 @@ export interface GastoRow {
   destinoTipo: string      // proyecto|oficina|taller|general|sin_asignar
   proyectoId: number | null
   proyectoNombre: string | null
+  partida?: { id: number; codigo: string | null; descripcion: string } | null
 }
 
 // ── KPIs del período ───────────────────────────────────────────────────
@@ -67,6 +68,8 @@ export function gastosPorRenglon(gastos: GastoRow[]): FilaRenglon[] {
 
 // ── Rentabilidad por proyecto (cruce ingreso ↔ gasto) ──────────────────
 
+export interface FilaPartidaEconomica { partidaId: number | null; codigo: string | null; descripcion: string; total: number }
+
 export interface FilaProyectoEconomico {
   proyectoId: number | null
   nombre: string
@@ -74,6 +77,7 @@ export interface FilaProyectoEconomico {
   gastos: number
   resultado: number
   margen: number | null
+  partidas: FilaPartidaEconomica[]   // desglose de gastos por partida
 }
 
 export function rentabilidadPorProyecto(ingresos: IngresoRow[], gastos: GastoRow[]): FilaProyectoEconomico[] {
@@ -90,6 +94,7 @@ export function rentabilidadPorProyecto(ingresos: IngresoRow[], gastos: GastoRow
         gastos: 0,
         resultado: 0,
         margen: null,
+        partidas: [],
       }
       map.set(key, fila)
     }
@@ -103,7 +108,18 @@ export function rentabilidadPorProyecto(ingresos: IngresoRow[], gastos: GastoRow
   for (const g of gastos) {
     const f = obtener(g.proyectoId, g.proyectoNombre)
     f.gastos += g.monto
+    // desglose por partida (solo gastos con partida)
+    if (g.partida) {
+      const pk = String(g.partida.id)
+      let part = f.partidas.find(x => x.partidaId != null && String(x.partidaId) === pk)
+      if (!part) {
+        part = { partidaId: g.partida.id, codigo: g.partida.codigo, descripcion: g.partida.descripcion, total: 0 }
+        f.partidas.push(part)
+      }
+      part.total += g.monto
+    }
   }
+  for (const f of map.values()) f.partidas.sort((a, b) => b.total - a.total)
 
   const filas = [...map.values()]
   for (const f of filas) {
