@@ -14,6 +14,7 @@ import { StatsCard } from '@/components/ui/stats-card'
 import { ImportarExtractoModal } from '@/components/contabilidad/ImportarExtractoModal'
 import { formatCurrency } from '@/lib/utils'
 import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
+import { InformeEconomico } from '@/components/contabilidad/InformeEconomico'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 
@@ -49,7 +50,7 @@ interface Props {
   resumen: Resumen
 }
 
-type Tab = 'dashboard' | 'facturas' | 'cuentas' | 'conciliacion' | 'proveedores'
+type Tab = 'dashboard' | 'resultado' | 'facturas' | 'cuentas' | 'conciliacion' | 'proveedores'
 
 const ESTADOS_BADGE: Record<string, { color: string; icon: any }> = {
   pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
@@ -144,6 +145,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
   // ── Tabs ──
   const tabs = [
     { key: 'dashboard' as Tab, label: 'Resumen', icon: <Landmark className="w-3.5 h-3.5" /> },
+    { key: 'resultado' as Tab, label: 'Resultado', icon: <DollarSign className="w-3.5 h-3.5" /> },
     { key: 'facturas' as Tab, label: 'Facturas', icon: <FileText className="w-3.5 h-3.5" /> },
     { key: 'cuentas' as Tab, label: 'Cuentas', icon: <Building2 className="w-3.5 h-3.5" /> },
     { key: 'conciliacion' as Tab, label: 'Conciliación', icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
@@ -448,6 +450,11 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
       {/* ── Conciliación ── */}
       {tab === 'conciliacion' && (
         <ConciliacionTab cuentas={cuentas} />
+      )}
+
+      {/* ── Resultado (Informe Económico) ── */}
+      {tab === 'resultado' && (
+        <InformeEconomico />
       )}
 
       {/* ── Proveedores ── */}
