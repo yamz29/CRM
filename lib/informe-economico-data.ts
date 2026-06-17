@@ -27,13 +27,16 @@ export interface RangoData {
 export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> {
   const enRango = { gte: desde, lte: hasta }
 
-  const [cobros, gastosProyecto, pagosEgreso, gastosOtraMoneda] = await Promise.all([
-    prisma.pagoFactura.findMany({
-      where: { fecha: enRango, factura: { tipo: 'ingreso', estado: { not: 'anulada' } } },
+  const [recibos, gastosProyecto, pagosEgreso, gastosOtraMoneda] = await Promise.all([
+    prisma.recibo.findMany({
+      where: { fecha: enRango, estado: { not: 'anulado' } },
       select: {
         fecha: true,
         monto: true,
-        factura: { select: { proyectoId: true, proyecto: { select: { nombre: true } } } },
+        montoAplicado: true,
+        aplicaciones: {
+          select: { monto: true, factura: { select: { proyectoId: true, proyecto: { select: { nombre: true } } } } },
+        },
       },
     }),
     prisma.gastoProyecto.findMany({
@@ -66,12 +69,23 @@ export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> 
     }),
   ])
 
-  const ingresos: IngresoRow[] = cobros.map(c => ({
-    fecha: c.fecha.toISOString(),
-    monto: c.monto,
-    proyectoId: c.factura.proyectoId,
-    proyectoNombre: c.factura.proyecto?.nombre ?? null,
-  }))
+  const ingresos: IngresoRow[] = []
+  for (const r of recibos) {
+    // Parte aplicada → atribuida al proyecto de cada factura
+    for (const ap of r.aplicaciones) {
+      ingresos.push({
+        fecha: r.fecha.toISOString(),
+        monto: ap.monto,
+        proyectoId: ap.factura.proyectoId,
+        proyectoNombre: ap.factura.proyecto?.nombre ?? null,
+      })
+    }
+    // Parte NO aplicada (anticipo) → sin proyecto, pero cuenta como ingreso (caja)
+    const sinAplicar = r.monto - r.montoAplicado
+    if (sinAplicar > 0.01) {
+      ingresos.push({ fecha: r.fecha.toISOString(), monto: sinAplicar, proyectoId: null, proyectoNombre: null })
+    }
+  }
 
   const gastos: GastoRow[] = [
     ...gastosProyecto.map(g => ({
