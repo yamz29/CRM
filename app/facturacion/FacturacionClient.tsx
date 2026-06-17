@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Search, Printer, Eye, FileText, AlertTriangle, CheckCircle2, Clock, Ban, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Printer, Eye, FileText, AlertTriangle, CheckCircle2, Clock, Ban, ChevronLeft, ChevronRight, Receipt } from 'lucide-react'
+import { RecibosTab } from '@/components/contabilidad/RecibosTab'
 
 interface Factura {
   id: number
@@ -35,7 +36,11 @@ interface Props {
   filtros: { estado: string; q: string; desde: string; hasta: string }
   conteos: Record<string, number>
   paginacion: { page: number; totalPages: number; total: number }
+  clientes: { id: number; nombre: string }[]
+  cuentas: { id: number; nombre: string }[]
 }
+
+type Tab = 'facturas' | 'recibos'
 
 const ESTADO_CONFIG: Record<string, { color: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
   pendiente: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', label: 'Pendiente', icon: Clock },
@@ -44,9 +49,10 @@ const ESTADO_CONFIG: Record<string, { color: string; label: string; icon: React.
   anulada:   { color: 'bg-red-100   text-red-800   dark:bg-red-900/30   dark:text-red-300',    label: 'Anulada',   icon: Ban },
 }
 
-export function FacturacionClient({ facturas, resumen, filtros, conteos, paginacion }: Props) {
+export function FacturacionClient({ facturas, resumen, filtros, conteos, paginacion, clientes, cuentas }: Props) {
   const router = useRouter()
   const pathname = usePathname()
+  const [tab, setTab] = useState<Tab>('facturas')
   const [q, setQ] = useState(filtros.q)
 
   function navegar(cambios: Partial<{ estado: string; q: string; desde: string; hasta: string; page: string }>) {
@@ -70,8 +76,37 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
 
   const totalCount = Object.values(conteos).reduce((s, c) => s + c, 0)
 
+  const tabs = [
+    { key: 'facturas' as Tab, label: 'Facturas', icon: <FileText className="w-3.5 h-3.5" /> },
+    { key: 'recibos' as Tab,  label: 'Recibos',  icon: <Receipt className="w-3.5 h-3.5" /> },
+  ]
+
   return (
     <>
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border">
+        {tabs.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              tab === t.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Recibos tab ── */}
+      {tab === 'recibos' && (
+        <RecibosTab clientes={clientes} cuentas={cuentas} />
+      )}
+
+      {/* ── Facturas tab ── */}
+      {tab === 'facturas' && <>
       {/* Cards resumen */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-card border border-border rounded-xl px-4 py-3">
@@ -270,6 +305,7 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
           </div>
         </div>
       )}
+      </>}
     </>
   )
 }

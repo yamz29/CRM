@@ -72,7 +72,7 @@ export default async function FacturacionPage({
     ...(sp.hasta ? { hasta: sp.hasta } : {}),
   }).toString()
 
-  const [facturas, total, agregados, proformasCount, porEstado] = await Promise.all([
+  const [facturas, total, agregados, proformasCount, porEstado, clientes, cuentas] = await Promise.all([
     prisma.factura.findMany({
       where,
       include: {
@@ -94,6 +94,8 @@ export default async function FacturacionPage({
       where: { tipo: 'ingreso' },
       _count: { _all: true },
     }),
+    prisma.cliente.findMany({ orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } }),
+    prisma.cuentaBancaria.findMany({ where: { activa: true }, orderBy: { nombre: 'asc' }, select: { id: true, nombre: true } }),
   ])
 
   const totalFacturado = agregados._sum.total ?? 0
@@ -156,6 +158,8 @@ export default async function FacturacionPage({
         filtros={{ estado: sp.estado ?? '', q: sp.q ?? '', desde: sp.desde ?? '', hasta: sp.hasta ?? '' }}
         conteos={conteos}
         paginacion={{ page, totalPages, total }}
+        clientes={clientes}
+        cuentas={cuentas}
       />
     </div>
   )
