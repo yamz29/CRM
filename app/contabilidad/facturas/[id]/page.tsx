@@ -21,6 +21,18 @@ export default async function FacturaDetallePage({
           include: { cuentaBancaria: { select: { id: true, nombre: true, banco: true } } },
           orderBy: { fecha: 'desc' },
         },
+        aplicaciones: {
+          include: {
+            recibo: {
+              select: {
+                id: true, numero: true, fecha: true, metodoPago: true,
+                referencia: true, observaciones: true,
+                cuentaBancaria: { select: { id: true, nombre: true, banco: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     }),
     prisma.cuentaBancaria.findMany({

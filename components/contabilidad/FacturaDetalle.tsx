@@ -19,6 +19,15 @@ interface Pago {
   referencia: string | null; observaciones: string | null
   cuentaBancaria: Cuenta | null
 }
+interface ReciboResumen {
+  id: number; numero: string; fecha: string; metodoPago: string
+  referencia: string | null; observaciones: string | null
+  cuentaBancaria: Cuenta | null
+}
+interface AplicacionRecibo {
+  id: number; reciboId: number; facturaId: number; monto: number
+  createdAt: string; recibo: ReciboResumen
+}
 interface Factura {
   id: number; numero: string; ncf: string | null; tipo: string
   fecha: string; fechaVencimiento: string | null
@@ -38,6 +47,7 @@ interface Factura {
   esProforma?: boolean
   presupuestoId?: number | null
   pagos: Pago[]
+  aplicaciones?: AplicacionRecibo[]
 }
 
 const ESTADOS_BADGE: Record<string, { color: string; icon: any; label: string }> = {
@@ -69,10 +79,11 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
     onConfirmar: () => void
   } | null>(null)
 
-  // Calculamos el saldo desde la SUMA real de pagos en vez de confiar
-  // en factura.montoPagado, que podría estar desincronizado tras editar
-  // o eliminar pagos manualmente. Defensa en profundidad.
-  const totalPagado = factura.pagos.reduce((s, p) => s + p.monto, 0)
+  // Para INGRESO calculamos desde las aplicaciones de recibo; para EGRESO
+  // desde los pagos directos. Defensa en profundidad frente a desincronización.
+  const totalPagado = factura.tipo === 'ingreso'
+    ? (factura.aplicaciones ?? []).reduce((s, a) => s + a.monto, 0)
+    : factura.pagos.reduce((s, p) => s + p.monto, 0)
   const saldoPendiente = Math.max(0, factura.total - totalPagado)
   const badge = ESTADOS_BADGE[factura.estado] || ESTADOS_BADGE.pendiente
   const BadgeIcon = badge.icon
@@ -251,71 +262,140 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
             )}
           </div>
 
-          {/* Pagos section */}
-          <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" /> Pagos registrados ({factura.pagos.length})
-                </h3>
-                {factura.estado !== 'anulada' && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Pagado: <strong className="text-foreground">{formatCurrency(totalPagado)}</strong>
-                    {' · '}
-                    Saldo: <strong className={saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}>
-                      {formatCurrency(saldoPendiente)}
-                    </strong>
-                  </p>
+          {/* Cobros / Pagos section */}
+          {factura.tipo === 'ingreso' ? (
+            /* ── INGRESO: muestra aplicaciones de recibo ── */
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" /> Cobros registrados ({(factura.aplicaciones ?? []).length})
+                  </h3>
+                  {factura.estado !== 'anulada' && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Cobrado: <strong className="text-foreground">{formatCurrency(totalPagado)}</strong>
+                      {' · '}
+                      Saldo: <strong className={saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}>
+                        {formatCurrency(saldoPendiente)}
+                      </strong>
+                    </p>
+                  )}
+                </div>
+                {factura.estado !== 'anulada' && saldoPendiente > 0.01 && (
+                  <Button size="sm" onClick={() => setShowPagoForm(!showPagoForm)}>
+                    <Plus className="w-3.5 h-3.5" /> Registrar Cobro
+                  </Button>
                 )}
               </div>
-              {factura.estado !== 'anulada' && saldoPendiente > 0.01 && (
-                <Button size="sm" onClick={() => setShowPagoForm(!showPagoForm)}>
-                  <Plus className="w-3.5 h-3.5" /> Registrar Pago
-                </Button>
+
+              {showPagoForm && (
+                <ReciboForm
+                  key={`reciboform-${(factura.aplicaciones ?? []).length}`}
+                  facturaId={factura.id}
+                  clienteId={factura.clienteId ?? factura.cliente?.id ?? null}
+                  saldoPendiente={saldoPendiente}
+                  totalFactura={factura.total}
+                  cuentas={cuentas}
+                  onClose={() => setShowPagoForm(false)}
+                  onSaved={() => { setShowPagoForm(false); refreshFactura() }}
+                />
+              )}
+
+              {(factura.aplicaciones ?? []).length > 0 ? (
+                <div className="space-y-2">
+                  {(factura.aplicaciones ?? []).map((a) => (
+                    <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/50">
+                      <div>
+                        <p className="text-sm font-medium">{formatCurrency(a.monto)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(a.recibo.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })} — {a.recibo.metodoPago}
+                          {a.recibo.referencia && <span className="ml-1 font-mono">({a.recibo.referencia})</span>}
+                          {a.recibo.cuentaBancaria && <span className="ml-1">— {a.recibo.cuentaBancaria.nombre}</span>}
+                        </p>
+                        {a.recibo.observaciones && <p className="text-xs text-muted-foreground mt-0.5">{a.recibo.observaciones}</p>}
+                        <p className="text-xs text-primary mt-0.5">
+                          <Link href={`/cobros/recibos/${a.recibo.id}`} className="hover:underline">
+                            {a.recibo.numero}
+                          </Link>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No hay cobros registrados</p>
               )}
             </div>
-
-            {showPagoForm && (
-              // key forzar remount cuando cambia la cantidad de pagos: así el
-              // useState(saldoPendiente.toFixed(2)) interno se re-ejecuta con
-              // el saldo actualizado en cada apertura.
-              <PagoForm
-                key={`pagoform-${factura.pagos.length}`}
-                facturaId={factura.id}
-                saldoPendiente={saldoPendiente}
-                totalFactura={factura.total}
-                cuentas={cuentas}
-                onClose={() => setShowPagoForm(false)}
-                onSaved={() => { setShowPagoForm(false); refreshFactura() }}
-              />
-            )}
-
-            {factura.pagos.length > 0 ? (
-              <div className="space-y-2">
-                {factura.pagos.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/50">
-                    <div>
-                      <p className="text-sm font-medium">{formatCurrency(p.monto)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(p.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })} — {p.metodoPago}
-                        {p.referencia && <span className="ml-1 font-mono">({p.referencia})</span>}
-                        {p.cuentaBancaria && <span className="ml-1">— {p.cuentaBancaria.nombre}</span>}
-                      </p>
-                      {p.observaciones && <p className="text-xs text-muted-foreground mt-0.5">{p.observaciones}</p>}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      <button onClick={() => handleDeletePago(p.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar pago">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+          ) : (
+            /* ── EGRESO: flujo de pagos a proveedor (sin cambios) ── */
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" /> Pagos registrados ({factura.pagos.length})
+                  </h3>
+                  {factura.estado !== 'anulada' && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Pagado: <strong className="text-foreground">{formatCurrency(totalPagado)}</strong>
+                      {' · '}
+                      Saldo: <strong className={saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}>
+                        {formatCurrency(saldoPendiente)}
+                      </strong>
+                    </p>
+                  )}
+                </div>
+                {factura.estado !== 'anulada' && saldoPendiente > 0.01 && (
+                  <Button size="sm" onClick={() => setShowPagoForm(!showPagoForm)}>
+                    <Plus className="w-3.5 h-3.5" /> Registrar Pago
+                  </Button>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No hay pagos registrados</p>
-            )}
-          </div>
+
+              {showPagoForm && (
+                // key forzar remount cuando cambia la cantidad de pagos: así el
+                // useState(saldoPendiente.toFixed(2)) interno se re-ejecuta con
+                // el saldo actualizado en cada apertura.
+                <PagoForm
+                  key={`pagoform-${factura.pagos.length}`}
+                  facturaId={factura.id}
+                  saldoPendiente={saldoPendiente}
+                  totalFactura={factura.total}
+                  cuentas={cuentas}
+                  onClose={() => setShowPagoForm(false)}
+                  onSaved={() => { setShowPagoForm(false); refreshFactura() }}
+                />
+              )}
+
+              {factura.pagos.length > 0 ? (
+                <div className="space-y-2">
+                  {factura.pagos.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/50">
+                      <div>
+                        <p className="text-sm font-medium">{formatCurrency(p.monto)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(p.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })} — {p.metodoPago}
+                          {p.referencia && <span className="ml-1 font-mono">({p.referencia})</span>}
+                          {p.cuentaBancaria && <span className="ml-1">— {p.cuentaBancaria.nombre}</span>}
+                        </p>
+                        {p.observaciones && <p className="text-xs text-muted-foreground mt-0.5">{p.observaciones}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <button onClick={() => handleDeletePago(p.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar pago">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No hay pagos registrados</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Amounts + File */}
@@ -543,6 +623,128 @@ function PagoForm({ facturaId, saldoPendiente, totalFactura, cuentas, onClose, o
         <div className="col-span-2 flex justify-end gap-2 mt-1">
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
           <Button type="submit" size="sm" disabled={loading}>{loading ? 'Guardando...' : 'Registrar Pago'}</Button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ── Recibo Form (INGRESO) ─────────────────────────────────────────────
+
+function ReciboForm({ facturaId, clienteId, saldoPendiente, totalFactura, cuentas, onClose, onSaved }: {
+  facturaId: number; clienteId: number | null; saldoPendiente: number; totalFactura: number
+  cuentas: Cuenta[]; onClose: () => void; onSaved: () => void
+}) {
+  const toast = useToast()
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
+  const [monto, setMonto] = useState(saldoPendiente.toFixed(2))
+  const [metodoPago, setMetodoPago] = useState('Transferencia')
+  const [referencia, setReferencia] = useState('')
+  const [cuentaBancariaId, setCuentaBancariaId] = useState('')
+  const [observaciones, setObservaciones] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const setPorcentaje = (p: number) => setMonto((totalFactura * p / 100).toFixed(2))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!clienteId) {
+      setError('Esta factura no tiene cliente asignado; no se puede crear un recibo.')
+      return
+    }
+    setLoading(true); setError('')
+
+    const res = await fetch('/api/cobros/recibos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clienteId,
+        fecha,
+        monto: parseFloat(monto),
+        metodoPago,
+        referencia: referencia || null,
+        cuentaBancariaId: cuentaBancariaId ? parseInt(cuentaBancariaId) : null,
+        observaciones: observaciones || null,
+        aplicaciones: [{ facturaId, monto: parseFloat(monto) }],
+      }),
+    })
+
+    if (res.ok) {
+      toast.exito('Cobro registrado correctamente')
+      onSaved()
+    } else {
+      const data = await res.json().catch(() => null)
+      setError(data?.error || 'Error al registrar cobro')
+      toast.error(data?.error || 'Error al registrar cobro')
+    }
+    setLoading(false)
+  }
+
+  const inputCls = 'w-full border border-border rounded-md px-2.5 py-1.5 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring'
+
+  return (
+    <div className="border border-primary/20 rounded-lg p-4 bg-primary/5">
+      <h4 className="font-medium text-sm mb-3">Registrar Cobro</h4>
+      {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Fecha</label>
+          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputCls} required />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Monto (pend: {formatCurrency(saldoPendiente)})</label>
+          <input type="number" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputCls} required />
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground">Rápido:</span>
+            {[30, 40, 50, 100].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPorcentaje(p)}
+                className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+                title={`${p}% de ${formatCurrency(totalFactura)}`}
+              >
+                {p}%
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setMonto(saldoPendiente.toFixed(2))}
+              className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+              title={`Saldo restante: ${formatCurrency(saldoPendiente)}`}
+            >
+              Saldo
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Método</label>
+          <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)} className={inputCls}>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Tarjeta">Tarjeta</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Referencia</label>
+          <input value={referencia} onChange={(e) => setReferencia(e.target.value)} className={inputCls} placeholder="Nro. cheque, ref. transferencia" />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Cuenta bancaria</label>
+          <select value={cuentaBancariaId} onChange={(e) => setCuentaBancariaId(e.target.value)} className={inputCls}>
+            <option value="">Sin cuenta</option>
+            {cuentas.map((c) => <option key={c.id} value={c.id}>{c.nombre} — {c.banco}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Observaciones</label>
+          <input value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className={inputCls} />
+        </div>
+        <div className="col-span-2 flex justify-end gap-2 mt-1">
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" size="sm" disabled={loading}>{loading ? 'Guardando...' : 'Registrar Cobro'}</Button>
         </div>
       </form>
     </div>

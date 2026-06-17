@@ -28,6 +28,7 @@ model Cliente {
   registrosHoras RegistroHoras[]
   oportunidades  Oportunidad[]
   facturas       Factura[]
+  recibos        Recibo[]
 }
 
 model Proyecto {
@@ -1173,6 +1174,7 @@ model CuentaBancaria {
 
   movimientos MovimientoBancario[]
   pagos       PagoFactura[]
+  recibos     Recibo[]
 
   @@map("cuenta_bancaria")
 }
@@ -1252,6 +1254,7 @@ model Factura {
   pagos            PagoFactura[]
   movimientos      MovimientoBancario[]
   gasto            GastoProyecto?
+  aplicaciones     AplicacionRecibo[]
 
   @@index([tipo])
   @@index([estado])
@@ -1297,12 +1300,56 @@ model MovimientoBancario {
   conciliado       Boolean   @default(false)
   facturaId        Int?
   factura          Factura?  @relation(fields: [facturaId], references: [id], onDelete: SetNull)
+  reciboId         Int?
+  recibo           Recibo?   @relation(fields: [reciboId], references: [id], onDelete: SetNull)
 
   creadoEn         DateTime  @default(now())
 
   @@index([cuentaBancariaId])
   @@index([conciliado])
   @@map("movimiento_bancario")
+}
+
+model Recibo {
+  id               Int      @id @default(autoincrement())
+  numero           String   @unique           // REC-2026-0001
+  clienteId        Int
+  fecha            DateTime
+  monto            Float
+  metodoPago       String   @default("Transferencia")
+  cuentaBancariaId Int?
+  referencia       String?
+  observaciones    String?
+  montoAplicado    Float    @default(0)        // derivado: suma de aplicaciones
+  estado           String   @default("sin_aplicar") // sin_aplicar|parcial|aplicado|anulado
+  createdBy        Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  cliente        Cliente            @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  cuentaBancaria CuentaBancaria?    @relation(fields: [cuentaBancariaId], references: [id], onDelete: SetNull)
+  aplicaciones   AplicacionRecibo[]
+  movimientos    MovimientoBancario[]
+
+  @@index([clienteId])
+  @@index([estado])
+  @@index([fecha])
+  @@map("recibo")
+}
+
+model AplicacionRecibo {
+  id        Int      @id @default(autoincrement())
+  reciboId  Int
+  facturaId Int
+  monto     Float
+  createdAt DateTime @default(now())
+
+  recibo  Recibo  @relation(fields: [reciboId], references: [id], onDelete: Cascade)
+  factura Factura @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@unique([reciboId, facturaId])
+  @@index([facturaId])
+  @@map("aplicacion_recibo")
 }
 
 // ── ÓRDENES DE COMPRA ────────────────────────────────────────────────

@@ -38,6 +38,18 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
           include: { cuentaBancaria: { select: { id: true, nombre: true, banco: true } } },
           orderBy: { fecha: 'desc' },
         },
+        aplicaciones: {
+          include: {
+            recibo: {
+              select: {
+                id: true, numero: true, fecha: true, metodoPago: true,
+                referencia: true, observaciones: true,
+                cuentaBancaria: { select: { id: true, nombre: true, banco: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
     if (!factura) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
