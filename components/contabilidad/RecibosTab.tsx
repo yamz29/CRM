@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard, Printer } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard, Printer, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
@@ -308,6 +308,37 @@ export function RecibosTab({ clientes, cuentas }: Props) {
   // Apply modal state
   const [reciboAplicar, setReciboAplicar] = useState<Recibo | null>(null)
 
+  // ── Filtros (client-side sobre la lista cargada) ──
+  const [fEstado, setFEstado] = useState('')
+  const [fCliente, setFCliente] = useState('')
+  const [fBusqueda, setFBusqueda] = useState('')
+  const [fDesde, setFDesde] = useState('')
+  const [fHasta, setFHasta] = useState('')
+  const hayFiltros = !!(fEstado || fCliente || fBusqueda || fDesde || fHasta)
+  const limpiarFiltros = () => { setFEstado(''); setFCliente(''); setFBusqueda(''); setFDesde(''); setFHasta('') }
+
+  const recibosFiltrados = useMemo(() => {
+    const q = fBusqueda.trim().toLowerCase()
+    const desde = fDesde ? new Date(fDesde + 'T00:00:00') : null
+    const hasta = fHasta ? new Date(fHasta + 'T23:59:59') : null
+    return recibos.filter(r => {
+      if (fEstado && r.estado !== fEstado) return false
+      if (fCliente && r.clienteId !== Number(fCliente)) return false
+      if (desde || hasta) {
+        const f = new Date(r.fecha)
+        if (desde && f < desde) return false
+        if (hasta && f > hasta) return false
+      }
+      if (q) {
+        const hay = r.numero.toLowerCase().includes(q)
+          || (r.referencia?.toLowerCase().includes(q) ?? false)
+          || r.cliente.nombre.toLowerCase().includes(q)
+        if (!hay) return false
+      }
+      return true
+    })
+  }, [recibos, fEstado, fCliente, fBusqueda, fDesde, fHasta])
+
   // ── Fetch recibos ──
   const fetchRecibos = useCallback(async () => {
     setLoading(true)
@@ -388,6 +419,44 @@ export function RecibosTab({ clientes, cuentas }: Props) {
         })}
       </div>
 
+      {/* Barra de filtros */}
+      {recibos.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-3 flex flex-wrap gap-2 items-center">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2" />
+            <input
+              type="text" value={fBusqueda} onChange={e => setFBusqueda(e.target.value)}
+              placeholder="N° recibo, referencia o cliente"
+              className="h-8 w-64 text-xs border border-border rounded-lg pl-7 pr-2 bg-input text-foreground"
+            />
+          </div>
+          <select value={fEstado} onChange={e => setFEstado(e.target.value)}
+            className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
+            <option value="">Todos los estados</option>
+            {(['sin_aplicar', 'parcial', 'aplicado', 'anulado'] as const).map(es => (
+              <option key={es} value={es}>{ESTADO_CONFIG[es].label}</option>
+            ))}
+          </select>
+          <select value={fCliente} onChange={e => setFCliente(e.target.value)}
+            className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
+            <option value="">Todos los clientes</option>
+            {clientes.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
+          </select>
+          <input type="date" value={fDesde} onChange={e => setFDesde(e.target.value)}
+            className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground" />
+          <span className="text-xs text-muted-foreground">a</span>
+          <input type="date" value={fHasta} onChange={e => setFHasta(e.target.value)}
+            className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground" />
+          {hayFiltros && (
+            <button onClick={limpiarFiltros}
+              className="h-8 px-2.5 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <X className="w-3.5 h-3.5" /> Limpiar
+            </button>
+          )}
+          <span className="ml-auto text-xs text-muted-foreground">{recibosFiltrados.length} de {recibos.length}</span>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loading ? (
@@ -398,6 +467,12 @@ export function RecibosTab({ clientes, cuentas }: Props) {
           <div className="flex flex-col items-center py-16 text-center">
             <Receipt className="w-12 h-12 text-muted-foreground/40 mb-3" />
             <p className="text-muted-foreground text-sm">No hay recibos registrados. Crea el primero con &quot;Nuevo recibo&quot;.</p>
+          </div>
+        ) : recibosFiltrados.length === 0 ? (
+          <div className="flex flex-col items-center py-16 text-center">
+            <Search className="w-12 h-12 text-muted-foreground/40 mb-3" />
+            <p className="text-muted-foreground text-sm">Ningún recibo coincide con los filtros.</p>
+            <button onClick={limpiarFiltros} className="text-xs text-primary hover:underline mt-1">Limpiar filtros</button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -416,7 +491,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {recibos.map(r => {
+                {recibosFiltrados.map(r => {
                   const cfg = ESTADO_CONFIG[r.estado] ?? ESTADO_CONFIG.sin_aplicar
                   const Icon = cfg.icon
                   const saldo = r.monto - r.montoAplicado
