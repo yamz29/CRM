@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard } from 'lucide-react'
+import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
@@ -463,6 +463,14 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                               <Ban className="w-3.5 h-3.5" /> Anular
                             </Button>
                           )}
+                          <a
+                            href={`/cobros/recibos/${r.id}/imprimir`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5" /> Imprimir
+                          </a>
                         </div>
                       </td>
                     </tr>
