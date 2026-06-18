@@ -11,7 +11,7 @@ export const GET = withPermiso('contabilidad', 'ver', async (req: NextRequest) =
   const hasta = searchParams.get('hasta') || fallback.hasta
 
   const { data, actual } = await cargarInforme(desde, hasta)
-  const { kpis, porRenglon, porProyecto, porMes } = data
+  const { kpis, porRenglon, porProyecto, overhead, porMes } = data
 
   const wb = XLSX.utils.book_new()
 
@@ -34,6 +34,12 @@ export const GET = withPermiso('contabilidad', 'ver', async (req: NextRequest) =
     ...porProyecto.map(p => [
       p.nombre, p.ingresos, p.gastos, p.resultado,
       p.margen === null ? 'N/A' : Number((p.margen * 100).toFixed(1)),
+    ]),
+    [],
+    ['Estructura / Overhead', 'Ingresos', 'Gastos', 'Resultado', 'Margen %'],
+    ...overhead.flatMap(o => [
+      [o.label, o.ingresos, o.gastos, o.resultado, o.margen === null ? 'N/A' : Number((o.margen * 100).toFixed(1))],
+      ...o.categorias.map(c => [`   ${c.categoria}`, '', c.total]),
     ]),
     [],
     ['Evolución mensual', 'Ingresos', 'Gastos', 'Resultado'],
