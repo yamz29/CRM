@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { prisma } from '@/lib/prisma'
 import { MONEDA_DEFAULT, presetRango, formatMonto } from '@/lib/gastos-informe'
 import { cargarInforme } from '@/lib/informe-economico-data'
@@ -21,7 +22,7 @@ export default async function ImprimirInformeEconomicoPage({
     cargarInforme(desde, hasta),
     prisma.empresa.findFirst({ select: { nombre: true } }),
   ])
-  const { kpis, porRenglon, porProyecto, porMes } = data
+  const { kpis, porRenglon, porProyecto, overhead, porMes } = data
   const nombreEmpresa = empresa?.nombre || 'Gonzalva Group'
   const resultadoColor = kpis.resultado >= 0 ? 'text-green-700' : 'text-red-700'
 
@@ -93,6 +94,43 @@ export default async function ImprimirInformeEconomicoPage({
                   </td>
                   <td className="py-1 text-right">{pct(p.margen)}</td>
                 </tr>
+              ))}
+            </tbody>
+          </table>
+        </Seccion>
+      )}
+
+      {overhead.length > 0 && (
+        <Seccion titulo="Estructura / Overhead">
+          <table className="w-full text-sm border-collapse">
+            <thead><tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500">
+              <th className="py-1">Renglón</th>
+              <th className="py-1 text-right">Ingresos</th>
+              <th className="py-1 text-right">Gastos</th>
+              <th className="py-1 text-right">Resultado</th>
+              <th className="py-1 text-right">Margen</th>
+            </tr></thead>
+            <tbody>
+              {overhead.map(o => (
+                <Fragment key={o.destino}>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-1 font-medium">{o.label}</td>
+                    <td className="py-1 text-right tabular-nums">{formatMonto(o.ingresos, MONEDA_DEFAULT)}</td>
+                    <td className="py-1 text-right tabular-nums">{formatMonto(o.gastos, MONEDA_DEFAULT)}</td>
+                    <td className={`py-1 text-right tabular-nums font-semibold ${o.resultado >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {formatMonto(o.resultado, MONEDA_DEFAULT)}
+                    </td>
+                    <td className="py-1 text-right">{pct(o.margen)}</td>
+                  </tr>
+                  {o.categorias.map((c, i) => (
+                    <tr key={`${o.destino}-${i}`} className="text-xs text-slate-500">
+                      <td className="py-0.5 pl-4">{c.categoria}</td>
+                      <td></td>
+                      <td className="py-0.5 text-right tabular-nums">{formatMonto(c.total, MONEDA_DEFAULT)}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

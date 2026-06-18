@@ -221,6 +221,66 @@ export function InformeEconomico() {
                 </div>
               )}
 
+              {/* Estructura / Overhead */}
+              {data.overhead.length > 0 && (
+                <div className="bg-card rounded-xl border border-border overflow-hidden">
+                  <h3 className="text-sm font-semibold text-foreground p-4 pb-1">Estructura / Overhead</h3>
+                  <p className="text-xs text-muted-foreground px-4 pb-2">Ingresos y gastos que no pertenecen a un proyecto (Oficina, Taller, General).</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted/40 border-y border-border text-xs font-semibold text-muted-foreground uppercase">
+                          <th className="px-4 py-2 text-left">Renglón</th>
+                          <th className="px-4 py-2 text-right">Ingresos</th>
+                          <th className="px-4 py-2 text-right">Gastos</th>
+                          <th className="px-4 py-2 text-right">Resultado</th>
+                          <th className="px-4 py-2 text-right">Margen</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {data.overhead.map(o => {
+                          const key = `oh-${o.destino}`
+                          const tieneCats = o.categorias.length > 0
+                          const abierto = expandido === key
+                          return (
+                            <Fragment key={key}>
+                              <tr
+                                className={`hover:bg-muted/30 ${tieneCats ? 'cursor-pointer' : ''}`}
+                                onClick={() => tieneCats && setExpandido(abierto ? null : key)}
+                              >
+                                <td className="px-4 py-2 font-medium text-foreground">
+                                  <span className="flex items-center gap-1.5">
+                                    {tieneCats
+                                      ? <ChevronRight className={`w-3.5 h-3.5 transition-transform ${abierto ? 'rotate-90' : ''}`} />
+                                      : <span className="w-3.5" />}
+                                    <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color(o.destino) }} />
+                                    {o.label}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{formatMonto(o.ingresos, MONEDA_DEFAULT)}</td>
+                                <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{formatMonto(o.gastos, MONEDA_DEFAULT)}</td>
+                                <td className={`px-4 py-2 text-right tabular-nums font-semibold ${o.resultado >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {formatMonto(o.resultado, MONEDA_DEFAULT)}
+                                </td>
+                                <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{pct(o.margen)}</td>
+                              </tr>
+                              {abierto && o.categorias.map((c, i) => (
+                                <tr key={`${key}-${i}`} className="bg-muted/20 text-xs">
+                                  <td className="px-4 py-1.5 pl-11 text-muted-foreground">{c.categoria}</td>
+                                  <td></td>
+                                  <td className="px-4 py-1.5 text-right tabular-nums text-muted-foreground">{formatMonto(c.total, MONEDA_DEFAULT)}</td>
+                                  <td colSpan={2}></td>
+                                </tr>
+                              ))}
+                            </Fragment>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* Evolución mensual */}
               {chartData.length > 0 && (
                 <div className="bg-card rounded-xl border border-border p-4">
