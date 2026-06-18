@@ -12,6 +12,7 @@ export interface IngresoRow {
   monto: number
   proyectoId: number | null
   proyectoNombre: string | null
+  destinoTipo?: string | null   // renglón del ingreso (factura.destinoTipo); null = anticipo sin aplicar
 }
 
 export interface GastoRow {
@@ -21,6 +22,7 @@ export interface GastoRow {
   proyectoId: number | null
   proyectoNombre: string | null
   partida?: { id: number; codigo: string | null; descripcion: string } | null
+  categoria?: string | null
 }
 
 // ── KPIs del período ───────────────────────────────────────────────────
@@ -102,10 +104,12 @@ export function rentabilidadPorProyecto(ingresos: IngresoRow[], gastos: GastoRow
   }
 
   for (const i of ingresos) {
+    if (i.proyectoId == null) continue   // overhead/sin asignar va en otra sección
     const f = obtener(i.proyectoId, i.proyectoNombre)
     f.ingresos += i.monto
   }
   for (const g of gastos) {
+    if (g.proyectoId == null) continue
     const f = obtener(g.proyectoId, g.proyectoNombre)
     f.gastos += g.monto
     // desglose por partida (solo gastos con partida)
@@ -128,6 +132,62 @@ export function rentabilidadPorProyecto(ingresos: IngresoRow[], gastos: GastoRow
   }
   // Mayor resultado primero; "Sin proyecto" al final si no aporta ingresos
   return filas.sort((a, b) => b.resultado - a.resultado)
+}
+
+// ── Rentabilidad overhead (renglones no-proyecto) ──────────────────────
+
+export interface FilaCategoriaEconomica { categoria: string; total: number }
+
+export interface FilaRenglonEconomico {
+  destino: string            // oficina|taller|general|sin_asignar
+  label: string
+  ingresos: number
+  gastos: number
+  resultado: number
+  margen: number | null
+  categorias: FilaCategoriaEconomica[]   // desglose de gastos por categoría
+}
+
+const RENGLONES_OVERHEAD = ['oficina', 'taller', 'general', 'sin_asignar'] as const
+
+function normalizarRenglon(destino: string | null | undefined): string {
+  const d = destino ?? 'sin_asignar'
+  return (RENGLONES_OVERHEAD as readonly string[]).includes(d) ? d : 'sin_asignar'
+}
+
+export function rentabilidadOverhead(ingresos: IngresoRow[], gastos: GastoRow[]): FilaRenglonEconomico[] {
+  const map = new Map<string, FilaRenglonEconomico>()
+  const labelDe = (key: string) => DESTINOS.find(d => d.key === key)?.label ?? key
+
+  const obtener = (destino: string): FilaRenglonEconomico => {
+    let fila = map.get(destino)
+    if (!fila) {
+      fila = { destino, label: labelDe(destino), ingresos: 0, gastos: 0, resultado: 0, margen: null, categorias: [] }
+      map.set(destino, fila)
+    }
+    return fila
+  }
+
+  for (const i of ingresos) {
+    if (i.proyectoId != null) continue   // los de proyecto van en la otra sección
+    obtener(normalizarRenglon(i.destinoTipo)).ingresos += i.monto
+  }
+  for (const g of gastos) {
+    if (g.proyectoId != null) continue
+    const f = obtener(normalizarRenglon(g.destinoTipo))
+    f.gastos += g.monto
+    const cat = g.categoria?.trim() || 'Sin categoría'
+    let c = f.categorias.find(x => x.categoria === cat)
+    if (!c) { c = { categoria: cat, total: 0 }; f.categorias.push(c) }
+    c.total += g.monto
+  }
+
+  for (const f of map.values()) {
+    f.resultado = f.ingresos - f.gastos
+    f.margen = f.ingresos > 0 ? f.resultado / f.ingresos : null
+    f.categorias.sort((a, b) => b.total - a.total)
+  }
+  return RENGLONES_OVERHEAD.filter(r => map.has(r)).map(r => map.get(r)!)
 }
 
 // ── Evolución mensual (ingresos vs gastos vs resultado) ────────────────
@@ -165,6 +225,7 @@ export interface InformeEconomicoData {
   kpisAnterior: KpisEconomicos
   porRenglon: FilaRenglon[]
   porProyecto: FilaProyectoEconomico[]
+  overhead: FilaRenglonEconomico[]                  // rentabilidad de renglones no-proyecto
   porMes: FilaMesEconomico[]
   otrasMonedas: { count: number; total: number }   // gastos no-RD$ excluidos
 }
@@ -181,6 +242,7 @@ export function construirInforme(
     kpisAnterior: calcularKpisEconomicos(ingresosAnterior, gastosAnterior),
     porRenglon: gastosPorRenglon(gastos),
     porProyecto: rentabilidadPorProyecto(ingresos, gastos),
+    overhead: rentabilidadOverhead(ingresos, gastos),
     porMes: evolucionMensual(ingresos, gastos),
     otrasMonedas,
   }

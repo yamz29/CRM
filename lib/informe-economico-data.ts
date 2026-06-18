@@ -35,7 +35,7 @@ export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> 
         monto: true,
         montoAplicado: true,
         aplicaciones: {
-          select: { monto: true, factura: { select: { proyectoId: true, proyecto: { select: { nombre: true } } } } },
+          select: { monto: true, factura: { select: { proyectoId: true, destinoTipo: true, proyecto: { select: { nombre: true } } } } },
         },
       },
     }),
@@ -48,6 +48,7 @@ export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> 
         proyectoId: true,
         proyecto: { select: { nombre: true } },
         partida: { select: { id: true, codigo: true, descripcion: true } },
+        categoria: true,
       },
     }),
     prisma.pagoFactura.findMany({
@@ -78,12 +79,13 @@ export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> 
         monto: ap.monto,
         proyectoId: ap.factura.proyectoId,
         proyectoNombre: ap.factura.proyecto?.nombre ?? null,
+        destinoTipo: ap.factura.destinoTipo,
       })
     }
-    // Parte NO aplicada (anticipo) → sin proyecto, pero cuenta como ingreso (caja)
+    // Parte NO aplicada (anticipo) → sin proyecto ni renglón (cuenta como ingreso de caja)
     const sinAplicar = r.monto - r.montoAplicado
     if (sinAplicar > 0.01) {
-      ingresos.push({ fecha: r.fecha.toISOString(), monto: sinAplicar, proyectoId: null, proyectoNombre: null })
+      ingresos.push({ fecha: r.fecha.toISOString(), monto: sinAplicar, proyectoId: null, proyectoNombre: null, destinoTipo: null })
     }
   }
 
@@ -95,6 +97,7 @@ export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> 
       proyectoId: g.proyectoId,
       proyectoNombre: g.proyecto?.nombre ?? null,
       partida: g.partida ?? null,
+      categoria: g.categoria ?? null,
     })),
     ...pagosEgreso.map(p => ({
       fecha: p.fecha.toISOString(),
@@ -103,6 +106,7 @@ export async function cargarRango(desde: Date, hasta: Date): Promise<RangoData> 
       proyectoId: p.factura.proyectoId,
       proyectoNombre: p.factura.proyecto?.nombre ?? null,
       partida: null,
+      categoria: null,
     })),
   ]
 
