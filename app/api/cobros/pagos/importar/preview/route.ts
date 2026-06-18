@@ -41,6 +41,7 @@ export const POST = withPermiso('contabilidad', 'editar', async (req: NextReques
       where: { tipo: 'ingreso' },
       select: {
         id: true, numero: true, estado: true, total: true, montoPagado: true,
+        clienteId: true,
         cliente: { select: { nombre: true } },
         proyecto: { select: { estado: true } },
       },
@@ -57,6 +58,7 @@ export const POST = withPermiso('contabilidad', 'editar', async (req: NextReques
       estado: f.estado,
       total: f.total,
       montoPagado: f.montoPagado,
+      clienteId: f.clienteId,
       clienteNombre: f.cliente?.nombre ?? null,
       proyectoCerrado: f.proyecto?.estado === 'Cerrado',
     }

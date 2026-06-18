@@ -17,6 +17,7 @@ import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
 import { InformeEconomico } from '@/components/contabilidad/InformeEconomico'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { ConvertirCreditoRecibo } from '@/components/contabilidad/ConvertirCreditoRecibo'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -449,7 +450,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
 
       {/* ── Conciliación ── */}
       {tab === 'conciliacion' && (
-        <ConciliacionTab cuentas={cuentas} />
+        <ConciliacionTab cuentas={cuentas} clientes={clientes} />
       )}
 
       {/* ── Resultado (Informe Económico) ── */}
@@ -678,7 +679,7 @@ function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria
 
 // ── Conciliación Tab ─────────────────────────────────────────────────────
 
-function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
+function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; clientes: Cliente[] }) {
   const toast = useToast()
   const [cuentaId, setCuentaId] = useState(cuentas[0]?.id?.toString() || '')
   const [movimientos, setMovimientos] = useState<any[]>([])
@@ -687,6 +688,7 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
   const [showTransferForm, setShowTransferForm] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [facturasDisponibles, setFacturasDisponibles] = useState<any[]>([])
+  const [movimientoConvertir, setMovimientoConvertir] = useState<any | null>(null)
 
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'sin' | 'conciliados'>('todos')
@@ -1052,12 +1054,13 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Monto</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Conciliado</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Factura</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Recibo</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {movimientosFiltrados.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">
                   Sin movimientos que coincidan con los filtros
                 </td></tr>
               )}
@@ -1131,6 +1134,22 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
+                    {m.recibo ? (
+                      <span className="text-xs font-mono text-primary">{m.recibo.numero}</span>
+                    ) : m.tipo === 'credito' && !m.reciboId ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMovimientoConvertir(m)}
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-xs"
+                      >
+                        Crear recibo
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
                     <button onClick={() => handleDeleteMovimiento(m.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar movimiento">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1159,6 +1178,21 @@ function ConciliacionTab({ cuentas }: { cuentas: CuentaBancaria[] }) {
         onConfirmar={() => confirmacion?.onConfirmar()}
         onCancelar={() => setConfirmacion(null)}
       />
+
+      {movimientoConvertir && (
+        <ConvertirCreditoRecibo
+          movimiento={{
+            id: movimientoConvertir.id,
+            monto: movimientoConvertir.monto,
+            fecha: movimientoConvertir.fecha,
+            descripcion: movimientoConvertir.descripcion,
+            referencia: movimientoConvertir.referencia,
+          }}
+          clientes={clientes}
+          onClose={() => setMovimientoConvertir(null)}
+          onDone={() => { setMovimientoConvertir(null); fetchMovimientos() }}
+        />
+      )}
     </div>
   )
 }

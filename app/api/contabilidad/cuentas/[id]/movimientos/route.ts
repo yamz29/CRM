@@ -28,7 +28,10 @@ export async function GET(request: NextRequest, { params }: Ctx) {
   try {
     const movimientos = await prisma.movimientoBancario.findMany({
       where,
-      include: { factura: { select: { id: true, numero: true, tipo: true, proveedor: true } } },
+      include: {
+        factura: { select: { id: true, numero: true, tipo: true, proveedor: true } },
+        recibo: { select: { id: true, numero: true } },
+      },
       orderBy: { fecha: 'desc' },
     })
     return NextResponse.json(movimientos)
