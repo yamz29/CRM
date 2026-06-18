@@ -13,6 +13,7 @@ interface FilaPreview {
   numFila: number
   facturaId: number | null
   facturaNumero: string | null
+  clienteId: number | null
   clienteNombre: string | null
   fecha: string | null
   monto: number
@@ -92,6 +93,7 @@ export function ImportarPagosButton() {
         body: JSON.stringify({
           filas: filasOk.map(f => ({
             facturaId: f.facturaId,
+            clienteId: f.clienteId,
             fecha: f.fecha,
             monto: f.monto,
             metodoPago: f.metodoPago,
@@ -103,7 +105,7 @@ export function ImportarPagosButton() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'No se pudo importar'); return }
-      toast.exito(`${data.pagosCreados} pago(s) registrado(s) en ${data.facturasActualizadas} factura(s)`)
+      toast.exito(`${data.recibosCreados} recibo(s) registrado(s) en ${data.facturasActualizadas} factura(s)`)
       router.refresh()
       setOpen(false)
       reset()
@@ -250,7 +252,7 @@ export function ImportarPagosButton() {
                 <Button size="sm" onClick={importar} disabled={importando}>
                   {importando
                     ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Registrando…</>
-                    : <>Registrar {preview.totales.ok} pago{preview.totales.ok !== 1 ? 's' : ''}</>}
+                    : <>Registrar {preview.totales.ok} recibo{preview.totales.ok !== 1 ? 's' : ''}</>}
                 </Button>
               )}
             </div>

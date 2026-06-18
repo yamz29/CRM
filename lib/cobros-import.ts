@@ -11,6 +11,7 @@ export interface FacturaLookup {
   estado: string            // pendiente | parcial | pagada | anulada
   total: number
   montoPagado: number
+  clienteId: number | null
   clienteNombre: string | null
   proyectoCerrado: boolean
 }
@@ -30,6 +31,7 @@ export interface FilaPagoValidada {
   numFila: number                  // fila real del Excel (con header)
   facturaId: number | null
   facturaNumero: string | null
+  clienteId: number | null
   clienteNombre: string | null
   fecha: string | null             // ISO
   monto: number
@@ -158,10 +160,11 @@ export function validarFilas(rows: FilaRaw[], maps: LookupMaps): ResultadoValida
       errores.push('Falta factura_id o numero')
     }
 
-    // ── Estado / proyecto cerrado ──
+    // ── Estado / proyecto cerrado / cliente ──
     if (factura) {
       if (factura.estado === 'anulada') errores.push(`Factura ${factura.numero} está anulada`)
       if (factura.proyectoCerrado) errores.push(`Factura ${factura.numero}: el proyecto está cerrado`)
+      if (factura.clienteId === null) errores.push(`Factura ${factura.numero} no tiene cliente asignado`)
     }
 
     // ── Fecha (vacía → hoy) ──
@@ -200,6 +203,7 @@ export function validarFilas(rows: FilaRaw[], maps: LookupMaps): ResultadoValida
       numFila: i + 2,
       facturaId: factura?.id ?? null,
       facturaNumero: factura?.numero ?? (numeroRaw || null),
+      clienteId: factura?.clienteId ?? null,
       clienteNombre: factura?.clienteNombre ?? null,
       fecha: fecha?.toISOString() ?? null,
       monto: monto ?? 0,
