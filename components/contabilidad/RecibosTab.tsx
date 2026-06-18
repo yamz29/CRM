@@ -55,7 +55,7 @@ const METODOS_PAGO = ['Transferencia', 'Efectivo', 'Cheque', 'Tarjeta'] as const
 
 // ── AplicarFacturasFields (shared sub-component) ─────────────────────────
 
-interface AplicarFacturasFieldsProps {
+export interface AplicarFacturasFieldsProps {
   facturas: FacturaPendiente[]
   valores: Record<number, string>
   onChange: (facturaId: number, val: string) => void
@@ -63,7 +63,9 @@ interface AplicarFacturasFieldsProps {
   max: number
 }
 
-function AplicarFacturasFields({ facturas, valores, onChange, max }: AplicarFacturasFieldsProps) {
+export type { FacturaPendiente }
+
+export function AplicarFacturasFields({ facturas, valores, onChange, max }: AplicarFacturasFieldsProps) {
   const totalAplicado = facturas.reduce((sum, f) => sum + (parseFloat(valores[f.id] ?? '') || 0), 0)
   const sumExceedsMax = totalAplicado > max + 0.001
 
