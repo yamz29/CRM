@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw } from 'lucide-react'
+import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
@@ -53,6 +53,240 @@ const ESTADO_CONFIG: Record<string, { color: string; label: string; icon: React.
 
 const METODOS_PAGO = ['Transferencia', 'Efectivo', 'Cheque', 'Tarjeta'] as const
 
+// ── AplicarFacturasFields (shared sub-component) ─────────────────────────
+
+interface AplicarFacturasFieldsProps {
+  facturas: FacturaPendiente[]
+  valores: Record<number, string>
+  onChange: (facturaId: number, val: string) => void
+  /** disponible: max total that can be applied (recibo monto or saldo) */
+  max: number
+}
+
+function AplicarFacturasFields({ facturas, valores, onChange, max }: AplicarFacturasFieldsProps) {
+  const totalAplicado = facturas.reduce((sum, f) => sum + (parseFloat(valores[f.id] ?? '') || 0), 0)
+  const sumExceedsMax = totalAplicado > max + 0.001
+
+  return (
+    <>
+      <div className="space-y-2">
+        {facturas.map(f => {
+          const saldo = f.total - f.montoPagado
+          const ap = parseFloat(valores[f.id] ?? '') || 0
+          const exceedsFactura = ap > saldo + 0.001
+          return (
+            <div key={f.id} className="grid grid-cols-12 gap-2 items-center text-sm">
+              <div className="col-span-7">
+                <span className="font-mono font-semibold text-foreground">{f.numero}</span>
+                <span className="ml-2 text-muted-foreground">{formatDate(f.fecha)}</span>
+                {f.descripcion && <p className="text-xs text-muted-foreground truncate">{f.descripcion}</p>}
+                <p className="text-xs text-muted-foreground">
+                  Total: {formatCurrency(f.total)} · Saldo: <span className="text-amber-600 dark:text-amber-400">{formatCurrency(saldo)}</span>
+                </p>
+              </div>
+              <div className="col-span-5">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={saldo}
+                  value={valores[f.id] ?? ''}
+                  onChange={e => onChange(f.id, e.target.value)}
+                  className={`w-full border rounded-md px-2 py-1 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring ${exceedsFactura ? 'border-red-500' : 'border-border'}`}
+                  placeholder="0.00"
+                />
+                {exceedsFactura && (
+                  <p className="text-[10px] text-red-600 mt-0.5">Supera el saldo ({formatCurrency(saldo)})</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Application summary */}
+      <div className="flex items-center justify-between pt-2 border-t border-border text-sm">
+        <span className="text-muted-foreground">Total a aplicar:</span>
+        <span className={`font-bold tabular-nums ${sumExceedsMax ? 'text-red-600' : 'text-foreground'}`}>
+          {formatCurrency(totalAplicado)}
+          {max > 0 && <span className="text-xs font-normal text-muted-foreground ml-1">/ {formatCurrency(max)}</span>}
+        </span>
+      </div>
+
+      {sumExceedsMax && (
+        <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 dark:bg-red-900/20 rounded-md px-3 py-2">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          La suma de aplicaciones ({formatCurrency(totalAplicado)}) supera el disponible ({formatCurrency(max)}).
+        </div>
+      )}
+    </>
+  )
+}
+
+// ── AplicarModal ──────────────────────────────────────────────────────────
+
+interface AplicarModalProps {
+  recibo: Recibo
+  onClose: () => void
+  onDone: () => void
+}
+
+function AplicarModal({ recibo, onClose, onDone }: AplicarModalProps) {
+  const toast = useToast()
+  const disponible = recibo.monto - recibo.montoAplicado
+
+  const [facturas, setFacturas] = useState<FacturaPendiente[]>([])
+  const [loadingFacturas, setLoadingFacturas] = useState(true)
+  const [aplicaciones, setAplicaciones] = useState<Record<number, string>>({})
+  const [submitting, setSubmitting] = useState(false)
+
+  // Fetch client's pending invoices on mount
+  useEffect(() => {
+    setLoadingFacturas(true)
+    fetch(`/api/contabilidad/facturas?tipo=ingreso&clienteId=${recibo.clienteId}`)
+      .then(r => r.ok ? r.json() : { facturas: [] })
+      .then(data => {
+        const all: FacturaPendiente[] = (data.facturas ?? [])
+          .filter((f: any) => f.estado !== 'pagada' && f.estado !== 'anulada')
+          .map((f: any) => ({
+            id: f.id,
+            numero: f.numero,
+            fecha: f.fecha,
+            total: f.total,
+            montoPagado: f.montoPagado,
+            descripcion: f.descripcion,
+          }))
+        setFacturas(all)
+        setAplicaciones({})
+      })
+      .catch(() => setFacturas([]))
+      .finally(() => setLoadingFacturas(false))
+  }, [recibo.clienteId])
+
+  // Client-side validation
+  const totalAplicado = facturas.reduce((sum, f) => sum + (parseFloat(aplicaciones[f.id] ?? '') || 0), 0)
+  const sumExceedsDisponible = totalAplicado > disponible + 0.001
+  const exceededFacturas = facturas.filter(f => {
+    const ap = parseFloat(aplicaciones[f.id] ?? '') || 0
+    const saldo = f.total - f.montoPagado
+    return ap > saldo + 0.001
+  })
+  const hasPositive = totalAplicado > 0.001
+  const isValid = !sumExceedsDisponible && exceededFacturas.length === 0 && hasPositive
+
+  const handleAplicar = async () => {
+    const aplicacionesPayload = facturas
+      .map(f => ({ facturaId: f.id, monto: parseFloat(aplicaciones[f.id] ?? '') || 0 }))
+      .filter(a => a.monto > 0)
+
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/cobros/recibos/${recibo.id}/aplicar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aplicaciones: aplicacionesPayload }),
+      })
+      if (res.ok) {
+        toast.exito(`Aplicaciones registradas en recibo ${recibo.numero}`)
+        onDone()
+      } else {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? 'Error al aplicar el recibo')
+      }
+    } catch {
+      toast.error('Error de red al aplicar el recibo')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Determine why confirm is disabled
+  let disabledReason = ''
+  if (!hasPositive) disabledReason = 'Ingresa al menos un monto a aplicar'
+  else if (sumExceedsDisponible) disabledReason = `La suma supera el disponible (${formatCurrency(disponible)})`
+  else if (exceededFacturas.length > 0) disabledReason = 'Un monto supera el saldo de su factura'
+
+  return (
+    /* Overlay */
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-xl space-y-5 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-muted-foreground" /> Aplicar recibo {recibo.numero}
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Recibo summary */}
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground">Cliente</p>
+            <p className="font-medium text-foreground">{recibo.cliente.nombre}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Monto recibo</p>
+            <p className="font-bold tabular-nums">{formatCurrency(recibo.monto)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Disponible</p>
+            <p className="font-bold tabular-nums text-amber-600 dark:text-amber-400">{formatCurrency(disponible)}</p>
+          </div>
+        </div>
+
+        {/* Pending invoices */}
+        <div className="border border-border rounded-lg p-4 space-y-3">
+          <h4 className="text-sm font-semibold text-foreground">
+            Facturas pendientes del cliente
+          </h4>
+
+          {loadingFacturas && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <RefreshCw className="w-3 h-3 animate-spin" /> Cargando facturas...
+            </p>
+          )}
+
+          {!loadingFacturas && facturas.length === 0 && (
+            <p className="text-xs text-muted-foreground">Este cliente no tiene facturas pendientes.</p>
+          )}
+
+          {!loadingFacturas && facturas.length > 0 && (
+            <AplicarFacturasFields
+              facturas={facturas}
+              valores={aplicaciones}
+              onChange={(id, val) => setAplicaciones(prev => ({ ...prev, [id]: val }))}
+              max={disponible}
+            />
+          )}
+        </div>
+
+        {/* Disabled reason hint */}
+        {disabledReason && !loadingFacturas && facturas.length > 0 && (
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs bg-amber-50 dark:bg-amber-900/20 rounded-md px-3 py-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {disabledReason}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            onClick={handleAplicar}
+            disabled={submitting || !isValid || loadingFacturas}
+          >
+            {submitting ? 'Aplicando...' : 'Confirmar aplicación'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ───────────────────────────────────────────────────────
 
 export function RecibosTab({ clientes, cuentas }: Props) {
@@ -62,12 +296,15 @@ export function RecibosTab({ clientes, cuentas }: Props) {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
-  // Confirm dialog state
+  // Confirm dialog state (for Anular)
   const [confirm, setConfirm] = useState<{
     titulo: string
     descripcion?: string
     onConfirmar: () => void
   } | null>(null)
+
+  // Apply modal state
+  const [reciboAplicar, setReciboAplicar] = useState<Recibo | null>(null)
 
   // ── Fetch recibos ──
   const fetchRecibos = useCallback(async () => {
@@ -181,6 +418,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                   const cfg = ESTADO_CONFIG[r.estado] ?? ESTADO_CONFIG.sin_aplicar
                   const Icon = cfg.icon
                   const saldo = r.monto - r.montoAplicado
+                  const puedeAplicar = saldo > 0.01 && r.estado !== 'anulado'
                   return (
                     <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
@@ -204,16 +442,28 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{r.cuentaBancaria?.nombre ?? '—'}</td>
                       <td className="px-4 py-3">
-                        {r.estado !== 'anulado' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAnular(r)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            <Ban className="w-3.5 h-3.5" /> Anular
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {puedeAplicar && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setReciboAplicar(r)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            >
+                              <CreditCard className="w-3.5 h-3.5" /> Aplicar
+                            </Button>
+                          )}
+                          {r.estado !== 'anulado' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAnular(r)}
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                              <Ban className="w-3.5 h-3.5" /> Anular
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -224,7 +474,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
         )}
       </div>
 
-      {/* Confirm dialog */}
+      {/* Confirm dialog (Anular) */}
       <ConfirmDialog
         abierto={confirm !== null}
         titulo={confirm?.titulo ?? ''}
@@ -234,6 +484,15 @@ export function RecibosTab({ clientes, cuentas }: Props) {
         onConfirmar={() => confirm?.onConfirmar()}
         onCancelar={() => setConfirm(null)}
       />
+
+      {/* Apply modal */}
+      {reciboAplicar && (
+        <AplicarModal
+          recibo={reciboAplicar}
+          onClose={() => setReciboAplicar(null)}
+          onDone={() => { setReciboAplicar(null); fetchRecibos() }}
+        />
+      )}
     </div>
   )
 }
@@ -309,10 +568,6 @@ function ReciboFormPanel({ clientes, cuentas, onClose, onSaved }: FormPanelProps
   })
 
   const isValid = !sumExceedsMonto && exceededFacturas.length === 0
-
-  const handleAplicacionChange = (facturaId: number, value: string) => {
-    setAplicaciones(prev => ({ ...prev, [facturaId]: value }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -458,58 +713,12 @@ function ReciboFormPanel({ clientes, cuentas, onClose, onSaved }: FormPanelProps
             )}
 
             {!loadingFacturas && facturasPendientes.length > 0 && (
-              <>
-                <div className="space-y-2">
-                  {facturasPendientes.map(f => {
-                    const saldo = f.total - f.montoPagado
-                    const ap = parseFloat(aplicaciones[f.id] ?? '') || 0
-                    const exceedsFactura = ap > saldo + 0.001
-                    return (
-                      <div key={f.id} className="grid grid-cols-12 gap-2 items-center text-sm">
-                        <div className="col-span-7">
-                          <span className="font-mono font-semibold text-foreground">{f.numero}</span>
-                          <span className="ml-2 text-muted-foreground">{formatDate(f.fecha)}</span>
-                          {f.descripcion && <p className="text-xs text-muted-foreground truncate">{f.descripcion}</p>}
-                          <p className="text-xs text-muted-foreground">
-                            Total: {formatCurrency(f.total)} · Saldo: <span className="text-amber-600 dark:text-amber-400">{formatCurrency(saldo)}</span>
-                          </p>
-                        </div>
-                        <div className="col-span-5">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max={saldo}
-                            value={aplicaciones[f.id] ?? ''}
-                            onChange={e => handleAplicacionChange(f.id, e.target.value)}
-                            className={`w-full border rounded-md px-2 py-1 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring ${exceedsFactura ? 'border-red-500' : 'border-border'}`}
-                            placeholder="0.00"
-                          />
-                          {exceedsFactura && (
-                            <p className="text-[10px] text-red-600 mt-0.5">Supera el saldo ({formatCurrency(saldo)})</p>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Application summary */}
-                <div className="flex items-center justify-between pt-2 border-t border-border text-sm">
-                  <span className="text-muted-foreground">Total a aplicar:</span>
-                  <span className={`font-bold tabular-nums ${sumExceedsMonto ? 'text-red-600' : 'text-foreground'}`}>
-                    {formatCurrency(totalAplicado)}
-                    {montoNum > 0 && <span className="text-xs font-normal text-muted-foreground ml-1">/ {formatCurrency(montoNum)}</span>}
-                  </span>
-                </div>
-
-                {sumExceedsMonto && (
-                  <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 dark:bg-red-900/20 rounded-md px-3 py-2">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    La suma de aplicaciones ({formatCurrency(totalAplicado)}) supera el monto del recibo ({formatCurrency(montoNum)}).
-                  </div>
-                )}
-              </>
+              <AplicarFacturasFields
+                facturas={facturasPendientes}
+                valores={aplicaciones}
+                onChange={(id, val) => setAplicaciones(prev => ({ ...prev, [id]: val }))}
+                max={montoNum}
+              />
             )}
           </div>
         )}
