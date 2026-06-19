@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withPermiso } from '@/lib/with-permiso'
+import { overheadDistribuidoProyecto } from '@/lib/overhead-data'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -106,11 +107,15 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
   const totalCobrado = facturas
     .filter(f => f.tipo === 'ingreso')
     .reduce((s, f) => s + f.montoPagado, 0)
-  const gastosAgg = await prisma.gastoProyecto.aggregate({
-    where: { proyectoId, estado: { not: 'Anulado' } },
-    _sum: { monto: true },
-  })
-  const totalGastos = gastosAgg._sum.monto ?? 0
+  const [gastosAgg, overheadDistribuido] = await Promise.all([
+    prisma.gastoProyecto.aggregate({
+      where: { proyectoId, estado: { not: 'Anulado' } },
+      _sum: { monto: true },
+    }),
+    overheadDistribuidoProyecto(proyectoId),
+  ])
+  // Costo real para el margen = gastos directos + overhead distribuido
+  const totalGastos = (gastosAgg._sum.monto ?? 0) + overheadDistribuido
   const margenBruto = totalCobrado - totalGastos
 
   // ── Construir checks ─────────────────────────────────────────────────
@@ -189,6 +194,7 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
     resumen: {
       totalCobrado,
       totalGastos,
+      overheadDistribuido,
       margenBruto,
       saldoIngresoPendiente,
       saldoEgresoPendiente,
