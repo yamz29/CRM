@@ -7,7 +7,7 @@ import {
   Landmark, FileText, Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle,
   DollarSign, AlertCircle, Eye, Trash2, CreditCard, Building2, ArrowRightLeft,
   CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck,
-  Download,
+  Download, Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCard } from '@/components/ui/stats-card'
@@ -291,6 +291,12 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
               <ArrowRightLeft className="w-5 h-5 mx-auto mb-1 text-primary" />
               <p className="text-sm font-medium">Conciliación</p>
             </button>
+            <Link href="/contabilidad/overhead">
+              <div className="p-4 bg-card border border-border rounded-xl hover:bg-muted/40 transition-colors cursor-pointer text-center">
+                <Layers className="w-5 h-5 mx-auto mb-1 text-primary" />
+                <p className="text-sm font-medium">Overhead distribuido</p>
+              </div>
+            </Link>
           </div>
         </div>
       )}
