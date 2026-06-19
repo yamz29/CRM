@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { checkPermiso } from '@/lib/permisos'
+import { generarNumeroProforma } from '@/lib/numero-factura'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -124,11 +125,23 @@ export async function POST(request: NextRequest) {
 
     const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, tasaItbis, impuesto, propinaLegal, otrosImpuestos, total, observaciones, proveedorId } = data
 
-    if (!numero?.toString().trim()) {
-      return NextResponse.json({ error: 'El número de factura es requerido' }, { status: 400 })
-    }
     if (!tipo || !['ingreso', 'egreso'].includes(tipo)) {
       return NextResponse.json({ error: 'Tipo debe ser ingreso o egreso' }, { status: 400 })
+    }
+
+    // Las facturas de INGRESO (cobros) nacen siempre como proforma: número
+    // PRO-YYYY-NNNN autogenerado y sin NCF. El NCF se agrega después con
+    // "Convertir a fiscal". Unifica con las proformas emitidas desde el
+    // presupuesto. El EGRESO conserva su número manual y NCF del proveedor.
+    const esIngreso = tipo === 'ingreso'
+    let numeroFinal: string
+    if (esIngreso) {
+      numeroFinal = await generarNumeroProforma()
+    } else {
+      if (!numero?.toString().trim()) {
+        return NextResponse.json({ error: 'El número de factura es requerido' }, { status: 400 })
+      }
+      numeroFinal = numero.toString().trim()
     }
 
     const parsedProyectoId = proyectoId ? parseInt(String(proyectoId)) : null
@@ -137,8 +150,9 @@ export async function POST(request: NextRequest) {
 
     const factura = await prisma.factura.create({
       data: {
-        numero: numero.toString().trim(),
-        ncf: ncf || null,
+        numero: numeroFinal,
+        ncf: esIngreso ? null : (ncf || null),
+        esProforma: esIngreso,
         tipo,
         fecha: fechaFactura,
         fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : null,

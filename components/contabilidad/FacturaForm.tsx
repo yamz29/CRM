@@ -418,7 +418,8 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!numero.trim()) { setError('Número de factura es requerido'); return }
+    // El número de ingreso lo genera el servidor (proforma PRO-YYYY-NNNN).
+    if (tipo === 'egreso' && !numero.trim()) { setError('Número de factura es requerido'); return }
     setLoading(true); setError('')
 
     const formData = new FormData()
@@ -645,16 +646,33 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
 
         {/* ── Main fields ── */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Número de Factura *</label>
-              <input value={numero} onChange={(e) => setNumero(e.target.value)} className={inputCls} placeholder="FAC-001" required />
+          {tipo === 'egreso' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Número de Factura *</label>
+                <input value={numero} onChange={(e) => setNumero(e.target.value)} className={inputCls} placeholder="FAC-001" required />
+              </div>
+              <div>
+                <label className={labelCls}>NCF / e-CF</label>
+                <input value={ncf} onChange={(e) => setNcf(e.target.value)} className={inputCls} placeholder="B0100000001" />
+              </div>
             </div>
+          ) : isEdit ? (
+            // Ingreso existente: mostramos su número (solo lectura) sin permitir
+            // cambiarlo. El NCF se gestiona con "Convertir a fiscal".
             <div>
-              <label className={labelCls}>NCF / e-CF</label>
-              <input value={ncf} onChange={(e) => setNcf(e.target.value)} className={inputCls} placeholder="B0100000001" />
+              <label className={labelCls}>Número</label>
+              <div className="px-2.5 py-1.5 text-sm border border-border rounded-md bg-muted/40 font-mono">{numero || '—'}</div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+              <FileText className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Se creará como <strong>proforma</strong> con número automático <span className="font-mono">PRO-…</span>.
+                Podrás convertirla a fiscal (agregar NCF) desde el detalle de la factura.
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
