@@ -29,6 +29,7 @@ interface PartidaData {
   diferencia: number
   pctConsumido: number
   estado: 'sin_gasto' | 'normal' | 'alerta' | 'excedido'
+  esAdicional?: boolean
 }
 
 interface CapituloData {
@@ -40,6 +41,7 @@ interface CapituloData {
   totalGastoReal: number
   diferencia: number
   pctConsumido: number
+  esAdicional?: boolean
 }
 
 interface Resumen {
@@ -387,7 +389,7 @@ export function ControlPresupuestarioTab({
                         {cap.partidas.map(p => (
                           <tr key={p.id} className={`hover:bg-muted/70 ${seleccionadas.has(p.id) ? 'bg-primary/5' : p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
                             <td className="px-3 py-2.5 text-center">
-                              {modoSeleccion ? (
+                              {modoSeleccion && !p.esAdicional ? (
                                 <input
                                   type="checkbox"
                                   checked={seleccionadas.has(p.id)}
@@ -423,7 +425,7 @@ export function ControlPresupuestarioTab({
                               <EstadoBadge estado={p.estado} />
                             </td>
                             <td className="px-2 py-2.5">
-                              {!modoSeleccion && (
+                              {!modoSeleccion && !p.esAdicional && (
                                 <button
                                   onClick={() => setPartidaEditando(p)}
                                   className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
@@ -470,7 +472,7 @@ export function ControlPresupuestarioTab({
                   return (
                     <tr key={p.id} className={`hover:bg-muted/70 ${seleccionadas.has(p.id) ? 'bg-primary/5' : p.estado === 'excedido' ? 'bg-red-50/30' : ''}`}>
                       <td className="px-3 py-2.5 text-center">
-                        {modoSeleccion ? (
+                        {modoSeleccion && !p.esAdicional ? (
                           <input
                             type="checkbox"
                             checked={seleccionadas.has(p.id)}
@@ -498,7 +500,7 @@ export function ControlPresupuestarioTab({
                       <td className="px-4 py-2.5 min-w-[120px]"><BarPct pct={p.pctConsumido} estado={p.estado} /></td>
                       <td className="px-4 py-2.5"><EstadoBadge estado={p.estado} /></td>
                       <td className="px-2 py-2.5">
-                        {!modoSeleccion && (
+                        {!modoSeleccion && !p.esAdicional && (
                           <button
                             onClick={() => setPartidaEditando(p)}
                             className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"

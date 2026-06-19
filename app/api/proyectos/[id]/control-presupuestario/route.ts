@@ -24,6 +24,15 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
     select: { id: true, monto: true, partidaId: true, descripcion: true, fecha: true, tipoGasto: true },
   })
 
+  // Adicionales aprobados/facturados: amplían el presupuesto vigente del control
+  // (misma convención que lib/resumen-financiero.ts). No tienen partida, así que
+  // se muestran como un capítulo sintético propio (ver más abajo).
+  const adicionales = await prisma.adicionalProyecto.findMany({
+    where: { proyectoId, estado: { in: ['aprobado', 'facturado'] } },
+    select: { id: true, numero: true, titulo: true, monto: true },
+    orderBy: { id: 'asc' },
+  })
+
   // Sum gastos per partida
   const gastosPorPartida = new Map<number, number>()
   let gastosNoClasificados = 0
@@ -58,6 +67,7 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
           : pctConsumido >= 100 ? 'excedido'
           : pctConsumido >= 80 ? 'alerta'
           : 'normal',
+        esAdicional: false,
       }
     })
 
@@ -75,8 +85,41 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
       pctConsumido: totalPresupuestadoCap > 0
         ? Math.round((totalGastoRealCap / totalPresupuestadoCap) * 10000) / 100
         : 0,
+      esAdicional: false,
     }
   })
+
+  // Capítulo sintético con los adicionales aprobados/facturados. IDs negativos
+  // para no colisionar con capítulos/partidas reales; `esAdicional` indica al
+  // frontend que estas filas no son partidas editables/fusionables.
+  if (adicionales.length > 0) {
+    const partidasAdic = adicionales.map(a => ({
+      id: -a.id,
+      codigo: a.numero,
+      descripcion: a.titulo,
+      unidad: 'GLB',
+      cantidad: 1,
+      precioUnitario: a.monto,
+      subtotalPresupuestado: a.monto,
+      gastoReal: 0,
+      diferencia: a.monto,
+      pctConsumido: 0,
+      estado: 'sin_gasto' as const,
+      esAdicional: true,
+    }))
+    const totalAdic = partidasAdic.reduce((s, p) => s + p.subtotalPresupuestado, 0)
+    capitulosData.push({
+      id: -1,
+      nombre: 'Adicionales aprobados',
+      orden: 9999,
+      partidas: partidasAdic,
+      totalPresupuestado: totalAdic,
+      totalGastoReal: 0,
+      diferencia: totalAdic,
+      pctConsumido: 0,
+      esAdicional: true,
+    })
+  }
 
   const totalPresupuestado = capitulosData.reduce((s, c) => s + c.totalPresupuestado, 0)
   const totalGastoReal = capitulosData.reduce((s, c) => s + c.totalGastoReal, 0)
