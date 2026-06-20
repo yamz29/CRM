@@ -157,6 +157,7 @@ ModuloMelaminaV2 ──< PiezaModulo
 | `PresupuestoIndirectoLinea` | Costos indirectos en % sobre base |
 | `ProyectoCapitulo` / `ProyectoPartida` | Snapshot del presupuesto para control |
 | `GastoProyecto` | Gasto real del proyecto |
+| `DistribucionOverhead` | Reparto mensual del overhead (gastos fijos oficina/taller/general) a los proyectos por % manual. `montoAsignado` (snapshot = pool real del mes × % / 100) entra en el costo real del proyecto. Ver `/contabilidad/overhead` |
 | `Recurso` | Catálogo de insumos: materiales, MO, equipos, herrajes, etc. |
 | `RecursoPriceHistory` | Historial de cambios de precio de un recurso (origen: manual / importacion) |
 | `RecursoImportBatch` | Registro de cada lote de importación Excel de recursos |

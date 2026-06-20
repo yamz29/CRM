@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowLeft } from 'lucide-react'
 import { PrintButton } from '@/app/presupuestos/[id]/imprimir/PrintButton'
+import { overheadDistribuidoProyecto } from '@/lib/overhead-data'
 
 const MS_DAY = 86_400_000
 
@@ -16,7 +17,7 @@ export default async function InformeCierreProyectoPage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [proyecto, empresa] = await Promise.all([
+  const [proyecto, empresa, overheadDistribuido] = await Promise.all([
     prisma.proyecto.findUnique({
       where: { id },
       include: {
@@ -39,6 +40,7 @@ export default async function InformeCierreProyectoPage({
       },
     }),
     prisma.empresa.findFirst(),
+    overheadDistribuidoProyecto(id),
   ])
   if (!proyecto) notFound()
 
@@ -68,7 +70,10 @@ export default async function InformeCierreProyectoPage({
   const totalFacturado = facturasIngreso.reduce((s, f) => s + f.total, 0)
   const totalCobrado = facturasIngreso.reduce((s, f) => s + f.montoPagado, 0)
 
-  const totalGastos = proyecto.gastos.reduce((s, g) => s + g.monto, 0)
+  const totalGastosDirectos = proyecto.gastos.reduce((s, g) => s + g.monto, 0)
+  // Costo real = gastos directos + overhead distribuido (porción de gastos
+  // fijos repartida a este proyecto)
+  const totalGastos = totalGastosDirectos + overheadDistribuido
   const margenBruto = totalCobrado - totalGastos
   const margenPct = totalCobrado > 0 ? (margenBruto / totalCobrado) * 100 : 0
 
@@ -207,8 +212,12 @@ export default async function InformeCierreProyectoPage({
                 <tr style={{ borderTop: '1px solid #e2e8f0' }}>
                   <td style={{ padding: '8px 0', fontWeight: 700 }}>Presupuesto vigente</td>
                   <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, fontFamily: 'monospace' }}>{formatCurrency(presupuestoVigente)}</td></tr>
-                <tr><td style={{ padding: '6px 0', color: '#475569' }}>Gastos reales</td>
-                  <td style={{ padding: '6px 0', textAlign: 'right', fontFamily: 'monospace', color: '#dc2626' }}>- {formatCurrency(totalGastos)}</td></tr>
+                <tr><td style={{ padding: '6px 0', color: '#475569' }}>Gastos directos</td>
+                  <td style={{ padding: '6px 0', textAlign: 'right', fontFamily: 'monospace', color: '#dc2626' }}>- {formatCurrency(totalGastosDirectos)}</td></tr>
+                {overheadDistribuido > 0 && (
+                  <tr><td style={{ padding: '6px 0', color: '#475569' }}>Overhead distribuido</td>
+                    <td style={{ padding: '6px 0', textAlign: 'right', fontFamily: 'monospace', color: '#dc2626' }}>- {formatCurrency(overheadDistribuido)}</td></tr>
+                )}
                 <tr style={{ borderTop: '2px solid #0f172a' }}>
                   <td style={{ padding: '10px 0', fontSize: 14, fontWeight: 800 }}>Margen bruto</td>
                   <td style={{

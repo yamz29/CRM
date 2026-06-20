@@ -81,6 +81,7 @@ model Proyecto {
   documentos        DocumentoProyecto[]
   ordenesCompra     OrdenCompra[]
   evmSnapshots      EVMSnapshot[]
+  distribucionesOverhead DistribucionOverhead[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -155,6 +156,29 @@ model GastoProyecto {
   @@index([proyectoId])
   @@index([proyectoId, estado])
   @@index([fecha])
+}
+
+// ── OVERHEAD DISTRIBUIDO ──────────────────────────────────────────────
+// Reparto manual, mes a mes, del overhead (gastos de oficina/taller/general)
+// entre los proyectos activos. Cada fila guarda el % asignado a un proyecto
+// para un mes y un snapshot del monto (poolReal * % / 100) al momento de
+// guardar. El monto acumulado entra en el costo real del proyecto.
+// No se crean filas de GastoProyecto: el overhead vive solo aquí para
+// evitar doble conteo en el informe económico global.
+
+model DistribucionOverhead {
+  id            Int      @id @default(autoincrement())
+  anio          Int
+  mes           Int      // 1-12
+  proyectoId    Int
+  porcentaje    Float    // 0-100
+  montoAsignado Float    @default(0) // snapshot = poolReal(anio,mes) * porcentaje/100 al guardar
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  proyecto      Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  @@unique([anio, mes, proyectoId])
+  @@index([proyectoId])
+  @@map("distribucion_overhead")
 }
 
 // ── ESTRUCTURA PRESUPUESTARIA DEL PROYECTO (snapshot) ─────────────────

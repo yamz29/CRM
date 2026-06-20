@@ -21,6 +21,7 @@ import { CerrarProyectoButton } from '@/components/proyectos/CerrarProyectoModal
 import { ReabrirProyectoButton } from '@/components/proyectos/ReabrirProyectoButton'
 import { headers } from 'next/headers'
 import { getFactorCargaSocial } from '@/lib/configuracion'
+import { overheadDistribuidoProyecto } from '@/lib/overhead-data'
 import {
   ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
   FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
@@ -118,11 +119,12 @@ export default async function ProyectoDetailPage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [proyecto, gastosResumen, adicionalesAprobados, cobros] = await Promise.all([
+  const [proyecto, gastosResumen, adicionalesAprobados, cobros, overheadDistribuido] = await Promise.all([
     getProyecto(id),
     getGastosResumen(id),
     getAdicionalesAprobados(id),
     getCobrosProyecto(id),
+    overheadDistribuidoProyecto(id),
   ])
   if (!proyecto) notFound()
 
@@ -132,7 +134,9 @@ export default async function ProyectoDetailPage({
 
   const tab = sp.tab ?? 'resumen'
   const { total: totalGastado, cantidad: cantidadGastos, costoHoras, costoHorasBase, totalHoras, factorCargaSocial } = gastosResumen
-  const costoTotal = totalGastado + costoHoras
+  // El overhead distribuido (porción de gastos fijos repartida a este proyecto)
+  // entra en el costo real junto con los gastos directos y la mano de obra.
+  const costoTotal = totalGastado + costoHoras + overheadDistribuido
   // Presupuesto vigente = presupuesto original + adicionales aprobados (Change Orders)
   const presupuestoVigente = proyecto.presupuestoEstimado != null
     ? proyecto.presupuestoEstimado + adicionalesAprobados
@@ -589,7 +593,9 @@ export default async function ProyectoDetailPage({
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Costo total</span>
               </div>
               <p className="text-lg font-black text-foreground">{formatCurrency(costoTotal)}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Gastos + M.O.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Gastos + M.O.{overheadDistribuido > 0 ? ' + Overhead' : ''}
+              </p>
               <Link href={`/proyectos/${proyecto.id}?tab=gastos`}>
                 <Button size="sm" variant="secondary" className="mt-2 w-full text-xs">
                   <TrendingDownIcon className="w-3 h-3" /> Ver gastos
@@ -633,6 +639,11 @@ export default async function ProyectoDetailPage({
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Costos reales</span>
               </div>
               <p className="text-lg font-black text-red-700">{formatCurrency(costos)}</p>
+              {overheadDistribuido > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5" title="Porción de gastos fijos (oficina/taller/general) repartida a este proyecto">
+                  Incl. overhead distribuido {formatCurrency(overheadDistribuido)}
+                </p>
+              )}
             </div>
 
             {/* Utilidad */}
