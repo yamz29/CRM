@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { ArrowLeft, FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react'
-import { CronogramaClient } from '@/components/cronograma/CronogramaClient'
+import { CronogramaView } from '@/components/cronograma/CronogramaView'
 
 export default async function CronogramaDetailPage({
   params,
@@ -18,7 +18,7 @@ export default async function CronogramaDetailPage({
   const cronograma = await prisma.cronograma.findUnique({
     where: { id: numId },
     include: {
-      proyecto: { select: { id: true, nombre: true, fechaEstimada: true } },
+      proyecto: { select: { id: true, nombre: true, fechaEstimada: true, estado: true } },
       presupuesto: { select: { id: true, numero: true } },
       actividades: {
         include: {
@@ -44,12 +44,8 @@ export default async function CronogramaDetailPage({
     orderBy: { createdAt: 'desc' },
   })
 
-  // Usuarios para asignación de avances
-  const usuarios = await prisma.usuario.findMany({
-    where: { activo: true },
-    select: { id: true, nombre: true },
-    orderBy: { nombre: 'asc' },
-  })
+  // Proyecto cerrado → la vista entra en modo solo lectura.
+  const readOnly = cronograma.proyecto?.estado === 'Cerrado'
 
   // Auto-calcular estado de actividades
   const hoy = new Date()
@@ -170,11 +166,11 @@ export default async function CronogramaDetailPage({
         </div>
       </div>
 
-      {/* Client component: Gantt + tabla */}
-      <CronogramaClient
+      {/* Vista unificada: tabla + timeline + panel */}
+      <CronogramaView
         cronograma={{ ...cronograma, actividades }}
         presupuestosDisponibles={presupuestosDisponibles}
-        usuarios={usuarios}
+        readOnly={readOnly}
       />
     </div>
   )
