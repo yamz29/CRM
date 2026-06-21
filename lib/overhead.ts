@@ -92,3 +92,45 @@ export interface DistribucionRow {
 export function sumarOverheadDistribuido(filas: DistribucionRow[]): number {
   return filas.reduce((s, d) => s + (d.montoAsignado || 0), 0)
 }
+
+// ── Sugerencia de reparto (índice de esfuerzo compuesto) ───────────────
+
+export interface PesosSugerencia {
+  costoMes: number
+  horas: number
+  costoAcum: number
+  presupuesto: number
+  avance: number
+}
+
+/** Pesos por defecto (suman 1). Configurables vía Configuracion. */
+export const PESOS_SUGERENCIA_DEFAULT: PesosSugerencia = {
+  costoMes: 0.35,
+  horas: 0.25,
+  costoAcum: 0.20,
+  presupuesto: 0.15,
+  avance: 0.05,
+}
+
+export type ClaveSenal = keyof PesosSugerencia
+const CLAVES_SENAL: ClaveSenal[] = ['costoMes', 'horas', 'costoAcum', 'presupuesto', 'avance']
+
+/**
+ * Normaliza pesos a Σ=1, anulando las señales "muertas" (sin datos en el mes)
+ * y redistribuyendo su peso proporcionalmente entre las vivas. Si todas están
+ * muertas, devuelve todo en 0 (el caller hará fallback a reparto igual).
+ */
+export function normalizarPesos(
+  pesos: PesosSugerencia,
+  senalesVivas: Record<ClaveSenal, boolean>,
+): PesosSugerencia {
+  const sumaVivas = CLAVES_SENAL.reduce(
+    (s, k) => s + (senalesVivas[k] ? pesos[k] : 0), 0,
+  )
+  const out = { costoMes: 0, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0 } as PesosSugerencia
+  if (sumaVivas <= 0) return out
+  for (const k of CLAVES_SENAL) {
+    out[k] = senalesVivas[k] ? pesos[k] / sumaVivas : 0
+  }
+  return out
+}
