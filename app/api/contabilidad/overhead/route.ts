@@ -8,6 +8,50 @@ import { montoPorcentaje, totalPorcentaje, validarReparto } from '@/lib/overhead
 const ESTADOS_ACTIVOS = ['Activo', 'En Ejecución']
 
 /**
+ * Conjunto de IDs de proyectos candidatos a recibir overhead en un mes:
+ * activos (no archivados) ∪ con gasto en el mes ∪ con fila DistribucionOverhead.
+ * Devuelve además el nombre/estado de cada uno.
+ */
+export async function proyectosCandidatosDelMes(anio: number, mes: number): Promise<
+  { id: number; nombre: string; estado: string }[]
+> {
+  const { desde, hasta } = rangoMes(anio, mes)
+  const [distribuciones, proyectosActivos, proyectosConGasto] = await Promise.all([
+    prisma.distribucionOverhead.findMany({ where: { anio, mes }, select: { proyectoId: true } }),
+    prisma.proyecto.findMany({
+      where: { estado: { in: ESTADOS_ACTIVOS }, archivada: false },
+      select: { id: true, nombre: true, estado: true },
+    }),
+    prisma.gastoProyecto.findMany({
+      where: { fecha: { gte: desde, lt: hasta }, proyectoId: { not: null } },
+      select: { proyectoId: true },
+      distinct: ['proyectoId'],
+    }),
+  ])
+
+  const ids = new Set<number>()
+  for (const p of proyectosActivos) ids.add(p.id)
+  for (const g of proyectosConGasto) if (g.proyectoId != null) ids.add(g.proyectoId)
+  for (const d of distribuciones) ids.add(d.proyectoId)
+
+  const idsFaltantes = [...ids].filter(id => !proyectosActivos.some(p => p.id === id))
+  const proyectosExtra = idsFaltantes.length > 0
+    ? await prisma.proyecto.findMany({
+        where: { id: { in: idsFaltantes } },
+        select: { id: true, nombre: true, estado: true },
+      })
+    : []
+
+  const info = new Map<number, { nombre: string; estado: string }>()
+  for (const p of [...proyectosActivos, ...proyectosExtra]) {
+    info.set(p.id, { nombre: p.nombre, estado: p.estado })
+  }
+  return [...ids]
+    .map(id => ({ id, nombre: info.get(id)?.nombre ?? `Proyecto ${id}`, estado: info.get(id)?.estado ?? '' }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+}
+
+/**
  * GET /api/contabilidad/overhead?anio=YYYY&mes=M
  *
  * Devuelve el pool real overhead del mes y la lista de proyectos activos
@@ -24,60 +68,27 @@ export const GET = withPermiso('contabilidad', 'ver', async (req: NextRequest) =
     return NextResponse.json({ error: 'Parámetros anio/mes inválidos' }, { status: 400 })
   }
 
-  const { desde, hasta } = rangoMes(anio, mes)
-
-  const [poolReal, distribuciones, proyectosActivos, proyectosConGasto] = await Promise.all([
+  const [poolReal, distribuciones, candidatos] = await Promise.all([
     poolRealDelMes(anio, mes),
     prisma.distribucionOverhead.findMany({
       where: { anio, mes },
       select: { proyectoId: true, porcentaje: true, montoAsignado: true },
     }),
-    prisma.proyecto.findMany({
-      where: { estado: { in: ESTADOS_ACTIVOS }, archivada: false },
-      select: { id: true, nombre: true, estado: true },
-    }),
-    // Proyectos con al menos un gasto (de proyecto) en el mes
-    prisma.gastoProyecto.findMany({
-      where: { fecha: { gte: desde, lt: hasta }, proyectoId: { not: null } },
-      select: { proyectoId: true },
-      distinct: ['proyectoId'],
-    }),
+    proyectosCandidatosDelMes(anio, mes),
   ])
 
-  // Unión de IDs candidatos: activos + con gasto en el mes + con fila existente
-  const ids = new Set<number>()
-  for (const p of proyectosActivos) ids.add(p.id)
-  for (const g of proyectosConGasto) if (g.proyectoId != null) ids.add(g.proyectoId)
-  for (const d of distribuciones) ids.add(d.proyectoId)
-
-  // Cargar nombre/estado de los que no vinieron en proyectosActivos
-  const idsFaltantes = [...ids].filter(id => !proyectosActivos.some(p => p.id === id))
-  const proyectosExtra = idsFaltantes.length > 0
-    ? await prisma.proyecto.findMany({
-        where: { id: { in: idsFaltantes } },
-        select: { id: true, nombre: true, estado: true },
-      })
-    : []
-
-  const infoProyecto = new Map<number, { nombre: string; estado: string }>()
-  for (const p of [...proyectosActivos, ...proyectosExtra]) {
-    infoProyecto.set(p.id, { nombre: p.nombre, estado: p.estado })
-  }
   const distPorProyecto = new Map(distribuciones.map(d => [d.proyectoId, d]))
 
-  const proyectos = [...ids]
-    .map(id => {
-      const info = infoProyecto.get(id)
-      const dist = distPorProyecto.get(id)
-      return {
-        proyectoId: id,
-        nombre: info?.nombre ?? `Proyecto ${id}`,
-        estado: info?.estado ?? '',
-        porcentaje: dist?.porcentaje ?? 0,
-        montoAsignado: dist?.montoAsignado ?? 0,
-      }
-    })
-    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+  const proyectos = candidatos.map(c => {
+    const dist = distPorProyecto.get(c.id)
+    return {
+      proyectoId: c.id,
+      nombre: c.nombre,
+      estado: c.estado,
+      porcentaje: dist?.porcentaje ?? 0,
+      montoAsignado: dist?.montoAsignado ?? 0,
+    }
+  })
 
   const totalAsignadoPct = proyectos.reduce((s, p) => s + p.porcentaje, 0)
   const totalAsignadoMonto = proyectos.reduce((s, p) => s + p.montoAsignado, 0)
