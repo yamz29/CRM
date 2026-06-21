@@ -200,7 +200,14 @@ export function CronogramaTimeline({
               style={{ left: c.x, width: c.ancho }}
               title={c.label}
             >
-              <span className="truncate px-0.5">{c.label}</span>
+              {escala === 'dia' ? (
+                <div className="flex flex-col items-center justify-center leading-tight">
+                  <span className="text-[9px] uppercase text-muted-foreground/70">{c.diaSemana}</span>
+                  <span className="tabular-nums">{c.fechaCorta}</span>
+                </div>
+              ) : (
+                <span className="truncate px-0.5">{c.fechaCorta}</span>
+              )}
             </div>
           ))}
         </div>

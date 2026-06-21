@@ -40,20 +40,30 @@ function aMedianoche(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
 }
 
-/**
- * Encabezado por día: "dom 21/6" (día de semana + día/mes, sin cero a la
- * izquierda y en minúsculas).
- */
-export function formatHeaderDia(fecha: Date): string {
-  const d = aMedianoche(fecha)
-  const dia = DIAS_SEMANA[d.getUTCDay()]
-  return `${dia} ${d.getUTCDate()}/${d.getUTCMonth() + 1}`
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
+/** Abreviatura del día de semana en minúsculas: "dom", "lun", … */
+export function formatDiaSemana(fecha: Date): string {
+  return DIAS_SEMANA[aMedianoche(fecha).getUTCDay()]
 }
 
-/** Encabezado por semana: "21/6" (fecha de inicio de semana, sin cero a la izq). */
-export function formatHeaderSemana(fecha: Date): string {
+/** Fecha corta "dd/mm" con cero a la izquierda: "21/06", "05/12". */
+export function formatFechaCorta(fecha: Date): string {
   const d = aMedianoche(fecha)
-  return `${d.getUTCDate()}/${d.getUTCMonth() + 1}`
+  return `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}`
+}
+
+/**
+ * Encabezado por día en una línea: "dom 21/06" (día de semana + dd/mm).
+ * El timeline lo muestra en dos líneas usando `diaSemana` y `fechaCorta`.
+ */
+export function formatHeaderDia(fecha: Date): string {
+  return `${formatDiaSemana(fecha)} ${formatFechaCorta(fecha)}`
+}
+
+/** Encabezado por semana: "22/06" (fecha de inicio de semana, dd/mm). */
+export function formatHeaderSemana(fecha: Date): string {
+  return formatFechaCorta(fecha)
 }
 
 /**
@@ -98,8 +108,12 @@ export function pixelAFecha(px: number, origen: Date, escala: Escala): Date {
 export interface ColumnaEscala {
   /** Fecha que representa la columna (UTC midnight). */
   fecha: Date
-  /** Etiqueta a mostrar en el encabezado. */
+  /** Etiqueta en una línea (compat): "dom 21/06" (día) o "22/06" (semana). */
   label: string
+  /** Día de semana abreviado para la 1ª línea del encabezado (solo día). */
+  diaSemana: string
+  /** Fecha corta "dd/mm" para la 2ª línea del encabezado. */
+  fechaCorta: string
   /** Posición horizontal del borde izquierdo de la columna (px). */
   x: number
   /** Ancho de la columna (px). */
@@ -124,6 +138,8 @@ export function generarColumnas(inicio: Date, fin: Date, escala: Escala): Column
       cols.push({
         fecha,
         label: formatHeaderDia(fecha),
+        diaSemana: formatDiaSemana(fecha),
+        fechaCorta: formatFechaCorta(fecha),
         x: i * ANCHO_COLUMNA.dia,
         ancho: ANCHO_COLUMNA.dia,
         finDeSemana: esFinDeSemana(fecha),
@@ -142,6 +158,8 @@ export function generarColumnas(inicio: Date, fin: Date, escala: Escala): Column
     cols.push({
       fecha: new Date(semana),
       label: formatHeaderSemana(semana),
+      diaSemana: '',
+      fechaCorta: formatFechaCorta(semana),
       x: fechaAPixel(semana, ejeOrigen, 'semana'),
       ancho: ANCHO_COLUMNA.semana,
       finDeSemana: false,

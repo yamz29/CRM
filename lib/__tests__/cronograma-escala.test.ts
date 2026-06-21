@@ -23,37 +23,37 @@ function d(iso: string): Date {
 describe('cronograma-escala', () => {
   // ─── Formato de encabezado por día ──────────────────────────────
   describe('formatHeaderDia', () => {
-    it('formatea "dom 21/6" sin cero a la izquierda', () => {
+    it('formatea "dom 21/06" con cero a la izquierda', () => {
       // 2026-06-21 es domingo
-      expect(formatHeaderDia(d('2026-06-21'))).toBe('dom 21/6')
+      expect(formatHeaderDia(d('2026-06-21'))).toBe('dom 21/06')
     })
 
     it('usa abreviaturas en español con tilde para miércoles y sábado', () => {
       // 2026-06-17 miércoles, 2026-06-20 sábado
-      expect(formatHeaderDia(d('2026-06-17'))).toBe('mié 17/6')
-      expect(formatHeaderDia(d('2026-06-20'))).toBe('sáb 20/6')
+      expect(formatHeaderDia(d('2026-06-17'))).toBe('mié 17/06')
+      expect(formatHeaderDia(d('2026-06-20'))).toBe('sáb 20/06')
     })
 
     it('cubre todos los días de la semana en orden dom..sáb', () => {
       // 2026-06-21 (dom) .. 2026-06-27 (sáb)
-      expect(formatHeaderDia(d('2026-06-21'))).toBe('dom 21/6')
-      expect(formatHeaderDia(d('2026-06-22'))).toBe('lun 22/6')
-      expect(formatHeaderDia(d('2026-06-23'))).toBe('mar 23/6')
-      expect(formatHeaderDia(d('2026-06-24'))).toBe('mié 24/6')
-      expect(formatHeaderDia(d('2026-06-25'))).toBe('jue 25/6')
-      expect(formatHeaderDia(d('2026-06-26'))).toBe('vie 26/6')
-      expect(formatHeaderDia(d('2026-06-27'))).toBe('sáb 27/6')
+      expect(formatHeaderDia(d('2026-06-21'))).toBe('dom 21/06')
+      expect(formatHeaderDia(d('2026-06-22'))).toBe('lun 22/06')
+      expect(formatHeaderDia(d('2026-06-23'))).toBe('mar 23/06')
+      expect(formatHeaderDia(d('2026-06-24'))).toBe('mié 24/06')
+      expect(formatHeaderDia(d('2026-06-25'))).toBe('jue 25/06')
+      expect(formatHeaderDia(d('2026-06-26'))).toBe('vie 26/06')
+      expect(formatHeaderDia(d('2026-06-27'))).toBe('sáb 27/06')
     })
 
-    it('día y mes de dos dígitos también sin cero a la izquierda', () => {
-      expect(formatHeaderDia(d('2026-12-05'))).toBe('sáb 5/12')
+    it('día y mes de dos dígitos', () => {
+      expect(formatHeaderDia(d('2026-12-05'))).toBe('sáb 05/12')
     })
   })
 
   // ─── Formato de encabezado por semana ───────────────────────────
   describe('formatHeaderSemana', () => {
-    it('muestra la fecha de inicio de semana como "d/m"', () => {
-      expect(formatHeaderSemana(d('2026-06-22'))).toBe('22/6')
+    it('muestra la fecha de inicio de semana como "dd/mm"', () => {
+      expect(formatHeaderSemana(d('2026-06-22'))).toBe('22/06')
     })
   })
 
@@ -141,10 +141,12 @@ describe('cronograma-escala', () => {
     it('genera una columna por día inclusive en ambos extremos', () => {
       const cols = generarColumnas(d('2026-06-21'), d('2026-06-23'), 'dia')
       expect(cols).toHaveLength(3)
-      expect(cols[0].label).toBe('dom 21/6')
+      expect(cols[0].label).toBe('dom 21/06')
+      expect(cols[0].diaSemana).toBe('dom')
+      expect(cols[0].fechaCorta).toBe('21/06')
       expect(cols[0].x).toBe(0)
       expect(cols[1].x).toBe(PX_POR_DIA.dia)
-      expect(cols[2].label).toBe('mar 23/6')
+      expect(cols[2].label).toBe('mar 23/06')
       expect(cols.every(c => c.ancho === ANCHO_COLUMNA.dia)).toBe(true)
     })
 
@@ -160,9 +162,9 @@ describe('cronograma-escala', () => {
       // del miércoles 24 jun al lunes 6 jul → semanas que empiezan 22-jun, 29-jun, 6-jul
       const cols = generarColumnas(d('2026-06-24'), d('2026-07-06'), 'semana')
       expect(cols).toHaveLength(3)
-      expect(cols[0].label).toBe('22/6')
-      expect(cols[1].label).toBe('29/6')
-      expect(cols[2].label).toBe('6/7')
+      expect(cols[0].label).toBe('22/06')
+      expect(cols[1].label).toBe('29/06')
+      expect(cols[2].label).toBe('06/07')
       expect(cols[0].x).toBe(0)
       expect(cols[1].x).toBe(ANCHO_COLUMNA.semana)
       expect(cols.every(c => c.ancho === ANCHO_COLUMNA.semana)).toBe(true)
