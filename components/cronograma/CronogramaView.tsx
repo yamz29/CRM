@@ -370,7 +370,7 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
 
       {/* Split sincronizado */}
       <div className="border border-border rounded-lg bg-card overflow-hidden">
-        <div className="grid grid-cols-[minmax(260px,40%)_1fr]" style={{ height: 'min(70vh, 640px)' }}>
+        <div className="grid grid-cols-[minmax(260px,40%)_1fr] grid-rows-[minmax(0,1fr)]" style={{ height: 'min(70vh, 640px)' }}>
           <CronogramaTabla
             actividades={actividades}
             gruposColapsados={gruposColapsados}

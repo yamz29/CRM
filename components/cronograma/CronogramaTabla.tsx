@@ -56,7 +56,7 @@ export function CronogramaTabla({
   )
 
   return (
-    <div className="flex flex-col h-full border-r border-border bg-card min-w-0">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden border-r border-border bg-card min-w-0">
       {/* Encabezado de columnas (alineado con el header de escala) */}
       <div
         className="shrink-0 flex items-center border-b border-border bg-muted/40 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
@@ -71,7 +71,7 @@ export function CronogramaTabla({
       {/* Cuerpo */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-auto"
+        className="flex-1 min-h-0 overflow-auto"
         onScroll={e => onScrollVertical(e.currentTarget.scrollTop)}
       >
         {grupos.map(g => {

@@ -180,7 +180,7 @@ export function CronogramaTimeline({
   }, [drag?.id, drag?.modo, escala, onArrastrar])
 
   return (
-    <div className="flex flex-col h-full min-w-0">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden min-w-0">
       {/* Encabezado de escala (fijo arriba) */}
       <div
         className="relative shrink-0 border-b border-border bg-muted/40 overflow-hidden"
@@ -216,7 +216,7 @@ export function CronogramaTimeline({
       {/* Cuerpo scrolleable (horizontal + vertical) */}
       <div
         ref={scrollRef}
-        className="relative flex-1 overflow-auto"
+        className="relative flex-1 min-h-0 overflow-auto"
         onScroll={e => {
           const el = e.currentTarget
           onScrollVertical(el.scrollTop)
