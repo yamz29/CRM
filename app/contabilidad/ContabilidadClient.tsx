@@ -273,6 +273,12 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
 
           {/* Quick actions */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Link href="/contabilidad/overhead">
+              <div className="p-4 bg-primary/5 border border-primary/30 rounded-xl hover:bg-primary/10 transition-colors cursor-pointer text-center">
+                <Layers className="w-5 h-5 mx-auto mb-1 text-primary" />
+                <p className="text-sm font-medium">Overhead distribuido</p>
+              </div>
+            </Link>
             <Link href="/contabilidad/facturas/nueva">
               <div className="p-4 bg-card border border-border rounded-xl hover:bg-muted/40 transition-colors cursor-pointer text-center">
                 <Plus className="w-5 h-5 mx-auto mb-1 text-primary" />
@@ -291,12 +297,6 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
               <ArrowRightLeft className="w-5 h-5 mx-auto mb-1 text-primary" />
               <p className="text-sm font-medium">Conciliación</p>
             </button>
-            <Link href="/contabilidad/overhead">
-              <div className="p-4 bg-card border border-border rounded-xl hover:bg-muted/40 transition-colors cursor-pointer text-center">
-                <Layers className="w-5 h-5 mx-auto mb-1 text-primary" />
-                <p className="text-sm font-medium">Overhead distribuido</p>
-              </div>
-            </Link>
           </div>
         </div>
       )}
