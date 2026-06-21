@@ -3,6 +3,7 @@ import {
   calcularPoolReal, montoPorcentaje, totalPorcentaje, validarReparto,
   sumarOverheadDistribuido, esGastoOverhead, type GastoOverheadRow,
   normalizarPesos, PESOS_SUGERENCIA_DEFAULT, type PesosSugerencia,
+  sugerirReparto, type SenalesProyecto,
 } from '../overhead'
 
 const gasto = (over: Partial<GastoOverheadRow>): GastoOverheadRow => ({
@@ -98,5 +99,75 @@ describe('normalizarPesos', () => {
     const vivas = { costoMes: false, horas: false, costoAcum: false, presupuesto: false, avance: false }
     const r = normalizarPesos(PESOS_SUGERENCIA_DEFAULT, vivas)
     expect(r.costoMes + r.horas + r.costoAcum + r.presupuesto + r.avance).toBe(0)
+  })
+})
+
+const senal = (over: Partial<SenalesProyecto> & { proyectoId: number }): SenalesProyecto => ({
+  costoMes: 0, costoAcum: 0, horas: 0, presupuesto: 0, avance: 0, diasActivos: 30, ...over,
+})
+
+describe('sugerirReparto', () => {
+  it('reparte 50/50 con señales iguales y suma 100', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, costoMes: 1000, horas: 10, costoAcum: 1000, presupuesto: 1000, avance: 50 }),
+      senal({ proyectoId: 2, costoMes: 1000, horas: 10, costoAcum: 1000, presupuesto: 1000, avance: 50 }),
+    ], 30)
+    expect(r.map(x => x.porcentaje)).toEqual([50, 50])
+    const total = r.reduce((s, x) => s + x.porcentaje, 0)
+    expect(total).toBeLessThanOrEqual(100.0001)
+  })
+
+  it('desglose de cada proyecto suma su porcentaje', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, costoMes: 3000, horas: 5, costoAcum: 2000, presupuesto: 1000, avance: 80 }),
+      senal({ proyectoId: 2, costoMes: 1000, horas: 20, costoAcum: 5000, presupuesto: 4000, avance: 20 }),
+    ], 30)
+    for (const x of r) {
+      const d = x.desglose
+      const sumaD = d.costoMes + d.horas + d.costoAcum + d.presupuesto + d.avance
+      expect(sumaD).toBeCloseTo(x.porcentaje, 4)
+    }
+  })
+
+  it('redistribuye peso cuando una señal está muerta (sin horas el mes)', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, costoMes: 2000, costoAcum: 2000, presupuesto: 2000, avance: 50, horas: 0 }),
+      senal({ proyectoId: 2, costoMes: 1000, costoAcum: 1000, presupuesto: 1000, avance: 50, horas: 0 }),
+    ], 30)
+    expect(r[0].porcentaje).toBeGreaterThan(r[1].porcentaje)
+    expect(r[0].desglose.horas).toBe(0)
+    expect(r[1].desglose.horas).toBe(0)
+  })
+
+  it('todas las señales 0 → reparto igual prorrateado por días', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, diasActivos: 30 }),
+      senal({ proyectoId: 2, diasActivos: 15 }),
+    ], 30)
+    expect(r[0].porcentaje).toBeGreaterThan(r[1].porcentaje)
+    expect(r[0].porcentaje + r[1].porcentaje).toBeCloseTo(100, 4)
+  })
+
+  it('prorratea por duración: medio mes recibe la mitad', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, costoMes: 1000, horas: 10, costoAcum: 1000, presupuesto: 1000, avance: 50, diasActivos: 30 }),
+      senal({ proyectoId: 2, costoMes: 1000, horas: 10, costoAcum: 1000, presupuesto: 1000, avance: 50, diasActivos: 15 }),
+    ], 30)
+    expect(r[0].porcentaje).toBeCloseTo(66.67, 1)
+    expect(r[1].porcentaje).toBeCloseTo(33.33, 1)
+  })
+
+  it('lista vacía → []', () => {
+    expect(sugerirReparto([], 30)).toEqual([])
+  })
+
+  it('suma nunca supera 100 (redondeo)', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, costoMes: 333 }),
+      senal({ proyectoId: 2, costoMes: 333 }),
+      senal({ proyectoId: 3, costoMes: 334 }),
+    ], 30)
+    const total = r.reduce((s, x) => s + x.porcentaje, 0)
+    expect(total).toBeLessThanOrEqual(100.01)
   })
 })

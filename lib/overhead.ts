@@ -134,3 +134,127 @@ export function normalizarPesos(
   }
   return out
 }
+
+export interface SenalesProyecto {
+  proyectoId: number
+  costoMes: number
+  costoAcum: number
+  horas: number
+  presupuesto: number
+  avance: number      // 0-100
+  diasActivos: number // días activos del proyecto dentro del mes
+}
+
+export interface DesgloseSenal {
+  costoMes: number
+  horas: number
+  costoAcum: number
+  presupuesto: number
+  avance: number
+}
+
+export interface SugerenciaProyecto {
+  proyectoId: number
+  porcentaje: number       // 0-100, redondeado a 2 dec, suma ≤ 100
+  desglose: DesgloseSenal  // aporte de cada señal en puntos de %; Σ = porcentaje
+}
+
+/**
+ * Calcula el % sugerido de reparto de overhead por proyecto.
+ *
+ * Para cada señal i: cuotaᵢ(p) = señalᵢ(p) / Σ señalᵢ. score(p) = Σ wᵢ·cuotaᵢ(p),
+ * prorrateado por diasActivos/diasDelMes, re-normalizado a 100%. Las señales sin
+ * total (todas 0) se consideran "muertas" y su peso se redistribuye. Si todas las
+ * señales están muertas, reparto igual prorrateado por días.
+ */
+export function sugerirReparto(
+  proyectos: SenalesProyecto[],
+  diasDelMes: number,
+  pesos: PesosSugerencia = PESOS_SUGERENCIA_DEFAULT,
+): SugerenciaProyecto[] {
+  if (proyectos.length === 0) return []
+
+  const totales: Record<ClaveSenal, number> = {
+    costoMes: 0, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0,
+  }
+  for (const p of proyectos) {
+    totales.costoMes += p.costoMes
+    totales.horas += p.horas
+    totales.costoAcum += p.costoAcum
+    totales.presupuesto += p.presupuesto
+    totales.avance += p.avance
+  }
+  const vivas: Record<ClaveSenal, boolean> = {
+    costoMes: totales.costoMes > 0,
+    horas: totales.horas > 0,
+    costoAcum: totales.costoAcum > 0,
+    presupuesto: totales.presupuesto > 0,
+    avance: totales.avance > 0,
+  }
+  const w = normalizarPesos(pesos, vivas)
+  const hayPesoVivo = CLAVES_SENAL.some(k => w[k] > 0)
+
+  const factor = (p: SenalesProyecto) =>
+    diasDelMes > 0 ? Math.min(Math.max(p.diasActivos, 0), diasDelMes) / diasDelMes : 1
+
+  const valor = (s: ClaveSenal, p: SenalesProyecto): number => p[s]
+  const crudo = proyectos.map(p => {
+    const f = factor(p)
+    const desglose: DesgloseSenal = { costoMes: 0, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0 }
+    let score = 0
+    if (hayPesoVivo) {
+      for (const k of CLAVES_SENAL) {
+        if (w[k] <= 0 || totales[k] <= 0) continue
+        const aporte = w[k] * (valor(k, p) / totales[k]) * f
+        desglose[k] = aporte
+        score += aporte
+      }
+    } else {
+      score = f
+    }
+    return { proyectoId: p.proyectoId, score, desglose }
+  })
+
+  const sumaScore = crudo.reduce((s, c) => s + c.score, 0)
+  const escala = sumaScore > 0 ? 100 / sumaScore : 0
+  const round2 = (n: number) => Math.round(n * 100) / 100
+
+  const resultado: SugerenciaProyecto[] = crudo.map(c => {
+    if (sumaScore > 0) {
+      const k = escala
+      const desg = c.desglose
+      return {
+        proyectoId: c.proyectoId,
+        porcentaje: round2(c.score * k),
+        desglose: {
+          costoMes: round2(desg.costoMes * k),
+          horas: round2(desg.horas * k),
+          costoAcum: round2(desg.costoAcum * k),
+          presupuesto: round2(desg.presupuesto * k),
+          avance: round2(desg.avance * k),
+        },
+      }
+    }
+    const igual = round2(100 / proyectos.length)
+    return {
+      proyectoId: c.proyectoId,
+      porcentaje: igual,
+      desglose: { costoMes: igual, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0 },
+    }
+  })
+
+  const totalPct = resultado.reduce((s, r) => s + r.porcentaje, 0)
+  const residuo = round2(100 - totalPct)
+  if (residuo !== 0 && resultado.length > 0) {
+    let idxMax = 0
+    for (let i = 1; i < crudo.length; i++) {
+      if (crudo[i].score > crudo[idxMax].score) idxMax = i
+    }
+    const ajustado = round2(resultado[idxMax].porcentaje + residuo)
+    if (ajustado >= 0) {
+      resultado[idxMax] = { ...resultado[idxMax], porcentaje: ajustado }
+    }
+  }
+
+  return resultado
+}
