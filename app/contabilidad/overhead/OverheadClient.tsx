@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Layers, Save, AlertTriangle, Info } from 'lucide-react'
+import { ArrowLeft, Layers, Save, AlertTriangle, Info, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
@@ -43,6 +43,10 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
   const [proyectos, setProyectos] = useState<ProyectoOverhead[]>(inicial.proyectos)
   const [cargando, setCargando] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [sugiriendo, setSugiriendo] = useState(false)
+  // Desglose por proyecto de la última sugerencia (puntos de % por señal).
+  type Desglose = { costoMes: number; horas: number; costoAcum: number; presupuesto: number; avance: number }
+  const [desgloses, setDesgloses] = useState<Record<number, Desglose>>({})
 
   const totalPct = useMemo(
     () => proyectos.reduce((s, p) => s + (parseFloat(pcts[p.proyectoId] || '0') || 0), 0),
@@ -66,6 +70,7 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
       setPoolReal(data.poolReal)
       setProyectos(data.proyectos)
       setPcts(Object.fromEntries(data.proyectos.map(p => [p.proyectoId, p.porcentaje ? String(p.porcentaje) : ''])))
+      setDesgloses({})
     } catch {
       toast.error('Error de red al cargar el mes')
     } finally {
@@ -109,6 +114,34 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
       toast.error('Error de red al guardar')
     } finally {
       setGuardando(false)
+    }
+  }
+
+  const handleSugerir = async () => {
+    setSugiriendo(true)
+    try {
+      const res = await fetch(`/api/contabilidad/overhead/sugerencia?anio=${anio}&mes=${mes}`)
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        toast.error(d?.error ?? 'No se pudo calcular la sugerencia')
+        return
+      }
+      const data: { sugerencias: { proyectoId: number; porcentaje: number; desglose: Desglose }[] } = await res.json()
+      if (data.sugerencias.length === 0) {
+        toast.error('No hay datos suficientes para sugerir un reparto este mes')
+        return
+      }
+      setPcts(prev => {
+        const next = { ...prev }
+        for (const s of data.sugerencias) next[s.proyectoId] = String(s.porcentaje)
+        return next
+      })
+      setDesgloses(Object.fromEntries(data.sugerencias.map(s => [s.proyectoId, s.desglose])))
+      toast.exito('Sugerencia aplicada — revisa antes de guardar')
+    } catch {
+      toast.error('Error de red al calcular la sugerencia')
+    } finally {
+      setSugiriendo(false)
     }
   }
 
@@ -204,6 +237,15 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
                       <Link href={`/proyectos/${p.proyectoId}`} className="font-medium text-foreground hover:text-primary">
                         {p.nombre}
                       </Link>
+                      {desgloses[p.proyectoId] && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                          <span title="Costo del mes">costo {desgloses[p.proyectoId].costoMes.toFixed(1)}</span>
+                          <span title="Horas del personal">horas {desgloses[p.proyectoId].horas.toFixed(1)}</span>
+                          <span title="Costo acumulado">acum {desgloses[p.proyectoId].costoAcum.toFixed(1)}</span>
+                          <span title="Presupuesto estimado">presup {desgloses[p.proyectoId].presupuesto.toFixed(1)}</span>
+                          <span title="Avance físico">avance {desgloses[p.proyectoId].avance.toFixed(1)}</span>
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{p.estado || '—'}</td>
                     <td className="px-4 py-3 text-right">
@@ -241,8 +283,11 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
         </div>
       </div>
 
-      {/* Guardar */}
+      {/* Acciones */}
       <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={handleSugerir} disabled={sugiriendo || cargando || guardando}>
+          <Sparkles className="w-4 h-4" /> {sugiriendo ? 'Calculando...' : 'Sugerir %'}
+        </Button>
         <Button onClick={handleGuardar} disabled={guardando || cargando || excede}>
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Guardar reparto'}
         </Button>

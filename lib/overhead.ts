@@ -92,3 +92,177 @@ export interface DistribucionRow {
 export function sumarOverheadDistribuido(filas: DistribucionRow[]): number {
   return filas.reduce((s, d) => s + (d.montoAsignado || 0), 0)
 }
+
+// ── Sugerencia de reparto (índice de esfuerzo compuesto) ───────────────
+
+export interface PesosSugerencia {
+  costoMes: number
+  horas: number
+  costoAcum: number
+  presupuesto: number
+  avance: number
+}
+
+/** Pesos por defecto (suman 1). Configurables vía Configuracion. */
+export const PESOS_SUGERENCIA_DEFAULT: PesosSugerencia = {
+  costoMes: 0.35,
+  horas: 0.25,
+  costoAcum: 0.20,
+  presupuesto: 0.15,
+  avance: 0.05,
+}
+
+export type ClaveSenal = keyof PesosSugerencia
+const CLAVES_SENAL: ClaveSenal[] = ['costoMes', 'horas', 'costoAcum', 'presupuesto', 'avance']
+
+/**
+ * Normaliza pesos a Σ=1, anulando las señales "muertas" (sin datos en el mes)
+ * y redistribuyendo su peso proporcionalmente entre las vivas. Si todas están
+ * muertas, devuelve todo en 0 (el caller hará fallback a reparto igual).
+ */
+export function normalizarPesos(
+  pesos: PesosSugerencia,
+  senalesVivas: Record<ClaveSenal, boolean>,
+): PesosSugerencia {
+  const sumaVivas = CLAVES_SENAL.reduce(
+    (s, k) => s + (senalesVivas[k] ? pesos[k] : 0), 0,
+  )
+  const out = { costoMes: 0, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0 } as PesosSugerencia
+  if (sumaVivas <= 0) return out
+  for (const k of CLAVES_SENAL) {
+    out[k] = senalesVivas[k] ? pesos[k] / sumaVivas : 0
+  }
+  return out
+}
+
+export interface SenalesProyecto {
+  proyectoId: number
+  costoMes: number
+  costoAcum: number
+  horas: number
+  presupuesto: number
+  avance: number      // 0-100
+  diasActivos: number // días activos del proyecto dentro del mes
+}
+
+export interface DesgloseSenal {
+  costoMes: number
+  horas: number
+  costoAcum: number
+  presupuesto: number
+  avance: number
+}
+
+export interface SugerenciaProyecto {
+  proyectoId: number
+  porcentaje: number       // 0-100, redondeado a 2 dec, suma ≤ 100
+  desglose: DesgloseSenal  // aporte de cada señal en puntos de %; Σ = porcentaje
+}
+
+/**
+ * Calcula el % sugerido de reparto de overhead por proyecto.
+ *
+ * Para cada señal i: cuotaᵢ(p) = señalᵢ(p) / Σ señalᵢ. score(p) = Σ wᵢ·cuotaᵢ(p),
+ * prorrateado por diasActivos/diasDelMes, re-normalizado a 100%. Las señales sin
+ * total (todas 0) se consideran "muertas" y su peso se redistribuye. Si todas las
+ * señales están muertas, reparto igual prorrateado por días.
+ */
+export function sugerirReparto(
+  proyectos: SenalesProyecto[],
+  diasDelMes: number,
+  pesos: PesosSugerencia = PESOS_SUGERENCIA_DEFAULT,
+): SugerenciaProyecto[] {
+  if (proyectos.length === 0) return []
+
+  const totales: Record<ClaveSenal, number> = {
+    costoMes: 0, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0,
+  }
+  for (const p of proyectos) {
+    totales.costoMes += p.costoMes
+    totales.horas += p.horas
+    totales.costoAcum += p.costoAcum
+    totales.presupuesto += p.presupuesto
+    totales.avance += p.avance
+  }
+  const vivas: Record<ClaveSenal, boolean> = {
+    costoMes: totales.costoMes > 0,
+    horas: totales.horas > 0,
+    costoAcum: totales.costoAcum > 0,
+    presupuesto: totales.presupuesto > 0,
+    avance: totales.avance > 0,
+  }
+  const w = normalizarPesos(pesos, vivas)
+  const hayPesoVivo = CLAVES_SENAL.some(k => w[k] > 0)
+
+  const factor = (p: SenalesProyecto) =>
+    diasDelMes > 0 ? Math.min(Math.max(p.diasActivos, 0), diasDelMes) / diasDelMes : 1
+
+  const valor = (s: ClaveSenal, p: SenalesProyecto): number => p[s]
+  const crudo = proyectos.map(p => {
+    const f = factor(p)
+    const desglose: DesgloseSenal = { costoMes: 0, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0 }
+    let score = 0
+    if (hayPesoVivo) {
+      for (const k of CLAVES_SENAL) {
+        if (w[k] <= 0 || totales[k] <= 0) continue
+        const aporte = w[k] * (valor(k, p) / totales[k]) * f
+        desglose[k] = aporte
+        score += aporte
+      }
+    } else {
+      score = f
+    }
+    return { proyectoId: p.proyectoId, score, desglose }
+  })
+
+  const sumaScore = crudo.reduce((s, c) => s + c.score, 0)
+  const escala = sumaScore > 0 ? 100 / sumaScore : 0
+  const round2 = (n: number) => Math.round(n * 100) / 100
+
+  const resultado: SugerenciaProyecto[] = crudo.map(c => {
+    if (sumaScore > 0) {
+      const k = escala
+      const desg = c.desglose
+      return {
+        proyectoId: c.proyectoId,
+        porcentaje: round2(c.score * k),
+        desglose: {
+          costoMes: round2(desg.costoMes * k),
+          horas: round2(desg.horas * k),
+          costoAcum: round2(desg.costoAcum * k),
+          presupuesto: round2(desg.presupuesto * k),
+          avance: round2(desg.avance * k),
+        },
+      }
+    }
+    const igual = round2(100 / proyectos.length)
+    return {
+      proyectoId: c.proyectoId,
+      porcentaje: igual,
+      desglose: { costoMes: igual, horas: 0, costoAcum: 0, presupuesto: 0, avance: 0 },
+    }
+  })
+
+  const totalPct = resultado.reduce((s, r) => s + r.porcentaje, 0)
+  const residuo = round2(100 - totalPct)
+  if (residuo !== 0 && resultado.length > 0) {
+    let idxMax = 0
+    for (let i = 1; i < crudo.length; i++) {
+      if (crudo[i].score > crudo[idxMax].score) idxMax = i
+    }
+    const ajustado = round2(resultado[idxMax].porcentaje + residuo)
+    if (ajustado >= 0) {
+      const d = resultado[idxMax].desglose
+      const claves: (keyof DesgloseSenal)[] = ['costoMes', 'horas', 'costoAcum', 'presupuesto', 'avance']
+      let claveDom: keyof DesgloseSenal = 'costoMes'
+      for (const k of claves) if (d[k] > d[claveDom]) claveDom = k
+      resultado[idxMax] = {
+        ...resultado[idxMax],
+        porcentaje: ajustado,
+        desglose: { ...d, [claveDom]: round2(d[claveDom] + residuo) },
+      }
+    }
+  }
+
+  return resultado
+}
