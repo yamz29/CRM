@@ -15,7 +15,7 @@ export const PUT = withPermiso('proyectos', 'editar', async (req: NextRequest, {
   const {
     nombre, descripcion, duracion, fechaInicio, fechaFin,
     pctAvance, estado, dependenciaId, tipoDependencia, desfaseDias,
-    orden, capituloNombre, cuadrilla, tipo, wbs,
+    orden, capituloNombre, cuadrilla, tipo, wbs, notas, materiales,
   } = body
 
   // Si viene fechaInicio + fechaFin (ej. drag en Gantt), recalcular
@@ -59,6 +59,8 @@ export const PUT = withPermiso('proyectos', 'editar', async (req: NextRequest, {
       ...(desfaseDias !== undefined && { desfaseDias: parseInt(desfaseDias) || 0 }),
       ...(orden !== undefined && { orden: parseInt(orden) }),
       ...(cuadrilla !== undefined && { cuadrilla: cuadrilla || null }),
+      ...(notas !== undefined && { notas: notas || null }),
+      ...(materiales !== undefined && { materiales: materiales || null }),
       ...(tipo !== undefined && { tipo }),
       ...(wbs !== undefined && { wbs: wbs || null }),
     },

@@ -1006,7 +1006,9 @@ model ActividadCronograma {
   dependenciaId   Int?
   tipoDependencia String   @default("FS") // FS | SS | FF | SF
   desfaseDias     Int      @default(0)   // lag/lead en días (positivo=espera, negativo=adelanto)
-  cuadrilla       String?  // nombre de la cuadrilla asignada
+  cuadrilla       String?  // nombre de la cuadrilla asignada (texto libre)
+  notas           String?  // notas libres de la actividad
+  materiales      String?  // materiales sugeridos (texto libre)
   orden           Int      @default(0)
 
   // Critical Path (CPM) — se recalcula al editar cualquier actividad
