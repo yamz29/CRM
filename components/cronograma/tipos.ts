@@ -18,6 +18,8 @@ export interface Actividad {
   tipoDependencia: string
   desfaseDias: number
   cuadrilla: string | null
+  notas?: string | null
+  materiales?: string | null
   esCritica?: boolean
   holguraDias?: number
   orden: number

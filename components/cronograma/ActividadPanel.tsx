@@ -16,6 +16,7 @@ interface Props {
   onGuardar: (id: number, data: Partial<Actividad>) => Promise<void>
   onRegistrarAvance: (id: number, pct: number, comentario: string) => Promise<void>
   onEliminar: (id: number) => void
+  onCrearOtra: (capitulo: string | null) => void
   onClose: () => void
 }
 
@@ -33,7 +34,7 @@ function isoDate(v: string | Date): string {
 
 export function ActividadPanel({
   actividad, actividades, capitulos, readOnly, guardando,
-  onGuardar, onRegistrarAvance, onEliminar, onClose,
+  onGuardar, onRegistrarAvance, onEliminar, onCrearOtra, onClose,
 }: Props) {
   const [nombre, setNombre] = useState(actividad.nombre)
   const [descripcion, setDescripcion] = useState(actividad.descripcion ?? '')
@@ -43,7 +44,6 @@ export function ActividadPanel({
   const [dependenciaId, setDependenciaId] = useState(actividad.dependenciaId ? String(actividad.dependenciaId) : '')
   const [tipoDependencia, setTipoDependencia] = useState(actividad.tipoDependencia)
   const [desfaseDias, setDesfaseDias] = useState(String(actividad.desfaseDias))
-  const [cuadrilla, setCuadrilla] = useState(actividad.cuadrilla ?? '')
   const [capitulo, setCapitulo] = useState(actividad.capituloNombre ?? '')
   const [pct, setPct] = useState(actividad.pctAvance)
   const [comentario, setComentario] = useState('')
@@ -58,7 +58,6 @@ export function ActividadPanel({
     setDependenciaId(actividad.dependenciaId ? String(actividad.dependenciaId) : '')
     setTipoDependencia(actividad.tipoDependencia)
     setDesfaseDias(String(actividad.desfaseDias))
-    setCuadrilla(actividad.cuadrilla ?? '')
     setCapitulo(actividad.capituloNombre ?? '')
     setPct(actividad.pctAvance)
     setComentario('')
@@ -71,11 +70,8 @@ export function ActividadPanel({
     const descActual = actividad.descripcion ?? ''
     if (descripcion !== descActual) data.descripcion = descripcion.trim() || null
     if (tipo !== actividad.tipo) data.tipo = tipo
-    if (cuadrilla !== (actividad.cuadrilla ?? '')) data.cuadrilla = cuadrilla.trim() || null
     if (capitulo !== (actividad.capituloNombre ?? '')) data.capituloNombre = capitulo.trim() || null
 
-    // Programación: fechaInicio / duración. Si cambia la fecha de inicio,
-    // se envía como override manual (fechaInicio + fechaFin) preservando duración.
     const durNum = Math.max(tipo === 'hito' ? 0 : 1, parseInt(duracion) || 1)
     const fechaInicioCambio = fechaInicio !== isoDate(actividad.fechaInicio)
     const durCambio = durNum !== actividad.duracion
@@ -109,7 +105,7 @@ export function ActividadPanel({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <h3 className="text-sm font-bold text-foreground truncate">
-            {readOnly ? 'Detalle de actividad' : 'Editar actividad'}
+            {readOnly ? 'Detalle de actividad' : 'Editar detalles'}
           </h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted">
             <X className="w-4 h-4" />
@@ -191,17 +187,17 @@ export function ActividadPanel({
             </div>
           )}
 
-          <div className="space-y-1">
-            <Label>Cuadrilla / responsable</Label>
-            <Input value={cuadrilla} onChange={e => setCuadrilla(e.target.value)} disabled={readOnly}
-              placeholder="Ej. Cuadrilla A" />
-          </div>
-
           {!readOnly && (
-            <Button onClick={guardarDetalles} disabled={guardando} className="w-full">
-              {guardando && <Loader2 className="w-4 h-4 animate-spin" />}
-              Guardar cambios
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={async () => { await guardarDetalles(); onClose() }} disabled={guardando}>
+                {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
+              </Button>
+              <Button variant="secondary"
+                onClick={async () => { await guardarDetalles(); onCrearOtra(capitulo.trim() || null) }}
+                disabled={guardando} title="Guarda esta actividad y abre una nueva en la misma fase">
+                Guardar y crear otra
+              </Button>
+            </div>
           )}
 
           {/* Avance */}

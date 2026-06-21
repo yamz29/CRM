@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
-import { Plus, Diamond, Wand2, RefreshCw, CalendarDays, CalendarRange, Lock } from 'lucide-react'
+import { Plus, Diamond, Wand2, RefreshCw, CalendarDays, CalendarRange, Lock, FileDown } from 'lucide-react'
 import { CronogramaTabla } from './CronogramaTabla'
 import { CronogramaTimeline } from './CronogramaTimeline'
 import { ActividadPanel } from './ActividadPanel'
+import { BarraInferior } from './BarraInferior'
 import { GenerarModal } from './GenerarModal'
 import type { Actividad, CronogramaData } from './tipos'
 import type { Escala } from '@/lib/cronograma-escala'
@@ -26,6 +28,7 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
   const [escala, setEscala] = useState<Escala>('dia')
   const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(new Set())
   const [seleccionadaId, setSeleccionadaId] = useState<number | null>(null)
+  const [mostrarDetalles, setMostrarDetalles] = useState(false)
   const [scrollTop, setScrollTop] = useState(0)
   const [generarModal, setGenerarModal] = useState(false)
   const [generando, setGenerando] = useState(false)
@@ -342,6 +345,11 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
           <Button size="sm" variant="secondary" onClick={() => router.refresh()}>
             <RefreshCw className="w-3.5 h-3.5" /> Actualizar
           </Button>
+          <Link href={`/cronograma/${cronograma.id}/imprimir`} target="_blank">
+            <Button size="sm" variant="secondary">
+              <FileDown className="w-3.5 h-3.5" /> Exportar
+            </Button>
+          </Link>
           {!readOnly && presupuestosDisponibles.length > 0 && (
             <Button size="sm" variant="secondary" onClick={() => setGenerarModal(true)}>
               <Wand2 className="w-3.5 h-3.5" /> Generar
@@ -396,8 +404,20 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
         </p>
       )}
 
-      {/* Panel de edición */}
+      {/* Barra inferior: cuadrillas + notas (vista rápida al seleccionar) */}
       {seleccionada && (
+        <BarraInferior
+          actividad={seleccionada}
+          readOnly={readOnly}
+          guardando={guardando}
+          onGuardar={guardarActividad}
+          onEditarDetalles={() => setMostrarDetalles(true)}
+          onClose={() => { setSeleccionadaId(null); setMostrarDetalles(false) }}
+        />
+      )}
+
+      {/* Panel lateral de detalles (a demanda, desde "Editar detalles") */}
+      {seleccionada && mostrarDetalles && (
         <ActividadPanel
           actividad={seleccionada}
           actividades={actividades}
@@ -407,7 +427,8 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
           onGuardar={guardarActividad}
           onRegistrarAvance={registrarAvance}
           onEliminar={setEliminarId}
-          onClose={() => setSeleccionadaId(null)}
+          onCrearOtra={(cap) => agregar('tarea', cap)}
+          onClose={() => setMostrarDetalles(false)}
         />
       )}
 
