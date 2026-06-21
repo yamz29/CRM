@@ -70,24 +70,25 @@ export function BarraInferior({ actividad, readOnly, guardando, onGuardar, onEdi
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 py-3">
         <div className="space-y-1">
           <Label>Cuadrillas / personal</Label>
-          <textarea value={cuadrilla} onChange={e => setCuadrilla(e.target.value)} disabled={readOnly}
+          <textarea value={cuadrilla} onChange={e => setCuadrilla(e.target.value)} onBlur={guardar} disabled={readOnly}
             rows={4} className={txtCls}
             placeholder={'Pintores — 3 personas\nAyudantes — 2 personas\nSupervisor — 1 persona'} />
         </div>
         <div className="space-y-1">
           <Label>Notas</Label>
-          <textarea value={notas} onChange={e => setNotas(e.target.value)} disabled={readOnly}
+          <textarea value={notas} onChange={e => setNotas(e.target.value)} onBlur={guardar} disabled={readOnly}
             rows={4} className={txtCls} placeholder="Notas internas de la actividad..." />
         </div>
         <div className="space-y-1">
           <Label>Materiales sugeridos</Label>
-          <textarea value={materiales} onChange={e => setMateriales(e.target.value)} disabled={readOnly}
+          <textarea value={materiales} onChange={e => setMateriales(e.target.value)} onBlur={guardar} disabled={readOnly}
             rows={4} className={txtCls} placeholder={'Pintura lavable (18L)\nRodillos 9" (x4)\nBrochas (x3)'} />
         </div>
       </div>
 
       {!readOnly && (
-        <div className="px-4 pb-3 flex justify-end">
+        <div className="px-4 pb-3 flex items-center justify-end gap-3">
+          <span className="text-[11px] text-muted-foreground">Se guarda automáticamente al cambiar de tarea</span>
           <Button size="sm" onClick={guardar} disabled={guardando || sinCambios}>
             {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
           </Button>
