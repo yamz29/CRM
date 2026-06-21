@@ -292,6 +292,30 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Guardar reparto'}
         </Button>
       </div>
+
+      {/* Nota: cómo se calcula el % sugerido */}
+      <div className="bg-muted/30 border border-border rounded-xl p-4 text-xs text-muted-foreground space-y-2">
+        <p className="flex items-center gap-1.5 font-semibold text-foreground">
+          <Info className="w-4 h-4 shrink-0" /> ¿Cómo se calcula el % sugerido?
+        </p>
+        <p>
+          A cada proyecto activo del mes se le asigna un <strong>índice de esfuerzo</strong> que
+          mezcla cinco señales, cada una comparada contra el total del mes:
+        </p>
+        <ul className="list-disc pl-5 space-y-0.5">
+          <li><strong>Costo del mes (35%)</strong> — gastos directos del proyecto en el mes.</li>
+          <li><strong>Horas del personal (25%)</strong> — horas registradas al proyecto en el mes.</li>
+          <li><strong>Costo acumulado (20%)</strong> — total gastado en el proyecto hasta la fecha.</li>
+          <li><strong>Presupuesto estimado (15%)</strong> — tamaño contratado del proyecto.</li>
+          <li><strong>Avance físico (5%)</strong> — % de avance actual (aproximado en meses pasados).</li>
+        </ul>
+        <p>
+          Ese índice se <strong>prorratea por los días que el proyecto estuvo activo</strong> dentro
+          del mes y luego se reparte el 100% del pool entre los proyectos. El desglose bajo cada
+          nombre muestra cuántos puntos aportó cada señal. La sugerencia es solo un punto de
+          partida: puedes ajustar cualquier % antes de guardar.
+        </p>
+      </div>
     </div>
   )
 }
