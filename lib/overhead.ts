@@ -252,7 +252,15 @@ export function sugerirReparto(
     }
     const ajustado = round2(resultado[idxMax].porcentaje + residuo)
     if (ajustado >= 0) {
-      resultado[idxMax] = { ...resultado[idxMax], porcentaje: ajustado }
+      const d = resultado[idxMax].desglose
+      const claves: (keyof DesgloseSenal)[] = ['costoMes', 'horas', 'costoAcum', 'presupuesto', 'avance']
+      let claveDom: keyof DesgloseSenal = 'costoMes'
+      for (const k of claves) if (d[k] > d[claveDom]) claveDom = k
+      resultado[idxMax] = {
+        ...resultado[idxMax],
+        porcentaje: ajustado,
+        desglose: { ...d, [claveDom]: round2(d[claveDom] + residuo) },
+      }
     }
   }
 

@@ -170,4 +170,17 @@ describe('sugerirReparto', () => {
     const total = r.reduce((s, x) => s + x.porcentaje, 0)
     expect(total).toBeLessThanOrEqual(100.01)
   })
+
+  it('el desglose sigue sumando el porcentaje tras el ajuste de residuo', () => {
+    const r = sugerirReparto([
+      senal({ proyectoId: 1, diasActivos: 0 }),
+      senal({ proyectoId: 2, diasActivos: 0 }),
+      senal({ proyectoId: 3, diasActivos: 0 }),
+    ], 30)
+    for (const x of r) {
+      const d = x.desglose
+      const sumaD = Math.round((d.costoMes + d.horas + d.costoAcum + d.presupuesto + d.avance) * 100) / 100
+      expect(sumaD).toBe(x.porcentaje)
+    }
+  })
 })
