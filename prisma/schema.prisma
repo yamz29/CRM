@@ -82,6 +82,7 @@ model Proyecto {
   ordenesCompra     OrdenCompra[]
   evmSnapshots      EVMSnapshot[]
   distribucionesOverhead DistribucionOverhead[]
+  itemsRutaCompra   ItemRutaCompra[]
 
   @@index([estado])
   @@index([clienteId, estado])
@@ -1225,6 +1226,7 @@ model Proveedor {
 
   facturas         Factura[]
   ordenesCompra    OrdenCompra[]
+  itemsRutaCompra  ItemRutaCompra[]
 
   @@map("proveedor")
 }
@@ -1430,6 +1432,51 @@ model ItemOrdenCompra {
 
   @@index([ordenCompraId])
   @@map("item_orden_compra")
+}
+
+// ── RUTA DE COMPRA ───────────────────────────────────────────────────
+// Lista manual de materiales que el comprador sale a comprar. Multi-proyecto
+// y multi-suplidor. Solo informativo: no genera gastos ni órdenes de compra.
+
+model RutaCompra {
+  id          Int      @id @default(autoincrement())
+  codigo      String   @unique          // RC-2026-0001
+  titulo      String?                    // ej. "Compras martes AM"
+  fecha       DateTime @default(now())
+  estado      String   @default("borrador") // borrador | en_proceso | completada | cancelada
+  comprador   String?                    // nombre del chofer/comprador (texto libre)
+  notas       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       ItemRutaCompra[]
+
+  @@index([estado])
+  @@map("ruta_compra")
+}
+
+model ItemRutaCompra {
+  id             Int      @id @default(autoincrement())
+  rutaCompraId   Int
+  descripcion    String                   // material a comprar
+  cantidad       Float    @default(1)
+  unidad         String   @default("ud")
+  proyectoId     Int?                     // a qué proyecto va (opcional)
+  proveedorId    Int?                     // suplidor (catálogo)
+  proveedorTexto String?                  // fallback si el suplidor no está en catálogo
+  urgencia       String   @default("media") // alta | media | baja
+  precioEstimado Float?
+  comprado       Boolean  @default(false)
+  precioReal     Float?
+  notas          String?
+  orden          Int      @default(0)
+
+  rutaCompra  RutaCompra @relation(fields: [rutaCompraId], references: [id], onDelete: Cascade)
+  proyecto    Proyecto?  @relation(fields: [proyectoId], references: [id], onDelete: SetNull)
+  proveedor   Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+
+  @@index([rutaCompraId])
+  @@map("item_ruta_compra")
 }
 
 // ── EVM SNAPSHOTS ────────────────────────────────────────────────────
