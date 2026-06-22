@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench, Calculator, CalendarDays, Bell } from 'lucide-react'
+import { Settings, Building2, UserCheck, Tag, Users, Ruler, HardDrive, Wrench, Calculator, CalendarDays, Bell, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmpresaForm } from '@/components/configuracion/EmpresaForm'
 import { VendedoresPanel } from '@/components/configuracion/VendedoresPanel'
@@ -11,7 +11,8 @@ import { RespaldoPanel } from '@/components/configuracion/RespaldoPanel'
 import { TiposModuloPanel } from '@/components/configuracion/TiposModuloPanel'
 import { CostosPanel } from '@/components/configuracion/CostosPanel'
 import { FeriadosPanel } from '@/components/configuracion/FeriadosPanel'
-import { getFactorCargaSocial } from '@/lib/configuracion'
+import { NominaConfigPanel } from '@/components/configuracion/NominaConfigPanel'
+import { getFactorCargaSocial, getTasaAfp, getTasaSfs, getFactorHoraExtra } from '@/lib/configuracion'
 
 const tabs = [
   { key: 'empresa', label: 'Empresa', icon: Building2 },
@@ -19,6 +20,7 @@ const tabs = [
   { key: 'categorias', label: 'Categorías', icon: Tag },
   { key: 'usuarios', label: 'Usuarios', icon: Users },
   { key: 'costos', label: 'Costos', icon: Calculator },
+  { key: 'nomina', label: 'Nómina', icon: Wallet },
   { key: 'unidades', label: 'Unidades', icon: Ruler },
   { key: 'feriados', label: 'Feriados', icon: CalendarDays },
   { key: 'taller', label: 'Taller', icon: Wrench },
@@ -60,6 +62,10 @@ export default async function ConfiguracionPage({
     ? JSON.parse(tiposModuloConfig.valor)
     : ['Base con puertas', 'Base con cajones', 'Base mixto', 'Aéreo con puertas', 'Columna', 'Closet', 'Baño', 'Oficina', 'Electrodoméstico', 'Otro']
   const factorCargaSocial = activeTab === 'costos' ? await getFactorCargaSocial() : 1
+
+  const [tasaAfp, tasaSfs, factorHoraExtra] = activeTab === 'nomina'
+    ? await Promise.all([getTasaAfp(), getTasaSfs(), getFactorHoraExtra()])
+    : [0, 0, 0]
 
   const feriados = activeTab === 'feriados'
     ? await prisma.diaFeriado.findMany({ orderBy: { fecha: 'asc' } })
@@ -125,6 +131,9 @@ export default async function ConfiguracionPage({
           {activeTab === 'categorias' && <CategoriasPanel initialData={categorias} />}
           {activeTab === 'usuarios' && <UsuariosPanel initialData={usuarios} />}
           {activeTab === 'costos' && <CostosPanel initialFactor={factorCargaSocial} />}
+          {activeTab === 'nomina' && (
+            <NominaConfigPanel initialTasaAfp={tasaAfp} initialTasaSfs={tasaSfs} initialFactorHoraExtra={factorHoraExtra} />
+          )}
           {activeTab === 'unidades' && <UnidadesPanel initialData={unidades} />}
           {activeTab === 'feriados' && <FeriadosPanel initialData={feriados.map(f => ({
             id: f.id,

@@ -81,6 +81,8 @@ export default async function EmpleadoDetallePage({ params }: { params: Promise<
             {esAdmin && (
               <div className="flex justify-between"><dt className="text-muted-foreground">Salario</dt><dd className="text-foreground font-medium">{empleado.salario ? formatCurrency(empleado.salario) : '—'}</dd></div>
             )}
+            <div className="flex justify-between"><dt className="text-muted-foreground">Banco</dt><dd className="text-foreground">{empleado.banco || '—'}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">Cuenta</dt><dd className="text-foreground">{empleado.numeroCuenta ? `${empleado.numeroCuenta} (${empleado.tipoCuenta || '—'})` : '—'}</dd></div>
           </dl>
         </div>
 

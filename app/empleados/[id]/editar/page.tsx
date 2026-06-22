@@ -48,6 +48,9 @@ export default async function EditarEmpleadoPage({ params }: { params: Promise<{
           horasPorDia: empleado.horasPorDia,
           diasLaborables: empleado.diasLaborables,
           diasVacacionesAnual: empleado.diasVacacionesAnual,
+          banco: empleado.banco,
+          tipoCuenta: empleado.tipoCuenta,
+          numeroCuenta: empleado.numeroCuenta,
           observaciones: empleado.observaciones,
         }}
       />

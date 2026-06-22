@@ -53,6 +53,9 @@ export const POST = withPermiso('empleados', 'editar', async (request: NextReque
         horasPorDia: body.horasPorDia !== undefined && body.horasPorDia !== '' ? parseFloat(body.horasPorDia) : 8,
         diasLaborables: body.diasLaborables || null,
         diasVacacionesAnual: body.diasVacacionesAnual !== undefined ? parseFloat(body.diasVacacionesAnual) || 14 : 14,
+        banco: body.banco || null,
+        tipoCuenta: body.tipoCuenta || null,
+        numeroCuenta: body.numeroCuenta || null,
         observaciones: body.observaciones || null,
       },
     })

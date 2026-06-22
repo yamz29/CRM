@@ -35,6 +35,9 @@ interface Props {
     horasPorDia?: number | null
     diasLaborables?: string | null
     diasVacacionesAnual?: number
+    banco?: string | null
+    tipoCuenta?: string | null
+    numeroCuenta?: string | null
     observaciones?: string | null
   }
 }
@@ -65,6 +68,9 @@ export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
     horasPorDia: initialData?.horasPorDia != null ? String(initialData.horasPorDia) : '8',
     diasLaborables: initialData?.diasLaborables || 'L,M,X,J,V',
     diasVacacionesAnual: initialData?.diasVacacionesAnual != null ? String(initialData.diasVacacionesAnual) : '14',
+    banco: initialData?.banco || '',
+    tipoCuenta: initialData?.tipoCuenta || '',
+    numeroCuenta: initialData?.numeroCuenta || '',
     observaciones: initialData?.observaciones || '',
   })
 
@@ -225,6 +231,33 @@ export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
           <input type="number" value={form.diasVacacionesAnual} onChange={(e) => set('diasVacacionesAnual', e.target.value)}
             min="0" step="1" placeholder="14"
             className="w-32 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Datos bancarios</h2>
+        <p className="text-xs text-muted-foreground">Se usan para generar la plantilla de pago de nómina.</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Banco</label>
+            <input type="text" value={form.banco} onChange={(e) => set('banco', e.target.value)}
+              placeholder="Ej: Banreservas"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Tipo de cuenta</label>
+            <select value={form.tipoCuenta} onChange={(e) => set('tipoCuenta', e.target.value)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card">
+              <option value="">—</option>
+              <option value="Ahorros">Ahorros</option>
+              <option value="Corriente">Corriente</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Número de cuenta</label>
+            <input type="text" value={form.numeroCuenta} onChange={(e) => set('numeroCuenta', e.target.value)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          </div>
         </div>
       </div>
 
