@@ -1597,3 +1597,57 @@ model ItemProgramaProyecto {
   @@index([proyectoId, tipo, estado])
   @@map("item_programa_proyecto")
 }
+
+// ── EMPLEADOS (RRHH) ──────────────────────────────────────────────────
+// Ficha del empleado: datos personales, cargo, horario contractual y
+// salario (sensible — solo visible para Admin). Las vacaciones/permisos
+// se manejan en SolicitudPermiso; el saldo de vacaciones se calcula
+// restando del derecho anual los días aprobados del año en curso.
+model Empleado {
+  id                  Int       @id @default(autoincrement())
+  nombre              String
+  cedula              String?   @unique
+  telefono            String?
+  correo              String?
+  cargo               String?
+  departamento        String?
+  fechaIngreso        DateTime
+  fechaSalida         DateTime?
+  activo              Boolean   @default(true)
+  salario             Float?    // sensible: solo Admin lo ve/edita
+  // Horario contractual
+  horaEntrada         Float?    // 8.0 = 8am
+  horaSalida          Float?    // 17.0 = 5pm
+  horasPorDia         Float?    @default(8)
+  diasLaborables      String?   // ej: "L,M,X,J,V"
+  // Vacaciones
+  diasVacacionesAnual Float     @default(14) // derecho anual (Ley RD = 14 días)
+  observaciones       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  solicitudes SolicitudPermiso[]
+
+  @@index([activo])
+  @@map("empleado")
+}
+
+model SolicitudPermiso {
+  id          Int      @id @default(autoincrement())
+  empleadoId  Int
+  tipo        String   // 'Vacaciones' | 'Permiso' | 'Licencia Médica' | 'Otro'
+  fechaInicio DateTime
+  fechaFin    DateTime
+  dias        Float
+  motivo      String?
+  estado      String   @default("Solicitado") // Solicitado | Aprobado | Rechazado
+  aprobadoPor String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+
+  @@index([empleadoId])
+  @@index([fechaInicio])
+  @@map("solicitud_permiso")
+}
