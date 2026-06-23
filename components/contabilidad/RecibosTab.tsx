@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard, Printer, Search } from 'lucide-react'
+import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, CreditCard, Printer, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
@@ -142,6 +142,20 @@ function AplicarModal({ recibo, onClose, onDone }: AplicarModalProps) {
   const [aplicaciones, setAplicaciones] = useState<Record<number, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
+  // Aplicaciones ya existentes del recibo (para poder quitarlas).
+  type AplicacionActual = { id: number; facturaId: number; monto: number; factura: { id: number; numero: string } }
+  const [actuales, setActuales] = useState<AplicacionActual[]>([])
+  const [confirmQuitar, setConfirmQuitar] = useState<AplicacionActual | null>(null)
+
+  const cargarActuales = useCallback(() => {
+    fetch(`/api/cobros/recibos/${recibo.id}`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setActuales(data?.aplicaciones ?? []))
+      .catch(() => setActuales([]))
+  }, [recibo.id])
+
+  useEffect(() => { cargarActuales() }, [cargarActuales])
+
   // Fetch client's pending invoices on mount
   useEffect(() => {
     setLoadingFacturas(true)
@@ -202,6 +216,25 @@ function AplicarModal({ recibo, onClose, onDone }: AplicarModalProps) {
     }
   }
 
+  const handleQuitar = async (apl: AplicacionActual) => {
+    setConfirmQuitar(null)
+    try {
+      const res = await fetch(`/api/cobros/recibos/${recibo.id}/aplicaciones/${apl.id}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        toast.exito(`Aplicación a ${apl.factura.numero} quitada`)
+        cargarActuales()
+        onDone()
+      } else {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? 'No se pudo quitar la aplicación')
+      }
+    } catch {
+      toast.error('Error de red al quitar la aplicación')
+    }
+  }
+
   // Determine why confirm is disabled
   let disabledReason = ''
   if (!hasPositive) disabledReason = 'Ingresa al menos un monto a aplicar'
@@ -237,6 +270,28 @@ function AplicarModal({ recibo, onClose, onDone }: AplicarModalProps) {
             <p className="font-bold tabular-nums text-amber-600 dark:text-amber-400">{formatCurrency(disponible)}</p>
           </div>
         </div>
+
+        {/* Aplicaciones actuales del recibo */}
+        {actuales.length > 0 && (
+          <div className="border border-border rounded-lg p-4 space-y-2">
+            <h4 className="text-sm font-semibold text-foreground">Aplicado actualmente</h4>
+            {actuales.map((a) => (
+              <div key={a.id} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {a.factura.numero} — <span className="tabular-nums">{formatCurrency(a.monto)}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-red-600"
+                  onClick={() => setConfirmQuitar(a)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Quitar
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Pending invoices */}
         <div className="border border-border rounded-lg p-4 space-y-3">
@@ -284,6 +339,18 @@ function AplicarModal({ recibo, onClose, onDone }: AplicarModalProps) {
             {submitting ? 'Aplicando...' : 'Confirmar aplicación'}
           </Button>
         </div>
+
+        <ConfirmDialog
+          abierto={confirmQuitar !== null}
+          titulo="¿Quitar esta aplicación?"
+          descripcion={confirmQuitar
+            ? `Se desaplicará ${formatCurrency(confirmQuitar.monto)} de la factura ${confirmQuitar.factura.numero}. El monto del recibo no se modifica.`
+            : ''}
+          textoConfirmar="Sí, quitar"
+          variante="peligro"
+          onConfirmar={() => { if (confirmQuitar) handleQuitar(confirmQuitar) }}
+          onCancelar={() => setConfirmQuitar(null)}
+        />
       </div>
     </div>
   )
