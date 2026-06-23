@@ -100,7 +100,7 @@ export function RutaCompraDetail({ rutaInicial }: { rutaInicial: Ruta }) {
       const res = await fetch(`/api/compras/rutas/${rutaInicial.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: nuevo, items: items.map((i) => ({ ...i, proyectoId: i.proyecto?.id ?? null })) }),
+        body: JSON.stringify({ estado: nuevo }),
       })
       if (!res.ok) throw new Error()
       toast.exito('Estado actualizado')

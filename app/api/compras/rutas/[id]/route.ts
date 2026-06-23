@@ -45,39 +45,48 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const items = Array.isArray(body.items) ? body.items : []
 
-    // Reemplazo total de líneas dentro de una transacción
-    await prisma.$transaction([
-      prisma.rutaCompra.update({
-        where: { id: rutaId },
-        data: {
-          titulo: body.titulo !== undefined ? (body.titulo?.toString().trim() || null) : undefined,
-          comprador: body.comprador !== undefined ? (body.comprador?.toString().trim() || null) : undefined,
-          fecha: body.fecha ? new Date(body.fecha) : undefined,
-          estado: ['borrador', 'en_proceso', 'completada', 'cancelada'].includes(body.estado) ? body.estado : undefined,
-          notas: body.notas !== undefined ? (body.notas?.toString().trim() || null) : undefined,
-        },
-      }),
-      prisma.itemRutaCompra.deleteMany({ where: { rutaCompraId: rutaId } }),
-      prisma.itemRutaCompra.createMany({
-        data: items.map((it: Record<string, unknown>, idx: number) => ({
-          rutaCompraId: rutaId,
-          descripcion: String(it.descripcion ?? '').trim() || 'Material',
-          cantidad: parseFloat(String(it.cantidad)) || 1,
-          unidad: String(it.unidad ?? 'ud').trim() || 'ud',
-          proyectoId: it.proyectoId ? parseInt(String(it.proyectoId)) : null,
-          proveedorId: it.proveedorId ? parseInt(String(it.proveedorId)) : null,
-          proveedorTexto: it.proveedorTexto ? String(it.proveedorTexto).trim() : null,
-          urgencia: ['alta', 'media', 'baja'].includes(String(it.urgencia)) ? String(it.urgencia) : 'media',
-          precioEstimado: it.precioEstimado != null && it.precioEstimado !== '' ? parseFloat(String(it.precioEstimado)) : null,
-          precioReal: it.precioReal != null && it.precioReal !== '' ? parseFloat(String(it.precioReal)) : null,
-          comprado: Boolean(it.comprado),
-          notas: it.notas ? String(it.notas).trim() : null,
-          orden: idx,
-        })),
-      }),
-    ])
+    // Actualización de cabecera (siempre)
+    const headerUpdate = prisma.rutaCompra.update({
+      where: { id: rutaId },
+      data: {
+        titulo: body.titulo !== undefined ? (body.titulo?.toString().trim() || null) : undefined,
+        comprador: body.comprador !== undefined ? (body.comprador?.toString().trim() || null) : undefined,
+        fecha: body.fecha ? new Date(body.fecha) : undefined,
+        estado: ['borrador', 'en_proceso', 'completada', 'cancelada'].includes(body.estado) ? body.estado : undefined,
+        notas: body.notas !== undefined ? (body.notas?.toString().trim() || null) : undefined,
+      },
+    })
+
+    // Reemplazo de líneas SOLO si vienen items explícitos. Un cambio de estado
+    // (o de cabecera) sin `items` no debe tocar las líneas: createMany reasigna
+    // IDs y dejaría obsoletos los del cliente (los PATCH en vivo fallarían).
+    if (Array.isArray(body.items)) {
+      const items = body.items
+      await prisma.$transaction([
+        headerUpdate,
+        prisma.itemRutaCompra.deleteMany({ where: { rutaCompraId: rutaId } }),
+        prisma.itemRutaCompra.createMany({
+          data: items.map((it: Record<string, unknown>, idx: number) => ({
+            rutaCompraId: rutaId,
+            descripcion: String(it.descripcion ?? '').trim() || 'Material',
+            cantidad: parseFloat(String(it.cantidad)) || 1,
+            unidad: String(it.unidad ?? 'ud').trim() || 'ud',
+            proyectoId: it.proyectoId ? parseInt(String(it.proyectoId)) : null,
+            proveedorId: it.proveedorId ? parseInt(String(it.proveedorId)) : null,
+            proveedorTexto: it.proveedorTexto ? String(it.proveedorTexto).trim() : null,
+            urgencia: ['alta', 'media', 'baja'].includes(String(it.urgencia)) ? String(it.urgencia) : 'media',
+            precioEstimado: it.precioEstimado != null && it.precioEstimado !== '' ? parseFloat(String(it.precioEstimado)) : null,
+            precioReal: it.precioReal != null && it.precioReal !== '' ? parseFloat(String(it.precioReal)) : null,
+            comprado: Boolean(it.comprado),
+            notas: it.notas ? String(it.notas).trim() : null,
+            orden: idx,
+          })),
+        }),
+      ])
+    } else {
+      await headerUpdate
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {
