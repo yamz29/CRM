@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { SolicitudesPanel } from '@/components/empleados/SolicitudesPanel'
 
-const DIA_LABELS: Record<string, string> = { L: 'Lun', M: 'Mar', X: 'Mié', J: 'Jue', V: 'Vie', S: 'Sáb', D: 'Dom' }
+const DIA_ORDEN = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
+const DIA_LABELS: Record<string, string> = { L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes', S: 'Sábado', D: 'Domingo' }
 
 function formatHora(h: number | null) {
   if (h == null) return '—'
@@ -26,16 +27,33 @@ export default async function EmpleadoDetallePage({ params }: { params: Promise<
 
   const empleado = await prisma.empleado.findUnique({
     where: { id },
-    include: { solicitudes: { orderBy: { fechaInicio: 'desc' } } },
+    include: {
+      solicitudes: { orderBy: { fechaInicio: 'desc' } },
+      horarios: true,
+      usuario: { select: { id: true, nombre: true } },
+    },
   })
   if (!empleado) notFound()
 
-  const dias = (empleado.diasLaborables || '').split(',').filter(Boolean)
+  const horariosOrdenados = [...empleado.horarios].sort(
+    (a, b) => DIA_ORDEN.indexOf(a.dia) - DIA_ORDEN.indexOf(b.dia)
+  )
   const solicitudesSerial = empleado.solicitudes.map((s) => ({
     ...s,
     fechaInicio: s.fechaInicio.toISOString(),
     fechaFin: s.fechaFin.toISOString(),
   }))
+
+  let horasDelMes: number | null = null
+  if (empleado.usuarioId) {
+    const hoy = new Date()
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    const agg = await prisma.registroHoras.aggregate({
+      where: { usuarioId: empleado.usuarioId, fecha: { gte: inicioMes } },
+      _sum: { horas: true },
+    })
+    horasDelMes = agg._sum.horas ?? 0
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -88,20 +106,44 @@ export default async function EmpleadoDetallePage({ params }: { params: Promise<
 
         <div className="bg-card rounded-xl border border-border p-5 space-y-3 col-span-2">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Horario contractual</h2>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div><dt className="text-muted-foreground">Entrada</dt><dd className="text-foreground font-medium">{formatHora(empleado.horaEntrada)}</dd></div>
-            <div><dt className="text-muted-foreground">Salida</dt><dd className="text-foreground font-medium">{formatHora(empleado.horaSalida)}</dd></div>
-            <div><dt className="text-muted-foreground">Horas/día</dt><dd className="text-foreground font-medium">{empleado.horasPorDia ?? '—'}</dd></div>
-          </div>
-          <div>
-            <dt className="text-muted-foreground text-sm mb-1.5">Días laborables</dt>
-            <div className="flex gap-1.5">
-              {dias.length === 0 && <span className="text-sm text-foreground">—</span>}
-              {dias.map((d) => (
-                <span key={d} className="px-2.5 py-1 text-xs font-medium rounded-lg bg-blue-100 text-blue-700">{DIA_LABELS[d] || d}</span>
-              ))}
+          {horariosOrdenados.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin horario configurado.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="font-medium pb-1.5">Día</th>
+                  <th className="font-medium pb-1.5">Entrada</th>
+                  <th className="font-medium pb-1.5">Salida</th>
+                  <th className="font-medium pb-1.5">Horas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {horariosOrdenados.map((h) => (
+                  <tr key={h.dia} className="border-t border-border">
+                    <td className="py-1.5 text-foreground">{DIA_LABELS[h.dia] || h.dia}</td>
+                    <td className="py-1.5 text-foreground">{formatHora(h.horaEntrada)}</td>
+                    <td className="py-1.5 text-foreground">{formatHora(h.horaSalida)}</td>
+                    <td className="py-1.5 text-foreground">{h.horasPorDia}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border p-5 space-y-3 col-span-2">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Horas del equipo</h2>
+          {empleado.usuario ? (
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">Horas registradas este mes ({empleado.usuario.nombre})</dt>
+              <dd className="text-foreground font-medium">{horasDelMes ?? 0} h</dd>
             </div>
-          </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Este empleado no está vinculado a un usuario del sistema — edítalo para sumar las horas que registre en &quot;Horas del equipo&quot;.
+            </p>
+          )}
         </div>
       </div>
 
