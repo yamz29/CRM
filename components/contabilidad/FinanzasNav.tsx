@@ -5,6 +5,7 @@ const ITEMS = [
   { key: 'cobros', href: '/facturacion', label: 'Cobros' },
   { key: 'transacciones', href: '/contabilidad/transacciones', label: 'Transacciones' },
   { key: 'compras', href: '/compras', label: 'Compras' },
+  { key: 'rutas', href: '/compras/rutas', label: 'Rutas de compra' },
   { key: 'proveedores', href: '/proveedores', label: 'Proveedores' },
 ] as const
 
