@@ -8,6 +8,20 @@ function esAdmin(req: NextRequest) {
   return req.headers.get('x-user-rol') === 'Admin'
 }
 
+type HorarioInput = { dia: string; horaEntrada?: number | string | null; horaSalida?: number | string | null; horasPorDia?: number | string | null }
+
+function buildHorariosCreate(horarios: HorarioInput[] | undefined) {
+  if (!Array.isArray(horarios)) return []
+  return horarios
+    .filter((h) => h && h.dia)
+    .map((h) => ({
+      dia: h.dia,
+      horaEntrada: h.horaEntrada !== undefined && h.horaEntrada !== null && h.horaEntrada !== '' ? parseFloat(String(h.horaEntrada)) : null,
+      horaSalida: h.horaSalida !== undefined && h.horaSalida !== null && h.horaSalida !== '' ? parseFloat(String(h.horaSalida)) : null,
+      horasPorDia: h.horasPorDia !== undefined && h.horasPorDia !== null && h.horasPorDia !== '' ? parseFloat(String(h.horasPorDia)) || 8 : 8,
+    }))
+}
+
 export const GET = withPermiso('empleados', 'ver', async (request: NextRequest, { params }: Ctx) => {
   const { id: idStr } = await params
   const id = parseInt(idStr)
@@ -16,7 +30,11 @@ export const GET = withPermiso('empleados', 'ver', async (request: NextRequest, 
   try {
     const empleado = await prisma.empleado.findUnique({
       where: { id },
-      include: { solicitudes: { orderBy: { fechaInicio: 'desc' } } },
+      include: {
+        solicitudes: { orderBy: { fechaInicio: 'desc' } },
+        horarios: true,
+        usuario: { select: { id: true, nombre: true } },
+      },
     })
     if (!empleado) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
@@ -51,10 +69,7 @@ export const PUT = withPermiso('empleados', 'editar', async (request: NextReques
       fechaIngreso: new Date(body.fechaIngreso),
       fechaSalida: body.fechaSalida ? new Date(body.fechaSalida) : null,
       activo: body.activo !== false,
-      horaEntrada: body.horaEntrada !== undefined && body.horaEntrada !== '' ? parseFloat(body.horaEntrada) : null,
-      horaSalida: body.horaSalida !== undefined && body.horaSalida !== '' ? parseFloat(body.horaSalida) : null,
-      horasPorDia: body.horasPorDia !== undefined && body.horasPorDia !== '' ? parseFloat(body.horasPorDia) : 8,
-      diasLaborables: body.diasLaborables || null,
+      usuarioId: body.usuarioId !== undefined && body.usuarioId !== '' && body.usuarioId !== null ? parseInt(body.usuarioId) : null,
       diasVacacionesAnual: body.diasVacacionesAnual !== undefined ? parseFloat(body.diasVacacionesAnual) || 14 : 14,
       banco: body.banco || null,
       tipoCuenta: body.tipoCuenta || null,
@@ -67,7 +82,14 @@ export const PUT = withPermiso('empleados', 'editar', async (request: NextReques
       data.salario = body.salario === '' || body.salario === null ? null : parseFloat(body.salario)
     }
 
-    const empleado = await prisma.empleado.update({ where: { id }, data })
+    if (Array.isArray(body.horarios)) {
+      data.horarios = {
+        deleteMany: {},
+        create: buildHorariosCreate(body.horarios),
+      }
+    }
+
+    const empleado = await prisma.empleado.update({ where: { id }, data, include: { horarios: true } })
 
     if (!admin) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

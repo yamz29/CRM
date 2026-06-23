@@ -729,6 +729,7 @@ model Usuario {
   asignacionesProduccion AsignacionProduccion[]
   comentariosDocumento   ComentarioDocumento[]
   pushSubscriptions      PushSubscription[]
+  empleado               Empleado?
 }
 
 // Subscription Web Push del navegador del usuario. Un mismo usuario puede
@@ -1615,11 +1616,8 @@ model Empleado {
   fechaSalida         DateTime?
   activo              Boolean   @default(true)
   salario             Float?    // sensible: solo Admin lo ve/edita
-  // Horario contractual
-  horaEntrada         Float?    // 8.0 = 8am
-  horaSalida          Float?    // 17.0 = 5pm
-  horasPorDia         Float?    @default(8)
-  diasLaborables      String?   // ej: "L,M,X,J,V"
+  // Vínculo opcional con el Usuario del sistema (para sumar sus horas de "Horas del equipo")
+  usuarioId           Int?      @unique
   // Vacaciones
   diasVacacionesAnual Float     @default(14) // derecho anual (Ley RD = 14 días)
   // Datos bancarios (para la plantilla de pago de nómina)
@@ -1630,11 +1628,29 @@ model Empleado {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
+  usuario      Usuario?           @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  horarios     HorarioEmpleado[]
   solicitudes  SolicitudPermiso[]
   lineasNomina LineaNomina[]
 
   @@index([activo])
   @@map("empleado")
+}
+
+// Horario contractual por día de la semana — permite que viernes/sábado
+// (u otro día) tengan horas de entrada/salida distintas al resto.
+model HorarioEmpleado {
+  id          Int    @id @default(autoincrement())
+  empleadoId  Int
+  dia         String // 'L' | 'M' | 'X' | 'J' | 'V' | 'S' | 'D'
+  horaEntrada Float? // 8.0 = 8am
+  horaSalida  Float? // 17.0 = 5pm
+  horasPorDia Float  @default(8)
+
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+
+  @@unique([empleadoId, dia])
+  @@map("horario_empleado")
 }
 
 model SolicitudPermiso {
