@@ -13,8 +13,14 @@ export default async function EditarEmpleadoPage({ params }: { params: Promise<{
   const hdrs = await headers()
   const esAdmin = hdrs.get('x-user-rol') === 'Admin'
 
-  const empleado = await prisma.empleado.findUnique({ where: { id } })
+  const empleado = await prisma.empleado.findUnique({ where: { id }, include: { horarios: true } })
   if (!empleado) notFound()
+
+  const usuarios = await prisma.usuario.findMany({
+    where: { activo: true },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: 'asc' },
+  })
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -31,6 +37,7 @@ export default async function EditarEmpleadoPage({ params }: { params: Promise<{
       <EmpleadoForm
         mode="edit"
         esAdmin={esAdmin}
+        usuarios={usuarios}
         initialData={{
           id: empleado.id,
           nombre: empleado.nombre,
@@ -43,10 +50,8 @@ export default async function EditarEmpleadoPage({ params }: { params: Promise<{
           fechaSalida: empleado.fechaSalida ? empleado.fechaSalida.toISOString() : null,
           activo: empleado.activo,
           salario: esAdmin ? empleado.salario : null,
-          horaEntrada: empleado.horaEntrada,
-          horaSalida: empleado.horaSalida,
-          horasPorDia: empleado.horasPorDia,
-          diasLaborables: empleado.diasLaborables,
+          usuarioId: empleado.usuarioId,
+          horarios: empleado.horarios,
           diasVacacionesAnual: empleado.diasVacacionesAnual,
           banco: empleado.banco,
           tipoCuenta: empleado.tipoCuenta,

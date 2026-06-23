@@ -18,7 +18,7 @@ export const PUT = withPermiso('nomina', 'editar', async (request: NextRequest, 
   try {
     const linea = await prisma.lineaNomina.findUnique({
       where: { id: lineaId },
-      include: { empleado: true, periodo: true },
+      include: { empleado: { include: { horarios: true } }, periodo: true },
     })
     if (!linea || linea.periodoId !== periodoId) {
       return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
@@ -37,7 +37,10 @@ export const PUT = withPermiso('nomina', 'editar', async (request: NextRequest, 
       getTasaAfp(), getTasaSfs(), getFactorHoraExtra(),
     ])
 
-    const horasPorDia = linea.empleado.horasPorDia || 8
+    const horarios = linea.empleado.horarios
+    const horasPorDia = horarios.length > 0
+      ? horarios.reduce((sum, h) => sum + h.horasPorDia, 0) / horarios.length
+      : 8
     const tarifaHora = ((linea.empleado.salario ?? 0) / 23.83) / horasPorDia
     const valorHoraExtra = Number((horasExtra * tarifaHora * factorHoraExtra).toFixed(2))
 

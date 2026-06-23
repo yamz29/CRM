@@ -15,9 +15,17 @@ const DIAS = [
   { value: 'D', label: 'Dom' },
 ]
 
+interface HorarioData {
+  dia: string
+  horaEntrada?: number | null
+  horaSalida?: number | null
+  horasPorDia?: number | null
+}
+
 interface Props {
   mode: 'create' | 'edit'
   esAdmin: boolean
+  usuarios?: { id: number; nombre: string }[]
   initialData?: {
     id?: number
     nombre?: string
@@ -30,10 +38,8 @@ interface Props {
     fechaSalida?: string | null
     activo?: boolean
     salario?: number | null
-    horaEntrada?: number | null
-    horaSalida?: number | null
-    horasPorDia?: number | null
-    diasLaborables?: string | null
+    usuarioId?: number | null
+    horarios?: HorarioData[]
     diasVacacionesAnual?: number
     banco?: string | null
     tipoCuenta?: string | null
@@ -47,7 +53,25 @@ function toDateInput(value?: string | null) {
   return value.slice(0, 10)
 }
 
-export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
+type DiaForm = { activo: boolean; horaEntrada: string; horaSalida: string; horasPorDia: string }
+
+function buildHorariosIniciales(horarios: HorarioData[] | undefined): Record<string, DiaForm> {
+  const porDia = new Map((horarios || []).map((h) => [h.dia, h]))
+  const result: Record<string, DiaForm> = {}
+  for (const d of DIAS) {
+    const h = porDia.get(d.value)
+    const esLaborableDefault = !horarios && ['L', 'M', 'X', 'J', 'V'].includes(d.value)
+    result[d.value] = {
+      activo: h ? true : esLaborableDefault,
+      horaEntrada: h?.horaEntrada != null ? String(h.horaEntrada) : '8',
+      horaSalida: h?.horaSalida != null ? String(h.horaSalida) : '17',
+      horasPorDia: h?.horasPorDia != null ? String(h.horasPorDia) : '8',
+    }
+  }
+  return result
+}
+
+export function EmpleadoForm({ mode, esAdmin, usuarios, initialData }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -63,10 +87,7 @@ export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
     fechaSalida: toDateInput(initialData?.fechaSalida),
     activo: initialData?.activo !== false,
     salario: initialData?.salario != null ? String(initialData.salario) : '',
-    horaEntrada: initialData?.horaEntrada != null ? String(initialData.horaEntrada) : '8',
-    horaSalida: initialData?.horaSalida != null ? String(initialData.horaSalida) : '17',
-    horasPorDia: initialData?.horasPorDia != null ? String(initialData.horasPorDia) : '8',
-    diasLaborables: initialData?.diasLaborables || 'L,M,X,J,V',
+    usuarioId: initialData?.usuarioId != null ? String(initialData.usuarioId) : '',
     diasVacacionesAnual: initialData?.diasVacacionesAnual != null ? String(initialData.diasVacacionesAnual) : '14',
     banco: initialData?.banco || '',
     tipoCuenta: initialData?.tipoCuenta || '',
@@ -74,15 +95,19 @@ export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
     observaciones: initialData?.observaciones || '',
   })
 
+  const [horariosPorDia, setHorariosPorDia] = useState<Record<string, DiaForm>>(
+    () => buildHorariosIniciales(initialData?.horarios)
+  )
+
   const set = (field: string, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: value }))
 
-  const diasSeleccionados = form.diasLaborables.split(',').filter(Boolean)
   const toggleDia = (dia: string) => {
-    const set2 = new Set(diasSeleccionados)
-    if (set2.has(dia)) set2.delete(dia)
-    else set2.add(dia)
-    set('diasLaborables', DIAS.filter((d) => set2.has(d.value)).map((d) => d.value).join(','))
+    setHorariosPorDia((prev) => ({ ...prev, [dia]: { ...prev[dia], activo: !prev[dia].activo } }))
+  }
+
+  const setDiaCampo = (dia: string, campo: keyof DiaForm, valor: string) => {
+    setHorariosPorDia((prev) => ({ ...prev, [dia]: { ...prev[dia], [campo]: valor } }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,12 +117,20 @@ export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
     setLoading(true)
     setError(null)
     try {
+      const horarios = DIAS
+        .filter((d) => horariosPorDia[d.value].activo)
+        .map((d) => ({
+          dia: d.value,
+          horaEntrada: horariosPorDia[d.value].horaEntrada,
+          horaSalida: horariosPorDia[d.value].horaSalida,
+          horasPorDia: horariosPorDia[d.value].horasPorDia,
+        }))
       const res = await fetch(
         mode === 'create' ? '/api/empleados' : `/api/empleados/${initialData?.id}`,
         {
           method: mode === 'create' ? 'POST' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify({ ...form, horarios }),
         }
       )
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Error') }
@@ -191,46 +224,63 @@ export function EmpleadoForm({ mode, esAdmin, initialData }: Props) {
 
       <div className="bg-card rounded-xl border border-border p-6 space-y-4">
         <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Horario contractual</h2>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Hora entrada</label>
-            <input type="number" value={form.horaEntrada} onChange={(e) => set('horaEntrada', e.target.value)}
-              min="0" max="24" step="0.5" placeholder="8.0"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Hora salida</label>
-            <input type="number" value={form.horaSalida} onChange={(e) => set('horaSalida', e.target.value)}
-              min="0" max="24" step="0.5" placeholder="17.0"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Horas/día</label>
-            <input type="number" value={form.horasPorDia} onChange={(e) => set('horasPorDia', e.target.value)}
-              min="0" max="24" step="0.5" placeholder="8"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Días laborables</label>
-          <div className="flex gap-1.5">
-            {DIAS.map((d) => (
-              <button key={d.value} type="button" onClick={() => toggleDia(d.value)}
-                className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                  diasSeleccionados.includes(d.value)
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-border text-muted-foreground hover:bg-muted'
-                }`}>
-                {d.label}
-              </button>
-            ))}
-          </div>
+        <p className="text-xs text-muted-foreground">
+          Activa cada día laborable y ajusta su horario — viernes o sábado pueden tener horas distintas al resto.
+        </p>
+        <div className="space-y-2">
+          {DIAS.map((d) => {
+            const dia = horariosPorDia[d.value]
+            return (
+              <div key={d.value} className="flex items-center gap-3">
+                <button type="button" onClick={() => toggleDia(d.value)}
+                  className={`w-14 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors flex-shrink-0 ${
+                    dia.activo
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'border-border text-muted-foreground hover:bg-muted'
+                  }`}>
+                  {d.label}
+                </button>
+                {dia.activo ? (
+                  <div className="grid grid-cols-3 gap-2 flex-1">
+                    <input type="number" value={dia.horaEntrada} onChange={(e) => setDiaCampo(d.value, 'horaEntrada', e.target.value)}
+                      min="0" max="24" step="0.5" placeholder="Entrada"
+                      className="w-full border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
+                    <input type="number" value={dia.horaSalida} onChange={(e) => setDiaCampo(d.value, 'horaSalida', e.target.value)}
+                      min="0" max="24" step="0.5" placeholder="Salida"
+                      className="w-full border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
+                    <input type="number" value={dia.horasPorDia} onChange={(e) => setDiaCampo(d.value, 'horasPorDia', e.target.value)}
+                      min="0" max="24" step="0.5" placeholder="Horas"
+                      className="w-full border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground flex-1">No laborable</span>
+                )}
+              </div>
+            )
+          })}
         </div>
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">Días de vacaciones por año</label>
           <input type="number" value={form.diasVacacionesAnual} onChange={(e) => set('diasVacacionesAnual', e.target.value)}
             min="0" step="1" placeholder="14"
             className="w-32 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring text-right" />
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Cuenta del sistema</h2>
+        <p className="text-xs text-muted-foreground">
+          Vincula este empleado a un usuario del sistema para sumar automáticamente las horas que registre en &quot;Horas del equipo&quot;.
+        </p>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">Usuario vinculado</label>
+          <select value={form.usuarioId} onChange={(e) => set('usuarioId', e.target.value)}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-card">
+            <option value="">— Sin vincular —</option>
+            {(usuarios || []).map((u) => (
+              <option key={u.id} value={u.id}>{u.nombre}</option>
+            ))}
+          </select>
         </div>
       </div>
 

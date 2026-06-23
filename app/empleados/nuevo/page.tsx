@@ -2,10 +2,16 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import { ArrowLeft } from 'lucide-react'
 import { EmpleadoForm } from '@/components/empleados/EmpleadoForm'
+import { prisma } from '@/lib/prisma'
 
 export default async function NuevoEmpleadoPage() {
   const hdrs = await headers()
   const esAdmin = hdrs.get('x-user-rol') === 'Admin'
+  const usuarios = await prisma.usuario.findMany({
+    where: { activo: true },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: 'asc' },
+  })
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -19,7 +25,7 @@ export default async function NuevoEmpleadoPage() {
           <p className="text-muted-foreground text-sm mt-0.5">Agregar empleado a la nómina</p>
         </div>
       </div>
-      <EmpleadoForm mode="create" esAdmin={esAdmin} />
+      <EmpleadoForm mode="create" esAdmin={esAdmin} usuarios={usuarios} />
     </div>
   )
 }

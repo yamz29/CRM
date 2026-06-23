@@ -13,6 +13,20 @@ function ocultarSalario<T extends { salario: number | null }>(req: NextRequest, 
   return empleados.map(({ salario, ...resto }) => resto)
 }
 
+type HorarioInput = { dia: string; horaEntrada?: number | string | null; horaSalida?: number | string | null; horasPorDia?: number | string | null }
+
+function buildHorariosCreate(horarios: HorarioInput[] | undefined) {
+  if (!Array.isArray(horarios)) return []
+  return horarios
+    .filter((h) => h && h.dia)
+    .map((h) => ({
+      dia: h.dia,
+      horaEntrada: h.horaEntrada !== undefined && h.horaEntrada !== null && h.horaEntrada !== '' ? parseFloat(String(h.horaEntrada)) : null,
+      horaSalida: h.horaSalida !== undefined && h.horaSalida !== null && h.horaSalida !== '' ? parseFloat(String(h.horaSalida)) : null,
+      horasPorDia: h.horasPorDia !== undefined && h.horasPorDia !== null && h.horasPorDia !== '' ? parseFloat(String(h.horasPorDia)) || 8 : 8,
+    }))
+}
+
 export const GET = withPermiso('empleados', 'ver', async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const activo = searchParams.get('activo')
@@ -21,6 +35,7 @@ export const GET = withPermiso('empleados', 'ver', async (request: NextRequest) 
     const empleados = await prisma.empleado.findMany({
       where: activo !== null ? { activo: activo !== 'false' } : {},
       orderBy: { nombre: 'asc' },
+      include: { horarios: true, usuario: { select: { id: true, nombre: true } } },
     })
     return NextResponse.json(ocultarSalario(request, empleados))
   } catch (error) {
@@ -48,16 +63,15 @@ export const POST = withPermiso('empleados', 'editar', async (request: NextReque
         fechaSalida: body.fechaSalida ? new Date(body.fechaSalida) : null,
         activo: body.activo !== false,
         salario: esAdmin(request) ? (parseFloat(body.salario) || null) : null,
-        horaEntrada: body.horaEntrada !== undefined && body.horaEntrada !== '' ? parseFloat(body.horaEntrada) : null,
-        horaSalida: body.horaSalida !== undefined && body.horaSalida !== '' ? parseFloat(body.horaSalida) : null,
-        horasPorDia: body.horasPorDia !== undefined && body.horasPorDia !== '' ? parseFloat(body.horasPorDia) : 8,
-        diasLaborables: body.diasLaborables || null,
+        usuarioId: body.usuarioId !== undefined && body.usuarioId !== '' && body.usuarioId !== null ? parseInt(body.usuarioId) : null,
         diasVacacionesAnual: body.diasVacacionesAnual !== undefined ? parseFloat(body.diasVacacionesAnual) || 14 : 14,
         banco: body.banco || null,
         tipoCuenta: body.tipoCuenta || null,
         numeroCuenta: body.numeroCuenta || null,
         observaciones: body.observaciones || null,
+        horarios: { create: buildHorariosCreate(body.horarios) },
       },
+      include: { horarios: true },
     })
 
     const [resultado] = ocultarSalario(request, [empleado])
