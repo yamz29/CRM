@@ -137,6 +137,29 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
     if (res.ok) setFactura(await res.json())
   }
 
+  const handleDesaplicar = (aplicacionId: number, reciboNumero: string) => {
+    setConfirmacion({
+      titulo: '¿Quitar este cobro de la factura?',
+      descripcion: `Se desaplicará el recibo ${reciboNumero}. El dinero del recibo no se elimina: queda disponible para aplicarlo a otra factura.`,
+      textoConfirmar: 'Sí, quitar',
+      onConfirmar: async () => {
+        setConfirmacion(null)
+        const apl = (factura.aplicaciones ?? []).find(a => a.id === aplicacionId)
+        if (!apl) return
+        const res = await fetch(`/api/cobros/recibos/${apl.reciboId}/aplicaciones/${aplicacionId}`, {
+          method: 'DELETE',
+        })
+        if (res.ok) {
+          toast.exito('Cobro desaplicado')
+          refreshFactura()
+        } else {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error ?? 'No se pudo desaplicar el cobro')
+        }
+      },
+    })
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -321,6 +344,16 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        {factura.estado !== 'anulada' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-red-600"
+                            onClick={() => handleDesaplicar(a.id, a.recibo.numero)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Quitar
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
