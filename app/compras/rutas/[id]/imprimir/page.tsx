@@ -16,7 +16,7 @@ interface ItemImpr {
 }
 
 function fmt(v: number) {
-  return `RD$ ${v.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
+  return `RD$ ${v.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export default async function ImprimirRutaPage({ params }: { params: Promise<{ id: string }> }) {
