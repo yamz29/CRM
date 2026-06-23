@@ -16,6 +16,8 @@ export const MODULOS = [
   { key: 'compras',       label: 'Compras',                grupo: 'Finanzas' },
   { key: 'tareas',        label: 'Tareas',                 grupo: 'Gestión' },
   { key: 'horas',         label: 'Horas del equipo',       grupo: 'Gestión' },
+  { key: 'empleados',     label: 'Empleados',              grupo: 'Gestión' },
+  { key: 'nomina',        label: 'Nómina',                 grupo: 'Gestión' },
   { key: 'melamina',      label: 'Módulos Melamina',       grupo: 'Taller' },
   { key: 'cocinas',       label: 'Espacios Modulares',     grupo: 'Taller' },
   { key: 'produccion',    label: 'Producción',             grupo: 'Taller' },

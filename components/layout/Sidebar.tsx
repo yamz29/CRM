@@ -36,6 +36,8 @@ import {
   ShoppingCart,
   Search,
   Files,
+  UserCog,
+  Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, Fragment } from 'react'
@@ -77,8 +79,10 @@ const NAV_GROUPS = [
     label: 'Gestión',
     icon: ClipboardList,
     items: [
-      { href: '/tareas', label: 'Tareas',           icon: CheckSquare, modulo: 'tareas' as ModuloKey },
-      { href: '/horas',  label: 'Horas del Equipo', icon: Clock,       modulo: 'horas'  as ModuloKey },
+      { href: '/tareas',    label: 'Tareas',           icon: CheckSquare, modulo: 'tareas'    as ModuloKey },
+      { href: '/horas',     label: 'Horas del Equipo', icon: Clock,       modulo: 'horas'     as ModuloKey },
+      { href: '/empleados', label: 'Empleados',        icon: UserCog,     modulo: 'empleados' as ModuloKey },
+      { href: '/nomina',    label: 'Nómina',           icon: Wallet,      modulo: 'nomina'    as ModuloKey },
     ],
   },
   {

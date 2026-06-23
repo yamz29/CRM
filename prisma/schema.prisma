@@ -1644,3 +1644,106 @@ model ItemProgramaProyecto {
   @@index([proyectoId, tipo, estado])
   @@map("item_programa_proyecto")
 }
+
+// ── EMPLEADOS (RRHH) ──────────────────────────────────────────────────
+// Ficha del empleado: datos personales, cargo, horario contractual y
+// salario (sensible — solo visible para Admin). Las vacaciones/permisos
+// se manejan en SolicitudPermiso; el saldo de vacaciones se calcula
+// restando del derecho anual los días aprobados del año en curso.
+model Empleado {
+  id                  Int       @id @default(autoincrement())
+  nombre              String
+  cedula              String?   @unique
+  telefono            String?
+  correo              String?
+  cargo               String?
+  departamento        String?
+  fechaIngreso        DateTime
+  fechaSalida         DateTime?
+  activo              Boolean   @default(true)
+  salario             Float?    // sensible: solo Admin lo ve/edita
+  // Horario contractual
+  horaEntrada         Float?    // 8.0 = 8am
+  horaSalida          Float?    // 17.0 = 5pm
+  horasPorDia         Float?    @default(8)
+  diasLaborables      String?   // ej: "L,M,X,J,V"
+  // Vacaciones
+  diasVacacionesAnual Float     @default(14) // derecho anual (Ley RD = 14 días)
+  // Datos bancarios (para la plantilla de pago de nómina)
+  banco               String?
+  tipoCuenta          String?   // Ahorros | Corriente
+  numeroCuenta        String?
+  observaciones       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  solicitudes  SolicitudPermiso[]
+  lineasNomina LineaNomina[]
+
+  @@index([activo])
+  @@map("empleado")
+}
+
+model SolicitudPermiso {
+  id          Int      @id @default(autoincrement())
+  empleadoId  Int
+  tipo        String   // 'Vacaciones' | 'Permiso' | 'Licencia Médica' | 'Otro'
+  fechaInicio DateTime
+  fechaFin    DateTime
+  dias        Float
+  motivo      String?
+  estado      String   @default("Solicitado") // Solicitado | Aprobado | Rechazado
+  aprobadoPor String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+
+  @@index([empleadoId])
+  @@index([fechaInicio])
+  @@map("solicitud_permiso")
+}
+
+// ── NÓMINA ───────────────────────────────────────────────────────────────
+// Períodos quincenales de pago. Cada período genera una línea por empleado
+// activo con salario asignado; las horas extra y bonificaciones se ingresan
+// manualmente por línea. AFP (2.87%) y SFS (3.04%) se descuentan automático
+// sobre el salario bruto (sin tope/tope salarial ni ISR — simplificación
+// deliberada, ver content/help/nomina.md).
+model PeriodoNomina {
+  id          Int      @id @default(autoincrement())
+  fechaInicio DateTime
+  fechaFin    DateTime
+  fechaPago   DateTime?
+  estado      String   @default("Borrador") // Borrador | Pagada
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lineas LineaNomina[]
+
+  @@index([fechaInicio])
+  @@map("periodo_nomina")
+}
+
+model LineaNomina {
+  id               Int    @id @default(autoincrement())
+  periodoId        Int
+  empleadoId       Int
+  salarioBase      Float  // mitad del salario mensual (quincena)
+  horasExtra       Float  @default(0)
+  valorHoraExtra   Float  @default(0) // calculado: tarifa hora x factor x horasExtra
+  bonificaciones   Float  @default(0)
+  otrosDescuentos  Float  @default(0)
+  motivoDescuento  String?
+  afp              Float  @default(0)
+  sfs              Float  @default(0)
+  totalBruto       Float  @default(0)
+  totalNeto        Float  @default(0)
+
+  periodo  PeriodoNomina @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  empleado Empleado      @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+
+  @@index([periodoId])
+  @@index([empleadoId])
+  @@map("linea_nomina")
+}
