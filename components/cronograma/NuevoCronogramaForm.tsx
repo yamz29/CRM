@@ -27,6 +27,7 @@ export function NuevoCronogramaForm({ proyectos, presupuestos, defaultProyectoId
     proyectoId: defaultProyectoId ? String(defaultProyectoId) : '',
     presupuestoId: defaultPresupuestoId ? String(defaultPresupuestoId) : '',
     fechaInicio: new Date().toISOString().split('T')[0],
+    fechaFinEstimado: '',
     estado: 'Planificado',
     notas: '',
   })
@@ -46,6 +47,7 @@ export function NuevoCronogramaForm({ proyectos, presupuestos, defaultProyectoId
           proyectoId: form.proyectoId || null,
           presupuestoId: form.presupuestoId || null,
           fechaInicio: form.fechaInicio,
+          fechaFinEstimado: form.fechaFinEstimado || null,
           estado: form.estado,
           notas: form.notas,
         }),
@@ -112,6 +114,11 @@ export function NuevoCronogramaForm({ proyectos, presupuestos, defaultProyectoId
               <Label>Fecha de inicio *</Label>
               <Input type="date" value={form.fechaInicio} required
                 onChange={e => setForm(p => ({ ...p, fechaInicio: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Meta de entrega (opcional)</Label>
+              <Input type="date" value={form.fechaFinEstimado}
+                onChange={e => setForm(p => ({ ...p, fechaFinEstimado: e.target.value }))} />
             </div>
           </div>
 

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { ArrowLeft, FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react'
 import { CronogramaView } from '@/components/cronograma/CronogramaView'
+import { ResumenAvance } from '@/components/cronograma/ResumenAvance'
+import { calcularResumen } from '@/lib/cronograma-resumen'
 
 export default async function CronogramaDetailPage({
   params,
@@ -85,6 +87,31 @@ export default async function CronogramaDetailPage({
       : 0,
   }
 
+  // Lista liviana de proyectos para el modal de edición
+  const proyectos = await prisma.proyecto.findMany({
+    select: { id: true, nombre: true },
+    orderBy: { nombre: 'asc' },
+  })
+
+  // Resumen de avance (fin proyectado, esperado vs real, tiempo)
+  const resumen = calcularResumen(
+    actividades,
+    cronograma.fechaInicio,
+    cronograma.fechaFinEstimado,
+    hoy,
+  )
+
+  const cronogramaEditable = {
+    id: cronograma.id,
+    nombre: cronograma.nombre,
+    estado: cronograma.estado,
+    fechaInicio: cronograma.fechaInicio,
+    fechaFinEstimado: cronograma.fechaFinEstimado,
+    proyectoId: cronograma.proyectoId,
+    presupuestoId: cronograma.presupuestoId,
+    notas: cronograma.notas,
+  }
+
   return (
     <div className="space-y-6 max-w-full">
       {/* Header */}
@@ -118,6 +145,15 @@ export default async function CronogramaDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Resumen de avance + edición del cronograma */}
+      <ResumenAvance
+        cronograma={cronogramaEditable}
+        resumen={resumen}
+        proyectos={proyectos}
+        presupuestos={presupuestosDisponibles}
+        readOnly={readOnly}
+      />
 
       {/* Aviso de desbordamiento de fecha del proyecto */}
       {desbordamiento && (

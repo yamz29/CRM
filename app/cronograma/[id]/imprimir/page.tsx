@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import { PrintButton } from './PrintButton'
+import { calcularResumen } from '@/lib/cronograma-resumen'
 
 export default async function CronogramaImprimirPage({
   params,
@@ -25,6 +26,7 @@ export default async function CronogramaImprimirPage({
   const pctGeneral = acts.length > 0
     ? Math.round(acts.reduce((s, a) => s + a.pctAvance, 0) / acts.length)
     : 0
+  const resumen = calcularResumen(acts, cronograma.fechaInicio, cronograma.fechaFinEstimado)
 
   // Agrupar por capítulo conservando orden de aparición
   const grupos: { capitulo: string; items: typeof acts }[] = []
@@ -87,10 +89,13 @@ export default async function CronogramaImprimirPage({
         )}
         <div className="flex flex-wrap gap-x-8 gap-y-1 mt-3 text-sm">
           <span>Inicio: <strong>{formatDate(cronograma.fechaInicio)}</strong></span>
-          {cronograma.fechaFinEstimado && (
-            <span>Fin estimado: <strong>{formatDate(cronograma.fechaFinEstimado)}</strong></span>
+          {resumen.finProyectado && (
+            <span>Fin proyectado: <strong>{formatDate(resumen.finProyectado)}</strong></span>
           )}
-          <span>Avance general: <strong>{pctGeneral}%</strong></span>
+          {cronograma.fechaFinEstimado && (
+            <span>Meta de entrega: <strong>{formatDate(cronograma.fechaFinEstimado)}</strong></span>
+          )}
+          <span>Avance general: <strong>{pctGeneral}%</strong> (esperado {resumen.avanceEsperado}%)</span>
         </div>
         <div className="mt-2 h-2 w-full bg-slate-200 rounded-full overflow-hidden">
           <div className="h-full bg-slate-800" style={{ width: `${pctGeneral}%` }} />
