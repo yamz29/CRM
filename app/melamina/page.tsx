@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { formatCurrency } from '@/lib/utils'
@@ -291,69 +292,67 @@ export default async function MelaminaPage({
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-muted/40 border-b border-border">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Código</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nombre</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dimensiones</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Material</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cant.</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Precio Venta</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {modulos.map((m) => (
-                      <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
-                          {m.codigo || '-'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Link href={`/melamina/${m.id}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                            {m.nombre}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Dimensiones</TableHead>
+                    <TableHead>Material</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Cant.</TableHead>
+                    <TableHead className="text-right">Precio Venta</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {modulos.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="text-sm text-muted-foreground font-mono">
+                        {m.codigo || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/melamina/${m.id}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                          {m.nombre}
+                        </Link>
+                        {m.colorAcabado && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{m.colorAcabado}</p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="default">{m.tipoModulo}</Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {m.ancho > 0 || m.alto > 0 || m.profundidad > 0
+                          ? `${m.ancho}×${m.alto}×${m.profundidad} cm`
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{m.material || '-'}</TableCell>
+                      <TableCell>{getEstadoBadge(m.estadoProduccion)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground text-right">{m.cantidad}</TableCell>
+                      <TableCell className="text-sm font-bold text-foreground text-right">
+                        {formatCurrency(m.precioVenta)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Link href={`/melamina/${m.id}`}>
+                            <Button variant="ghost" size="sm" title="Ver despiece" aria-label={`Ver despiece de ${m.nombre}`}>
+                              <Layers className="w-4 h-4" />
+                            </Button>
                           </Link>
-                          {m.colorAcabado && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{m.colorAcabado}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="default">{m.tipoModulo}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                          {m.ancho > 0 || m.alto > 0 || m.profundidad > 0
-                            ? `${m.ancho}×${m.alto}×${m.profundidad} cm`
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{m.material || '-'}</td>
-                        <td className="px-4 py-3">{getEstadoBadge(m.estadoProduccion)}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground text-right">{m.cantidad}</td>
-                        <td className="px-4 py-3 text-sm font-bold text-foreground text-right">
-                          {formatCurrency(m.precioVenta)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <Link href={`/melamina/${m.id}`}>
-                              <Button variant="ghost" size="sm" title="Ver despiece">
-                                <Layers className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/melamina/${m.id}/editar`}>
-                              <Button variant="ghost" size="sm" title="Editar">
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                            <DeleteModuloButton id={m.id} nombre={m.nombre} />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          <Link href={`/melamina/${m.id}/editar`}>
+                            <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar ${m.nombre}`}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                          <DeleteModuloButton id={m.id} nombre={m.nombre} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

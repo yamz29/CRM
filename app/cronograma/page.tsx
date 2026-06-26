@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { formatDate } from '@/lib/utils'
 import { Plus, CalendarRange, FolderOpen, CheckCircle2, Clock, AlertCircle, PauseCircle } from 'lucide-react'
 import { DeleteCronogramaButton } from './DeleteCronogramaButton'
@@ -83,48 +84,48 @@ export default async function CronogramaPage() {
               </Link>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-muted/40 border-b border-border">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Nombre</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Presupuesto</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Inicio</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Fin est.</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Actividades</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead>Presupuesto</TableHead>
+                  <TableHead>Inicio</TableHead>
+                  <TableHead>Fin est.</TableHead>
+                  <TableHead className="text-center">Actividades</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {cronogramas.map(c => (
-                  <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
+                  <TableRow key={c.id}>
+                    <TableCell>
                       <Link href={`/cronograma/${c.id}`} className="text-sm font-semibold text-foreground hover:text-primary">
                         {c.nombre}
                       </Link>
                       <p className="text-xs text-muted-foreground">v{c.version}</p>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       {c.proyecto ? (
                         <Link href={`/proyectos/${c.proyecto.id}`} className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
                           <FolderOpen className="w-3.5 h-3.5" />
                           {c.proyecto.nombre.length > 28 ? c.proyecto.nombre.slice(0, 28) + '…' : c.proyecto.nombre}
                         </Link>
                       ) : <span className="text-muted-foreground/40 text-sm">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
                       {c.presupuesto?.numero ?? <span className="text-muted-foreground/40">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(c.fechaInicio)}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDate(c.fechaInicio)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
                       {c.fechaFinEstimado ? formatDate(c.fechaFinEstimado) : <span className="text-muted-foreground/40">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
+                    </TableCell>
+                    <TableCell className="text-center">
                       <span className="text-sm font-bold text-foreground">{c._count.actividades}</span>
-                    </td>
-                    <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
-                    <td className="px-4 py-3 text-right">
+                    </TableCell>
+                    <TableCell><EstadoBadge estado={c.estado} /></TableCell>
+                    <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/cronograma/${c.id}`}>
                           <Button variant="ghost" size="sm">Ver →</Button>
@@ -135,11 +136,11 @@ export default async function CronogramaPage() {
                           actividadesCount={c._count.actividades}
                         />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
