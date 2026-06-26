@@ -53,7 +53,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm relative">
         {/* Logo / Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/30 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl shadow-xl shadow-primary/30 mb-4">
             <Building2 className="w-9 h-9 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Gonzalva Group</h1>
@@ -85,7 +85,7 @@ export default function LoginPage() {
                 required
                 autoFocus
                 placeholder="usuario@gonzalvagroup.com"
-                className="w-full border border-white/[0.08] bg-white/[0.04] text-white rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/30 transition-all"
+                className="w-full border border-white/[0.08] bg-white/[0.04] text-white rounded-lg px-3 py-2.5 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all"
               />
             </div>
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full border border-white/[0.08] bg-white/[0.04] text-white rounded-lg px-3 py-2.5 pr-10 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/30 transition-all"
+                  className="w-full border border-white/[0.08] bg-white/[0.04] text-white rounded-lg px-3 py-2.5 pr-10 text-sm placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all"
                 />
                 <button
                   type="button"
@@ -117,7 +117,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30"
+              className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all mt-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e17]"
             >
               {loading ? (
                 <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

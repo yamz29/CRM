@@ -123,8 +123,8 @@ export function LayoutShell({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logoUrl} alt="" className="w-7 h-7 object-contain rounded bg-white p-0.5" />
               ) : (
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-[10px]">GG</span>
+                <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-[10px]">GG</span>
                 </div>
               )}
               <span className="font-bold text-sm text-foreground truncate">{nombreEmpresa}</span>

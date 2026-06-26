@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, Eye, Pencil, Trash2, Users, Phone } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Plus, Search, Eye, Pencil, Users, Phone } from 'lucide-react'
 import { DeleteClienteButton } from './DeleteClienteButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { ExportButton } from '@/components/ui/export-button'
@@ -76,12 +78,12 @@ export default async function ClientesPage({
           <form method="GET" className="flex gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 name="search"
                 defaultValue={search || ''}
                 placeholder="Buscar por nombre, RNC/cédula, correo o teléfono..."
-                className="flex h-10 w-full rounded-lg border border-border bg-input pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="pl-9"
               />
             </div>
             <Button type="submit" variant="secondary">
@@ -118,85 +120,79 @@ export default async function ClientesPage({
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nombre</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">RNC / Cédula</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teléfono</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fuente</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyectos</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {clientes.map((cliente) => (
-                    <tr key={cliente.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <div>
-                          <Link
-                            href={`/clientes/${cliente.id}`}
-                            className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                          >
-                            {cliente.nombre}
-                          </Link>
-                          {cliente.correo && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{cliente.correo}</p>
-                          )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>RNC / Cédula</TableHead>
+                  <TableHead>Teléfono</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Fuente</TableHead>
+                  <TableHead>Proyectos</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clientes.map((cliente) => (
+                  <TableRow key={cliente.id}>
+                    <TableCell>
+                      <Link
+                        href={`/clientes/${cliente.id}`}
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                      >
+                        {cliente.nombre}
+                      </Link>
+                      {cliente.correo && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{cliente.correo}</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(cliente as any).rnc ? (
+                        <span className="text-sm text-muted-foreground font-mono">{(cliente as any).rnc}</span>
+                      ) : (
+                        <span className="text-muted-foreground/50 text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {cliente.telefono ? (
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <Phone className="w-3.5 h-3.5" />
+                          {cliente.telefono}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {(cliente as any).rnc ? (
-                          <span className="text-sm text-muted-foreground font-mono">{(cliente as any).rnc}</span>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {cliente.telefono ? (
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Phone className="w-3.5 h-3.5" />
-                            {cliente.telefono}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={tipoClienteVariant[cliente.tipoCliente] || 'default'}>
-                          {cliente.tipoCliente}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{cliente.fuente}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-foreground">
-                            {cliente._count.proyectos} proyecto{cliente._count.proyectos !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Link href={`/clientes/${cliente.id}`}>
-                            <Button variant="ghost" size="sm" title="Ver detalle">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/clientes/${cliente.id}/editar`}>
-                            <Button variant="ghost" size="sm" title="Editar">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <DeleteClienteButton id={cliente.id} nombre={cliente.nombre} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        <span className="text-muted-foreground/50 text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={tipoClienteVariant[cliente.tipoCliente] || 'default'}>
+                        {cliente.tipoCliente}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{cliente.fuente}</TableCell>
+                    <TableCell>
+                      <span className="text-sm font-medium text-foreground">
+                        {cliente._count.proyectos} proyecto{cliente._count.proyectos !== 1 ? 's' : ''}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/clientes/${cliente.id}`}>
+                          <Button variant="ghost" size="sm" title="Ver detalle" aria-label={`Ver detalle de ${cliente.nombre}`}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/clientes/${cliente.id}/editar`}>
+                          <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar ${cliente.nombre}`}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <DeleteClienteButton id={cliente.id} nombre={cliente.nombre} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

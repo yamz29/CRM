@@ -134,15 +134,16 @@ function NavLink({ href, label, icon: Icon, collapsed, onNavClick }: {
       title={collapsed ? label : undefined}
       className={cn(
         'flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150 group',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a]',
         collapsed ? 'justify-center px-2 py-2.5' : 'pl-8 pr-3 py-2',
         isActive
-          ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
           : 'text-slate-400 hover:text-white hover:bg-white/5'
       )}
     >
-      <Icon className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300')} />
+      <Icon className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-primary-foreground' : 'text-slate-500 group-hover:text-slate-300')} />
       {!collapsed && <span className="flex-1">{label}</span>}
-      {!collapsed && isActive && <ChevronRight className="w-3.5 h-3.5 text-blue-300" />}
+      {!collapsed && isActive && <ChevronRight className="w-3.5 h-3.5 text-primary-foreground/70" />}
     </Link>
   )
 }
@@ -262,7 +263,7 @@ export function Sidebar({
               className={cn('object-contain rounded-lg bg-white p-0.5 flex-shrink-0', collapsed ? 'w-9 h-9' : 'w-10 h-10')}
             />
           ) : (
-            <div className={cn('flex-shrink-0 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40', collapsed ? 'w-9 h-9' : 'w-10 h-10')}>
+            <div className={cn('flex-shrink-0 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/40', collapsed ? 'w-9 h-9' : 'w-10 h-10')}>
               <span className={cn('text-white font-black tracking-tight', collapsed ? 'text-xs' : 'text-sm')}>GG</span>
             </div>
           )}
@@ -283,6 +284,7 @@ export function Sidebar({
           title={collapsed ? 'Buscar (Ctrl+K)' : undefined}
           className={cn(
             'flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors text-white/60 hover:text-white hover:bg-white/5',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a]',
             collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'
           )}
         >
@@ -357,8 +359,8 @@ export function Sidebar({
 
         {/* User profile + logout */}
         <div className={cn('flex items-center rounded-lg', collapsed ? 'justify-center py-1' : 'gap-2.5 px-2 py-1.5')}>
-          <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center flex-shrink-0 ring-2 ring-blue-900/50">
-            <span className="text-white text-xs font-bold">{initials || 'AD'}</span>
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 ring-2 ring-primary/40">
+            <span className="text-primary-foreground text-xs font-bold">{initials || 'AD'}</span>
           </div>
           {!collapsed && (
             <>
