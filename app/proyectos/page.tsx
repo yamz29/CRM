@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoProyectoBadge } from '@/components/ui/badge'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/ui/stats-card'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Eye, Pencil, FolderOpen, TrendingUp, Clock, CheckCircle, BarChart2, GanttChart, Kanban } from 'lucide-react'
@@ -201,102 +202,100 @@ export default async function ProyectosPage({
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-24">Código</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyecto</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inicio</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Presupuesto</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">Avance</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {proyectos.map((proyecto) => (
-                    <tr key={proyecto.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">
-                        {proyecto.codigo ? (
-                          <span className="inline-block font-mono text-xs font-semibold text-foreground bg-muted/50 px-2 py-0.5 rounded">
-                            {proyecto.codigo}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/40">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/proyectos/${proyecto.id}`}
-                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                        >
-                          {proyecto.nombre}
-                        </Link>
-                        {proyecto.ubicacion && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{proyecto.ubicacion}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/clientes/${proyecto.cliente.id}`}
-                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          {proyecto.cliente.nombre.split(' ').slice(0, 2).join(' ')}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{proyecto.tipoProyecto}</td>
-                      <td className="px-4 py-3">
-                        <EstadoProyectoBadge estado={proyecto.estado} />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {proyecto.fechaInicio ? formatDate(proyecto.fechaInicio) : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-foreground tabular-nums">
-                        {proyecto.presupuestoEstimado
-                          ? formatCurrency(proyecto.presupuestoEstimado)
-                          : '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {(proyecto as any).avanceFisico > 0 ? (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${(proyecto as any).avanceFisico}%`,
-                                  backgroundColor: (proyecto as any).avanceFisico === 100 ? '#22c55e' : (proyecto as any).avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{(proyecto as any).avanceFisico}%</span>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-24">Código</TableHead>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Inicio</TableHead>
+                  <TableHead>Presupuesto</TableHead>
+                  <TableHead className="w-28">Avance</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {proyectos.map((proyecto) => (
+                  <TableRow key={proyecto.id}>
+                    <TableCell>
+                      {proyecto.codigo ? (
+                        <span className="inline-block font-mono text-xs font-semibold text-foreground bg-muted/50 px-2 py-0.5 rounded">
+                          {proyecto.codigo}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/proyectos/${proyecto.id}`}
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                      >
+                        {proyecto.nombre}
+                      </Link>
+                      {proyecto.ubicacion && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{proyecto.ubicacion}</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/clientes/${proyecto.cliente.id}`}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {proyecto.cliente.nombre.split(' ').slice(0, 2).join(' ')}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{proyecto.tipoProyecto}</TableCell>
+                    <TableCell>
+                      <EstadoProyectoBadge estado={proyecto.estado} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {proyecto.fechaInicio ? formatDate(proyecto.fechaInicio) : '-'}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium text-foreground tabular-nums">
+                      {proyecto.presupuestoEstimado
+                        ? formatCurrency(proyecto.presupuestoEstimado)
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {(proyecto as any).avanceFisico > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${(proyecto as any).avanceFisico}%`,
+                                backgroundColor: (proyecto as any).avanceFisico === 100 ? '#22c55e' : (proyecto as any).avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                              }}
+                            />
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-sm">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Link href={`/proyectos/${proyecto.id}`}>
-                            <Button variant="ghost" size="sm" title="Ver detalle">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/proyectos/${proyecto.id}/editar`}>
-                            <Button variant="ghost" size="sm" title="Editar">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <DeleteProyectoButton id={proyecto.id} nombre={proyecto.nombre} />
+                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{(proyecto as any).avanceFisico}%</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        <span className="text-muted-foreground/50 text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/proyectos/${proyecto.id}`}>
+                          <Button variant="ghost" size="sm" title="Ver detalle" aria-label={`Ver detalle de ${proyecto.nombre}`}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/proyectos/${proyecto.id}/editar`}>
+                          <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar ${proyecto.nombre}`}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <DeleteProyectoButton id={proyecto.id} nombre={proyecto.nombre} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

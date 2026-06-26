@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EstadoPresupuestoBadge } from '@/components/ui/badge'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Eye, Pencil, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { DeletePresupuestoButton } from './DeletePresupuestoButton'
@@ -144,86 +145,84 @@ export default async function PresupuestosPage({
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">N° Cotización</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proyecto</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fecha</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {presupuestos.map((p) => (
-                    <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Cotización</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {presupuestos.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <Link
+                        href={`/presupuestos/${p.id}`}
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                      >
+                        {p.numero}
+                      </Link>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {p._count.capitulos > 0
+                          ? `${p._count.capitulos} capítulos (V2)`
+                          : `${p._count.partidas} partidas · ${p._count.modulosMelamina} módulos`}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/clientes/${p.cliente.id}`}
+                        title={p.cliente.nombre}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors block max-w-[200px] truncate"
+                      >
+                        {p.cliente.nombre}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {p.proyecto ? (
                         <Link
-                          href={`/presupuestos/${p.id}`}
-                          className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                          href={`/proyectos/${p.proyecto.id}`}
+                          title={p.proyecto.nombre}
+                          className="hover:text-primary transition-colors block max-w-[220px] truncate"
                         >
-                          {p.numero}
+                          {p.proyecto.nombre}
                         </Link>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {p._count.capitulos > 0
-                            ? `${p._count.capitulos} capítulos (V2)`
-                            : `${p._count.partidas} partidas · ${p._count.modulosMelamina} módulos`}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/clientes/${p.cliente.id}`}
-                          title={p.cliente.nombre}
-                          className="text-sm text-muted-foreground hover:text-primary transition-colors block max-w-[200px] truncate"
-                        >
-                          {p.cliente.nombre}
+                      ) : (
+                        <span className="text-muted-foreground/50">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <EstadoPresupuestoBadge estado={p.estado} />
+                    </TableCell>
+                    <TableCell className="text-sm font-bold text-foreground tabular-nums">
+                      {formatCurrency(p.total)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(p.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/presupuestos/${p.id}`}>
+                          <Button variant="ghost" size="sm" title="Ver detalle" aria-label={`Ver presupuesto ${p.numero}`}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
                         </Link>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {p.proyecto ? (
-                          <Link
-                            href={`/proyectos/${p.proyecto.id}`}
-                            title={p.proyecto.nombre}
-                            className="hover:text-primary transition-colors block max-w-[220px] truncate"
-                          >
-                            {p.proyecto.nombre}
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground/50">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <EstadoPresupuestoBadge estado={p.estado} />
-                      </td>
-                      <td className="px-4 py-3 text-sm font-bold text-foreground tabular-nums">
-                        {formatCurrency(p.total)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {formatDate(p.createdAt)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Link href={`/presupuestos/${p.id}`}>
-                            <Button variant="ghost" size="sm" title="Ver detalle">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/presupuestos/${p.id}/editar-v2`}>
-                            <Button variant="ghost" size="sm" title="Editar">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <DeletePresupuestoButton id={p.id} numero={p.numero} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <Link href={`/presupuestos/${p.id}/editar-v2`}>
+                          <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar presupuesto ${p.numero}`}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <DeletePresupuestoButton id={p.id} numero={p.numero} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
