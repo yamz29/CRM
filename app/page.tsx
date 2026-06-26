@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { TourBanner } from '@/components/onboarding/TourBanner'
+import { PipelineDonut } from '@/components/dashboard/PipelineDonut'
 
 const MS_DAY = 86_400_000
 
@@ -53,6 +54,7 @@ interface EtapaCount {
   count: number
   href: string
   color: string
+  colorHex: string
 }
 
 // ── Data ───────────────────────────────────────────────────────────────────
@@ -268,12 +270,21 @@ async function getOperacionData() {
   const ETAPAS_OP = ['Lead', 'Levantamiento', 'Cotización', 'Negociación']
   const ETAPAS_PROY = ['Prospecto', 'En Cotización', 'Adjudicado', 'En Ejecución', 'Pausado', 'Completado']
 
+  const OP_COLORS: Record<string, string> = {
+    'Lead': '#64748b', 'Levantamiento': '#6366f1', 'Cotización': '#3b82f6', 'Negociación': '#f59e0b',
+  }
+  const PROY_COLORS: Record<string, string> = {
+    'Prospecto': '#64748b', 'En Cotización': '#3b82f6', 'Adjudicado': '#f59e0b',
+    'En Ejecución': '#10b981', 'Pausado': '#f97316', 'Completado': '#14b8a6',
+  }
+
   const oportunidades: EtapaCount[] = ETAPAS_OP.map(label => {
     const found = oportunidadesPorEtapa.find(o => o.etapa === label)
     return {
       key: `op-${label}`, label, count: found?._count._all ?? 0,
       href: `/oportunidades?etapa=${encodeURIComponent(label)}`,
       color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+      colorHex: OP_COLORS[label] ?? '#64748b',
     }
   })
 
@@ -286,6 +297,7 @@ async function getOperacionData() {
         : label === 'Pausado' ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200'
         : label === 'Completado' ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-200'
         : 'bg-slate-50 dark:bg-slate-800/30 border-slate-200',
+      colorHex: PROY_COLORS[label] ?? '#64748b',
     }
   })
 
@@ -489,7 +501,11 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">Conversiones activas por etapa.</p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-4 gap-2">
+            <PipelineDonut
+              data={data.oportunidades.map(e => ({ label: e.label, count: e.count, colorHex: e.colorHex }))}
+              totalLabel="Activas"
+            />
+            <div className="grid grid-cols-4 gap-2 mt-4">
               {data.oportunidades.map(e => (
                 <Link
                   key={e.key}
@@ -512,7 +528,11 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">Click en el estado para ver el Kanban.</p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-2">
+            <PipelineDonut
+              data={data.proyectosPorEstado.map(e => ({ label: e.label, count: e.count, colorHex: e.colorHex }))}
+              totalLabel="Proyectos"
+            />
+            <div className="grid grid-cols-3 gap-2 mt-4">
               {data.proyectosPorEstado.map(e => (
                 <Link
                   key={e.key}
