@@ -10,6 +10,7 @@ import {
   Download, Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/ui/stats-card'
 import { ImportarExtractoModal } from '@/components/contabilidad/ImportarExtractoModal'
 import { formatCurrency } from '@/lib/utils'
@@ -354,71 +355,69 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
 
           {/* Table */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/40">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Número</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Cliente/Proveedor</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">NCF</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Destino</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Total</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Pagado</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Estado</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {facturasFiltradas.map((f) => {
-                    const badge = ESTADOS_BADGE[f.estado] || ESTADOS_BADGE.pendiente
-                    const BadgeIcon = badge.icon
-                    return (
-                      <tr key={f.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-4 py-3 font-medium font-mono">{f.numero}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${f.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
-                            {f.tipo === 'ingreso' ? <ArrowUpCircle className="w-3.5 h-3.5" /> : <ArrowDownCircle className="w-3.5 h-3.5" />}
-                            {f.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{new Date(f.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</td>
-                        <td className="px-4 py-3">{f.tipo === 'ingreso' ? f.cliente?.nombre || '—' : f.proveedor || '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{f.ncf || '—'}</td>
-                        <td className="px-4 py-3 text-xs">
-                          {f.proyecto ? (
-                            <span className="text-primary">{f.proyecto.nombre}</span>
-                          ) : (
-                            <span className="capitalize text-muted-foreground">{f.destinoTipo}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold tabular-nums">{formatCurrency(f.total)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(f.montoPagado)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                            <BadgeIcon className="w-3 h-3" /> {f.estado}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Link href={`/contabilidad/facturas/${f.id}`}>
-                              <Button variant="ghost" size="sm"><Eye className="w-3.5 h-3.5" /></Button>
-                            </Link>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteFactura(f.id)}>
-                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  {facturasFiltradas.length === 0 && (
-                    <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">No se encontraron facturas</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Cliente/Proveedor</TableHead>
+                  <TableHead>NCF</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Pagado</TableHead>
+                  <TableHead className="text-center">Estado</TableHead>
+                  <TableHead className="text-center">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {facturasFiltradas.map((f) => {
+                  const badge = ESTADOS_BADGE[f.estado] || ESTADOS_BADGE.pendiente
+                  const BadgeIcon = badge.icon
+                  return (
+                    <TableRow key={f.id}>
+                      <TableCell className="font-medium font-mono">{f.numero}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${f.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
+                          {f.tipo === 'ingreso' ? <ArrowUpCircle className="w-3.5 h-3.5" /> : <ArrowDownCircle className="w-3.5 h-3.5" />}
+                          {f.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(f.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</TableCell>
+                      <TableCell>{f.tipo === 'ingreso' ? f.cliente?.nombre || '—' : f.proveedor || '—'}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{f.ncf || '—'}</TableCell>
+                      <TableCell className="text-xs">
+                        {f.proyecto ? (
+                          <span className="text-primary">{f.proyecto.nombre}</span>
+                        ) : (
+                          <span className="capitalize text-muted-foreground">{f.destinoTipo}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{formatCurrency(f.total)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatCurrency(f.montoPagado)}</TableCell>
+                      <TableCell className="text-center">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+                          <BadgeIcon className="w-3 h-3" /> {f.estado}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Link href={`/contabilidad/facturas/${f.id}`}>
+                            <Button variant="ghost" size="sm" aria-label={`Ver factura ${f.numero}`}><Eye className="w-3.5 h-3.5" /></Button>
+                          </Link>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteFactura(f.id)} aria-label={`Eliminar factura ${f.numero}`}>
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {facturasFiltradas.length === 0 && (
+                  <TableRow><TableCell colSpan={10} className="py-12 text-center text-muted-foreground">No se encontraron facturas</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
@@ -1038,10 +1037,10 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; cli
         )}
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/40">
-                <th className="px-3 py-3 w-10">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
                   <input
                     type="checkbox"
                     checked={movimientosFiltrados.length > 0 && seleccion.size === movimientosFiltrados.length}
@@ -1052,46 +1051,46 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; cli
                     className="rounded border-border cursor-pointer"
                     title="Seleccionar todos"
                   />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Descripción</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Referencia</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Monto</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Conciliado</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Factura</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Recibo</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+                </TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Referencia</TableHead>
+                <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="text-center">Conciliado</TableHead>
+                <TableHead className="text-center">Factura</TableHead>
+                <TableHead className="text-center">Recibo</TableHead>
+                <TableHead className="text-center w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {movimientosFiltrados.length === 0 && (
-                <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                <TableRow><TableCell colSpan={10} className="py-8 text-center text-muted-foreground text-sm">
                   Sin movimientos que coincidan con los filtros
-                </td></tr>
+                </TableCell></TableRow>
               )}
               {movimientosFiltrados.map((m: any) => (
-                <tr key={m.id} className={`hover:bg-muted/20 ${seleccion.has(m.id) ? 'bg-primary/5' : ''}`}>
-                  <td className="px-3 py-3">
+                <TableRow key={m.id} className={seleccion.has(m.id) ? 'bg-primary/5' : ''}>
+                  <TableCell>
                     <input
                       type="checkbox"
                       checked={seleccion.has(m.id)}
                       onChange={() => toggleSeleccion(m.id)}
                       className="rounded border-border cursor-pointer"
                     />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(m.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(m.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</TableCell>
+                  <TableCell>
                     <span className={`text-xs font-medium ${m.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
                       {m.tipo === 'credito' ? 'Crédito' : 'Débito'}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">{m.descripcion}</td>
-                  <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{m.referencia || '—'}</td>
-                  <td className={`px-4 py-3 text-right font-semibold tabular-nums ${m.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
+                  </TableCell>
+                  <TableCell>{m.descripcion}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">{m.referencia || '—'}</TableCell>
+                  <TableCell className={`text-right font-semibold tabular-nums ${m.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
                     {m.tipo === 'credito' ? '+' : '-'}{formatCurrency(m.monto)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">
                     {m.conciliado ? (
                       <span className="inline-flex items-center gap-1 text-green-600 text-xs">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Sí
@@ -1099,8 +1098,8 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; cli
                     ) : (
                       <span className="text-xs text-muted-foreground">No</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">
                     {m.factura ? (
                       <div className="flex items-center gap-1 justify-center">
                         <Link href={`/contabilidad/facturas/${m.factura.id}`} className="text-xs text-primary hover:underline">
@@ -1138,8 +1137,8 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; cli
                           })}
                       </select>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">
                     {m.recibo ? (
                       <span className="text-xs font-mono text-primary">{m.recibo.numero}</span>
                     ) : m.tipo === 'credito' && !m.reciboId ? (
@@ -1154,16 +1153,16 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; cli
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button onClick={() => handleDeleteMovimiento(m.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar movimiento">
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <button onClick={() => handleDeleteMovimiento(m.id)} className="text-muted-foreground hover:text-red-500 transition-colors" title="Eliminar movimiento" aria-label="Eliminar movimiento">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
         </>
       )}

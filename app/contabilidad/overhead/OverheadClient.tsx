@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Layers, Save, AlertTriangle, Info, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Table, TableHeader, TableFooter, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useToast } from '@/components/ui/toast'
 import { formatCurrency } from '@/lib/utils'
 import { montoPorcentaje } from '@/lib/overhead'
@@ -217,70 +218,68 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
 
       {/* Tabla de proyectos */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/40">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase w-32">%</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Porción (RD$)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {proyectos.map(p => {
-                const pct = parseFloat(pcts[p.proyectoId] || '0') || 0
-                const porcion = montoPorcentaje(poolReal, pct)
-                return (
-                  <tr key={p.proyectoId} className="hover:bg-muted/20">
-                    <td className="px-4 py-3">
-                      <Link href={`/proyectos/${p.proyectoId}`} className="font-medium text-foreground hover:text-primary">
-                        {p.nombre}
-                      </Link>
-                      {desgloses[p.proyectoId] && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
-                          <span title="Costo del mes">costo {desgloses[p.proyectoId].costoMes.toFixed(1)}</span>
-                          <span title="Horas del personal">horas {desgloses[p.proyectoId].horas.toFixed(1)}</span>
-                          <span title="Costo acumulado">acum {desgloses[p.proyectoId].costoAcum.toFixed(1)}</span>
-                          <span title="Presupuesto estimado">presup {desgloses[p.proyectoId].presupuesto.toFixed(1)}</span>
-                          <span title="Avance físico">avance {desgloses[p.proyectoId].avance.toFixed(1)}</span>
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{p.estado || '—'}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={pcts[p.proyectoId] ?? ''}
-                        onChange={e => setPcts(prev => ({ ...prev, [p.proyectoId]: e.target.value }))}
-                        className="h-8 w-24 text-right ml-auto tabular-nums"
-                        placeholder="0"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">{formatCurrency(porcion)}</td>
-                  </tr>
-                )
-              })}
-              {proyectos.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-12 text-center text-muted-foreground">
-                  No hay proyectos activos ni gastos en este mes
-                </td></tr>
-              )}
-            </tbody>
-            {proyectos.length > 0 && (
-              <tfoot>
-                <tr className="bg-muted/30 border-t border-border font-semibold">
-                  <td className="px-4 py-3" colSpan={2}>Total</td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${excede ? 'text-red-600' : ''}`}>{totalPct.toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(totalMonto)}</td>
-                </tr>
-              </tfoot>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Proyecto</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead className="text-right w-32">%</TableHead>
+              <TableHead className="text-right">Porción (RD$)</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {proyectos.map(p => {
+              const pct = parseFloat(pcts[p.proyectoId] || '0') || 0
+              const porcion = montoPorcentaje(poolReal, pct)
+              return (
+                <TableRow key={p.proyectoId}>
+                  <TableCell>
+                    <Link href={`/proyectos/${p.proyectoId}`} className="font-medium text-foreground hover:text-primary">
+                      {p.nombre}
+                    </Link>
+                    {desgloses[p.proyectoId] && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                        <span title="Costo del mes">costo {desgloses[p.proyectoId].costoMes.toFixed(1)}</span>
+                        <span title="Horas del personal">horas {desgloses[p.proyectoId].horas.toFixed(1)}</span>
+                        <span title="Costo acumulado">acum {desgloses[p.proyectoId].costoAcum.toFixed(1)}</span>
+                        <span title="Presupuesto estimado">presup {desgloses[p.proyectoId].presupuesto.toFixed(1)}</span>
+                        <span title="Avance físico">avance {desgloses[p.proyectoId].avance.toFixed(1)}</span>
+                      </p>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{p.estado || '—'}</TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={pcts[p.proyectoId] ?? ''}
+                      onChange={e => setPcts(prev => ({ ...prev, [p.proyectoId]: e.target.value }))}
+                      className="h-8 w-24 text-right ml-auto tabular-nums"
+                      placeholder="0"
+                    />
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">{formatCurrency(porcion)}</TableCell>
+                </TableRow>
+              )
+            })}
+            {proyectos.length === 0 && (
+              <TableRow><TableCell colSpan={4} className="py-12 text-center text-muted-foreground">
+                No hay proyectos activos ni gastos en este mes
+              </TableCell></TableRow>
             )}
-          </table>
-        </div>
+          </TableBody>
+          {proyectos.length > 0 && (
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={2} className="font-semibold">Total</TableCell>
+                <TableCell className={`text-right tabular-nums font-semibold ${excede ? 'text-red-600' : ''}`}>{totalPct.toFixed(2)}%</TableCell>
+                <TableCell className="text-right tabular-nums font-semibold">{formatCurrency(totalMonto)}</TableCell>
+              </TableRow>
+            </TableFooter>
+          )}
+        </Table>
       </div>
 
       {/* Acciones */}
