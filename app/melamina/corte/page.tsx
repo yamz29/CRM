@@ -69,12 +69,12 @@ export default async function ListaCorteConsolidadaPage({
         <div className="flex items-center gap-3">
           <Link
             href="/melamina"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Lista de Corte</h1>
+            <h1 className="text-xl font-bold text-foreground">Lista de Corte</h1>
             <p className="text-sm text-slate-500">{proyecto.nombre}</p>
           </div>
         </div>

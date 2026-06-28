@@ -20,12 +20,12 @@ export default async function MaterialesMelaminaPage() {
       <div className="flex items-center gap-4">
         <Link
           href="/melamina"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800">Materiales de Melamina</h1>
+          <h1 className="text-2xl font-bold text-foreground">Materiales de Melamina</h1>
           <p className="text-slate-500 text-sm mt-0.5">
             Catálogo de tableros, cantos y herrajes para módulos
           </p>
