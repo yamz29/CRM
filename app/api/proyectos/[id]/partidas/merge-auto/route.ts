@@ -28,7 +28,7 @@ export const GET = withPermiso('proyectos', 'ver', async (_req: NextRequest, { p
 
   const candidatos = Array.from(grupos.entries())
     .filter(([, arr]) => arr.length >= 2)
-    .map(([codigo, arr]) => ({
+    .map(([, arr]) => ({
       codigo: arr[0].codigo,
       cantidad: arr.length,
       totalSubtotal: arr.reduce((s, p) => s + p.subtotalPresupuestado, 0),

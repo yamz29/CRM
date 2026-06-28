@@ -2,10 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getResumenFinancieroBatch } from '@/lib/resumen-financiero'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import {
-  AlertTriangle, AlertOctagon, Clock, Receipt, FilePlus, GanttChart,
-  Lock, TrendingDown, FolderOpen, ChevronRight, CheckCircle2, Calendar,
-} from 'lucide-react'
+import { AlertTriangle, AlertOctagon, Clock, FilePlus, GanttChart, Lock, TrendingDown, FolderOpen, ChevronRight, CheckCircle2, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { TourBanner } from '@/components/onboarding/TourBanner'

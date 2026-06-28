@@ -223,7 +223,6 @@ export function calcularCriticalPath(
   return actividades.map(a => {
     const e = early.get(a.id)!
     const l = late.get(a.id)!
-    const holgura = diffWorkingDays(e.es, l.ls, opts) - (e.es <= l.ls ? 0 : 0)
     // diffWorkingDays es inclusive en ambos extremos; si ls == es, diff = 1, queremos 0
     const holguraReal = e.es.getTime() === l.ls.getTime()
       ? 0

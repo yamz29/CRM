@@ -4,12 +4,6 @@ import bcrypt from 'bcryptjs'
 import { withPermiso } from '@/lib/with-permiso'
 
 export const GET = withPermiso('configuracion', 'ver', async (_req: NextRequest) => {
-  const usuarios = await prisma.usuario.findMany({
-    orderBy: { nombre: 'asc' },
-    select: { id: true, nombre: true, correo: true, rol: true, activo: true, createdAt: true,
-      password: false }, // never expose hashed password
-  })
-  // Add hasPassword field
   const all = await prisma.usuario.findMany({ orderBy: { nombre: 'asc' } })
   const withFlag = all.map((u) => ({
     id: u.id, nombre: u.nombre, correo: u.correo, rol: u.rol,

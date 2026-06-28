@@ -118,8 +118,8 @@ export function ModuloMelaminaForm({ tableros, tiposModulo = TIPOS_MODULO_DEFAUL
       }
 
       router.push(mode === 'create' ? '/melamina?msg=creado' : '/melamina?msg=actualizado')
-    } catch (err: any) {
-      setError(err.message || 'Error inesperado')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setLoading(false)
     }

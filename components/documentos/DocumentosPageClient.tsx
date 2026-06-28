@@ -1,12 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import {
-  Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen,
-  FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File,
-  Tag, Calendar, User, Link2, Eye, Briefcase, TrendingUp,
-  ChevronRight, ChevronDown, MessageSquare, Send, Folder, Globe, Upload,
-} from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, ExternalLink, Pencil, Trash2, X, FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File, Tag, Calendar, User, Link2, Eye, Briefcase, TrendingUp, MessageSquare, Send, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SharePointUploader, guessCategory } from './SharePointUploader'
 import { SharePointFileManager } from './SharePointFileManager'
@@ -114,11 +109,6 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
     const res = await fetch(`/api/documentos/${docId}/comentarios`)
     if (res.ok) setComentarios(await res.json())
     setComentariosLoading(false)
-  }
-
-  function selectDoc(doc: Documento) {
-    setSelectedDoc(doc)
-    loadComentarios(doc.id)
   }
 
   // ── Comments ───────────────────────────────────────────────────────

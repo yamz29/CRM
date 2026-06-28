@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { BackButton } from '@/components/ui/back-button'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle, Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2, Search } from 'lucide-react'
+import { Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle, Loader2, FolderOpen, Building2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { compressImage, enhanceForOCR } from '@/lib/compress-image'
 import { carpetaFactura, nombreArchivoFactura } from '@/lib/factura-sp-path'
@@ -250,9 +250,9 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
         + fallbackMsg
       )
       setOcrLastProvider(data.provider === 'claude' || data.provider === 'gemini' ? data.provider : null)
-    } catch (err: any) {
+    } catch (err) {
       console.error('OCR error:', err)
-      setOcrResult(`Error OCR: ${err.message}`)
+      setOcrResult(`Error OCR: ${err instanceof Error ? err.message : 'desconocido'}`)
     } finally {
       setOcrLoading(false)
     }

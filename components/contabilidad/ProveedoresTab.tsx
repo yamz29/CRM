@@ -4,10 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Plus, Pencil, Trash2, Check, X, Search, Building2, Loader2,
-  Phone, Mail, User, FileText,
-} from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Search, Building2, Loader2, Mail } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 

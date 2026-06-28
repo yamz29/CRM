@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle,
-  Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2,
-  ListTodo, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore, Star,
-  FolderOpen, Trash2,
-} from 'lucide-react'
+import { X, Pencil, Trophy, XCircle, FileText, Phone, MessageCircle, Users, MapPin, Mail, StickyNote, Plus, ExternalLink, CheckCircle, Link2, Square, CheckSquare, Clock, AlertTriangle, Archive, ArchiveRestore, Star, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ETAPAS, type Oportunidad, type PresupuestoOpcion } from './PipelineClient'

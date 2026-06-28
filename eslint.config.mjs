@@ -10,6 +10,14 @@ const eslintConfig = defineConfig([
     // ~80 `any` y ~50 violaciones de las reglas nuevas del React Compiler.
     // Se degradan a warning para que el lint sea ejecutable sin ocultarlas.
     rules: {
+      // Respetar el convenio `_` para descartes intencionales (params/vars/catch).
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+        destructuredArrayIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+      }],
       "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/purity": "warn",

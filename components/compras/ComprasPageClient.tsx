@@ -1,15 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  ShoppingCart, Plus, Search, FileText, Truck, Building2, Calendar,
-  Check, X, Loader2, Eye, ChevronDown, Package,
-} from 'lucide-react'
+import { ShoppingCart, Plus, Search, FileText, Truck, Building2, Check, X, Eye } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
 interface Proveedor { id: number; nombre: string; condicionesPago: string | null }
@@ -55,7 +52,7 @@ export function ComprasPageClient({
 }) {
   const router = useRouter()
   const toast = useToast()
-  const [ordenes, setOrdenes] = useState(ordenesIniciales)
+  const [ordenes] = useState(ordenesIniciales)
   const [filters, setFilters] = useUrlFilters({ q: '', estado: 'todos' })
   const busqueda = filters.q
   const filtroEstado = filters.estado
@@ -70,11 +67,6 @@ export function ComprasPageClient({
     moneda: 'RD$',
     notas: '',
   })
-
-  const refreshData = useCallback(async () => {
-    const res = await fetch('/api/compras')
-    if (res.ok) setOrdenes(await res.json())
-  }, [])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()

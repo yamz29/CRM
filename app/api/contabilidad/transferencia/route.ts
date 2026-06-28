@@ -66,8 +66,9 @@ export async function POST(request: NextRequest) {
       credito,
       message: `Transferencia de ${montoNum.toLocaleString('en-US', { minimumFractionDigits: 2 })} de ${origen.nombre} a ${destino.nombre}`,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error en transferencia:', error)
-    return NextResponse.json({ error: `Error al procesar transferencia: ${error.message}` }, { status: 500 })
+    const msg = error instanceof Error ? error.message : 'Error desconocido'
+    return NextResponse.json({ error: `Error al procesar transferencia: ${msg}` }, { status: 500 })
   }
 }

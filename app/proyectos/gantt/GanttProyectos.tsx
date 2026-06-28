@@ -82,10 +82,6 @@ function addMonths(d: Date, n: number): Date {
   return new Date(d.getFullYear(), d.getMonth() + n, 1)
 }
 
-function monthsBetween(a: Date, b: Date): number {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
-}
-
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
@@ -164,7 +160,7 @@ export function GanttProyectos({
   }
 
   // Separar proyectos con fechas vs sin fechas, y aplicar filtro de ocultos
-  const { conFechas, sinFechas, ocultadosConFechas } = useMemo(() => {
+  const { conFechas, sinFechas } = useMemo(() => {
     const con: Proyecto[] = []
     const sin: Proyecto[] = []
     const ocultados: Proyecto[] = []

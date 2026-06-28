@@ -2,14 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import {
-  TrendingUp, Plus, Camera, Loader2, AlertTriangle, CheckCircle,
-  ArrowUpRight, ArrowDownRight,
-} from 'lucide-react'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer,
-} from 'recharts'
+import { TrendingUp, Camera, Loader2, AlertTriangle, CheckCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface Snapshot {
   id: number

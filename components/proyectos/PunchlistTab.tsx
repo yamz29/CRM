@@ -8,10 +8,7 @@ import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { formatDate } from '@/lib/utils'
-import {
-  Plus, Pencil, Trash2, Check, X, Loader2,
-  AlertTriangle, CheckCircle2, Circle, Clock, ShieldCheck, ArrowRight,
-} from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Loader2, CheckCircle2, Circle, Clock, ShieldCheck, ArrowRight } from 'lucide-react'
 
 interface PunchItem {
   id: number

@@ -177,7 +177,7 @@ function evalFormula(expr: string): number | null {
   }
 }
 
-function NumericInput({ value, onChange, step = '1', placeholder = '0', className = '' }: {
+function NumericInput({ value, onChange, placeholder = '0', className = '' }: {
   value: number; onChange: (v: number) => void; step?: string; placeholder?: string; className?: string
 }) {
   const [raw, setRaw] = useState('')

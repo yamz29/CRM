@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
-import { parseExcelRows, ParseResult, ParsedTitulo, ParsedCapitulo, ParsedPartida } from '@/lib/excel-parser'
+import { parseExcelRows, ParseResult, ParsedCapitulo, ParsedPartida } from '@/lib/excel-parser'
 import { useToast } from '@/components/ui/toast'
 
 // ── Types that match PresupuestoV2Builder's internal state ─────────────────

@@ -45,15 +45,12 @@ export const PUT = withPermiso('oportunidades', 'editar', async (req: NextReques
   }
 
   // Check if stage is changing to auto-create tasks
-  let etapaAnterior: string | null = null
   if (etapa !== undefined) {
     const current = await prisma.oportunidad.findUnique({
       where: { id: numId },
       select: { etapa: true, clienteId: true, responsable: true },
     })
     if (current && current.etapa !== etapa) {
-      etapaAnterior = current.etapa
-
       // Auto-create tasks from templates for the new stage
       if (!['Ganado', 'Perdido'].includes(etapa)) {
         const plantillas = await prisma.plantillaTareaEtapa.findMany({

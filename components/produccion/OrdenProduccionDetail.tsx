@@ -118,7 +118,7 @@ function formatDuration(start: string, end: string | null): string {
   return `${(hours / 24).toFixed(1)} días`
 }
 
-export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
+export function OrdenProduccionDetail({ orden, piezas }: Props) {
   const router = useRouter()
   const goBack = useSmartBack('/produccion')
   const toast = useToast()

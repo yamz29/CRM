@@ -9,16 +9,7 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSmartBack } from '@/components/ui/back-button'
 import { formatCurrency } from '@/lib/utils'
-import {
-  Plus,
-  Trash2,
-  Save,
-  X,
-  Loader2,
-  ChevronDown,
-  Hammer,
-  Box,
-} from 'lucide-react'
+import { Plus, Trash2, Save, X, Loader2, Hammer, Box } from 'lucide-react'
 
 interface Cliente {
   id: number
@@ -82,16 +73,6 @@ const PARTIDAS_PREDEFINIDAS = [
   { descripcion: 'Pintura lavable muros y cielos', unidad: 'm2' },
   { descripcion: 'Cerámicos y porcelanato piso', unidad: 'm2' },
   { descripcion: 'Carpintería en general', unidad: 'gl' },
-]
-
-const MATERIALES_MELAMINA = [
-  'Melamina Egger 18mm Blanco Alpino',
-  'Melamina Egger 18mm Grafito',
-  'Melamina Egger 18mm Wengue',
-  'Melamina Egger 25mm Blanco',
-  'MDF 18mm',
-  'Plywood Fenólico 15mm',
-  'Melamina 18mm Roble Natural',
 ]
 
 function emptyPartida(orden: number): Partida {

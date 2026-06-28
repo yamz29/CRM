@@ -1,24 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  Folder, FileText, Image, FileSpreadsheet, FileIcon, Presentation,
-  ChevronRight, ArrowLeft, Loader2, LogIn, LogOut, Plus, Globe,
-  AlertTriangle, Upload, FolderPlus, MoreVertical, Move, Pencil,
-  Trash2, X, Check,
-} from 'lucide-react'
+import { Folder, FileText, Image, FileSpreadsheet, FileIcon, Presentation, ChevronRight, ArrowLeft, Loader2, LogIn, LogOut, Globe, AlertTriangle, Upload, FolderPlus, MoreVertical, Move, Pencil, Trash2, X, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  initMsal, loginOneDrive, logoutOneDrive, isLoggedIn,
-  formatFileSize, getFileIcon,
-  type OneDriveItem,
-} from '@/lib/onedrive'
-import {
-  listSharePointRoot, listSharePointFolder, listSharePointPath,
-  getSharePointShareLink,
-  createFolder, moveItem, renameItem, deleteItem, uploadToFolder,
-  sanitizeFolderName, getRootFolder,
-} from '@/lib/sharepoint'
+import { initMsal, loginOneDrive, logoutOneDrive, isLoggedIn, formatFileSize, getFileIcon, type OneDriveItem } from '@/lib/onedrive'
+import { listSharePointFolder, listSharePointPath, getSharePointShareLink, createFolder, moveItem, renameItem, deleteItem, uploadToFolder, sanitizeFolderName, getRootFolder } from '@/lib/sharepoint'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 

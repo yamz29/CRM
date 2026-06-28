@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withPermiso } from '@/lib/with-permiso'
-import { feriadosDominicanos } from '@/lib/calendario-laboral'
 
 // GET /api/configuracion/feriados
 // Lista feriados ordenados por fecha. Opcionalmente filtra por año (?year=2026).

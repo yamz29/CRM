@@ -78,7 +78,7 @@ export default async function MelaminaPage({
     conteosPorTipo.map(c => [c.tipoModulo, c._count])
   )
 
-  const [modulos, totalModulos, enProduccion, instalados, conteosPorEstado] = await Promise.all([
+  const [modulos, totalModulos, enProduccion, instalados] = await Promise.all([
     prisma.moduloMelaminaV2.findMany({
       where,
       orderBy: [{ tipoModulo: 'asc' }, { createdAt: 'desc' }],
@@ -90,15 +90,7 @@ export default async function MelaminaPage({
     prisma.moduloMelaminaV2.count({
       where: { estadoProduccion: { in: ['Instalado', 'Entregado'] } },
     }),
-    prisma.moduloMelaminaV2.groupBy({
-      by: ['estadoProduccion'],
-      _count: true,
-    }),
   ])
-
-  const cuentaPorEstado = Object.fromEntries(
-    conteosPorEstado.map(c => [c.estadoProduccion, c._count])
-  )
 
   // Group modules by estado for kanban view
   const modulosPorEstado = Object.fromEntries(

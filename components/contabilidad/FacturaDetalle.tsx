@@ -47,7 +47,7 @@ interface Factura {
   aplicaciones?: AplicacionRecibo[]
 }
 
-const ESTADOS_BADGE: Record<string, { color: string; icon: any; label: string }> = {
+const ESTADOS_BADGE: Record<string, { color: string; icon: React.ComponentType<{ className?: string }>; label: string }> = {
   pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, label: 'Pendiente' },
   parcial: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: ArrowRightLeft, label: 'Parcial' },
   pagada: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2, label: 'Pagada' },
@@ -66,7 +66,6 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
   const [factura, setFactura] = useState(initialFactura)
   const [showPagoForm, setShowPagoForm] = useState(false)
   const [showConvertirModal, setShowConvertirModal] = useState(false)
-  const [loading, setLoading] = useState(false)
 
   // Confirmación genérica para reemplazar el diálogo nativo del navegador
   const [confirmacion, setConfirmacion] = useState<{

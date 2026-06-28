@@ -45,7 +45,7 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
   const [prioridad, setPrioridad] = useState(initialData?.prioridad || 'Media')
   const [estado, setEstado] = useState(initialData?.estado || 'Pendiente')
   const [avance, setAvance] = useState(initialData?.avance ?? 0)
-  const [responsable, setResponsable] = useState(initialData?.responsable || '')
+  const [responsable] = useState(initialData?.responsable || '')
   const [asignadoId, setAsignadoId] = useState(String(initialData?.asignadoId || ''))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -99,8 +99,8 @@ export function TareaForm({ clientes, proyectos, usuarios, mode = 'create', init
       }
 
       router.push(mode === 'create' ? '/tareas?msg=creado' : '/tareas?msg=actualizado')
-    } catch (err: any) {
-      setError(err.message || 'Error inesperado')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setLoading(false)
     }

@@ -39,7 +39,6 @@ export const GET = withPermiso('empleados', 'ver', async (request: NextRequest, 
     if (!empleado) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     if (!esAdmin(request)) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { salario, ...resto } = empleado
       return NextResponse.json(resto)
     }
@@ -92,7 +91,6 @@ export const PUT = withPermiso('empleados', 'editar', async (request: NextReques
     const empleado = await prisma.empleado.update({ where: { id }, data, include: { horarios: true } })
 
     if (!admin) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { salario, ...resto } = empleado
       return NextResponse.json(resto)
     }

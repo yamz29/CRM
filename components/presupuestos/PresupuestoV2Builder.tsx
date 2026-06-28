@@ -116,7 +116,6 @@ const DEFAULT_INDIRECTO_LINEAS: IndirectoLinea[] = [
 const UNIDADES = ['m2', 'ml', 'm3', 'gl', 'ud', 'kg', 'hr', 'm', 'ton', 'pl', 'jg', 'día', 'sem', 'mes', 'saco', 'lt', 'lts', 'PA']
 const ESTADOS = ['Borrador', 'Enviado', 'Aprobado', 'Rechazado']
 const TAB_FIELDS = ['codigo', 'descripcion', 'unidad', 'cantidad', 'precioUnitario'] as const
-type TabField = (typeof TAB_FIELDS)[number]
 type SeccionAPU = keyof DetalleAPU
 
 const SECCIONES_APU: { key: SeccionAPU; label: string; color: string }[] = [
@@ -180,7 +179,7 @@ const nextPK = () => String(++_pk)
 // ── NumericCell ───────────────────────────────────────────────────────────────
 
 function NumericCell({
-  value, onChange, cellkey, onKeyDown, step = '0.0001', className = '',
+  value, onChange, cellkey, onKeyDown, className = '',
 }: {
   value: number; onChange: (v: number) => void
   cellkey: string; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void

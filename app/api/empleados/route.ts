@@ -9,7 +9,6 @@ function esAdmin(req: NextRequest) {
 // Oculta el salario a usuarios sin rol Admin (campo sensible)
 function ocultarSalario<T extends { salario: number | null }>(req: NextRequest, empleados: T[]) {
   if (esAdmin(req)) return empleados
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   return empleados.map(({ salario, ...resto }) => resto)
 }
 

@@ -124,10 +124,6 @@ export function RespaldoPanel() {
 
   // ── Funciones de importación ────────────────────────────────────────────
 
-  function impMensaje(tipo: 'ok' | 'error' | 'warn', texto: string) {
-    setImp(prev => ({ ...prev, mensaje: { tipo, texto } }))
-  }
-
   function resetImport() {
     setImp({ step: 'idle', file: null, tempFile: null, validatedSize: null, validating: false, mensaje: null })
     if (fileInputRef.current) fileInputRef.current.value = ''

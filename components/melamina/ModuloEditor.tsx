@@ -515,7 +515,6 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
     ? ((materialTablero.anchoMm ?? 2080) * (materialTablero.largoMm ?? 2800)) / 1_000_000
     : (2080 * 2800) / 1_000_000
   const numPlanchas = totalAreaM2 > 0 ? Math.ceil((totalAreaM2 * 1.15) / areaPlanchaM2) : 0
-  const pctUsoPlancha = numPlanchas > 0 ? (totalAreaM2 / (numPlanchas * areaPlanchaM2)) * 100 : 0
 
   // ── Nesting ──────────────────────────────────────────────────────────────
   const nestingGroups = useMemo(
@@ -530,7 +529,6 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
   // Suma proporcional de TODOS los tableros usados en el módulo
   const costoTablero = tableroGroups.reduce((acc, g) =>
     acc + (g.boardAreaM2 > 0 ? (g.areaM2 / g.boardAreaM2) * (g.mat?.precio || 0) : 0), 0)
-  const pctProporcionalTablero = areaPlanchaM2 > 0 ? (totalAreaM2 / areaPlanchaM2) * 100 : 0
   const totalMateriales = materialesModulo.reduce((acc, r) => acc + r.subtotal, 0)
   const costoTotal = costoTablero + totalMateriales
   const pv = parseFloat(precioVenta) || 0
@@ -676,8 +674,8 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Error inesperado')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setLoading(false)
     }
@@ -693,8 +691,8 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
       }
       const { id: newId } = await res.json()
       router.push(`/melamina/${newId}`)
-    } catch (err: any) {
-      setError(err.message || 'Error inesperado')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setLoading(false)
       setConfirmDuplicar(false)

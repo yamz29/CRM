@@ -1,15 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  ArrowLeft, ShoppingCart, Plus, Trash2, Check, X, Pencil, Save,
-  Truck, Building2, PackageCheck, Send, FileText, Loader2,
-} from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Plus, Trash2, Check, X, Pencil, Truck, Building2, PackageCheck, Send, FileText } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useSmartBack } from '@/components/ui/back-button'
 import { useToast } from '@/components/ui/toast'
@@ -63,14 +59,11 @@ const emptyItem = { descripcion: '', unidad: 'ud', cantidad: '1', precioUnitario
 
 export function OrdenCompraDetail({
   ordenInicial,
-  proveedores,
-  proyectos,
 }: {
   ordenInicial: Orden
   proveedores: Proveedor[]
   proyectos: Proyecto[]
 }) {
-  const router = useRouter()
   const goBack = useSmartBack('/compras')
   const toast = useToast()
   const [orden, setOrden] = useState(ordenInicial)

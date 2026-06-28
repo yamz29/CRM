@@ -1,11 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import {
-  Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen,
-  FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File,
-  Tag, Calendar, User, Link2, Upload,
-} from 'lucide-react'
+import { Plus, Search, ExternalLink, Pencil, Trash2, X, FolderOpen, FileText, Image, FileCheck, MapPin, Receipt, ClipboardList, File, Tag, Calendar, User, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
@@ -42,10 +38,6 @@ const CATEGORIAS = [
   { key: 'Acta',      label: 'Acta',      icon: FileText,      color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
   { key: 'General',   label: 'General',   icon: File,          color: 'bg-muted text-muted-foreground' },
 ]
-
-function getCatConfig(cat: string) {
-  return CATEGORIAS.find(c => c.key === cat) ?? CATEGORIAS[CATEGORIAS.length - 1]
-}
 
 function parseEtiquetas(json: string | null): string[] {
   if (!json) return []

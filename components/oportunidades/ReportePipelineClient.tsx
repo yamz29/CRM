@@ -1,16 +1,10 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import {
-  Trophy, XCircle, TrendingUp, DollarSign, Clock, Users,
-  Calendar, Filter, Download, AlertTriangle, BarChart3,
-} from 'lucide-react'
+import { Trophy, XCircle, TrendingUp, DollarSign, Clock, Users, Calendar, Filter, AlertTriangle, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-} from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface Resumen {
   totalCerradas: number
@@ -52,7 +46,6 @@ interface ReporteData {
   porResponsable: ResponsableData[]
 }
 
-const PIE_COLORS = ['#22c55e', '#ef4444']
 const MOTIVO_COLORS = ['#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4']
 
 function formatMes(mes: string) {
@@ -97,10 +90,6 @@ export function ReportePipelineClient() {
   if (!data) return <p className="text-center text-muted-foreground py-10">Error cargando reporte</p>
 
   const { resumen, motivos, categorias, meses, porResponsable } = data
-  const pieData = [
-    { name: 'Ganadas', value: resumen.ganadas },
-    { name: 'Perdidas', value: resumen.perdidas },
-  ].filter(d => d.value > 0)
 
   return (
     <div className="space-y-6">

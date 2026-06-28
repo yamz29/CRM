@@ -2,16 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Upload, Loader2, CheckCircle, AlertTriangle, Globe } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  initMsal, loginOneDrive, isLoggedIn,
-  formatFileSize,
-  type OneDriveItem,
-} from '@/lib/onedrive'
-import {
-  uploadSmallFile, uploadLargeFile, ensureFolder,
-  getSharePointShareLink, sanitizeFolderName,
-} from '@/lib/sharepoint'
+import { initMsal, loginOneDrive, isLoggedIn, type OneDriveItem } from '@/lib/onedrive'
+import { uploadSmallFile, uploadLargeFile, ensureFolder, getSharePointShareLink } from '@/lib/sharepoint'
 
 // ── Types ────────────────────────────────────────────────────────────────
 

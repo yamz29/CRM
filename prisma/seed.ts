@@ -52,7 +52,7 @@ async function main() {
     },
   })
 
-  const cliente4 = await prisma.cliente.create({
+  await prisma.cliente.create({
     data: {
       nombre: 'Arquitecta Andrea Soledad Muñoz Pizarro',
       telefono: '+56 9 5432 1098',
@@ -65,7 +65,7 @@ async function main() {
     },
   })
 
-  const cliente5 = await prisma.cliente.create({
+  await prisma.cliente.create({
     data: {
       nombre: 'Marcelo Andrés Sepúlveda González',
       telefono: '+56 9 4321 0987',

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Ruler, Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Ruler, Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 

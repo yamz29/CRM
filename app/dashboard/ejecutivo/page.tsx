@@ -1,12 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
-import { redirect, notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import {
-  TrendingUp, TrendingDown, DollarSign, Users, FolderOpen,
-  PieChart, BarChart3, Award, Lock,
-} from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import { TrendingUp, TrendingDown, DollarSign, Users, FolderOpen, PieChart, BarChart3, Award, Lock } from 'lucide-react'
 
 /**
  * /dashboard/ejecutivo — solo Admin.

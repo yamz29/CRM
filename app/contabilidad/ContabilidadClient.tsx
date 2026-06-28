@@ -1,14 +1,9 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  Landmark, FileText, Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle,
-  DollarSign, AlertCircle, Eye, Trash2, CreditCard, Building2, ArrowRightLeft,
-  CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck,
-  Download, Layers,
-} from 'lucide-react'
+import { Landmark, FileText, Plus, Search, ArrowUpCircle, ArrowDownCircle, DollarSign, Eye, Trash2, CreditCard, Building2, ArrowRightLeft, CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck, Download, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/ui/stats-card'
@@ -54,7 +49,7 @@ interface Props {
 
 type Tab = 'dashboard' | 'resultado' | 'facturas' | 'cuentas' | 'conciliacion' | 'proveedores'
 
-const ESTADOS_BADGE: Record<string, { color: string; icon: any }> = {
+const ESTADOS_BADGE: Record<string, { color: string; icon: React.ComponentType<{ className?: string }> }> = {
   pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
   parcial: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: ArrowRightLeft },
   pagada: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2 },
@@ -84,7 +79,6 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
   const [filtroEstado, setFiltroEstado] = useState<string>('')
 
   // Modals
-  const [showFacturaForm, setShowFacturaForm] = useState(false)
   const [showCuentaForm, setShowCuentaForm] = useState(false)
   const [editingCuenta, setEditingCuenta] = useState<CuentaBancaria | null>(null)
 

@@ -4,15 +4,7 @@ import fs from 'fs'
 import { execSync } from 'child_process'
 import { prisma } from '@/lib/prisma'
 import { withPermiso } from '@/lib/with-permiso'
-import {
-  TEMP_DIR,
-  DB_PATH,
-  isSQLiteFile,
-  isSafeTempName,
-  saveTempFile,
-  backupCurrentDb,
-  replaceDatabaseWith,
-} from '@/lib/sqlite-import'
+import { TEMP_DIR, isSQLiteFile, isSafeTempName, saveTempFile, backupCurrentDb, replaceDatabaseWith } from '@/lib/sqlite-import'
 
 const ALLOWED_EXTENSIONS = ['.db', '.sqlite']
 

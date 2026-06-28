@@ -4,7 +4,6 @@ import { checkPermiso } from '@/lib/permisos'
 
 const TIPOS = ['compra', 'tarea'] as const
 const PRIORIDADES = ['Alta', 'Normal', 'Baja'] as const
-const ESTADOS = ['Pendiente', 'En Progreso', 'Completado', 'Cancelado'] as const
 
 // GET /api/proyectos/[id]/programa?tipo=compra|tarea
 export async function GET(

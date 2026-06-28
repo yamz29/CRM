@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Trash2, X, Check, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -61,23 +61,6 @@ const TABS: { key: Tipo; label: string; desc: string }[] = [
 ]
 
 const inputCls = 'border border-slate-200 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'
-
-function dimLabel(m: Material) {
-  if (m.tipo === 'tablero') {
-    const parts = []
-    if (m.anchoMm) parts.push(`${m.anchoMm}mm`)
-    if (m.largoMm) parts.push(`${m.largoMm}mm`)
-    if (m.espesorMm) parts.push(`e${m.espesorMm}mm`)
-    return parts.join(' × ') || '—'
-  }
-  if (m.tipo === 'canto') {
-    const parts = []
-    if (m.anchoMm) parts.push(`${m.anchoMm}mm ancho`)
-    if (m.espesorMm) parts.push(`${m.espesorMm}mm esp.`)
-    return parts.join(', ') || '—'
-  }
-  return '—'
-}
 
 export function MaterialesManager({ initialMateriales }: { initialMateriales: Material[] }) {
   const router = useRouter()
@@ -159,8 +142,8 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
       setShowForm(false)
       setForm(emptyForm(tab))
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setSaving(false)
     }
@@ -195,8 +178,8 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
       setEditingId(null)
       setEditForm(null)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setSaving(false)
     }
@@ -210,8 +193,8 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
       setMateriales((prev) => prev.filter((m) => m.id !== id))
       toast.exito('Material eliminado')
       router.refresh()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error inesperado')
     } finally {
       setDeleting(false)
       setBorrar(null)
