@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoPresupuestoBadge } from '@/components/ui/badge'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   ArrowLeft,
@@ -77,6 +78,12 @@ export default async function PresupuestoDetailPage({
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={[
+        { label: 'Presupuestos', href: '/presupuestos' },
+        { label: presupuesto.numero },
+      ]} />
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">

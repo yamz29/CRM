@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoProyectoBadge, EstadoPresupuestoBadge } from '@/components/ui/badge'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { GastosTab } from '@/components/gastos/GastosTab'
 import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupuestarioTab'
@@ -211,6 +212,12 @@ export default async function ProyectoDetailPage({
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* ── Breadcrumbs ── */}
+      <Breadcrumbs items={[
+        { label: 'Proyectos', href: '/proyectos' },
+        { label: proyecto.codigo ? `${proyecto.codigo} · ${proyecto.nombre}` : proyecto.nombre },
+      ]} />
+
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

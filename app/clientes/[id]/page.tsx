@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, EstadoProyectoBadge, EstadoPresupuestoBadge } from '@/components/ui/badge'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   ArrowLeft,
@@ -54,6 +55,12 @@ export default async function ClienteDetailPage({
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={[
+        { label: 'Clientes', href: '/clientes' },
+        { label: cliente.nombre },
+      ]} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
