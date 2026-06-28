@@ -265,7 +265,7 @@ export function SharePointBrowser({
           <LogIn className="w-3.5 h-3.5" /> Conectar SharePoint
         </Button>
         {error && (
-          <div className="flex items-center gap-1.5 text-[10px] text-amber-500 text-center">
+          <div className="flex items-center gap-1.5 text-2xs text-amber-500 text-center">
             <AlertTriangle className="w-3 h-3 shrink-0" /> {error}
           </div>
         )}
@@ -377,7 +377,7 @@ export function SharePointBrowser({
                   {icon}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-foreground truncate">{item.name}</p>
-                    <p className="text-[10px] text-muted-foreground/60">
+                    <p className="text-2xs text-muted-foreground/60">
                       {isFolder
                         ? `${item.folder!.childCount} elementos`
                         : formatFileSize(item.size)}

@@ -449,7 +449,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
             )}
             {factura.propinaLegal != null && factura.propinaLegal > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Propina Legal 10% <span className="text-[10px]">(Ley 228)</span></span>
+                <span className="text-muted-foreground">Propina Legal 10% <span className="text-2xs">(Ley 228)</span></span>
                 <span className="tabular-nums">{formatCurrency(factura.propinaLegal)}</span>
               </div>
             )}
@@ -607,13 +607,13 @@ function PagoForm({ facturaId, saldoPendiente, totalFactura, cuentas, onClose, o
           <label className="text-xs text-muted-foreground">Monto (pend: {formatCurrency(saldoPendiente)})</label>
           <input type="number" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputCls} required />
           <div className="flex items-center gap-1 mt-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">Rápido:</span>
+            <span className="text-2xs text-muted-foreground">Rápido:</span>
             {[30, 40, 50, 100].map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPorcentaje(p)}
-                className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+                className="text-2xs px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
                 title={`${p}% de ${formatCurrency(totalFactura)}`}
               >
                 {p}%
@@ -622,7 +622,7 @@ function PagoForm({ facturaId, saldoPendiente, totalFactura, cuentas, onClose, o
             <button
               type="button"
               onClick={() => setMonto(saldoPendiente.toFixed(2))}
-              className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+              className="text-2xs px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
               title={`Saldo restante: ${formatCurrency(saldoPendiente)}`}
             >
               Saldo
@@ -729,13 +729,13 @@ function ReciboForm({ facturaId, clienteId, saldoPendiente, totalFactura, cuenta
           <label className="text-xs text-muted-foreground">Monto (pend: {formatCurrency(saldoPendiente)})</label>
           <input type="number" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} className={inputCls} required />
           <div className="flex items-center gap-1 mt-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">Rápido:</span>
+            <span className="text-2xs text-muted-foreground">Rápido:</span>
             {[30, 40, 50, 100].map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPorcentaje(p)}
-                className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+                className="text-2xs px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
                 title={`${p}% de ${formatCurrency(totalFactura)}`}
               >
                 {p}%
@@ -744,7 +744,7 @@ function ReciboForm({ facturaId, clienteId, saldoPendiente, totalFactura, cuenta
             <button
               type="button"
               onClick={() => setMonto(saldoPendiente.toFixed(2))}
-              className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
+              className="text-2xs px-1.5 py-0.5 rounded border border-border bg-card hover:bg-muted/40"
               title={`Saldo restante: ${formatCurrency(saldoPendiente)}`}
             >
               Saldo
@@ -847,7 +847,7 @@ function ConvertirAFiscalModal({
               className="w-full h-10 px-3 text-sm font-mono uppercase border border-border rounded-md bg-card"
               required
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               Formato: B (consumidor final) o E (e-CF) + 10-12 dígitos.
             </p>
           </div>

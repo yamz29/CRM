@@ -59,7 +59,7 @@ export function CronogramaTabla({
     <div className="flex flex-col h-full min-h-0 overflow-hidden border-r border-border bg-card min-w-0">
       {/* Encabezado de columnas (alineado con el header de escala) */}
       <div
-        className="shrink-0 flex items-center border-b border-border bg-muted/40 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+        className="shrink-0 flex items-center border-b border-border bg-muted/40 px-2 text-2xs font-semibold uppercase tracking-wide text-muted-foreground"
         style={{ height: ALTURA_HEADER_ESCALA }}
       >
         <span className="flex-1">Actividad</span>
@@ -93,7 +93,7 @@ export function CronogramaTabla({
                   <span className="text-xs font-semibold text-foreground truncate">
                     {g.capitulo ?? 'General'}
                   </span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">({g.items.length})</span>
+                  <span className="text-2xs text-muted-foreground shrink-0">({g.items.length})</span>
                 </button>
                 {!readOnly && (
                   <div className="flex items-center gap-0.5 opacity-0 group-hover/grp:opacity-100 transition-opacity">
@@ -165,8 +165,8 @@ export function CronogramaTabla({
                     </div>
 
                     {/* Fechas */}
-                    <span className="w-20 text-center text-[11px] text-muted-foreground tabular-nums hidden sm:block">{fmt(a.fechaInicio)}</span>
-                    <span className="w-20 text-center text-[11px] text-muted-foreground tabular-nums hidden sm:block">{fmt(a.fechaFin)}</span>
+                    <span className="w-20 text-center text-2xs text-muted-foreground tabular-nums hidden sm:block">{fmt(a.fechaInicio)}</span>
+                    <span className="w-20 text-center text-2xs text-muted-foreground tabular-nums hidden sm:block">{fmt(a.fechaFin)}</span>
 
                     {/* Mini-barra de avance */}
                     <div className="w-16 flex items-center gap-1 shrink-0">
@@ -176,7 +176,7 @@ export function CronogramaTabla({
                           style={{ width: `${Math.max(0, Math.min(100, a.pctAvance))}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-muted-foreground tabular-nums w-6 text-right">{Math.round(a.pctAvance)}%</span>
+                      <span className="text-2xs text-muted-foreground tabular-nums w-6 text-right">{Math.round(a.pctAvance)}%</span>
                     </div>
                   </div>
                 )

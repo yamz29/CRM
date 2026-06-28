@@ -402,7 +402,7 @@ function ItemRow({ item, onRefresh, onPromover }: {
             <Calendar className="w-3 h-3" /> {fb.text}
           </span>
           {item.prioridad !== 'Normal' && (
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${PRIORIDAD_COLOR[item.prioridad]}`}>
+            <span className={`px-1.5 py-0.5 rounded text-2xs font-medium ${PRIORIDAD_COLOR[item.prioridad]}`}>
               {item.prioridad}
             </span>
           )}

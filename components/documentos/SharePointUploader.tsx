@@ -150,7 +150,7 @@ export function SharePointUploader({ folderPath, onUploaded, label }: Props) {
           <>
             <Upload className="w-5 h-5" />
             <span>{label || 'Arrastra un archivo o haz clic para subir'}</span>
-            <span className="text-[10px] text-muted-foreground/60">Se guarda en SharePoint/{folderPath}</span>
+            <span className="text-2xs text-muted-foreground/60">Se guarda en SharePoint/{folderPath}</span>
           </>
         )}
       </div>

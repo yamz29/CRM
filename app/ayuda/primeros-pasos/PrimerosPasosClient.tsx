@@ -122,7 +122,7 @@ export function PrimerosPasosClient({ rolActivo, guias }: Props) {
             </ul>
 
             {loading && (
-              <p className="text-[11px] text-muted-foreground italic">Cargando progreso…</p>
+              <p className="text-2xs text-muted-foreground italic">Cargando progreso…</p>
             )}
             {pctRol === 100 && !loading && (
               <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-2">
@@ -224,7 +224,7 @@ function ImagenConFallback({ src, alt }: { src: string; alt: string }) {
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-dashed border-border rounded-lg p-3">
         <ImageOff className="w-4 h-4 shrink-0" />
         <span>
-          Captura pendiente: <code className="bg-muted px-1 py-0.5 rounded text-[10px]">{src}</code>
+          Captura pendiente: <code className="bg-muted px-1 py-0.5 rounded text-2xs">{src}</code>
         </span>
       </div>
     )

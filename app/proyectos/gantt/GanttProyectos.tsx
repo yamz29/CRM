@@ -358,7 +358,7 @@ export function GanttProyectos({
               {hiddenProjectIds.size > 0 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               Mostrar/ocultar
               {hiddenProjectIds.size > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-[10px] font-bold">
+                <span className="ml-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-2xs font-bold">
                   {hiddenProjectIds.size}
                 </span>
               )}
@@ -407,7 +407,7 @@ export function GanttProyectos({
                               />
                               <span className="text-xs font-medium text-foreground truncate">{p.nombre}</span>
                             </div>
-                            <p className="text-[10px] text-muted-foreground truncate">{p.cliente}</p>
+                            <p className="text-2xs text-muted-foreground truncate">{p.cliente}</p>
                           </div>
                         </label>
                       )
@@ -511,7 +511,7 @@ export function GanttProyectos({
                   <text
                     x={12}
                     y={HEADER_HEIGHT / 2 + 4}
-                    className="fill-muted-foreground text-[11px] font-semibold uppercase tracking-wide"
+                    className="fill-muted-foreground text-2xs font-semibold uppercase tracking-wide"
                   >
                     Proyecto
                   </text>
@@ -562,7 +562,7 @@ export function GanttProyectos({
                           ◇ {t.nombre.length > 32 ? t.nombre.slice(0, 30) + '…' : t.nombre}
                         </text>
                         <text x={12} y={rowCenterY + 11}
-                          className="fill-muted-foreground text-[10px] pointer-events-none">
+                          className="fill-muted-foreground text-2xs pointer-events-none">
                           {proyNombre ? `En: ${proyNombre}` : 'Tarea global'}
                         </text>
                       </g>
@@ -596,7 +596,7 @@ export function GanttProyectos({
                         <text
                           x={12}
                           y={rowCenterY + 11}
-                          className="fill-muted-foreground text-[10px] pointer-events-none"
+                          className="fill-muted-foreground text-2xs pointer-events-none"
                         >
                           {p.cliente.length > 34 ? p.cliente.slice(0, 32) + '…' : p.cliente}
                         </text>
@@ -635,7 +635,7 @@ export function GanttProyectos({
                         x={x + u.width / 2}
                         y={HEADER_HEIGHT / 2 + 6}
                         textAnchor="middle"
-                        className="fill-foreground text-[11px] font-medium"
+                        className="fill-foreground text-2xs font-medium"
                       >
                         {u.label}
                       </text>
@@ -644,7 +644,7 @@ export function GanttProyectos({
                         <text
                           x={x + 4}
                           y={14}
-                          className="fill-muted-foreground text-[10px] font-semibold"
+                          className="fill-muted-foreground text-2xs font-semibold"
                         >
                           {u.labelSecondary}
                         </text>
@@ -776,7 +776,7 @@ export function GanttProyectos({
                           x={x + width / 2}
                           y={rowCenterY + 4}
                           textAnchor="middle"
-                          className="text-[10px] font-semibold pointer-events-none"
+                          className="text-2xs font-semibold pointer-events-none"
                           fill={t.avance >= 50 ? '#fff' : tcolor}
                         >
                           {t.avance}%
@@ -854,7 +854,7 @@ export function GanttProyectos({
                             x={x + width / 2}
                             y={rowCenterY + 4}
                             textAnchor="middle"
-                            className="text-[10px] font-semibold pointer-events-none"
+                            className="text-2xs font-semibold pointer-events-none"
                             fill={p.avance >= 50 ? '#fff' : color}
                           >
                             {p.avance}%

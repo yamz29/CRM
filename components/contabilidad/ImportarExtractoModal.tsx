@@ -177,7 +177,7 @@ export function ImportarExtractoModal({ cuentaId, cuentaNombre, onClose, onImpor
               {/* Resumen */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="rounded-lg border border-border p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase">Formato</p>
+                  <p className="text-2xs text-muted-foreground uppercase">Formato</p>
                   <p className="text-sm font-mono font-semibold mt-1">
                     {preview.formato === 'banco-popular-txt' ? 'Banco Popular' :
                      preview.formato === 'xlsx' ? 'Excel' :
@@ -185,15 +185,15 @@ export function ImportarExtractoModal({ cuentaId, cuentaNombre, onClose, onImpor
                   </p>
                 </div>
                 <div className="rounded-lg border border-border p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase">Total filas</p>
+                  <p className="text-2xs text-muted-foreground uppercase">Total filas</p>
                   <p className="text-lg font-bold mt-1">{preview.total}</p>
                 </div>
                 <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-3">
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase">Nuevas</p>
+                  <p className="text-2xs text-emerald-700 dark:text-emerald-300 uppercase">Nuevas</p>
                   <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300 mt-1">{preview.nuevos}</p>
                 </div>
                 <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3">
-                  <p className="text-[10px] text-amber-700 dark:text-amber-300 uppercase">Duplicadas</p>
+                  <p className="text-2xs text-amber-700 dark:text-amber-300 uppercase">Duplicadas</p>
                   <p className="text-lg font-bold text-amber-700 dark:text-amber-300 mt-1">{preview.duplicados}</p>
                 </div>
               </div>
@@ -251,14 +251,14 @@ export function ImportarExtractoModal({ cuentaId, cuentaNombre, onClose, onImpor
                               </span>
                             </td>
                             <td className="px-2 py-1 max-w-xs truncate" title={r.descripcion}>{r.descripcion}</td>
-                            <td className="px-2 py-1 font-mono text-[10px] text-muted-foreground">{r.referencia || '—'}</td>
+                            <td className="px-2 py-1 font-mono text-2xs text-muted-foreground">{r.referencia || '—'}</td>
                             <td className={`px-2 py-1 text-right tabular-nums ${r.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
                               {formatCurrency(r.monto)}
                             </td>
                             <td className="px-2 py-1 text-center">
                               {r.duplicado
-                                ? <span className="text-[10px] text-amber-600">Duplicada</span>
-                                : <span className="text-[10px] text-emerald-600">Nueva</span>
+                                ? <span className="text-2xs text-amber-600">Duplicada</span>
+                                : <span className="text-2xs text-emerald-600">Nueva</span>
                               }
                             </td>
                           </tr>

@@ -31,10 +31,10 @@ export function StatsCard({
     )}>
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{title}</p>
+          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{title}</p>
           <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{value}</p>
           {description && (
-            <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{description}</p>
+            <p className="text-2xs text-muted-foreground/80 leading-relaxed">{description}</p>
           )}
         </div>
         <div className={cn('p-2.5 rounded-xl', colorClass)}>

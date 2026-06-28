@@ -390,7 +390,7 @@ export function ReportePipelineClient() {
                           {d.etapa === 'Perdido' ? (
                             <div className="space-y-0.5">
                               {d.categoriaPerdida && (
-                                <span className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                <span className="inline-block px-1.5 py-0.5 rounded-full text-2xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
                                   {d.categoriaPerdida}
                                 </span>
                               )}

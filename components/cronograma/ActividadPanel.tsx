@@ -226,9 +226,9 @@ export function ActividadPanel({
             )}
             {actividad.avances && actividad.avances.length > 0 && (
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground">Historial</p>
+                <p className="text-2xs font-semibold text-muted-foreground">Historial</p>
                 {actividad.avances.map(av => (
-                  <div key={av.id} className="flex items-center gap-2 text-[11px] text-muted-foreground py-0.5">
+                  <div key={av.id} className="flex items-center gap-2 text-2xs text-muted-foreground py-0.5">
                     <span className="font-bold text-foreground tabular-nums">{Math.round(av.pctAvance)}%</span>
                     <span>{new Date(av.fecha).toLocaleDateString('es-DO', { timeZone: 'UTC' })}</span>
                     {av.comentario && <span className="truncate">— {av.comentario}</span>}

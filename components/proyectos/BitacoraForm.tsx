@@ -234,12 +234,12 @@ export function BitacoraForm({ proyectoId, avanceFisicoActual, onCreated, onCanc
                 {comprimiendo ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-[10px] mt-0.5">Procesando…</span>
+                    <span className="text-2xs mt-0.5">Procesando…</span>
                   </>
                 ) : (
                   <>
                     <Camera className="w-5 h-5" />
-                    <span className="text-[10px] mt-0.5">Agregar</span>
+                    <span className="text-2xs mt-0.5">Agregar</span>
                   </>
                 )}
               </button>
@@ -248,7 +248,7 @@ export function BitacoraForm({ proyectoId, avanceFisicoActual, onCreated, onCanc
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
             onChange={handleFileChange} />
           {comprimiendo && (
-            <p className="text-[11px] text-muted-foreground mt-1">Comprimiendo fotos para que la subida sea rápida…</p>
+            <p className="text-2xs text-muted-foreground mt-1">Comprimiendo fotos para que la subida sea rápida…</p>
           )}
         </div>
       </div>

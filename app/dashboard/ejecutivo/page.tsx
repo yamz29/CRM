@@ -182,7 +182,7 @@ export default async function DashboardEjecutivoPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-foreground">Dashboard ejecutivo</h1>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
+            <span className="text-2xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
               <Lock className="w-3 h-3" /> Admin
             </span>
           </div>
@@ -229,7 +229,7 @@ export default async function DashboardEjecutivoPage() {
             <p className={`text-2xl font-black tabular-nums mt-1 ${margenPctActual >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {margenPctActual.toFixed(1)}%
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1">
+            <p className="text-2xs text-muted-foreground mt-1">
               Mes anterior: <span className="tabular-nums">{margenPctAnterior.toFixed(1)}%</span>
             </p>
           </div>
@@ -257,7 +257,7 @@ export default async function DashboardEjecutivoPage() {
                   title={`Gastos: ${formatCurrency(m.gastos)}`}
                 />
               </div>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{m.mes}</span>
+              <span className="text-2xs text-muted-foreground tabular-nums">{m.mes}</span>
             </div>
           ))}
         </div>
@@ -298,7 +298,7 @@ export default async function DashboardEjecutivoPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{c.nombre}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-2xs text-muted-foreground">
                           {c.proyectosCount} proyecto{c.proyectosCount !== 1 ? 's' : ''} · cobrado {formatCurrency(c.cobrado)}
                         </p>
                       </div>
@@ -306,7 +306,7 @@ export default async function DashboardEjecutivoPage() {
                         <p className={`text-sm font-bold tabular-nums ${c.margen >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {formatCurrency(c.margen)}
                         </p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">{c.margenPct.toFixed(1)}%</p>
+                        <p className="text-2xs text-muted-foreground tabular-nums">{c.margenPct.toFixed(1)}%</p>
                       </div>
                     </Link>
                   </li>
@@ -343,13 +343,13 @@ export default async function DashboardEjecutivoPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {p.codigo && (
-                            <span className="font-mono text-[10px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                            <span className="font-mono text-2xs font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
                               {p.codigo}
                             </span>
                           )}
                           <span className="text-sm font-medium text-foreground truncate">{p.nombre}</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate">
+                        <p className="text-2xs text-muted-foreground truncate">
                           {p.cliente?.nombre ?? '—'} · {p.estado}
                         </p>
                       </div>
@@ -357,7 +357,7 @@ export default async function DashboardEjecutivoPage() {
                         <p className={`text-sm font-bold tabular-nums ${p.margen >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {formatCurrency(p.margen)}
                         </p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">{p.margenPct.toFixed(1)}%</p>
+                        <p className="text-2xs text-muted-foreground tabular-nums">{p.margenPct.toFixed(1)}%</p>
                       </div>
                     </Link>
                   </li>
@@ -426,14 +426,14 @@ function PLCard({ label, valor, delta, tonoPositivo, comparado, esMargen }: {
       </p>
       <div className="flex items-center gap-2 mt-1">
         {delta != null ? (
-          <span className={`text-[11px] font-medium flex items-center gap-0.5 ${deltaColor}`}>
+          <span className={`text-2xs font-medium flex items-center gap-0.5 ${deltaColor}`}>
             <DeltaIcon className="w-3 h-3" />
             {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
           </span>
         ) : (
-          <span className="text-[11px] text-muted-foreground">sin comparación</span>
+          <span className="text-2xs text-muted-foreground">sin comparación</span>
         )}
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-2xs text-muted-foreground">
           mes ant: <span className="tabular-nums">{formatCurrency(comparado)}</span>
         </span>
       </div>

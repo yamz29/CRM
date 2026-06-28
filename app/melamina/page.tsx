@@ -251,12 +251,12 @@ export default async function MelaminaPage({
                       <div className="bg-card border border-border rounded-lg px-3 py-2 hover:border-primary/40 transition-colors cursor-pointer group">
                         <p className="text-xs font-semibold text-foreground group-hover:text-primary truncate">{m.nombre}</p>
                         {m.codigo && (
-                          <p className="text-[10px] font-mono text-muted-foreground truncate">{m.codigo}</p>
+                          <p className="text-2xs font-mono text-muted-foreground truncate">{m.codigo}</p>
                         )}
                         <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-[10px] text-muted-foreground">×{m.cantidad}</span>
+                          <span className="text-2xs text-muted-foreground">×{m.cantidad}</span>
                           {m.precioVenta > 0 && (
-                            <span className="text-[10px] font-semibold text-foreground">{formatCurrency(m.precioVenta)}</span>
+                            <span className="text-2xs font-semibold text-foreground">{formatCurrency(m.precioVenta)}</span>
                           )}
                         </div>
                       </div>

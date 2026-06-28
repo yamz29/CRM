@@ -226,7 +226,7 @@ export function FeriadosPanel({ initialData }: Props) {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">{f.nombre}</span>
                       {f.recurrente && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                        <span className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                           anual
                         </span>
                       )}

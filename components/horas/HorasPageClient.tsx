@@ -241,7 +241,7 @@ function BlockPopup({
           <div className="space-y-2">
             {GRUPOS_TIPOS.map(({ grupo, tipos }) => (
               <div key={grupo}>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">{grupo}</p>
+                <p className="text-2xs font-semibold text-muted-foreground uppercase mb-1">{grupo}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {tipos.map(({ label, Icon, bg, text }) => (
                     <button
@@ -706,7 +706,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
                                 >
                                   <cfg.Icon className="w-3 h-3 flex-shrink-0 opacity-80" />
                                   <span className="truncate">{label}</span>
-                                  <span className="ml-auto flex-shrink-0 opacity-75 text-[10px]">{r.horas}h</span>
+                                  <span className="ml-auto flex-shrink-0 opacity-75 text-2xs">{r.horas}h</span>
                                   <Pencil className="w-2.5 h-2.5 flex-shrink-0 opacity-50" />
                                 </div>
                               )

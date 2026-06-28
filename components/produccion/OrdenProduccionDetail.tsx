@@ -258,7 +258,7 @@ export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
                 }`}>
                   {isPast ? <Check className="w-4 h-4" /> : <StageIcon className="w-3.5 h-3.5" />}
                 </div>
-                <span className={`mt-1.5 text-[10px] font-medium text-center leading-tight ${
+                <span className={`mt-1.5 text-2xs font-medium text-center leading-tight ${
                   isCurrent ? 'text-foreground' : 'text-muted-foreground'
                 }`}>{etapa.label}</span>
                 {logEntry && logEntry.fin && (
@@ -654,7 +654,7 @@ function RecepcionItem({ material: m, onAction, onSaveNota, saving }: {
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm text-foreground">{m.nombre}</span>
               <span className="text-xs text-muted-foreground capitalize">{m.tipo}</span>
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${estadoColor}`}>{m.estado}</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-2xs font-medium ${estadoColor}`}>{m.estado}</span>
             </div>
             <p className="text-xs text-muted-foreground">
               Requerido: {m.cantidadRequerida} {m.unidad} · Comprado: {m.cantidadComprada} {m.unidad}
@@ -907,7 +907,7 @@ function CanteoPanel({ orden, piezas }: { orden: Orden; piezas: Pieza[] }) {
                       <td className="py-2 px-4">
                         <div className="flex gap-1">
                           {cantos.filter(c => !c.startsWith('_')).map(c => (
-                            <span key={c} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400">{labels[c] || c}</span>
+                            <span key={c} className="px-1.5 py-0.5 rounded text-2xs font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400">{labels[c] || c}</span>
                           ))}
                         </div>
                       </td>
@@ -1013,7 +1013,7 @@ function MecanizacionPanel({ orden, piezas }: { orden: Orden; piezas: Pieza[] })
                       {p.tipoMecanizado ? (
                         <div className="flex gap-1 flex-wrap">
                           {p.tipoMecanizado.split(',').map(t => (
-                            <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">{t.trim()}</span>
+                            <span key={t} className="px-1.5 py-0.5 rounded text-2xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">{t.trim()}</span>
                           ))}
                         </div>
                       ) : (

@@ -119,15 +119,15 @@ export function FacturacionPresupuesto({ presupuestoId, presupuestoEstado, presu
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono font-semibold text-sm text-foreground">{f.numero}</span>
                         {f.esProforma ? (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                          <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                             PROFORMA
                           </span>
                         ) : f.ncf ? (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                          <span className="px-1.5 py-0.5 rounded text-2xs font-mono bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
                             {f.ncf}
                           </span>
                         ) : null}
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${ESTADO_COLOR[f.estado] || ''}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${ESTADO_COLOR[f.estado] || ''}`}>
                           {f.estado}
                         </span>
                       </div>
@@ -137,9 +137,9 @@ export function FacturacionPresupuesto({ presupuestoId, presupuestoEstado, presu
                   <div className="text-right">
                     <p className="text-sm font-semibold tabular-nums">{formatCurrency(f.total)}</p>
                     {saldo > 0 ? (
-                      <p className="text-[10px] text-amber-600">Saldo: {formatCurrency(saldo)}</p>
+                      <p className="text-2xs text-amber-600">Saldo: {formatCurrency(saldo)}</p>
                     ) : f.estado !== 'anulada' ? (
-                      <p className="text-[10px] text-green-600 flex items-center gap-0.5 justify-end">
+                      <p className="text-2xs text-green-600 flex items-center gap-0.5 justify-end">
                         <CheckCircle2 className="w-3 h-3" /> Cobrada
                       </p>
                     ) : null}
@@ -320,7 +320,7 @@ function EmitirFacturaModal({
               <span className="tabular-nums">{formatCurrency(montoEfectivo)}</span>
             </div>
             {montoEfectivo > pendiente + 0.01 && (
-              <p className="text-[11px] text-amber-600 mt-1">
+              <p className="text-2xs text-amber-600 mt-1">
                 ⚠ El monto excede lo pendiente ({formatCurrency(pendiente)}). Asegúrate de que sea correcto.
               </p>
             )}

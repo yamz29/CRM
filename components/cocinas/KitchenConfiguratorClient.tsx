@@ -1513,7 +1513,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     </button>
                     <button
                       onClick={() => setCanvasZoomPersist(1)}
-                      className="px-1.5 py-1 text-[10px] text-muted-foreground hover:text-foreground font-mono min-w-[36px]"
+                      className="px-1.5 py-1 text-2xs text-muted-foreground hover:text-foreground font-mono min-w-[36px]"
                       title="Restablecer zoom (100%)"
                     >
                       {Math.round(canvasZoom * 100)}%

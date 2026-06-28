@@ -238,7 +238,7 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
                       {p.nombre}
                     </Link>
                     {desgloses[p.proyectoId] && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                      <p className="text-2xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
                         <span title="Costo del mes">costo {desgloses[p.proyectoId].costoMes.toFixed(1)}</span>
                         <span title="Horas del personal">horas {desgloses[p.proyectoId].horas.toFixed(1)}</span>
                         <span title="Costo acumulado">acum {desgloses[p.proyectoId].costoAcum.toFixed(1)}</span>

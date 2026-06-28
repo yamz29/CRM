@@ -18,6 +18,10 @@ const config: Config = {
       },
     },
     extend: {
+      fontSize: {
+        // Escala para texto diminuto (labels, badges, metadatos)
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

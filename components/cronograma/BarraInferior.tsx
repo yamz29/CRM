@@ -51,7 +51,7 @@ export function BarraInferior({ actividad, readOnly, guardando, onGuardar, onEdi
           <Users className="w-4 h-4 text-muted-foreground shrink-0" />
           <h3 className="text-sm font-bold text-foreground truncate">{actividad.nombre || 'Actividad'}</h3>
           {actividad.esCritica && actividad.estado !== 'Completado' && (
-            <span className="flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 shrink-0">
+            <span className="flex items-center gap-1 text-2xs font-medium text-red-600 dark:text-red-400 shrink-0">
               <Flag className="w-3 h-3" /> Ruta crítica
             </span>
           )}
@@ -88,7 +88,7 @@ export function BarraInferior({ actividad, readOnly, guardando, onGuardar, onEdi
 
       {!readOnly && (
         <div className="px-4 pb-3 flex items-center justify-end gap-3">
-          <span className="text-[11px] text-muted-foreground">Se guarda automáticamente al cambiar de tarea</span>
+          <span className="text-2xs text-muted-foreground">Se guarda automáticamente al cambiar de tarea</span>
           <Button size="sm" onClick={guardar} disabled={guardando || sinCambios}>
             {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
           </Button>

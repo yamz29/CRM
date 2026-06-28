@@ -321,7 +321,7 @@ function KpiCard({ label, valor, sub, tono = 'neutro', icono }: {
       <p className={`text-xl font-bold tabular-nums mt-1 flex items-center gap-1.5 ${color}`}>
         {icono}{valor}
       </p>
-      {sub && <p className="text-[11px] text-muted-foreground mt-1">{sub}</p>}
+      {sub && <p className="text-2xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   )
 }

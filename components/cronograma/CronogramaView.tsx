@@ -312,7 +312,7 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
           </div>
 
           {criticasCount > 0 && (
-            <span className="text-[11px] text-red-600 dark:text-red-400 font-medium">
+            <span className="text-2xs text-red-600 dark:text-red-400 font-medium">
               {criticasCount} en ruta crítica
             </span>
           )}
@@ -320,13 +320,13 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
           {!readOnly && (
             <>
               <div className="h-4 w-px bg-border mx-1" />
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
+              <label className="flex items-center gap-1.5 text-2xs text-muted-foreground cursor-pointer">
                 <input type="checkbox" checked={usarCalLab}
                   onChange={e => { setUsarCalLab(e.target.checked); cambiarCalendario(e.target.checked, usarFer) }}
                   className="rounded border-border" />
                 Saltar fines de semana
               </label>
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
+              <label className="flex items-center gap-1.5 text-2xs text-muted-foreground cursor-pointer">
                 <input type="checkbox" checked={usarFer} disabled={!usarCalLab}
                   onChange={e => { setUsarFer(e.target.checked); cambiarCalendario(usarCalLab, e.target.checked) }}
                   className="rounded border-border" />
@@ -338,7 +338,7 @@ export function CronogramaView({ cronograma: inicial, presupuestosDisponibles, r
 
         <div className="flex items-center gap-2">
           {readOnly && (
-            <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+            <span className="flex items-center gap-1 text-2xs text-amber-600 dark:text-amber-400 font-medium">
               <Lock className="w-3.5 h-3.5" /> Solo lectura (proyecto cerrado)
             </span>
           )}

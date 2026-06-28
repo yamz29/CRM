@@ -137,19 +137,19 @@ export function EVMTab({ proyectoId }: { proyectoId: number }) {
       {ultimo && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="border border-border rounded-xl p-3 bg-card">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">BAC (Presupuesto)</p>
+            <p className="text-2xs uppercase tracking-wider text-muted-foreground">BAC (Presupuesto)</p>
             <p className="text-lg font-bold text-foreground">{fmtFull(ultimo.presupuestoBase)}</p>
           </div>
           <div className="border border-border rounded-xl p-3 bg-card">
-            <p className="text-[10px] uppercase tracking-wider text-blue-500">PV (Planificado)</p>
+            <p className="text-2xs uppercase tracking-wider text-blue-500">PV (Planificado)</p>
             <p className="text-lg font-bold text-blue-600">{fmtFull(ultimo.valorPlanificado)}</p>
           </div>
           <div className="border border-border rounded-xl p-3 bg-card">
-            <p className="text-[10px] uppercase tracking-wider text-green-500">EV (Valor Ganado)</p>
+            <p className="text-2xs uppercase tracking-wider text-green-500">EV (Valor Ganado)</p>
             <p className="text-lg font-bold text-green-600">{fmtFull(ultimo.valorGanado)}</p>
           </div>
           <div className="border border-border rounded-xl p-3 bg-card">
-            <p className="text-[10px] uppercase tracking-wider text-red-500">AC (Costo Real)</p>
+            <p className="text-2xs uppercase tracking-wider text-red-500">AC (Costo Real)</p>
             <p className="text-lg font-bold text-red-600">{fmtFull(ultimo.costoReal)}</p>
           </div>
         </div>

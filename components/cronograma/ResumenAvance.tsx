@@ -95,14 +95,14 @@ export function ResumenAvance({ cronograma, resumen, proyectos, presupuestos, re
             </p>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground w-12 shrink-0">Real</span>
+                <span className="text-2xs text-muted-foreground w-12 shrink-0">Real</span>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, avanceReal)}%` }} />
                 </div>
                 <span className="text-xs font-semibold text-foreground w-9 text-right">{avanceReal}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground w-12 shrink-0">Esperado</span>
+                <span className="text-2xs text-muted-foreground w-12 shrink-0">Esperado</span>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-slate-400 dark:bg-slate-500" style={{ width: `${Math.min(100, avanceEsperado)}%` }} />
                 </div>

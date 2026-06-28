@@ -194,7 +194,7 @@ export function CronogramaTimeline({
           {columnas.map((c, i) => (
             <div
               key={i}
-              className={`absolute top-0 h-full flex items-center justify-center text-[10px] font-medium border-l border-border/60 ${
+              className={`absolute top-0 h-full flex items-center justify-center text-2xs font-medium border-l border-border/60 ${
                 c.finDeSemana && usarCalendarioLaboral ? 'bg-muted/60 text-muted-foreground/70' : 'text-muted-foreground'
               }`}
               style={{ left: c.x, width: c.ancho }}
@@ -351,7 +351,7 @@ export function CronogramaTimeline({
                         className={`absolute top-0 left-0 h-full ${colores.relleno} opacity-80`}
                         style={{ width: `${Math.max(0, Math.min(100, a.pctAvance))}%` }}
                       />
-                      <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-medium text-foreground/90 truncate pointer-events-none">
+                      <span className="absolute inset-0 flex items-center px-1.5 text-2xs font-medium text-foreground/90 truncate pointer-events-none">
                         {a.nombre}
                       </span>
                       {/* Asas de redimensión */}

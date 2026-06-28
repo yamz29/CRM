@@ -118,14 +118,14 @@ export function ImportarModulosModal({ presupuestoId, onClose, onSelect }: Props
                       {m.tipoModulo} — {m.ancho}×{m.alto}×{m.profundidad} cm — Cant: {m.cantidad}
                     </p>
                     <div className="flex gap-2 mt-1 flex-wrap">
-                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      <span className="text-2xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                         {m.piezas.length} piezas
                       </span>
-                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      <span className="text-2xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                         {m.materialesModulo.length} materiales
                       </span>
                       {m.materialTablero && (
-                        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        <span className="text-2xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                           {m.materialTablero.nombre}
                         </span>
                       )}

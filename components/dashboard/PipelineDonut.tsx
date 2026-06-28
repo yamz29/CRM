@@ -58,7 +58,7 @@ export function PipelineDonut({ data, totalLabel = 'Total' }: { data: Slice[]; t
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span className="text-2xl font-black text-foreground tabular-nums leading-none">{total}</span>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{totalLabel}</span>
+        <span className="text-2xs uppercase tracking-wider text-muted-foreground mt-1">{totalLabel}</span>
       </div>
     </div>
   )

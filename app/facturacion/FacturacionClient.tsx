@@ -229,8 +229,8 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
                       <Link href={`/contabilidad/facturas/${f.id}`} className="text-sm font-semibold text-foreground hover:text-primary">
                         {f.numero}
                       </Link>
-                      {f.ncf && <p className="text-[10px] text-muted-foreground font-mono">NCF: {f.ncf}</p>}
-                      {f.esProforma && <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">PROFORMA</p>}
+                      {f.ncf && <p className="text-2xs text-muted-foreground font-mono">NCF: {f.ncf}</p>}
+                      {f.esProforma && <p className="text-2xs text-amber-600 dark:text-amber-400 font-medium">PROFORMA</p>}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(f.fecha)}
@@ -257,11 +257,11 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
                         {formatCurrency(f.montoPagado)}
                       </span>
                       {saldo > 0.01 && (
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Saldo: {formatCurrency(saldo)}</p>
+                        <p className="text-2xs text-amber-600 dark:text-amber-400">Saldo: {formatCurrency(saldo)}</p>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${cfg.color}`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium ${cfg.color}`}>
                         <Icon className="w-3 h-3" />
                         {cfg.label}
                       </span>

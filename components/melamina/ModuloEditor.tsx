@@ -1089,7 +1089,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
                 <span className="text-xs text-muted-foreground">
                 {totalAreaM2.toFixed(3)} m² · {totalTapacantoMl.toFixed(2)} ml canto
                 {Object.entries(calcTapacantoByColor(piezas)).map(([color, ml]) => (
-                  <span key={color} className="ml-2 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px]">
+                  <span key={color} className="ml-2 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-2xs">
                     {color}: {ml.toFixed(2)} ml
                   </span>
                 ))}
@@ -1473,7 +1473,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
                         {Object.entries(calcTapacantoByColor(piezas.filter((p) =>
                           (p.material || materialTablero?.nombre || 'Sin tablero') === g.nombre
                         ))).map(([color, ml]) => (
-                          <span key={color} className="ml-2 px-1 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px]">
+                          <span key={color} className="ml-2 px-1 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-2xs">
                             {color}: {ml.toFixed(2)} ml
                           </span>
                         ))}

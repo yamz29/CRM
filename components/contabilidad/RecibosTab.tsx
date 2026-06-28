@@ -98,7 +98,7 @@ export function AplicarFacturasFields({ facturas, valores, onChange, max }: Apli
                   placeholder="0.00"
                 />
                 {exceedsFactura && (
-                  <p className="text-[10px] text-red-600 mt-0.5">Supera el saldo ({formatCurrency(saldo)})</p>
+                  <p className="text-2xs text-red-600 mt-0.5">Supera el saldo ({formatCurrency(saldo)})</p>
                 )}
               </div>
             </div>
@@ -567,8 +567,8 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                     <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
                         <span className="font-semibold font-mono text-foreground">{r.numero}</span>
-                        <p className="text-[10px] text-muted-foreground">{r.metodoPago}</p>
-                        {r.referencia && <p className="text-[10px] text-muted-foreground font-mono">{r.referencia}</p>}
+                        <p className="text-2xs text-muted-foreground">{r.metodoPago}</p>
+                        {r.referencia && <p className="text-2xs text-muted-foreground font-mono">{r.referencia}</p>}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{formatDate(r.fecha)}</td>
                       <td className="px-4 py-3 text-foreground">{r.cliente.nombre}</td>
@@ -580,7 +580,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${cfg.color}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium ${cfg.color}`}>
                           <Icon className="w-3 h-3" /> {cfg.label}
                         </span>
                       </td>

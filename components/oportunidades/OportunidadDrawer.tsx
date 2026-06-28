@@ -478,15 +478,15 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
                               {t.etapaPipeline && (
-                                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                <span className="text-2xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                   {t.etapaPipeline}
                                 </span>
                               )}
                               {t.prioridad === 'Alta' && (
-                                <span className="text-[10px] text-red-500 font-medium">Alta</span>
+                                <span className="text-2xs text-red-500 font-medium">Alta</span>
                               )}
                               {t.fechaLimite && (
-                                <span className={`text-[10px] flex items-center gap-0.5 ${vencida ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                                <span className={`text-2xs flex items-center gap-0.5 ${vencida ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
                                   {vencida && <AlertTriangle className="w-2.5 h-2.5" />}
                                   <Clock className="w-2.5 h-2.5" />
                                   {new Date(t.fechaLimite).toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })}
@@ -547,7 +547,7 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
                         className="text-xs font-medium text-foreground hover:text-primary transition-colors truncate block">
                         {d.nombre}
                       </a>
-                      <span className="text-[10px] text-muted-foreground">{d.categoria}</span>
+                      <span className="text-2xs text-muted-foreground">{d.categoria}</span>
                     </div>
                     <a href={d.url} target="_blank" rel="noopener noreferrer"
                       className="p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">

@@ -118,14 +118,14 @@ export function KanbanProduccion({ ordenId, items, onSelectItem, selectedItemId 
                       {item.nombreModulo}
                     </p>
                     {item.dimensiones && (
-                      <p className="text-[10px] text-muted-foreground mb-1.5">{item.dimensiones}</p>
+                      <p className="text-2xs text-muted-foreground mb-1.5">{item.dimensiones}</p>
                     )}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${PRIORIDAD_COLORS[item.prioridad] || ''}`}>
+                      <span className={`px-1.5 py-0.5 rounded text-2xs font-medium ${PRIORIDAD_COLORS[item.prioridad] || ''}`}>
                         {item.prioridad}
                       </span>
                       {item.cantidad > 1 && (
-                        <span className="text-[10px] text-muted-foreground bg-muted px-1 py-0.5 rounded">
+                        <span className="text-2xs text-muted-foreground bg-muted px-1 py-0.5 rounded">
                           ×{item.cantidad}
                         </span>
                       )}

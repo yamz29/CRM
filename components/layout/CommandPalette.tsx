@@ -250,7 +250,7 @@ export function CommandPalette() {
             if (list.length === 0) return null
             return (
               <div key={kind} className="py-1">
-                <div className="px-4 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="px-4 py-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {KIND_LABEL[kind]}
                 </div>
                 {list.map(item => {
@@ -283,28 +283,28 @@ export function CommandPalette() {
         </div>
 
         {/* Footer con tips */}
-        <div className="px-4 py-2 border-t border-border bg-muted/20 flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="px-4 py-2 border-t border-border bg-muted/20 flex items-center justify-between text-2xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[10px]">↑</kbd>
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[10px]">↓</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-2xs">↑</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-2xs">↓</kbd>
               navegar
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[10px] flex items-center gap-0.5">
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-2xs flex items-center gap-0.5">
                 <CornerDownLeft className="w-3 h-3" />
               </kbd>
               abrir
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[10px]">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-2xs">Esc</kbd>
               cerrar
             </span>
           </div>
           <span className="hidden sm:inline">
-            <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[10px]">⌘</kbd>
+            <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-2xs">⌘</kbd>
             +
-            <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[10px]">K</kbd>
+            <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-2xs">K</kbd>
           </span>
         </div>
       </div>

@@ -211,7 +211,7 @@ export function BitacoraTimeline({ proyectoId, avanceFisicoActual }: BitacoraTim
                               onClick={(e) => { e.stopPropagation(); setLightbox(foto.url) }}>
                               <img src={foto.url} alt={foto.caption || ''} className="w-full h-full object-cover" />
                               {foto.caption && (
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 truncate">
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-2xs px-1.5 py-0.5 truncate">
                                   {foto.caption}
                                 </div>
                               )}

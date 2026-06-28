@@ -414,7 +414,7 @@ export default async function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {p.codigo && (
-                            <span className="font-mono text-[10px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                            <span className="font-mono text-2xs font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
                               {p.codigo}
                             </span>
                           )}
@@ -428,7 +428,7 @@ export default async function DashboardPage() {
                         <p className="text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">
                           {p.variacionPct > 0 ? '+' : ''}{isFinite(p.variacionPct) ? p.variacionPct.toFixed(0) : '∞'}%
                         </p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                        <p className="text-2xs text-muted-foreground tabular-nums">
                           {formatCurrency(p.gastado)} / {formatCurrency(p.presupuesto)}
                         </p>
                       </div>
@@ -482,7 +482,7 @@ export default async function DashboardPage() {
                         }`}>
                           {h.diasRestantes === 0 ? 'Hoy' : `${h.diasRestantes}d`}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">{formatDate(h.fechaFin)}</p>
+                        <p className="text-2xs text-muted-foreground">{formatDate(h.fechaFin)}</p>
                       </div>
                     </Link>
                   </li>
@@ -512,7 +512,7 @@ export default async function DashboardPage() {
                   href={e.href}
                   className={`block border rounded-lg p-2.5 transition-colors hover:opacity-80 ${e.color}`}
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/70 truncate">
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-foreground/70 truncate">
                     {e.label}
                   </p>
                   <p className="text-2xl font-black text-foreground mt-1">{e.count}</p>
@@ -539,7 +539,7 @@ export default async function DashboardPage() {
                   href={e.href}
                   className={`block border rounded-lg p-2.5 transition-colors hover:opacity-80 ${e.color}`}
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/70 truncate">
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-foreground/70 truncate">
                     {e.label}
                   </p>
                   <p className="text-2xl font-black text-foreground mt-1">{e.count}</p>

@@ -1202,7 +1202,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
               )}
             </div>
             {itbisActivo && itbisPorcentaje === 1.8 && (
-              <p className="text-[10px] text-muted-foreground">Norma 07-07 DGII: retención reducida al 1.8%</p>
+              <p className="text-2xs text-muted-foreground">Norma 07-07 DGII: retención reducida al 1.8%</p>
             )}
           </div>
         </div>

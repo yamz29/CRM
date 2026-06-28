@@ -243,7 +243,7 @@ function Card({
         {/* Código + nombre */}
         <div className="flex items-start gap-1.5 mb-1.5">
           {p.codigo && (
-            <span className="font-mono text-[10px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
+            <span className="font-mono text-2xs font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
               {p.codigo}
             </span>
           )}
@@ -269,7 +269,7 @@ function Card({
         {/* Avance físico */}
         {p.avanceFisico > 0 && p.estado !== 'Cerrado' && (
           <div className="mb-1.5">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-0.5">
+            <div className="flex items-center justify-between text-2xs text-muted-foreground mb-0.5">
               <span>Avance</span>
               <span className="tabular-nums font-semibold text-foreground">{p.avanceFisico}%</span>
             </div>
@@ -293,7 +293,7 @@ function Card({
         )}
 
         {/* Footer: fecha + contadores */}
-        <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-1 text-2xs text-muted-foreground">
           {p.fechaEstimada ? (
             <span className={`flex items-center gap-1 ${fechaEstimadaPasada ? 'text-red-600 dark:text-red-400' : ''}`}>
               <Calendar className="w-3 h-3" />

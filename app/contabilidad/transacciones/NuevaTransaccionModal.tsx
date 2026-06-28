@@ -245,23 +245,23 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
             <div className="bg-muted/30 border border-border rounded-lg p-3 space-y-3">
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Subtotal</label>
+                  <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Subtotal</label>
                   <input type="number" step="0.01" value={subtotal} onChange={e => handleSubtotalChange(e.target.value)}
                     className="w-full h-8 px-2 text-sm border border-border rounded bg-background tabular-nums" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">ITBIS</label>
+                  <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">ITBIS</label>
                   <input type="number" step="0.01" value={impuesto} onChange={e => handleImpuestoChange(e.target.value)}
                     className="w-full h-8 px-2 text-sm border border-border rounded bg-background tabular-nums" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Total *</label>
+                  <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Total *</label>
                   <input type="number" step="0.01" value={monto} onChange={e => setMonto(e.target.value)} required
                     className="w-full h-8 px-2 text-sm border border-primary rounded bg-background tabular-nums font-bold" />
                 </div>
               </div>
               {montoCalculado && (
-                <p className="text-[10px] text-muted-foreground">Auto-calculado: {formatCurrency(parseFloat(montoCalculado))}</p>
+                <p className="text-2xs text-muted-foreground">Auto-calculado: {formatCurrency(parseFloat(montoCalculado))}</p>
               )}
             </div>
 
@@ -271,27 +271,27 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
                 <p className="text-xs font-semibold uppercase text-blue-700 dark:text-blue-400">Datos de factura</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Número</label>
+                    <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Número</label>
                     <input value={numero} onChange={e => setNumero(e.target.value)}
                       placeholder="Auto si vacío"
                       className="w-full h-8 px-2 text-sm border border-border rounded bg-background" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">NCF</label>
+                    <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">NCF</label>
                     <input value={ncf} onChange={e => setNcf(e.target.value)}
                       className="w-full h-8 px-2 text-sm border border-border rounded bg-background font-mono" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Vencimiento</label>
+                    <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Vencimiento</label>
                     <input type="date" value={fechaVencimiento} onChange={e => setFechaVencimiento(e.target.value)}
                       className="w-full h-8 px-2 text-sm border border-border rounded bg-background" />
                   </div>
                   <div>
                     {tipo === 'ingreso' ? (
                       <>
-                        <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Cliente</label>
+                        <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Cliente</label>
                         <select value={clienteId} onChange={e => setClienteId(e.target.value)}
                           className="w-full h-8 px-2 text-sm border border-border rounded bg-background">
                           <option value="">—</option>
@@ -300,7 +300,7 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
                       </>
                     ) : (
                       <>
-                        <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Proveedor</label>
+                        <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Proveedor</label>
                         <select value={proveedorId} onChange={e => handleProveedorSelect(e.target.value)}
                           className="w-full h-8 px-2 text-sm border border-border rounded bg-background">
                           <option value="">— Escribir manual —</option>
@@ -313,12 +313,12 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
                 {tipo === 'egreso' && !proveedorId && (
                   <div className="grid grid-cols-[1fr_140px] gap-2">
                     <div>
-                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Nombre proveedor</label>
+                      <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Nombre proveedor</label>
                       <input value={proveedorTexto} onChange={e => setProveedorTexto(e.target.value)}
                         className="w-full h-8 px-2 text-sm border border-border rounded bg-background" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">RNC</label>
+                      <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">RNC</label>
                       <input value={rncProveedor} onChange={e => setRncProveedor(e.target.value)}
                         className="w-full h-8 px-2 text-sm border border-border rounded bg-background font-mono" />
                     </div>
@@ -332,7 +332,7 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
               <div className="border border-amber-200 dark:border-amber-900 rounded-lg p-3 space-y-3 bg-amber-50/30 dark:bg-amber-900/10">
                 <p className="text-xs font-semibold uppercase text-amber-700 dark:text-amber-400">Datos del gasto</p>
                 <div>
-                  <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Proyecto *</label>
+                  <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Proyecto *</label>
                   <select value={proyectoId} onChange={e => setProyectoId(e.target.value)}
                     className="w-full h-8 px-2 text-sm border border-border rounded bg-background">
                     <option value="">— Selecciona —</option>
@@ -341,7 +341,7 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Destino</label>
+                    <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Destino</label>
                     <select value={destinoTipo} onChange={e => setDestinoTipo(e.target.value)}
                       className="w-full h-8 px-2 text-sm border border-border rounded bg-background">
                       <option value="proyecto">Proyecto</option>
@@ -351,7 +351,7 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Método</label>
+                    <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Método</label>
                     <select value={metodoPago} onChange={e => setMetodoPago(e.target.value)}
                       className="w-full h-8 px-2 text-sm border border-border rounded bg-background">
                       <option value="Efectivo">Efectivo</option>
@@ -362,7 +362,7 @@ export function NuevaTransaccionModal({ proyectos, clientes, proveedores, onClos
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-medium text-muted-foreground mb-0.5 uppercase">Cta origen</label>
+                    <label className="block text-2xs font-medium text-muted-foreground mb-0.5 uppercase">Cta origen</label>
                     <input value={cuentaOrigen} onChange={e => setCuentaOrigen(e.target.value)}
                       placeholder="Opcional"
                       className="w-full h-8 px-2 text-sm border border-border rounded bg-background" />

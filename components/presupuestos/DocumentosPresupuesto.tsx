@@ -79,7 +79,7 @@ export function DocumentosPresupuesto({ oportunidadId, clienteNombre, folderName
                   className="text-xs font-medium text-foreground hover:text-primary transition-colors truncate block">
                   {d.nombre}
                 </a>
-                <span className="text-[10px] text-muted-foreground">{d.categoria}</span>
+                <span className="text-2xs text-muted-foreground">{d.categoria}</span>
               </div>
               <a href={d.url} target="_blank" rel="noopener noreferrer"
                 className="p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">

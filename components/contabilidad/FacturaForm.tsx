@@ -815,7 +815,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
                 <select
                   value={tasaItbis}
                   onChange={(e) => { const v = Number(e.target.value); setTasaItbis(v); recalcItbis(subtotal, v) }}
-                  className="ml-2 text-[10px] border border-border rounded bg-card px-1 py-0.5"
+                  className="ml-2 text-2xs border border-border rounded bg-card px-1 py-0.5"
                   title="Tasa ITBIS"
                 >
                   <option value={18}>18%</option>
@@ -873,7 +873,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
                       <button
                         type="button"
                         onClick={() => setPropinaLegal(((subtotalNum) * 0.10).toFixed(2))}
-                        className="ml-2 text-primary text-[10px] hover:underline"
+                        className="ml-2 text-primary text-2xs hover:underline"
                       >
                         Calc. 10%
                       </button>

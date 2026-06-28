@@ -371,7 +371,7 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm text-foreground">{esp.nombre}</span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                          <span className="px-1.5 py-0.5 rounded text-2xs font-medium bg-muted text-muted-foreground">
                             {esp.layoutType}
                           </span>
                         </div>
@@ -421,7 +421,7 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">{m.nombre}</span>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          <span className={`px-1.5 py-0.5 rounded text-2xs font-medium ${
                             m.nivel === 'alto' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
                             : m.nivel === 'isla' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400'
                             : 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
@@ -604,7 +604,7 @@ export function OrdenProduccionForm({ espacios, proyectos }: Props) {
                       </table>
                     </div>
                     {csvParseResult.items.length > 50 && (
-                      <p className="px-3 py-1.5 text-[11px] text-muted-foreground border-t border-border bg-muted/20">
+                      <p className="px-3 py-1.5 text-2xs text-muted-foreground border-t border-border bg-muted/20">
                         Mostrando 50 de {csvParseResult.items.length}. Al crear la orden se incluirán todas.
                       </p>
                     )}

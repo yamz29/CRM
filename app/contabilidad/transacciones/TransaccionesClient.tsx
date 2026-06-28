@@ -279,13 +279,13 @@ export function TransaccionesClient({ proyectos, clientes, proveedores }: Props)
                         )}
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${fuenteCfg.bg} ${fuenteCfg.color}`}>
+                        <span className={`inline-flex items-center text-2xs px-1.5 py-0.5 rounded-full font-medium ${fuenteCfg.bg} ${fuenteCfg.color}`}>
                           {fuenteCfg.label}
                         </span>
                       </TableCell>
                       <TableCell className="text-xs font-mono text-muted-foreground">
                         <div>{t.numero ?? '—'}</div>
-                        {t.ncf && <div className="text-[10px] text-muted-foreground/60">NCF: {t.ncf}</div>}
+                        {t.ncf && <div className="text-2xs text-muted-foreground/60">NCF: {t.ncf}</div>}
                       </TableCell>
                       <TableCell className="text-foreground max-w-xs truncate" title={t.descripcion}>{t.descripcion}</TableCell>
                       <TableCell className="text-muted-foreground text-xs max-w-[120px] truncate">
@@ -302,13 +302,13 @@ export function TransaccionesClient({ proyectos, clientes, proveedores }: Props)
                       <TableCell className={`text-right font-semibold tabular-nums ${t.tipo === 'ingreso' ? 'text-green-700' : 'text-red-700'}`}>
                         {formatCurrency(t.monto)}
                         {t.montoPagado > 0 && t.montoPagado < t.monto && (
-                          <div className="text-[10px] text-muted-foreground font-normal">
+                          <div className="text-2xs text-muted-foreground font-normal">
                             Pagado: {formatCurrency(t.montoPagado)}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${estadoCfg.color}`}>
+                        <span className={`inline-flex items-center text-2xs px-1.5 py-0.5 rounded-full font-medium ${estadoCfg.color}`}>
                           {estadoCfg.label}
                         </span>
                       </TableCell>
@@ -363,7 +363,7 @@ function MetricCard({ icon: Icon, label, value, color, bg }: {
             <Icon className={`w-4 h-4 ${color}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+            <p className="text-2xs text-muted-foreground uppercase tracking-wide">{label}</p>
             <p className={`text-sm font-black tabular-nums truncate ${color}`}>{value}</p>
           </div>
         </div>

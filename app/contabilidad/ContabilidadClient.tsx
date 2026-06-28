@@ -514,7 +514,7 @@ function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancaria; o
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${esTarjeta ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+          <span className={`text-2xs font-medium px-1.5 py-0.5 rounded ${esTarjeta ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
             {esTarjeta ? 'Tarjeta de Crédito' : c.tipoCuenta === 'ahorro' ? 'Ahorro' : 'Corriente'}
           </span>
           {c.numeroCuenta && <span className="text-xs font-mono text-muted-foreground">{c.numeroCuenta}</span>}
@@ -526,7 +526,7 @@ function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancaria; o
               {formatCurrency(c.saldoActual ?? c.saldoInicial)}
             </p>
             {esTarjeta && (
-              <p className="text-[10px] text-muted-foreground">Límite: {formatCurrency(c.saldoInicial)}</p>
+              <p className="text-2xs text-muted-foreground">Límite: {formatCurrency(c.saldoInicial)}</p>
             )}
           </div>
           <div className="flex gap-1">

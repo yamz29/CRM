@@ -219,7 +219,7 @@ export function ImportarGastosMasivoButton() {
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                       <p className="text-xs text-green-700 dark:text-green-400">Listas para importar</p>
                       <p className="text-2xl font-black text-green-700 dark:text-green-400 tabular-nums">{preview.totales.ok}</p>
-                      <p className="text-[10px] text-green-700 dark:text-green-400 tabular-nums mt-0.5">{formatCurrency(preview.totales.montoOk)}</p>
+                      <p className="text-2xs text-green-700 dark:text-green-400 tabular-nums mt-0.5">{formatCurrency(preview.totales.montoOk)}</p>
                     </div>
                     <div className={`border rounded-lg p-3 ${
                       preview.totales.conErrores > 0
@@ -266,7 +266,7 @@ export function ImportarGastosMasivoButton() {
                               <td className="px-2 py-1.5">
                                 <p className="text-foreground line-clamp-2">{f.descripcion || <span className="text-red-500 italic">vacía</span>}</p>
                                 {tieneError && (
-                                  <p className="text-[10px] text-red-600 dark:text-red-400 mt-0.5 italic">
+                                  <p className="text-2xs text-red-600 dark:text-red-400 mt-0.5 italic">
                                     {f.errores.join(' · ')}
                                   </p>
                                 )}
@@ -277,7 +277,7 @@ export function ImportarGastosMasivoButton() {
                               <td className="px-2 py-1.5 text-muted-foreground truncate">{f.proveedor ?? '—'}</td>
                               <td className="px-2 py-1.5">
                                 {f.proyectoCodigo ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px]">
+                                  <span className="inline-flex items-center gap-1 text-2xs">
                                     <FolderOpen className="w-3 h-3" />
                                     <span className="font-mono">{f.proyectoCodigo}</span>
                                   </span>
