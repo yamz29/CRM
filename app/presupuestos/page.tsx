@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EstadoPresupuestoBadge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { PageHeader } from '@/components/ui/page-header'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Plus, Eye, Pencil, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { DeletePresupuestoButton } from './DeletePresupuestoButton'
@@ -85,22 +86,24 @@ export default async function PresupuestosPage({
       {msg === 'actualizado' && <SuccessBanner mensaje="Presupuesto actualizado exitosamente" />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Presupuestos</h1>
-          <p className="text-muted-foreground mt-1">
+      <PageHeader
+        title="Presupuestos"
+        subtitle={
+          <>
             {total} {total === 1 ? 'presupuesto' : 'presupuestos'}
             {q ? ` para "${q}"` : ''}
             {estado ? ` · ${estado}` : ''}
-          </p>
-        </div>
-        <Link href="/presupuestos/nuevo-v2">
-          <Button>
-            <Plus className="w-4 h-4" />
-            Nuevo Presupuesto
-          </Button>
-        </Link>
-      </div>
+          </>
+        }
+        actions={
+          <Link href="/presupuestos/nuevo-v2">
+            <Button>
+              <Plus className="w-4 h-4" />
+              Nuevo Presupuesto
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <Card>

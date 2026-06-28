@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/page-header'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Plus, Search, Eye, Pencil, Users, Phone } from 'lucide-react'
 import { DeleteClienteButton } from './DeleteClienteButton'
@@ -56,21 +57,21 @@ export default async function ClientesPage({
       {msg === 'creado' && <SuccessBanner mensaje="Cliente creado exitosamente" />}
       {msg === 'actualizado' && <SuccessBanner mensaje="Cliente actualizado exitosamente" />}
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
-          <p className="text-muted-foreground mt-1">{clientes.length} clientes registrados</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportButton href="/api/export/clientes" label="Exportar" />
-          <Link href="/clientes/nuevo">
-            <Button>
-              <Plus className="w-4 h-4" />
-              Nuevo Cliente
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Clientes"
+        subtitle={`${clientes.length} clientes registrados`}
+        actions={
+          <>
+            <ExportButton href="/api/export/clientes" label="Exportar" />
+            <Link href="/clientes/nuevo">
+              <Button>
+                <Plus className="w-4 h-4" />
+                Nuevo Cliente
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Search */}
       <Card>
