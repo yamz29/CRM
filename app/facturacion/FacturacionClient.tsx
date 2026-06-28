@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Search, Printer, Eye, FileText, AlertTriangle, CheckCircle2, Clock, Ban, ChevronLeft, ChevronRight, Receipt } from 'lucide-react'
 import { RecibosTab } from '@/components/contabilidad/RecibosTab'
@@ -202,20 +203,20 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
             </p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/40 border-b border-border text-left">
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Número</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Cliente</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase text-right">Total</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase text-right">Cobrado</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Estado</th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Proyecto</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Cobrado</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {facturas.map(f => {
                 const cfg = ESTADO_CONFIG[f.estado] ?? ESTADO_CONFIG.pendiente
                 const Icon = cfg.icon
@@ -223,24 +224,24 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
                 const vencida = !f.esProforma && f.estado !== 'pagada' && f.estado !== 'anulada' && f.fechaVencimiento && new Date(f.fechaVencimiento) < new Date()
 
                 return (
-                  <tr key={f.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
+                  <TableRow key={f.id}>
+                    <TableCell>
                       <Link href={`/contabilidad/facturas/${f.id}`} className="text-sm font-semibold text-foreground hover:text-primary">
                         {f.numero}
                       </Link>
                       {f.ncf && <p className="text-[10px] text-muted-foreground font-mono">NCF: {f.ncf}</p>}
                       {f.esProforma && <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">PROFORMA</p>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
                       {formatDate(f.fecha)}
                       {vencida && (
                         <span className="ml-1 text-red-600 dark:text-red-400" title={`Vencida desde ${formatDate(f.fechaVencimiento!)}`}>
                           <AlertTriangle className="w-3 h-3 inline" />
                         </span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-foreground">{f.cliente?.nombre ?? '—'}</td>
-                    <td className="px-4 py-3 text-sm">
+                    </TableCell>
+                    <TableCell className="text-sm text-foreground">{f.cliente?.nombre ?? '—'}</TableCell>
+                    <TableCell className="text-sm">
                       {f.proyecto ? (
                         <Link href={`/proyectos/${f.proyecto.id}`} className="text-muted-foreground hover:text-primary">
                           {f.proyecto.codigo ? <span className="font-mono text-xs">{f.proyecto.codigo}</span> : null}
@@ -249,41 +250,41 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
                       ) : (
                         <span className="text-muted-foreground/50 text-xs">Sin proyecto</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-bold text-right tabular-nums">{formatCurrency(f.total)}</td>
-                    <td className="px-4 py-3 text-sm text-right tabular-nums">
+                    </TableCell>
+                    <TableCell className="text-sm font-bold text-right tabular-nums">{formatCurrency(f.total)}</TableCell>
+                    <TableCell className="text-sm text-right tabular-nums">
                       <span className={f.montoPagado >= f.total - 0.01 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
                         {formatCurrency(f.montoPagado)}
                       </span>
                       {saldo > 0.01 && (
                         <p className="text-[10px] text-amber-600 dark:text-amber-400">Saldo: {formatCurrency(saldo)}</p>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${cfg.color}`}>
                         <Icon className="w-3 h-3" />
                         {cfg.label}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
                         <Link href={`/contabilidad/facturas/${f.id}`} title="Ver detalle">
-                          <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded transition-colors">
+                          <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded transition-colors" aria-label={`Ver factura ${f.numero}`}>
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                         </Link>
                         <Link href={`/contabilidad/facturas/${f.id}/imprimir`} target="_blank" title="Imprimir">
-                          <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded transition-colors">
+                          <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded transition-colors" aria-label={`Imprimir factura ${f.numero}`}>
                             <Printer className="w-3.5 h-3.5" />
                           </button>
                         </Link>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </div>
 

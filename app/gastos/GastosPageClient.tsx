@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { GastoForm, type GastoData } from '@/components/gastos/GastoForm'
 import { Plus, Search, Pencil, Trash2, Paperclip, Building2, Wrench, LayoutGrid, HelpCircle, FolderOpen, Receipt, BarChart3, List } from 'lucide-react'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
@@ -288,75 +289,73 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
             No hay gastos registrados{q || filtroDestino ? ' con esos filtros' : ''}.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  <th className="px-4 py-2.5 text-left">Fecha</th>
-                  <th className="px-4 py-2.5 text-left">Descripción</th>
-                  <th className="px-4 py-2.5 text-left">Destino</th>
-                  <th className="px-4 py-2.5 text-left">Tipo</th>
-                  <th className="px-4 py-2.5 text-left">Suplidor</th>
-                  <th className="px-4 py-2.5 text-right">Monto</th>
-                  <th className="px-4 py-2.5 text-center">Estado</th>
-                  <th className="px-4 py-2.5 text-center w-8"></th>
-                  <th className="px-4 py-2.5 w-20"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map(g => (
-                  <tr key={g.id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap text-xs">{formatDate(g.fecha)}</td>
-                    <td className="px-4 py-2.5">
-                      <div className="font-medium text-foreground">{g.descripcion}</div>
-                      {g.referencia && <div className="text-xs text-muted-foreground">{g.referencia}</div>}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <DestinoBadge destino={g.destinoTipo} proyecto={g.proyecto} />
-                        {esSinPartida(g) && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                            <HelpCircle className="w-3 h-3" />
-                            Sin partida
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{g.tipoGasto}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{g.suplidor ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-foreground tabular-nums whitespace-nowrap">
-                      {g.moneda} {g.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-4 py-2.5 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[g.estado] ?? 'bg-muted text-muted-foreground'}`}>
-                        {g.estado}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2.5 text-center">
-                      {g.archivoUrl && (
-                        <a href={g.archivoUrl} target="_blank" rel="noopener noreferrer" title="Ver adjunto"
-                          className="text-primary/60 hover:text-primary transition-colors">
-                          <Paperclip className="w-3.5 h-3.5" />
-                        </a>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Destino</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Suplidor</TableHead>
+                <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="w-8"></TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(g => (
+                <TableRow key={g.id} className="group">
+                  <TableCell className="text-muted-foreground whitespace-nowrap text-xs">{formatDate(g.fecha)}</TableCell>
+                  <TableCell>
+                    <div className="font-medium text-foreground">{g.descripcion}</div>
+                    {g.referencia && <div className="text-xs text-muted-foreground">{g.referencia}</div>}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <DestinoBadge destino={g.destinoTipo} proyecto={g.proyecto} />
+                      {esSinPartida(g) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          <HelpCircle className="w-3 h-3" />
+                          Sin partida
+                        </span>
                       )}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(g)}
-                          className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setBorrarId(g.id)} disabled={deleting === g.id}
-                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{g.tipoGasto}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{g.suplidor ?? '—'}</TableCell>
+                  <TableCell className="text-right font-semibold text-foreground tabular-nums whitespace-nowrap">
+                    {g.moneda} {g.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[g.estado] ?? 'bg-muted text-muted-foreground'}`}>
+                      {g.estado}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {g.archivoUrl && (
+                      <a href={g.archivoUrl} target="_blank" rel="noopener noreferrer" title="Ver adjunto"
+                        className="text-primary/60 hover:text-primary transition-colors">
+                        <Paperclip className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(g)} aria-label="Editar gasto"
+                        className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setBorrarId(g.id)} disabled={deleting === g.id} aria-label="Eliminar gasto"
+                        className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
       </>

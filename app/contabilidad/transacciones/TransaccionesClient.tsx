@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/utils'
 import { NuevaTransaccionModal } from './NuevaTransaccionModal'
 
@@ -242,100 +243,98 @@ export function TransaccionesClient({ proyectos, clientes, proveedores }: Props)
               <p className="text-sm text-muted-foreground">Sin transacciones para los filtros seleccionados</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border">
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Tipo</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Fuente</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Núm / NCF</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Descripción</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Proveedor / Cliente</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Proyecto</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-muted-foreground uppercase">Monto</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Estado</th>
-                    <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {transacciones.map(t => {
-                    const fuenteCfg = FUENTE_CONFIG[t.fuente]
-                    const estadoCfg = ESTADO_PAGO_CONFIG[t.estadoPago] ?? ESTADO_PAGO_CONFIG['n/a']
-                    return (
-                      <tr key={t.id} className="hover:bg-muted/20">
-                        <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(t.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' })}
-                        </td>
-                        <td className="px-3 py-2">
-                          {t.tipo === 'ingreso' ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
-                              <TrendingUp className="w-3 h-3" /> Ingreso
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 dark:text-red-400">
-                              <TrendingDown className="w-3 h-3" /> Egreso
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${fuenteCfg.bg} ${fuenteCfg.color}`}>
-                            {fuenteCfg.label}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Fuente</TableHead>
+                  <TableHead>Núm / NCF</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Proveedor / Cliente</TableHead>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-center">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transacciones.map(t => {
+                  const fuenteCfg = FUENTE_CONFIG[t.fuente]
+                  const estadoCfg = ESTADO_PAGO_CONFIG[t.estadoPago] ?? ESTADO_PAGO_CONFIG['n/a']
+                  return (
+                    <TableRow key={t.id}>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(t.fecha).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' })}
+                      </TableCell>
+                      <TableCell>
+                        {t.tipo === 'ingreso' ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
+                            <TrendingUp className="w-3 h-3" /> Ingreso
                           </span>
-                        </td>
-                        <td className="px-3 py-2 text-xs font-mono text-muted-foreground">
-                          <div>{t.numero ?? '—'}</div>
-                          {t.ncf && <div className="text-[10px] text-muted-foreground/60">NCF: {t.ncf}</div>}
-                        </td>
-                        <td className="px-3 py-2 text-foreground max-w-xs truncate" title={t.descripcion}>{t.descripcion}</td>
-                        <td className="px-3 py-2 text-muted-foreground text-xs max-w-[120px] truncate">
-                          {t.proveedor || t.cliente?.nombre || '—'}
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground text-xs">
-                          {t.proyecto ? (
-                            <Link href={`/proyectos/${t.proyecto.id}`} className="hover:text-primary inline-flex items-center gap-1">
-                              <Briefcase className="w-3 h-3" />
-                              <span className="truncate max-w-[120px]">{t.proyecto.nombre}</span>
-                            </Link>
-                          ) : '—'}
-                        </td>
-                        <td className={`px-3 py-2 text-right font-semibold tabular-nums ${t.tipo === 'ingreso' ? 'text-green-700' : 'text-red-700'}`}>
-                          {formatCurrency(t.monto)}
-                          {t.montoPagado > 0 && t.montoPagado < t.monto && (
-                            <div className="text-[10px] text-muted-foreground font-normal">
-                              Pagado: {formatCurrency(t.montoPagado)}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${estadoCfg.color}`}>
-                            {estadoCfg.label}
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 dark:text-red-400">
+                            <TrendingDown className="w-3 h-3" /> Egreso
                           </span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center justify-center gap-1">
-                            {t.facturaId && (
-                              <Link href={`/contabilidad/facturas/${t.facturaId}`}
-                                className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted"
-                                title="Ver factura">
-                                <FileText className="w-3.5 h-3.5" />
-                              </Link>
-                            )}
-                            {t.archivoUrl && (
-                              <a href={t.archivoUrl} target="_blank" rel="noopener noreferrer"
-                                className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted"
-                                title="Ver archivo">
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            )}
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${fuenteCfg.bg} ${fuenteCfg.color}`}>
+                          {fuenteCfg.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">
+                        <div>{t.numero ?? '—'}</div>
+                        {t.ncf && <div className="text-[10px] text-muted-foreground/60">NCF: {t.ncf}</div>}
+                      </TableCell>
+                      <TableCell className="text-foreground max-w-xs truncate" title={t.descripcion}>{t.descripcion}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs max-w-[120px] truncate">
+                        {t.proveedor || t.cliente?.nombre || '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {t.proyecto ? (
+                          <Link href={`/proyectos/${t.proyecto.id}`} className="hover:text-primary inline-flex items-center gap-1">
+                            <Briefcase className="w-3 h-3" />
+                            <span className="truncate max-w-[120px]">{t.proyecto.nombre}</span>
+                          </Link>
+                        ) : '—'}
+                      </TableCell>
+                      <TableCell className={`text-right font-semibold tabular-nums ${t.tipo === 'ingreso' ? 'text-green-700' : 'text-red-700'}`}>
+                        {formatCurrency(t.monto)}
+                        {t.montoPagado > 0 && t.montoPagado < t.monto && (
+                          <div className="text-[10px] text-muted-foreground font-normal">
+                            Pagado: {formatCurrency(t.montoPagado)}
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${estadoCfg.color}`}>
+                          {estadoCfg.label}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          {t.facturaId && (
+                            <Link href={`/contabilidad/facturas/${t.facturaId}`}
+                              className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted"
+                              title="Ver factura">
+                              <FileText className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
+                          {t.archivoUrl && (
+                            <a href={t.archivoUrl} target="_blank" rel="noopener noreferrer"
+                              className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted"
+                              title="Ver archivo">
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
