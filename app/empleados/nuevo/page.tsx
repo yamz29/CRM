@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { EmpleadoForm } from '@/components/empleados/EmpleadoForm'
 import { prisma } from '@/lib/prisma'
 
@@ -15,6 +16,7 @@ export default async function NuevoEmpleadoPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <Breadcrumbs items={[{ label: 'Empleados', href: '/empleados' }, { label: 'Nuevo empleado' }]} />
       <div className="flex items-center gap-4">
         <Link href="/empleados"
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">

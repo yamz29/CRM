@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { prisma } from '@/lib/prisma'
 import { EmpleadoForm } from '@/components/empleados/EmpleadoForm'
 
@@ -24,6 +25,7 @@ export default async function EditarEmpleadoPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <Breadcrumbs items={[{ label: 'Empleados', href: '/empleados' }, { label: empleado.nombre, href: `/empleados/${empleado.id}` }, { label: 'Editar' }]} />
       <div className="flex items-center gap-4">
         <Link href="/empleados"
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">

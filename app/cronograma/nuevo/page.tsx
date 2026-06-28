@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NuevoCronogramaForm } from '@/components/cronograma/NuevoCronogramaForm'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 
 export default async function NuevoCronogramaPage({
   searchParams,
@@ -24,6 +25,7 @@ export default async function NuevoCronogramaPage({
 
   return (
     <div className="max-w-2xl space-y-6">
+      <Breadcrumbs items={[{ label: 'Cronogramas', href: '/cronograma' }, { label: 'Nuevo cronograma' }]} />
       <div className="flex items-center gap-4">
         <Link href="/cronograma"
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">

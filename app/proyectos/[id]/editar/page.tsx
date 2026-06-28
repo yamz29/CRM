@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { ProyectoForm } from '@/components/proyectos/ProyectoForm'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import Link from 'next/link'
 
 export default async function EditarProyectoPage({
@@ -30,6 +31,7 @@ export default async function EditarProyectoPage({
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <Breadcrumbs items={[{ label: 'Proyectos', href: '/proyectos' }, { label: proyecto.nombre, href: `/proyectos/${proyecto.id}` }, { label: 'Editar' }]} />
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link

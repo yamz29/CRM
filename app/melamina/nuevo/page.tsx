@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ModuloMelaminaForm } from '@/components/melamina/ModuloMelaminaForm'
 
@@ -21,6 +22,7 @@ export default async function NuevoModuloPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      <Breadcrumbs items={[{ label: 'Módulos Melamina', href: '/melamina' }, { label: 'Nuevo módulo' }]} />
       <div className="flex items-center gap-4">
         <Link
           href="/melamina"

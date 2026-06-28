@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { PeriodoForm } from '@/components/nomina/PeriodoForm'
 
 export default function NuevoPeriodoNominaPage() {
   return (
     <div className="space-y-6 max-w-2xl">
+      <Breadcrumbs items={[{ label: 'Nómina', href: '/nomina' }, { label: 'Nuevo período' }]} />
       <div className="flex items-center gap-4">
         <Link href="/nomina"
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">

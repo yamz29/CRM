@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { ClienteForm } from '@/components/clientes/ClienteForm'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import Link from 'next/link'
 
 export default async function EditarClientePage({
@@ -18,6 +19,7 @@ export default async function EditarClientePage({
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <Breadcrumbs items={[{ label: 'Clientes', href: '/clientes' }, { label: cliente.nombre, href: `/clientes/${cliente.id}` }, { label: 'Editar' }]} />
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link

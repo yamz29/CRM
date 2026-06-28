@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { PresupuestoV2Builder } from '@/components/presupuestos/PresupuestoV2Builder'
 
 export default async function NuevoPresupuestoV2Page({
@@ -30,6 +31,7 @@ export default async function NuevoPresupuestoV2Page({
 
   return (
     <div className="space-y-6 max-w-7xl">
+      <Breadcrumbs items={[{ label: 'Presupuestos', href: '/presupuestos' }, { label: 'Nuevo presupuesto' }]} />
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link

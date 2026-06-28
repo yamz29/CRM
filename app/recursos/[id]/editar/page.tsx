@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { RecursoForm } from '@/components/recursos/RecursoForm'
 import { PriceHistoryPanel } from '@/components/recursos/PriceHistoryPanel'
 
@@ -15,6 +16,7 @@ export default async function EditarRecursoPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <Breadcrumbs items={[{ label: 'Recursos', href: '/recursos' }, { label: `Editar · ${recurso.nombre}` }]} />
       <div className="flex items-center gap-4">
         <Link href="/recursos"
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">

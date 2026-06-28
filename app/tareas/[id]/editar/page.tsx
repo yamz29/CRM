@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TareaForm } from '@/components/tareas/TareaForm'
 
@@ -35,6 +36,7 @@ export default async function EditarTareaPage({
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <Breadcrumbs items={[{ label: 'Tareas', href: '/tareas' }, { label: `Editar · ${tarea.titulo}` }]} />
       <div className="flex items-center gap-4">
         <Link
           href="/tareas"
