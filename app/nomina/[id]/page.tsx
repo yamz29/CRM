@@ -1,7 +1,6 @@
-import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { prisma } from '@/lib/prisma'
 import { formatDate } from '@/lib/utils'
@@ -45,10 +44,7 @@ export default async function PeriodoNominaPage({ params }: { params: Promise<{ 
       ]} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/nomina"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/nomina" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">
               {formatDate(periodo.fechaInicio)} — {formatDate(periodo.fechaFin)}

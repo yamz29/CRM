@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, List } from 'lucide-react'
+import { List } from 'lucide-react'
 import { KanbanClient } from './KanbanClient'
 
 /**
@@ -27,10 +28,7 @@ export default async function ProyectosKanbanPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <Link href="/proyectos"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/proyectos" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">Pipeline de proyectos</h1>
             <p className="text-sm text-muted-foreground mt-0.5">

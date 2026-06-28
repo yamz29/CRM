@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
-import Link from 'next/link'
-import { ArrowLeft, Bell } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
+import { Bell } from 'lucide-react'
 import { NotificacionesCard } from '@/components/notifications/NotificacionesCard'
 import { InteresadosForm } from './InteresadosForm'
 import { prisma } from '@/lib/prisma'
@@ -24,12 +24,7 @@ export default async function NotificacionesConfigPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link
-          href="/configuracion"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/configuracion" />
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Bell className="w-6 h-6 text-muted-foreground" /> Notificaciones

@@ -1,7 +1,6 @@
-import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { prisma } from '@/lib/prisma'
 import { EmpleadoForm } from '@/components/empleados/EmpleadoForm'
@@ -27,10 +26,7 @@ export default async function EditarEmpleadoPage({ params }: { params: Promise<{
     <div className="space-y-6 max-w-2xl">
       <Breadcrumbs items={[{ label: 'Empleados', href: '/empleados' }, { label: empleado.nombre, href: `/empleados/${empleado.id}` }, { label: 'Editar' }]} />
       <div className="flex items-center gap-4">
-        <Link href="/empleados"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/empleados" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Editar Empleado</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{empleado.nombre}</p>

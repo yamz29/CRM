@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import { Sidebar } from './Sidebar'
 import { CommandPalette } from './CommandPalette'
+import { NavigationHistoryProvider } from './NavigationHistoryProvider'
 import { Menu } from 'lucide-react'
 import { type PermisosMap } from '@/lib/permisos'
 
@@ -69,6 +70,7 @@ export function LayoutShell({
 
   return (
     <SidebarContext.Provider value={{ collapsed, mobileOpen, setMobileOpen }}>
+      <NavigationHistoryProvider>
       <div className="flex min-h-screen">
 
         {/* ── Mobile overlay ── */}
@@ -139,6 +141,7 @@ export function LayoutShell({
         {/* Búsqueda global Cmd+K / Ctrl+K — montada una vez para toda la app */}
         <CommandPalette />
       </div>
+      </NavigationHistoryProvider>
     </SidebarContext.Provider>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { BackButton } from '@/components/ui/back-button'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Filter, AlertCircle, Briefcase, Flag, Plus, X, Loader2, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Calendar, Filter, AlertCircle, Briefcase, Flag, Plus, X, Loader2, Trash2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -325,9 +326,7 @@ export function GanttProyectos({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3 print:hidden">
         <div className="flex items-center gap-3">
-          <Link href="/proyectos" className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/proyectos" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">Cronograma de proyectos</h1>
             <p className="text-sm text-muted-foreground mt-0.5">

@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Layers, Save, AlertTriangle, Info, Sparkles } from 'lucide-react'
+import { Layers, Save, AlertTriangle, Info, Sparkles } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHeader, TableFooter, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -161,10 +162,7 @@ export function OverheadClient({ inicial }: { inicial: OverheadData }) {
             Reparte los gastos fijos del mes (oficina, taller, general) entre los proyectos activos.
           </p>
         </div>
-        <Link href="/contabilidad"
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-4 h-4" /> Volver a Contabilidad
-        </Link>
+        <BackButton variant="text" label="Volver a Contabilidad" fallbackHref="/contabilidad" className="gap-1.5" />
       </div>
 
       {/* Selector de mes + pool */}

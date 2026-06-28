@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TareaForm } from '@/components/tareas/TareaForm'
@@ -38,12 +37,7 @@ export default async function EditarTareaPage({
     <div className="space-y-6 max-w-2xl">
       <Breadcrumbs items={[{ label: 'Tareas', href: '/tareas' }, { label: `Editar · ${tarea.titulo}` }]} />
       <div className="flex items-center gap-4">
-        <Link
-          href="/tareas"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/tareas" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Editar Tarea</h1>
           <p className="text-muted-foreground text-sm mt-0.5 line-clamp-1">{tarea.titulo}</p>

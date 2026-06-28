@@ -1,17 +1,11 @@
 import { ImportarFacturasClient } from '@/components/contabilidad/ImportarFacturasClient'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
 
 export default function ImportarFacturasPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center gap-4">
-        <Link
-          href="/contabilidad?tab=facturas"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/50 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/contabilidad?tab=facturas" className="hover:bg-muted/50" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Importar facturas desde CSV</h1>
           <p className="text-sm text-muted-foreground mt-0.5">

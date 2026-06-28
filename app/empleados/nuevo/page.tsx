@@ -1,6 +1,5 @@
-import Link from 'next/link'
+import { BackButton } from '@/components/ui/back-button'
 import { headers } from 'next/headers'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { EmpleadoForm } from '@/components/empleados/EmpleadoForm'
 import { prisma } from '@/lib/prisma'
@@ -18,10 +17,7 @@ export default async function NuevoEmpleadoPage() {
     <div className="space-y-6 max-w-2xl">
       <Breadcrumbs items={[{ label: 'Empleados', href: '/empleados' }, { label: 'Nuevo empleado' }]} />
       <div className="flex items-center gap-4">
-        <Link href="/empleados"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/empleados" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Nuevo Empleado</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Agregar empleado a la nómina</p>

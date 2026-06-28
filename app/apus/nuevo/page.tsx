@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { ApuEditor } from '@/components/apus/ApuEditor'
 
@@ -22,10 +21,7 @@ export default async function NuevoApuPage() {
     <div className="space-y-6 max-w-5xl">
       <Breadcrumbs items={[{ label: 'Catálogo APU', href: '/apus' }, { label: 'Nuevo APU' }]} />
       <div className="flex items-center gap-4">
-        <Link href="/apus"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/apus" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Nuevo APU</h1>
           <p className="text-slate-500 text-sm mt-0.5">Análisis de Precio Unitario</p>

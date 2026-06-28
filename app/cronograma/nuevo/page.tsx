@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import { NuevoCronogramaForm } from '@/components/cronograma/NuevoCronogramaForm'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 
 export default async function NuevoCronogramaPage({
@@ -27,10 +26,7 @@ export default async function NuevoCronogramaPage({
     <div className="max-w-2xl space-y-6">
       <Breadcrumbs items={[{ label: 'Cronogramas', href: '/cronograma' }, { label: 'Nuevo cronograma' }]} />
       <div className="flex items-center gap-4">
-        <Link href="/cronograma"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/cronograma" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Nuevo Cronograma</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Crea vacío o genera actividades desde un presupuesto</p>

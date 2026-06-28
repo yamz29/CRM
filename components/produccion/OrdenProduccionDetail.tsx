@@ -17,6 +17,7 @@ import {
   Download, Clock,
 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useSmartBack } from '@/components/ui/back-button'
 import { useToast } from '@/components/ui/toast'
 
 const STAGE_ICONS: Record<string, React.ElementType> = {
@@ -119,6 +120,7 @@ function formatDuration(start: string, end: string | null): string {
 
 export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
   const router = useRouter()
+  const goBack = useSmartBack('/produccion')
   const toast = useToast()
   const [tab, setTab] = useState<'etapa' | 'tiempos' | 'config'>('etapa')
   const [saving, setSaving] = useState(false)
@@ -214,9 +216,7 @@ export function OrdenProduccionDetail({ orden, usuarios, piezas }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Link href="/produccion">
-            <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button>
-          </Link>
+          <Button variant="ghost" size="sm" onClick={goBack} aria-label="Volver"><ArrowLeft className="w-4 h-4" /></Button>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-foreground">{orden.nombre}</h1>
