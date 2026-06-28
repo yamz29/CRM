@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { Plus, Clock, PlayCircle, CheckCircle, Package } from 'lucide-react'
@@ -48,17 +49,15 @@ export default async function ProduccionPage({ searchParams }: { searchParams: P
       {msg === 'eliminado' && <SuccessBanner mensaje="Orden de producción eliminada" />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Producción</h1>
-          <p className="text-muted-foreground mt-1">
-            {ordenes.length} órdenes de producción
-          </p>
-        </div>
-        <Link href="/produccion/nueva">
-          <Button><Plus className="w-4 h-4" /> Nueva Orden</Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Producción"
+        subtitle={`${ordenes.length} órdenes de producción`}
+        actions={
+          <Link href="/produccion/nueva">
+            <Button><Plus className="w-4 h-4" /> Nueva Orden</Button>
+          </Link>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

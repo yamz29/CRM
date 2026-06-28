@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import { Plus } from 'lucide-react'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { ApusTable } from '@/components/apus/ApusTable'
@@ -22,18 +23,18 @@ export default async function ApusPage({ searchParams }: { searchParams: Promise
       {msg === 'actualizado' && <SuccessBanner mensaje="APU actualizado exitosamente" />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Catálogo de APUs</h1>
-          <p className="text-muted-foreground mt-1">{apus.length} análisis de precios unitarios</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <HelpDrawer slug="apu" titulo="APU" />
-          <Link href="/apus/nuevo">
-            <Button><Plus className="w-4 h-4" /> Nuevo APU</Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Catálogo de APUs"
+        subtitle={`${apus.length} análisis de precios unitarios`}
+        actions={
+          <>
+            <HelpDrawer slug="apu" titulo="APU" />
+            <Link href="/apus/nuevo">
+              <Button><Plus className="w-4 h-4" /> Nuevo APU</Button>
+            </Link>
+          </>
+        }
+      />
 
       <ApusTable apus={apus} />
     </div>

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { KitchenListClient } from '@/components/cocinas/KitchenListClient'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
+import { PageHeader } from '@/components/ui/page-header'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,15 +29,11 @@ export default async function CocinasPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Espacios (Modulares)</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Diseña y presupuesta espacios modulares colocando módulos sobre paredes
-          </p>
-        </div>
-        <HelpDrawer slug="cocinas" titulo="Configurador de Cocinas" />
-      </div>
+      <PageHeader
+        title="Espacios (Modulares)"
+        subtitle="Diseña y presupuesta espacios modulares colocando módulos sobre paredes"
+        actions={<HelpDrawer slug="cocinas" titulo="Configurador de Cocinas" />}
+      />
       <KitchenListClient initialProjects={projectsWithCounts} />
     </div>
   )

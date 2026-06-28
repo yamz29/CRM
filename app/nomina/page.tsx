@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Plus, Wallet, CheckCircle2, FileClock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { HelpDrawer } from '@/components/help/HelpDrawer'
@@ -36,18 +37,18 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
     <div className="space-y-6">
       {msg === 'creado' && <SuccessBanner mensaje="Período de nómina creado exitosamente" />}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Nómina</h1>
-          <p className="text-muted-foreground mt-1">Períodos de pago quincenal, horas extra y deducciones de ley</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <HelpDrawer slug="nomina" titulo="Nómina" />
-          <Link href="/nomina/nuevo">
-            <Button><Plus className="w-4 h-4" /> Nuevo Período</Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Nómina"
+        subtitle="Períodos de pago quincenal, horas extra y deducciones de ley"
+        actions={
+          <>
+            <HelpDrawer slug="nomina" titulo="Nómina" />
+            <Link href="/nomina/nuevo">
+              <Button><Plus className="w-4 h-4" /> Nuevo Período</Button>
+            </Link>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard title="Total períodos" value={periodos.length} icon={<Wallet className="w-5 h-5" />} colorClass="bg-blue-500/10 text-blue-500" />

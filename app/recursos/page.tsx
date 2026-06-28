@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import { Plus } from 'lucide-react'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { RecursosTable } from '@/components/recursos/RecursosTable'
@@ -36,18 +37,18 @@ export default async function RecursosPage({ searchParams }: { searchParams: Pro
       {msg === 'actualizado' && <SuccessBanner mensaje="Recurso actualizado exitosamente" />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Catálogo de Recursos</h1>
-          <p className="text-muted-foreground mt-1">{recursos.length} recursos · base de datos maestra de costos</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <RecursosPageClient />
-          <Link href="/recursos/nuevo">
-            <Button><Plus className="w-4 h-4" /> Nuevo Recurso</Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Catálogo de Recursos"
+        subtitle={`${recursos.length} recursos · base de datos maestra de costos`}
+        actions={
+          <>
+            <RecursosPageClient />
+            <Link href="/recursos/nuevo">
+              <Button><Plus className="w-4 h-4" /> Nuevo Recurso</Button>
+            </Link>
+          </>
+        }
+      />
 
       <InventarioPanel recursos={recursosStock} />
       <RecursosTable recursos={recursos} />

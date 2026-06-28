@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import { Plus, Users, UserCheck, UserX, CalendarClock } from 'lucide-react'
 import { StatsCard } from '@/components/ui/stats-card'
 import { SuccessBanner } from '@/components/ui/success-banner'
@@ -39,18 +40,18 @@ export default async function EmpleadosPage({ searchParams }: { searchParams: Pr
       {msg === 'creado' && <SuccessBanner mensaje="Empleado creado exitosamente" />}
       {msg === 'actualizado' && <SuccessBanner mensaje="Empleado actualizado exitosamente" />}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Empleados</h1>
-          <p className="text-muted-foreground mt-1">Ficha de personal, horario, vacaciones y permisos</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <HelpDrawer slug="empleados" titulo="Empleados" />
-          <Link href="/empleados/nuevo">
-            <Button><Plus className="w-4 h-4" /> Nuevo Empleado</Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Empleados"
+        subtitle="Ficha de personal, horario, vacaciones y permisos"
+        actions={
+          <>
+            <HelpDrawer slug="empleados" titulo="Empleados" />
+            <Link href="/empleados/nuevo">
+              <Button><Plus className="w-4 h-4" /> Nuevo Empleado</Button>
+            </Link>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard title="Total" value={empleados.length} icon={<Users className="w-5 h-5" />} colorClass="bg-blue-500/10 text-blue-500" />
