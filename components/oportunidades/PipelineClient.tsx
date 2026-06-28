@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Plus, LayoutGrid, List, Search, TrendingUp, DollarSign, Target, Archive, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
@@ -194,16 +195,19 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
   const router = useRouter()
   const toast = useToast()
   const [oportunidades, setOportunidades] = useState<Oportunidad[]>(initial)
-  const [view, setView] = useState<'kanban' | 'lista'>('kanban')
-  const [q, setQ] = useState('')
-  const [filtroEtapa, setFiltroEtapa] = useState('')
-  const [filtroResponsable, setFiltroResponsable] = useState('')
+  const [filters, setFilters] = useUrlFilters({
+    view: 'kanban', q: '', etapa: '', responsable: '', arch: '', urgente: '',
+  })
+  const view = filters.view as 'kanban' | 'lista'
+  const q = filters.q
+  const filtroEtapa = filters.etapa
+  const filtroResponsable = filters.responsable
+  const verArchivadas = filters.arch === '1'
+  const filtroUrgente = filters.urgente === '1'
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Oportunidad | null>(null)
   const [drawerOp, setDrawerOp] = useState<Oportunidad | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
-  const [verArchivadas, setVerArchivadas] = useState(false)
-  const [filtroUrgente, setFiltroUrgente] = useState(false)
   const [perdidaPending, setPerdidaPending] = useState<Oportunidad | null>(null)
 
   const filtered = useMemo(() => {
@@ -363,7 +367,7 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
           <input
             type="text"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => setFilters({ q: e.target.value })}
             placeholder="Buscar oportunidad o cliente..."
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -371,7 +375,7 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
         {view === 'lista' && (
           <select
             value={filtroEtapa}
-            onChange={(e) => setFiltroEtapa(e.target.value)}
+            onChange={(e) => setFilters({ etapa: e.target.value })}
             className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground"
           >
             <option value="">Todas las etapas</option>
@@ -380,14 +384,14 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
         )}
         <select
           value={filtroResponsable}
-          onChange={(e) => setFiltroResponsable(e.target.value)}
+          onChange={(e) => setFilters({ responsable: e.target.value })}
           className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground"
         >
           <option value="">Todos los responsables</option>
           {usuarios.map((u) => <option key={u.id} value={u.nombre}>{u.nombre}</option>)}
         </select>
         <button
-          onClick={() => setFiltroUrgente(!filtroUrgente)}
+          onClick={() => setFilters({ urgente: filtroUrgente ? '' : '1' })}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
             ${filtroUrgente
               ? 'bg-amber-500/10 text-amber-600 border-amber-300 dark:border-amber-800'
@@ -397,7 +401,7 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
           Urgentes
         </button>
         <button
-          onClick={() => setVerArchivadas(!verArchivadas)}
+          onClick={() => setFilters({ arch: verArchivadas ? '' : '1' })}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors
             ${verArchivadas
               ? 'bg-amber-500/10 text-amber-600 border-amber-300 dark:border-amber-800'
@@ -408,13 +412,13 @@ export function PipelineClient({ oportunidades: initial, clientes, presupuestos,
         </button>
         <div className="flex items-center border border-border rounded-lg overflow-hidden">
           <button
-            onClick={() => setView('kanban')}
+            onClick={() => setFilters({ view: 'kanban' })}
             className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${view === 'kanban' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
           >
             <LayoutGrid className="w-3.5 h-3.5" /> Kanban
           </button>
           <button
-            onClick={() => setView('lista')}
+            onClick={() => setFilters({ view: 'lista' })}
             className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${view === 'lista' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
           >
             <List className="w-3.5 h-3.5" /> Lista

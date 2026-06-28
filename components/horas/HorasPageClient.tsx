@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import {
   ChevronLeft, ChevronRight, Clock, FolderOpen, Sparkles, Archive,
   Truck, Users, Wrench, Trash2, Pencil, X, BarChart3, Plus,
@@ -349,9 +350,10 @@ function BlockPopup({
 export function HorasPageClient({ registros: init, proyectos, usuarios, clientes, currentUserId }: Props) {
   const toast = useToast()
   const [registros, setRegistros] = useState<RegistroHoras[]>(init)
-  const [tab, setTab]             = useState<'grid' | 'reportes'>('grid')
+  const [filters, setFilters] = useUrlFilters({ tab: 'grid', usr: currentUserId ? String(currentUserId) : '' })
+  const tab = filters.tab as 'grid' | 'reportes'
+  const filterUsr = filters.usr
   const [monday, setMonday]       = useState(getMondayOf(todayStr()))
-  const [filterUsr, setFilterUsr] = useState(currentUserId ? String(currentUserId) : '')
 
   const [popup,     setPopup]     = useState<PopupState | null>(null)
   const [eliminarBloque, setEliminarBloque] = useState(false)
@@ -504,7 +506,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
         {(['grid', 'reportes'] as const).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => setFilters({ tab: t })}
             className={cn(
               'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
               tab === t
@@ -557,7 +559,7 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
             {usuarios.length > 1 && (
               <select
                 value={filterUsr}
-                onChange={(e) => setFilterUsr(e.target.value)}
+                onChange={(e) => setFilters({ usr: e.target.value })}
                 className="px-3 py-2 text-sm border border-border rounded-xl bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todos los empleados</option>

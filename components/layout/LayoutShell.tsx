@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext, Suspense } from 'react'
 import { Sidebar } from './Sidebar'
 import { CommandPalette } from './CommandPalette'
 import { NavigationHistoryProvider } from './NavigationHistoryProvider'
+import { ModuleMemoryTracker } from './ModuleMemoryTracker'
 import { Menu } from 'lucide-react'
 import { type PermisosMap } from '@/lib/permisos'
 
@@ -71,6 +72,7 @@ export function LayoutShell({
   return (
     <SidebarContext.Provider value={{ collapsed, mobileOpen, setMobileOpen }}>
       <NavigationHistoryProvider>
+      <Suspense fallback={null}><ModuleMemoryTracker /></Suspense>
       <div className="flex min-h-screen">
 
         {/* ── Mobile overlay ── */}

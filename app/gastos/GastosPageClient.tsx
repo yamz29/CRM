@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -78,14 +79,16 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   const [editing, setEditing]       = useState<GastoData | null>(null)
   const [deleting, setDeleting]     = useState<number | null>(null)
   const [borrarId, setBorrarId]     = useState<number | null>(null)
-  const [vista, setVista] = useState<'lista' | 'informe'>('lista')
-
-  // Filters
-  const [q, setQ]                           = useState('')
-  const [filtroDestino, setFiltroDestino]   = useState('')
-  const [filtroProyecto, setFiltroProyecto] = useState('')
-  const [filtroEstado, setFiltroEstado]     = useState('')
-  const [soloSinPartida, setSoloSinPartida] = useState(false)
+  // Filtros sincronizados con la URL (los conserva el botón "Atrás")
+  const [filters, setFilters] = useUrlFilters({
+    vista: 'lista', q: '', destino: '', proyecto: '', estado: '', sinpartida: '',
+  })
+  const vista = filters.vista as 'lista' | 'informe'
+  const q = filters.q
+  const filtroDestino = filters.destino
+  const filtroProyecto = filters.proyecto
+  const filtroEstado = filters.estado
+  const soloSinPartida = filters.sinpartida === '1'
 
   const esSinPartida = (g: Gasto) => g.proyectoId != null && g.partida == null
 
@@ -167,13 +170,13 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-border overflow-hidden mr-1">
-            <button onClick={() => setVista('lista')}
+            <button onClick={() => setFilters({ vista: 'lista' })}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
                 vista === 'lista' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}>
               <List className="w-3.5 h-3.5" /> Lista
             </button>
-            <button onClick={() => setVista('informe')}
+            <button onClick={() => setFilters({ vista: 'informe' })}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
                 vista === 'informe' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}>
@@ -199,7 +202,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
         {Object.entries(DESTINO_CONFIG).map(([key, cfg]) => (
           <button
             key={key}
-            onClick={() => setFiltroDestino(filtroDestino === key ? '' : key)}
+            onClick={() => setFilters({ destino: filtroDestino === key ? '' : key })}
             className={`rounded-xl border p-3 text-left transition-all ${
               filtroDestino === key
                 ? 'ring-2 ring-primary border-primary/50 bg-card'
@@ -221,7 +224,7 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
         ))}
         {sinPartidaCount > 0 && (
           <button
-            onClick={() => setSoloSinPartida(!soloSinPartida)}
+            onClick={() => setFilters({ sinpartida: soloSinPartida ? '' : '1' })}
             className={`rounded-xl border p-3 text-left transition-all ${
               soloSinPartida
                 ? 'ring-2 ring-primary border-primary/50 bg-card'
@@ -253,28 +256,28 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
           <input
             type="text"
             value={q}
-            onChange={e => setQ(e.target.value)}
+            onChange={e => setFilters({ q: e.target.value })}
             placeholder="Buscar descripción, suplidor, referencia..."
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <select value={filtroDestino} onChange={e => setFiltroDestino(e.target.value)}
+        <select value={filtroDestino} onChange={e => setFilters({ destino: e.target.value })}
           className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
           <option value="">Todos los destinos</option>
           {Object.entries(DESTINO_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
-        <select value={filtroProyecto} onChange={e => setFiltroProyecto(e.target.value)}
+        <select value={filtroProyecto} onChange={e => setFilters({ proyecto: e.target.value })}
           className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
           <option value="">Todos los proyectos</option>
           {proyectos.map(p => <option key={p.id} value={String(p.id)}>{p.nombre}</option>)}
         </select>
-        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
+        <select value={filtroEstado} onChange={e => setFilters({ estado: e.target.value })}
           className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
           <option value="">Todos los estados</option>
           {['Registrado', 'Revisado', 'Anulado'].map(e => <option key={e} value={e}>{e}</option>)}
         </select>
         {(q || filtroDestino || filtroProyecto || filtroEstado || soloSinPartida) && (
-          <button onClick={() => { setQ(''); setFiltroDestino(''); setFiltroProyecto(''); setFiltroEstado(''); setSoloSinPartida(false) }}
+          <button onClick={() => setFilters({ q: '', destino: '', proyecto: '', estado: '', sinpartida: '' })}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors">Limpiar</button>
         )}
         <span className="text-xs text-muted-foreground ml-auto">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Card, CardContent } from '@/components/ui/card'
 import { ESTADO_COLORS, PRIORIDAD_COLORS, ETAPA_COLORS } from '@/lib/produccion'
 import { Search, X, Eye, Trash2 } from 'lucide-react'
@@ -30,9 +31,10 @@ interface Props {
 export function ProduccionPageClient({ ordenes }: Props) {
   const router = useRouter()
   const toast = useToast()
-  const [filtroTexto, setFiltroTexto] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
-  const [filtroPrioridad, setFiltroPrioridad] = useState('')
+  const [filters, setFilters] = useUrlFilters({ q: '', estado: '', prioridad: '' })
+  const filtroTexto = filters.q
+  const filtroEstado = filters.estado
+  const filtroPrioridad = filters.prioridad
   const [deleting, setDeleting] = useState<number | null>(null)
   const [borrarId, setBorrarId] = useState<number | null>(null)
 
@@ -76,13 +78,13 @@ export function ProduccionPageClient({ ordenes }: Props) {
                 type="text"
                 placeholder="Buscar por nombre, código, cliente..."
                 value={filtroTexto}
-                onChange={(e) => setFiltroTexto(e.target.value)}
+                onChange={(e) => setFilters({ q: e.target.value })}
                 className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-border bg-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <select
               value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
+              onChange={(e) => setFilters({ estado: e.target.value })}
               className="px-3 py-1.5 rounded-lg border border-border bg-input text-foreground text-sm"
             >
               <option value="">Todos los estados</option>
@@ -93,7 +95,7 @@ export function ProduccionPageClient({ ordenes }: Props) {
             </select>
             <select
               value={filtroPrioridad}
-              onChange={(e) => setFiltroPrioridad(e.target.value)}
+              onChange={(e) => setFilters({ prioridad: e.target.value })}
               className="px-3 py-1.5 rounded-lg border border-border bg-input text-foreground text-sm"
             >
               <option value="">Todas las prioridades</option>
@@ -102,7 +104,7 @@ export function ProduccionPageClient({ ordenes }: Props) {
               <option value="Baja">Baja</option>
             </select>
             {hasFilters && (
-              <button onClick={() => { setFiltroTexto(''); setFiltroEstado(''); setFiltroPrioridad('') }}
+              <button onClick={() => setFilters({ q: '', estado: '', prioridad: '' })}
                 className="text-muted-foreground hover:text-foreground">
                 <X className="w-4 h-4" />
               </button>

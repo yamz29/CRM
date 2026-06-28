@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -55,8 +56,9 @@ export function ComprasPageClient({
   const router = useRouter()
   const toast = useToast()
   const [ordenes, setOrdenes] = useState(ordenesIniciales)
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [filters, setFilters] = useUrlFilters({ q: '', estado: 'todos' })
+  const busqueda = filters.q
+  const filtroEstado = filters.estado
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -229,7 +231,7 @@ export function ComprasPageClient({
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => setFilters({ q: e.target.value })}
             placeholder="Buscar por # OC, proveedor, proyecto..."
             className="pl-9 h-9"
           />
@@ -238,7 +240,7 @@ export function ComprasPageClient({
           {FILTROS_ESTADO.map((est) => (
             <button
               key={est}
-              onClick={() => setFiltroEstado(est)}
+              onClick={() => setFilters({ estado: est })}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                 filtroEstado === est
                   ? 'bg-primary text-white'

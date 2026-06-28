@@ -41,6 +41,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, Fragment } from 'react'
+import { useResolvedModuleHref } from '@/components/ui/module-link'
 import { useTheme } from '@/components/theme/ThemeProvider'
 import { type PermisosMap, type ModuloKey, getNivel } from '@/lib/permisos'
 
@@ -127,9 +128,10 @@ function NavLink({ href, label, icon: Icon, collapsed, onNavClick }: {
 }) {
   const pathname = usePathname()
   const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+  const resolvedHref = useResolvedModuleHref(href)
   return (
     <Link
-      href={href}
+      href={resolvedHref}
       onClick={onNavClick}
       title={collapsed ? label : undefined}
       className={cn(

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -56,12 +57,15 @@ function getEstadoBadge(estado: string) {
 export function TareasPageClient({ tareas, usuarios }: Props) {
   const router = useRouter()
   const today = new Date()
-  const [view, setView] = useState<'lista' | 'kanban'>('lista')
-  const [filtroTexto, setFiltroTexto] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
-  const [filtroAsignado, setFiltroAsignado] = useState('')
-  const [filtroPrioridad, setFiltroPrioridad] = useState('')
-  const [verArchivadas, setVerArchivadas] = useState(false)
+  const [filters, setFilters] = useUrlFilters({
+    view: 'lista', q: '', estado: '', asignado: '', prioridad: '', arch: '',
+  })
+  const view = filters.view as 'lista' | 'kanban'
+  const filtroTexto = filters.q
+  const filtroEstado = filters.estado
+  const filtroAsignado = filters.asignado
+  const filtroPrioridad = filters.prioridad
+  const verArchivadas = filters.arch === '1'
 
   // DnD state
   const draggingId = useRef<number | null>(null)
@@ -196,7 +200,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
             <input
               type="text"
               value={filtroTexto}
-              onChange={(e) => setFiltroTexto(e.target.value)}
+              onChange={(e) => setFilters({ q: e.target.value })}
               placeholder="Buscar por título, cliente, proyecto..."
               className="border border-border rounded-lg px-2.5 py-1.5 text-sm bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-w-[220px]"
             />
@@ -206,14 +210,14 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
             {/* Toggle vista */}
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button
-                onClick={() => setView('lista')}
+                onClick={() => setFilters({ view: 'lista' })}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors
                   ${view === 'lista' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`}
               >
                 <List className="w-3.5 h-3.5" /> Lista
               </button>
               <button
-                onClick={() => setView('kanban')}
+                onClick={() => setFilters({ view: 'kanban' })}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors
                   ${view === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'}`}
               >
@@ -226,7 +230,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
             {/* Filtro estado */}
             <select
               value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
+              onChange={(e) => setFilters({ estado: e.target.value })}
               className="border border-border rounded-lg px-2.5 py-1.5 text-sm bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Todos los estados</option>
@@ -236,7 +240,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
             {/* Filtro asignado */}
             <select
               value={filtroAsignado}
-              onChange={(e) => setFiltroAsignado(e.target.value)}
+              onChange={(e) => setFilters({ asignado: e.target.value })}
               className="border border-border rounded-lg px-2.5 py-1.5 text-sm bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Todos los asignados</option>
@@ -246,7 +250,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
             {/* Filtro prioridad */}
             <select
               value={filtroPrioridad}
-              onChange={(e) => setFiltroPrioridad(e.target.value)}
+              onChange={(e) => setFilters({ prioridad: e.target.value })}
               className="border border-border rounded-lg px-2.5 py-1.5 text-sm bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Todas las prioridades</option>
@@ -257,7 +261,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
 
             {/* Toggle archivadas */}
             <button
-              onClick={() => setVerArchivadas(!verArchivadas)}
+              onClick={() => setFilters({ arch: verArchivadas ? '' : '1' })}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors
                 ${verArchivadas
                   ? 'bg-amber-500/10 text-amber-600 border-amber-300 dark:border-amber-800'
@@ -269,7 +273,7 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
 
             {hasFilters && (
               <button
-                onClick={() => { setFiltroTexto(''); setFiltroEstado(''); setFiltroAsignado(''); setFiltroPrioridad(''); setVerArchivadas(false) }}
+                onClick={() => setFilters({ q: '', estado: '', asignado: '', prioridad: '', arch: '' })}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> Limpiar

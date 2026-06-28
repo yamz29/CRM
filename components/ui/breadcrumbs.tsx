@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ChevronRight, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CrumbLink } from '@/components/ui/module-link'
 
 export interface Crumb {
   label: string
@@ -23,9 +24,9 @@ export function Breadcrumbs({ items, className }: { items: Crumb[]; className?: 
           <span key={`${item.label}-${i}`} className="flex items-center gap-1.5">
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
             {item.href && !last ? (
-              <Link href={item.href} className="hover:text-foreground transition-colors truncate max-w-[200px]">
+              <CrumbLink href={item.href} className="hover:text-foreground transition-colors truncate max-w-[200px]">
                 {item.label}
-              </Link>
+              </CrumbLink>
             ) : (
               <span
                 className={cn('truncate max-w-[260px]', last && 'text-foreground font-medium')}
