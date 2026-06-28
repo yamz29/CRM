@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
+import { BackButton } from '@/components/ui/back-button'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  ArrowLeft, Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer, Grid3x3, Copy,
-} from 'lucide-react'
+import { Save, Wand2, Plus, Trash2, Package, Layers, BarChart3, Settings2, Printer, Grid3x3, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatCurrency } from '@/lib/utils'
@@ -712,12 +711,7 @@ export function ModuloEditor({ modulo, materialesDisponibles, tiposModulo = TIPO
       {/* Header (oculto al imprimir) */}
       <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-3">
-          <Link
-            href="/melamina"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/melamina" />
           <div>
             <h1 className="text-xl font-bold text-foreground">{nombre || 'Módulo sin nombre'}</h1>
             <p className="text-sm text-muted-foreground">{codigo && <span className="font-mono mr-2">{codigo}</span>}{tipoModulo}</p>

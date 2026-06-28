@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { BackButton } from '@/components/ui/back-button'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  ArrowLeft, Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle,
-  Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2, Search,
-} from 'lucide-react'
+import { Save, Upload, X, FileText, ArrowUpCircle, ArrowDownCircle, Image, Loader2, ScanLine, CheckCircle2, AlertTriangle, FolderOpen, Building2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { compressImage, enhanceForOCR } from '@/lib/compress-image'
 import { carpetaFactura, nombreArchivoFactura } from '@/lib/factura-sp-path'
@@ -513,9 +511,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/contabilidad" className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/contabilidad" />
         <div>
           <h1 className="text-xl font-bold text-foreground">{isEdit ? 'Editar Factura' : 'Nueva Factura'}</h1>
           <p className="text-sm text-muted-foreground">Registra una factura de ingreso o egreso</p>

@@ -2,12 +2,12 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import {
   ArrowLeft, Calculator, LayoutPanelLeft, Map, Search, X,
   Trash2, FileText, Layers, ClipboardList, Copy, Check, Grid2x2,
 } from 'lucide-react'
 import { NEST_COLORS } from '@/lib/nesting'
+import { useSmartBack } from '@/components/ui/back-button'
 import { cn, formatCurrency } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1041,6 +1041,7 @@ function NestingModal({
 
 export function KitchenConfiguratorClient({ project, availableModules }: Props) {
   const router = useRouter()
+  const goBack = useSmartBack('/cocinas')
 
   const [placements, setPlacements] = useState<Placement[]>(
     project.placements.map((p) => ({
@@ -1381,9 +1382,9 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
     <div className="flex flex-col h-screen bg-[#0b0f1a]" onKeyDown={handleKeyDown} tabIndex={-1} style={{ outline: 'none' }}>
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card flex-shrink-0">
-        <Link href="/cocinas" className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors">
+        <button type="button" onClick={goBack} aria-label="Volver" className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors">
           <ArrowLeft className="w-4 h-4" />
-        </Link>
+        </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-foreground font-semibold text-sm truncate">{project.nombre}</h1>
           <p className="text-muted-foreground text-xs">{placements.length} módulo{placements.length !== 1 ? 's' : ''} colocado{placements.length !== 1 ? 's' : ''}</p>

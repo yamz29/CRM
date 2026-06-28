@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSmartBack } from '@/components/ui/back-button'
 import { formatCurrency } from '@/lib/utils'
 import {
   Plus,
@@ -122,6 +123,7 @@ export function PresupuestoBuilder({
   defaultProyectoId,
 }: PresupuestoBuilderProps) {
   const router = useRouter()
+  const goBack = useSmartBack('/presupuestos')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -674,7 +676,7 @@ export function PresupuestoBuilder({
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.back()}
+            onClick={goBack}
             disabled={loading}
           >
             <X className="w-4 h-4" />

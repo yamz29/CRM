@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -23,13 +24,7 @@ import { ReabrirProyectoButton } from '@/components/proyectos/ReabrirProyectoBut
 import { headers } from 'next/headers'
 import { getFactorCargaSocial } from '@/lib/configuracion'
 import { overheadDistribuidoProyecto } from '@/lib/overhead-data'
-import {
-  ArrowLeft, Pencil, MapPin, Calendar, User, DollarSign,
-  FileText, Plus, Tag, TrendingDown as TrendingDownIcon,
-  TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen,
-  FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink, FolderOpen, ListTodo,
-  type LucideIcon,
-} from 'lucide-react'
+import { Pencil, MapPin, Calendar, User, DollarSign, FileText, Plus, Tag, TrendingDown as TrendingDownIcon, TrendingUp, AlertTriangle, Receipt, BarChart2, Percent, ClipboardList, BookOpen, FilePlus, ClipboardCheck, GanttChart, Banknote, ExternalLink, FolderOpen, ListTodo, type LucideIcon } from 'lucide-react'
 
 async function getProyecto(id: number) {
   return prisma.proyecto.findUnique({
@@ -221,10 +216,7 @@ export default async function ProyectoDetailPage({
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/proyectos"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/proyectos" />
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               {proyecto.codigo && (

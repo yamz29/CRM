@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -6,18 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoPresupuestoBadge } from '@/components/ui/badge'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import {
-  ArrowLeft,
-  Pencil,
-  Printer,
-  Download,
-  User,
-  FolderOpen,
-  FileText,
-  Calendar,
-  Hammer,
-  Box,
-} from 'lucide-react'
+import { Pencil, Printer, Download, User, FolderOpen, FileText, Calendar, Hammer, Box } from 'lucide-react'
 import { CambiarEstadoButton } from './CambiarEstadoButton'
 import { DuplicarButton } from './DuplicarButton'
 import { DocumentosPresupuesto } from '@/components/presupuestos/DocumentosPresupuesto'
@@ -87,12 +77,7 @@ export default async function PresupuestoDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
-          <Link
-            href="/presupuestos"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/presupuestos" />
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">{presupuesto.numero}</h1>

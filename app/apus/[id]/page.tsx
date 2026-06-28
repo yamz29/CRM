@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { ApuEditor } from '@/components/apus/ApuEditor'
 
@@ -44,10 +43,7 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
         { label: apu.codigo ? `${apu.codigo} · ${apu.nombre}` : apu.nombre },
       ]} />
       <div className="flex items-center gap-4">
-        <Link href="/apus"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/apus" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">{apu.nombre}</h1>
           <p className="text-slate-500 text-sm mt-0.5">

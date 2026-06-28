@@ -11,6 +11,7 @@ import {
   Truck, Building2, PackageCheck, Send, FileText, Loader2,
 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useSmartBack } from '@/components/ui/back-button'
 import { useToast } from '@/components/ui/toast'
 
 interface Item {
@@ -70,6 +71,7 @@ export function OrdenCompraDetail({
   proyectos: Proyecto[]
 }) {
   const router = useRouter()
+  const goBack = useSmartBack('/compras')
   const toast = useToast()
   const [orden, setOrden] = useState(ordenInicial)
   const [showAddItem, setShowAddItem] = useState(false)
@@ -186,9 +188,9 @@ export function OrdenCompraDetail({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/compras" className="p-2 rounded-lg hover:bg-muted transition-colors">
+          <button type="button" onClick={goBack} aria-label="Volver" className="p-2 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
-          </Link>
+          </button>
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <ShoppingCart className="w-6 h-6 text-blue-600" />

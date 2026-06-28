@@ -3,7 +3,8 @@ import path from 'path'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { marked } from 'marked'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
 import articulos from '@/content/help/index.json'
 
 type Params = { params: Promise<{ slug: string }> }
@@ -32,13 +33,7 @@ export default async function AyudaArticlePage({ params }: Params) {
     <div className="max-w-3xl mx-auto py-8 px-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm">
-        <Link
-          href="/ayuda"
-          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Centro de Ayuda
-        </Link>
+        <BackButton variant="text" label="Centro de Ayuda" fallbackHref="/ayuda" className="gap-1.5" />
         {articulo && (
           <>
             <span className="text-muted-foreground/70">/</span>

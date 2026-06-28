@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
-import { ArrowLeft, Package2 } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
+import { Package2 } from 'lucide-react'
 import { MaterialesManager } from './MaterialesManager'
 
 export default async function MaterialesMelaminaPage() {
@@ -18,12 +18,7 @@ export default async function MaterialesMelaminaPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center gap-4">
-        <Link
-          href="/melamina"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/melamina" />
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">Materiales de Melamina</h1>
           <p className="text-slate-500 text-sm mt-0.5">

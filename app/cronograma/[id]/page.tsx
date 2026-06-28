@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
-import { ArrowLeft, FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react'
+import { FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { BackButton } from '@/components/ui/back-button'
 import { CronogramaView } from '@/components/cronograma/CronogramaView'
 import { ResumenAvance } from '@/components/cronograma/ResumenAvance'
 import { calcularResumen } from '@/lib/cronograma-resumen'
@@ -122,10 +123,7 @@ export default async function CronogramaDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <Link href="/cronograma"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors mt-0.5 shrink-0">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/cronograma" className="mt-0.5 shrink-0" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">{cronograma.nombre}</h1>
             <div className="flex items-center gap-4 mt-1 flex-wrap">

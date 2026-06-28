@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { BackButton } from '@/components/ui/back-button'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { PresupuestoV2Builder } from '@/components/presupuestos/PresupuestoV2Builder'
 
@@ -34,12 +33,7 @@ export default async function NuevoPresupuestoV2Page({
       <Breadcrumbs items={[{ label: 'Presupuestos', href: '/presupuestos' }, { label: 'Nuevo presupuesto' }]} />
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link
-          href="/presupuestos"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref="/presupuestos" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Nuevo Presupuesto</h1>
           <p className="text-slate-500 text-sm mt-0.5">

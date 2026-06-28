@@ -1,9 +1,8 @@
 import { prisma } from '@/lib/prisma'
+import { BackButton } from '@/components/ui/back-button'
 import { notFound } from 'next/navigation'
 import { ProyectoForm } from '@/components/proyectos/ProyectoForm'
-import { ArrowLeft } from 'lucide-react'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
-import Link from 'next/link'
 
 export default async function EditarProyectoPage({
   params,
@@ -34,12 +33,7 @@ export default async function EditarProyectoPage({
       <Breadcrumbs items={[{ label: 'Proyectos', href: '/proyectos' }, { label: proyecto.nombre, href: `/proyectos/${proyecto.id}` }, { label: 'Editar' }]} />
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link
-          href={`/proyectos/${proyecto.id}`}
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
+        <BackButton fallbackHref={`/proyectos/${proyecto.id}`} />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Editar Proyecto</h1>
           <p className="text-muted-foreground mt-0.5">{proyecto.nombre}</p>

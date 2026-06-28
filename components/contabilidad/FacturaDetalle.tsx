@@ -1,13 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { BackButton } from '@/components/ui/back-button'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  ArrowLeft, ArrowUpCircle, ArrowDownCircle, Plus, FileText,
-  CheckCircle2, Clock, XCircle, ArrowRightLeft, CreditCard,
-  ExternalLink, Trash2, Ban, Pencil, FolderOpen, Printer,
-} from 'lucide-react'
+import { ArrowUpCircle, ArrowDownCircle, Plus, FileText, CheckCircle2, Clock, XCircle, ArrowRightLeft, CreditCard, ExternalLink, Trash2, Ban, Pencil, FolderOpen, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -165,9 +162,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/contabilidad" className="flex items-center justify-center w-9 h-9 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <BackButton fallbackHref="/contabilidad" />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-foreground">

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSmartBack } from '@/components/ui/back-button'
 import { Save, X, Loader2 } from 'lucide-react'
 
 interface Cliente {
@@ -38,6 +39,7 @@ interface ProyectoFormProps {
 
 export function ProyectoForm({ clientes, initialData, mode = 'create', defaultClienteId }: ProyectoFormProps) {
   const router = useRouter()
+  const goBack = useSmartBack('/proyectos')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -337,7 +339,7 @@ export function ProyectoForm({ clientes, initialData, mode = 'create', defaultCl
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.back()}
+            onClick={goBack}
             disabled={loading}
           >
             <X className="w-4 h-4" />
