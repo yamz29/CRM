@@ -246,7 +246,7 @@ export default async function ProyectoDetailPage({
                 <User className="w-3.5 h-3.5" />
                 {proyecto.cliente.nombre}
               </Link>
-              <span className="text-muted-foreground/70">|</span>
+              <span className="text-muted-foreground/40">·</span>
               <span className="text-muted-foreground text-sm flex items-center gap-1">
                 <Tag className="w-3.5 h-3.5" />
                 {proyecto.tipoProyecto}
@@ -367,7 +367,7 @@ export default async function ProyectoDetailPage({
           }`}>
             <AlertTriangle className={`w-5 h-5 mt-0.5 shrink-0 ${pctGastado >= 100 ? 'text-red-500' : 'text-amber-500'}`} />
             <div>
-              <p className={`text-sm font-semibold ${pctGastado >= 100 ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+              <p className={`text-sm font-semibold ${pctGastado >= 100 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
                 {pctGastado >= 100
                   ? `Presupuesto superado — ${formatCurrency(Math.abs(balance!))} por encima del límite`
                   : `Advertencia — ${pctGastado.toFixed(0)}% del presupuesto ejecutado`}
@@ -461,7 +461,7 @@ export default async function ProyectoDetailPage({
                 </p>
                 {varianzaForecast != null ? (
                   <>
-                    <p className={`text-2xl font-black ${varianzaForecast >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    <p className={`text-2xl font-black ${varianzaForecast >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`}>
                       {varianzaForecast < 0 ? '−' : '+'}{formatCurrency(Math.abs(varianzaForecast))}
                     </p>
                     <p className={`text-xs mt-1 font-medium ${varianzaForecast >= 0 ? 'text-green-600' : 'text-red-500'}`}>
@@ -470,7 +470,7 @@ export default async function ProyectoDetailPage({
                   </>
                 ) : eficiencia != null ? (
                   <>
-                    <p className={`text-2xl font-black ${eficiencia >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    <p className={`text-2xl font-black ${eficiencia >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`}>
                       {eficiencia >= 0 ? '+' : ''}{eficiencia.toFixed(0)} pts
                     </p>
                     <p className={`text-xs mt-1 font-medium ${eficiencia >= 0 ? 'text-green-600' : 'text-red-500'}`}>
@@ -494,7 +494,7 @@ export default async function ProyectoDetailPage({
             </h3>
             <Link
               href={`/proyectos/${proyecto.id}?tab=gastos`}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              className="text-xs text-primary hover:text-primary/80 font-medium"
             >
               Ver todos los gastos →
             </Link>
@@ -573,7 +573,7 @@ export default async function ProyectoDetailPage({
               </div>
               {balance != null ? (
                 <>
-                  <p className={`text-lg font-black ${balance >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                  <p className={`text-lg font-black ${balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`}>
                     {balance < 0 && '−'}{formatCurrency(Math.abs(balance))}
                   </p>
                   {pctGastado != null && (
@@ -633,7 +633,7 @@ export default async function ProyectoDetailPage({
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ingresos</span>
               </div>
               {ingresos != null ? (
-                <p className="text-lg font-black text-blue-700">{formatCurrency(ingresos)}</p>
+                <p className="text-lg font-black text-blue-600 dark:text-blue-400">{formatCurrency(ingresos)}</p>
               ) : (
                 <p className="text-sm text-muted-foreground italic">Sin presupuesto aprobado</p>
               )}
@@ -645,7 +645,7 @@ export default async function ProyectoDetailPage({
                 <TrendingDownIcon className="w-3.5 h-3.5 text-red-500" />
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Costos reales</span>
               </div>
-              <p className="text-lg font-black text-red-700">{formatCurrency(costos)}</p>
+              <p className="text-lg font-black text-red-600 dark:text-red-400">{formatCurrency(costos)}</p>
               {overheadDistribuido > 0 && (
                 <p className="text-xs text-muted-foreground mt-0.5" title="Porción de gastos fijos (oficina/taller/general) repartida a este proyecto">
                   Incl. overhead distribuido {formatCurrency(overheadDistribuido)}
@@ -660,7 +660,7 @@ export default async function ProyectoDetailPage({
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Utilidad</span>
               </div>
               {utilidad != null ? (
-                <p className={`text-lg font-black ${utilidad >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                <p className={`text-lg font-black ${utilidad >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`}>
                   {utilidad < 0 && '−'}{formatCurrency(Math.abs(utilidad))}
                 </p>
               ) : (
@@ -676,7 +676,7 @@ export default async function ProyectoDetailPage({
               </div>
               {margen != null ? (
                 <>
-                  <p className={`text-lg font-black ${margen >= 15 ? 'text-green-700' : margen >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <p className={`text-lg font-black ${margen >= 15 ? 'text-green-600 dark:text-green-400' : margen >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
                     {margen.toFixed(1)}%
                   </p>
                   <div className="mt-1.5">
@@ -704,7 +704,7 @@ export default async function ProyectoDetailPage({
             </h3>
             <Link
               href={`/contabilidad/facturas/nueva?tipo=ingreso&proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Nueva factura de ingreso
             </Link>
@@ -725,7 +725,7 @@ export default async function ProyectoDetailPage({
                 <TrendingUp className="w-3.5 h-3.5 text-green-500" />
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cobrado</span>
               </div>
-              <p className="text-lg font-black text-green-700">{formatCurrency(cobros.totalCobrado)}</p>
+              <p className="text-lg font-black text-green-600 dark:text-green-400">{formatCurrency(cobros.totalCobrado)}</p>
               {cobros.totalFacturado > 0 && (
                 <div className="mt-1.5">
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -743,7 +743,7 @@ export default async function ProyectoDetailPage({
                 <AlertTriangle className={`w-3.5 h-3.5 ${cobros.porCobrar > 0 ? 'text-amber-500' : 'text-green-500'}`} />
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Por cobrar</span>
               </div>
-              <p className={`text-lg font-black ${cobros.porCobrar > 0 ? 'text-amber-600' : 'text-green-700'}`}>
+              <p className={`text-lg font-black ${cobros.porCobrar > 0 ? 'text-amber-600' : 'text-green-600 dark:text-green-400'}`}>
                 {formatCurrency(cobros.porCobrar)}
               </p>
             </div>
@@ -777,7 +777,7 @@ export default async function ProyectoDetailPage({
                       <td className="px-4 py-2.5 text-sm text-muted-foreground">{formatDate(f.fecha)}</td>
                       <td className="px-4 py-2.5 text-sm font-semibold text-foreground text-right tabular-nums">{formatCurrency(f.total)}</td>
                       <td className="px-4 py-2.5 text-sm font-semibold text-right tabular-nums">
-                        <span className={f.montoPagado >= f.total ? 'text-green-700' : 'text-amber-600'}>
+                        <span className={f.montoPagado >= f.total ? 'text-green-600 dark:text-green-400' : 'text-amber-600'}>
                           {formatCurrency(f.montoPagado)}
                         </span>
                       </td>
@@ -1013,7 +1013,7 @@ export default async function ProyectoDetailPage({
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
                               c.estado === 'En Ejecución' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
-                              : c.estado === 'Terminado' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+                              : c.estado === 'Terminado' ? 'bg-green-100 text-green-600 dark:text-green-400 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
                               : c.estado === 'Pausado' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
                               : 'bg-muted text-foreground border-border'
                             }`}>{c.estado}</span>
