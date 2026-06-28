@@ -530,7 +530,7 @@ function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancaria; o
             )}
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={handleToggle} title="Ver movimientos">
+            <Button variant="ghost" size="sm" onClick={handleToggle} aria-label="Ver movimientos" title="Ver movimientos">
               <List className="w-3.5 h-3.5" />
               {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </Button>

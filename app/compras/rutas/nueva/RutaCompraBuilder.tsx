@@ -138,7 +138,7 @@ export function RutaCompraBuilder({ proveedores, proyectos }: { proveedores: Opt
                 </td>
                 <td className="px-3 py-2"><Input type="number" step="0.01" value={l.precioEstimado} onChange={(e) => updateLinea(i, { precioEstimado: e.target.value })} className="h-8 text-sm text-right" /></td>
                 <td className="px-3 py-2 text-center">
-                  <button onClick={() => removeLinea(i)} className="p-1 text-muted-foreground hover:text-red-600" title="Eliminar línea"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => removeLinea(i)} className="p-1 text-muted-foreground hover:text-red-600" aria-label="Eliminar línea" title="Eliminar línea"><Trash2 className="w-4 h-4" /></button>
                 </td>
               </tr>
             ))}

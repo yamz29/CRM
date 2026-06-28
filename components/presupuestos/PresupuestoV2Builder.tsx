@@ -299,7 +299,7 @@ function SeccionLineas({ seccion, lineas, onChange, unidades }: { seccion: { key
                 <td className="px-1 py-0.5">
                   <div className="flex items-center gap-0.5">
                     <input type="text" value={linea.descripcion} onChange={(e) => updateLinea(i, 'descripcion', e.target.value)} placeholder="Descripción..." className="flex-1 min-w-0 px-2 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card hover:border-border bg-transparent transition-colors" />
-                    <button onClick={() => setPickerRow(i)} title="Buscar en catálogo" className="p-1 rounded text-muted-foreground/70 hover:text-blue-500 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Search className="w-3 h-3" /></button>
+                    <button onClick={() => setPickerRow(i)} aria-label="Buscar en catálogo" title="Buscar en catálogo" className="p-1 rounded text-muted-foreground/70 hover:text-blue-500 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"><Search className="w-3 h-3" /></button>
                   </div>
                 </td>
                 <td className="px-1 py-0.5"><select value={linea.unidad} onChange={(e) => updateLinea(i, 'unidad', e.target.value)} className="w-full px-1 py-1 text-sm border border-transparent rounded focus:outline-none focus:border-blue-400 focus:bg-card hover:border-border bg-transparent text-center transition-colors">{unidades.map((u) => <option key={u} value={u}>{u}</option>)}</select></td>
@@ -764,7 +764,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
           <div className="flex items-center gap-1 flex-shrink-0">
             <button onClick={() => moveCapitulo(ci, -1)} disabled={ci === 0} className="p-1 rounded hover:bg-slate-700 disabled:opacity-30 transition-colors"><ChevronUp className="w-3.5 h-3.5" /></button>
             <button onClick={() => moveCapitulo(ci, 1)} disabled={ci === capitulos.length - 1} className="p-1 rounded hover:bg-slate-700 disabled:opacity-30 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
-            <button onClick={() => setApuSearchOpen(ci)} className="p-1 rounded hover:bg-primary/90 transition-colors" title="Buscar en catálogo APU"><FileSpreadsheet className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setApuSearchOpen(ci)} className="p-1 rounded hover:bg-primary/90 transition-colors" aria-label="Buscar en catálogo APU" title="Buscar en catálogo APU"><FileSpreadsheet className="w-3.5 h-3.5" /></button>
             <button onClick={() => removeCapitulo(ci)} className="p-1 rounded hover:bg-red-700 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
           </div>
         </div>
@@ -815,9 +815,9 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                           </td>
                           <td className="px-1 py-0.5">
                             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => movePartida(ci, pi, -1)} disabled={pi === 0} title="Subir" className="p-1 rounded hover:bg-amber-100 text-amber-700 hover:text-amber-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => movePartida(ci, pi, 1)} disabled={pi === cap.partidas.length - 1} title="Bajar" className="p-1 rounded hover:bg-amber-100 text-amber-700 hover:text-amber-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => removePartida(ci, pi)} title="Eliminar" className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => movePartida(ci, pi, -1)} disabled={pi === 0} aria-label="Subir" title="Subir" className="p-1 rounded hover:bg-amber-100 text-amber-700 hover:text-amber-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => movePartida(ci, pi, 1)} disabled={pi === cap.partidas.length - 1} aria-label="Bajar" title="Bajar" className="p-1 rounded hover:bg-amber-100 text-amber-700 hover:text-amber-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => removePartida(ci, pi)} aria-label="Eliminar" title="Eliminar" className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           </td>
                         </tr>
@@ -861,11 +861,11 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
                           </td>
                           <td className="px-1 py-0.5">
                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => movePartida(ci, pi, -1)} disabled={pi === 0} title="Subir" className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => movePartida(ci, pi, 1)} disabled={pi === cap.partidas.length - 1} title="Bajar" className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => toggleApu(apuKey)} title="APU" className={`p-1 rounded transition-colors ${apuOpen === apuKey ? 'bg-blue-100 text-blue-600' : 'hover:bg-muted text-muted-foreground hover:text-primary'}`}><BarChart2 className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => duplicatePartida(ci, pi)} title="Duplicar" className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-muted-foreground transition-colors"><Copy className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => removePartida(ci, pi)} title="Eliminar" className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => movePartida(ci, pi, -1)} disabled={pi === 0} aria-label="Subir" title="Subir" className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => movePartida(ci, pi, 1)} disabled={pi === cap.partidas.length - 1} aria-label="Bajar" title="Bajar" className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => toggleApu(apuKey)} aria-label="APU" title="APU" className={`p-1 rounded transition-colors ${apuOpen === apuKey ? 'bg-blue-100 text-blue-600' : 'hover:bg-muted text-muted-foreground hover:text-primary'}`}><BarChart2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => duplicatePartida(ci, pi)} aria-label="Duplicar" title="Duplicar" className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-muted-foreground transition-colors"><Copy className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => removePartida(ci, pi)} aria-label="Eliminar" title="Eliminar" className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           </td>
                         </tr>

@@ -170,17 +170,17 @@ export function SolicitudesPanel({
               {s.estado === 'Solicitado' && (
                 <>
                   <button onClick={() => cambiarEstado(s.id, 'Aprobado')}
-                    className="p-1.5 rounded text-muted-foreground hover:text-green-600 hover:bg-green-50 transition-colors" title="Aprobar">
+                    className="p-1.5 rounded text-muted-foreground hover:text-green-600 hover:bg-green-50 transition-colors" aria-label="Aprobar" title="Aprobar">
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => cambiarEstado(s.id, 'Rechazado')}
-                    className="p-1.5 rounded text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors" title="Rechazar">
+                    className="p-1.5 rounded text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors" aria-label="Rechazar" title="Rechazar">
                     <XIcon className="w-3.5 h-3.5" />
                   </button>
                 </>
               )}
               <button onClick={() => eliminar(s.id)}
-                className="p-1.5 rounded text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors" title="Eliminar">
+                className="p-1.5 rounded text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors" aria-label="Eliminar" title="Eliminar">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

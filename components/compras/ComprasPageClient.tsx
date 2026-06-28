@@ -306,7 +306,7 @@ export function ComprasPageClient({
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{o._count.items}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium text-foreground">{fmt(o.total, o.moneda)}</td>
                     <td className="px-4 py-3 text-right">
-                      <button className="p-1.5 text-muted-foreground hover:text-blue-600 rounded" title="Ver detalle">
+                      <button className="p-1.5 text-muted-foreground hover:text-blue-600 rounded" aria-label="Ver detalle" title="Ver detalle">
                         <Eye className="w-4 h-4" />
                       </button>
                     </td>

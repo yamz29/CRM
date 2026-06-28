@@ -327,7 +327,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                   </div>
                 </div>
                 <a href={selectedSpFile.shareUrl} target="_blank" rel="noopener noreferrer"
-                  className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir en SharePoint">
+                  className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" aria-label="Abrir en SharePoint" title="Abrir en SharePoint">
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
@@ -359,7 +359,7 @@ export function DocumentosPageClient({ proyectos, oportunidades }: Props) {
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <a href={selectedDoc.url} target="_blank" rel="noopener noreferrer"
-                    className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" title="Abrir original">
+                    className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted" aria-label="Abrir original" title="Abrir original">
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                   <button onClick={() => setBorrarId(selectedDoc.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Eliminar">

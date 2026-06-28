@@ -312,7 +312,7 @@ export function SharePointBrowser({
               </button>
             </>
           )}
-          <button onClick={handleLogout} className="p-1 text-muted-foreground hover:text-foreground rounded" title="Desconectar">
+          <button onClick={handleLogout} className="p-1 text-muted-foreground hover:text-foreground rounded" aria-label="Desconectar" title="Desconectar">
             <LogOut className="w-3 h-3" />
           </button>
         </div>

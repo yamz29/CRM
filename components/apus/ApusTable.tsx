@@ -150,12 +150,12 @@ export function ApusTable({ apus }: { apus: Apu[] }) {
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1 justify-end">
                         <Link href={`/apus/${apu.id}`}>
-                          <button className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-blue-50 transition-colors" title="Ver / Editar">
+                          <button className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-blue-50 transition-colors" aria-label="Ver / Editar" title="Ver / Editar">
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                         </Link>
                         <Link href={`/apus/${apu.id}`}>
-                          <button className="p-1.5 rounded text-muted-foreground hover:text-muted-foreground hover:bg-muted transition-colors" title="Editar">
+                          <button className="p-1.5 rounded text-muted-foreground hover:text-muted-foreground hover:bg-muted transition-colors" aria-label="Editar" title="Editar">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                         </Link>

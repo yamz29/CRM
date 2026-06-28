@@ -858,17 +858,17 @@ export function GastosTab({
                       <td className="px-3 py-2 text-right">
                         <div className="flex justify-end gap-0.5">
                           <button onClick={() => startEdit(g)}
-                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-blue-50 rounded transition-colors" title="Editar">
+                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-blue-50 rounded transition-colors" aria-label="Editar" title="Editar">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           {g.estado !== 'Anulado' && (
                             <button onClick={() => setConfirmacion({ tipo: 'anular', gastoId: g.id })}
-                              className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded transition-colors" title="Anular">
+                              className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded transition-colors" aria-label="Anular" title="Anular">
                               <AlertTriangle className="w-3.5 h-3.5" />
                             </button>
                           )}
                           <button onClick={() => setConfirmacion({ tipo: 'eliminar', gastoId: g.id })}
-                            className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
+                            className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded transition-colors" aria-label="Eliminar" title="Eliminar">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
