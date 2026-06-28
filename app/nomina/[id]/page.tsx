@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { prisma } from '@/lib/prisma'
 import { formatDate } from '@/lib/utils'
 import { LineasNominaPanel } from '@/components/nomina/LineasNominaPanel'
@@ -38,6 +39,10 @@ export default async function PeriodoNominaPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[
+        { label: 'Nómina', href: '/nomina' },
+        { label: `${formatDate(periodo.fechaInicio)} — ${formatDate(periodo.fechaFin)}` },
+      ]} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/nomina"

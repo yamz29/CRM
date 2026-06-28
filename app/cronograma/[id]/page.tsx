@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { ArrowLeft, FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { CronogramaView } from '@/components/cronograma/CronogramaView'
 import { ResumenAvance } from '@/components/cronograma/ResumenAvance'
 import { calcularResumen } from '@/lib/cronograma-resumen'
@@ -114,6 +115,10 @@ export default async function CronogramaDetailPage({
 
   return (
     <div className="space-y-6 max-w-full">
+      <Breadcrumbs items={[
+        { label: 'Cronogramas', href: '/cronograma' },
+        { label: cronograma.nombre },
+      ]} />
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">

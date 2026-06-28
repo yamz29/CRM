@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Pencil } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -57,6 +58,10 @@ export default async function EmpleadoDetallePage({ params }: { params: Promise<
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <Breadcrumbs items={[
+        { label: 'Empleados', href: '/empleados' },
+        { label: empleado.nombre },
+      ]} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/empleados"

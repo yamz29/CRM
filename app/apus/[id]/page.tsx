@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { ApuEditor } from '@/components/apus/ApuEditor'
 
 export default async function EditarApuPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +39,10 @@ export default async function EditarApuPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6 max-w-5xl">
+      <Breadcrumbs items={[
+        { label: 'Catálogo APU', href: '/apus' },
+        { label: apu.codigo ? `${apu.codigo} · ${apu.nombre}` : apu.nombre },
+      ]} />
       <div className="flex items-center gap-4">
         <Link href="/apus"
           className="flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
