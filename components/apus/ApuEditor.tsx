@@ -311,7 +311,7 @@ function NuevoRecursoModal({ tipoDefault, onCreated, onClose }: {
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2">
+            className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2">
             {saving ? 'Creando...' : <><Plus className="w-3.5 h-3.5" />Crear y agregar</>}
           </button>
         </div>

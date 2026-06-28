@@ -617,7 +617,7 @@ export function GastosTab({
           >
             <Filter className="w-3.5 h-3.5" />
             Filtros
-            {filtroActivo && <span className="ml-1 w-4 h-4 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center leading-none">{[search, filtroTipo, filtroMetodo, filtroEstado, filtroCategoria, filtroPartida, filtroDesde, filtroHasta].filter(Boolean).length}</span>}
+            {filtroActivo && <span className="ml-1 w-4 h-4 rounded-full bg-primary text-white text-xs flex items-center justify-center leading-none">{[search, filtroTipo, filtroMetodo, filtroEstado, filtroCategoria, filtroPartida, filtroDesde, filtroHasta].filter(Boolean).length}</span>}
           </Button>
           {filtroActivo && (
             <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-muted-foreground">Limpiar</button>

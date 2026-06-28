@@ -235,7 +235,7 @@ export function EmpleadoForm({ mode, esAdmin, usuarios, initialData }: Props) {
                 <button type="button" onClick={() => toggleDia(d.value)}
                   className={`w-14 px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors flex-shrink-0 ${
                     dia.activo
-                      ? 'bg-blue-600 text-white border-blue-600'
+                      ? 'bg-primary text-primary-foreground border-primary'
                       : 'border-border text-muted-foreground hover:bg-muted'
                   }`}>
                   {d.label}

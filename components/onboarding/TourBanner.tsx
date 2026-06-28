@@ -65,7 +65,7 @@ export function TourBanner() {
       <div className="flex items-center gap-2 shrink-0">
         <Link
           href="/ayuda/primeros-pasos"
-          className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
         >
           Empezar tour
           <ArrowRight className="w-3.5 h-3.5" />

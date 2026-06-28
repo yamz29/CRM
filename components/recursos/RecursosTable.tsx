@@ -170,7 +170,7 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
               <SlidersHorizontal className="w-4 h-4" />
               Filtros
               {activeChips.length > 0 && (
-                <span className="bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                <span className="bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
                   {activeChips.length}
                 </span>
               )}
@@ -181,14 +181,14 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => setTipoFilter('')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tipoFilter === '' ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tipoFilter === '' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}
             >
               Todos
             </button>
             {tipos.map(t => (
               <button key={t}
                 onClick={() => setTipoFilter(tipoFilter === t ? '' : t)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tipoFilter === t ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tipoFilter === t ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}
               >
                 {TIPO_LABELS[t] || t}
               </button>
@@ -221,7 +221,7 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
                         key={op}
                         onClick={() => setEstadoFilter(op)}
                         className={`flex-1 py-2 capitalize transition-colors ${
-                          estadoFilter === op ? 'bg-blue-600 text-white font-medium' : 'bg-card text-muted-foreground hover:bg-muted'
+                          estadoFilter === op ? 'bg-primary text-white font-medium' : 'bg-card text-muted-foreground hover:bg-muted'
                         }`}
                       >
                         {op === 'todos' ? 'Todos' : op === 'activos' ? 'Activos' : 'Inactivos'}

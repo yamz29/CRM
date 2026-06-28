@@ -241,7 +241,7 @@ export function ComprasPageClient({
               onClick={() => setFiltroEstado(est)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                 filtroEstado === est
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >

@@ -411,7 +411,7 @@ function ApuPanel({ partida, onClose, onUpdate, onApply, unidades }: { partida: 
                 <tr><td className="py-1 text-muted-foreground">Margen</td><td className="py-1 text-right font-semibold text-green-600">{calc.margen.toFixed(1)}%</td></tr>
               </tbody>
             </table>
-            <button onClick={onApply} className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"><CheckCircle className="w-4 h-4" />Aplicar {formatCurrency(calc.precioSugerido)} al presupuesto</button>
+            <button onClick={onApply} className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"><CheckCircle className="w-4 h-4" />Aplicar {formatCurrency(calc.precioSugerido)} al presupuesto</button>
             <button
               onClick={handleSaveToCatalog}
               disabled={savingToCatalog || savedToCatalog || calc.costoDirecto === 0}
@@ -764,7 +764,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
           <div className="flex items-center gap-1 flex-shrink-0">
             <button onClick={() => moveCapitulo(ci, -1)} disabled={ci === 0} className="p-1 rounded hover:bg-slate-700 disabled:opacity-30 transition-colors"><ChevronUp className="w-3.5 h-3.5" /></button>
             <button onClick={() => moveCapitulo(ci, 1)} disabled={ci === capitulos.length - 1} className="p-1 rounded hover:bg-slate-700 disabled:opacity-30 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
-            <button onClick={() => setApuSearchOpen(ci)} className="p-1 rounded hover:bg-blue-700 transition-colors" title="Buscar en catálogo APU"><FileSpreadsheet className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setApuSearchOpen(ci)} className="p-1 rounded hover:bg-primary/90 transition-colors" title="Buscar en catálogo APU"><FileSpreadsheet className="w-3.5 h-3.5" /></button>
             <button onClick={() => removeCapitulo(ci)} className="p-1 rounded hover:bg-red-700 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
           </div>
         </div>

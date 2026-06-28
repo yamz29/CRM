@@ -68,7 +68,7 @@ export function RutasCompraPageClient({ rutasIniciales }: { rutasIniciales: Ruta
         <div className="flex gap-1 flex-wrap">
           {FILTROS.map((f) => (
             <button key={f} onClick={() => setFiltro(f)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtro === f ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtro === f ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
               {f === 'todos' ? 'Todos' : ESTADOS_BADGE[f]?.label || f}
             </button>
           ))}

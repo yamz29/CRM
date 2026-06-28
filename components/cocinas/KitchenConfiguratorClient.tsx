@@ -101,7 +101,7 @@ interface Props {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const NIVEL_COLORS: Record<string, { fill: string; stroke: string; badge: string }> = {
-  base:  { fill: '#1d4ed8', stroke: '#3b82f6', badge: 'bg-blue-700 text-blue-100' },
+  base:  { fill: '#1d4ed8', stroke: '#3b82f6', badge: 'bg-primary text-blue-100' },
   alto:  { fill: '#15803d', stroke: '#22c55e', badge: 'bg-green-700 text-green-100' },
   torre: { fill: '#b45309', stroke: '#f59e0b', badge: 'bg-amber-700 text-amber-100' },
   isla:  { fill: '#6b21a8', stroke: '#a855f7', badge: 'bg-purple-800 text-purple-100' },
@@ -870,7 +870,7 @@ function NestingModal({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-medium transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />Imprimir
             </button>
@@ -1390,11 +1390,11 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
         </div>
         <div className="flex bg-muted rounded-lg p-0.5">
           <button onClick={() => setView('elevation')}
-            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'elevation' ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:text-foreground')}>
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'elevation' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground')}>
             <LayoutPanelLeft className="w-3.5 h-3.5" />Elevación
           </button>
           <button onClick={() => setView('plan')}
-            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'plan' ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:text-foreground')}>
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors', view === 'plan' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground')}>
             <Map className="w-3.5 h-3.5" />Planta
           </button>
         </div>
@@ -1418,7 +1418,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
             <div className="flex flex-wrap gap-1">
               {Object.keys(TIPO_FILTER_MAP).map((f) => (
                 <button key={f} onClick={() => setTipoFilter(f)}
-                  className={cn('px-2 py-0.5 rounded-full text-xs font-medium transition-colors', tipoFilter === f ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:text-foreground')}>
+                  className={cn('px-2 py-0.5 rounded-full text-xs font-medium transition-colors', tipoFilter === f ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:text-foreground')}>
                   {f}
                 </button>
               ))}
@@ -1466,7 +1466,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                         <button
                           onClick={() => handleModuleSelect(m)}
                           className={cn('flex-1 py-1 rounded text-xs font-medium transition-colors',
-                            isWallActive ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground/70 hover:bg-muted/80')}
+                            isWallActive ? 'bg-primary text-white' : 'bg-muted text-muted-foreground/70 hover:bg-muted/80')}
                           title="Colocar en pared"
                         >
                           Pared
@@ -1730,7 +1730,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
                     <ClipboardList className="w-4 h-4" />Ver lista de cortes
                   </button>
                   <button onClick={() => setShowNestingModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors">
                     <Grid2x2 className="w-4 h-4" />Ver nesting
                   </button>
                   <button onClick={() => setShowApuModal(true)}
@@ -1893,7 +1893,7 @@ export function KitchenConfiguratorClient({ project, availableModules }: Props) 
               <button onClick={() => setShowApuModal(false)}
                 className="flex-1 py-2 bg-muted hover:bg-muted/80 text-muted-foreground/70 rounded-lg text-sm font-medium transition-colors">Cancelar</button>
               <button onClick={handleGenerarApu} disabled={generatingApu}
-                className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+                className="flex-1 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
                 {generatingApu ? 'Creando...' : 'Crear APU'}
               </button>
             </div>

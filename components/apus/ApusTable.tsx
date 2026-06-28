@@ -74,13 +74,13 @@ export function ApusTable({ apus }: { apus: Apu[] }) {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setCapFilter('')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${capFilter === '' ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${capFilter === '' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}>
               Todos
             </button>
             {capitulos.map((c) => (
               <button key={c}
                 onClick={() => setCapFilter(capFilter === c ? '' : c)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${capFilter === c ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}>
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${capFilter === c ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted'}`}>
                 {c}
               </button>
             ))}

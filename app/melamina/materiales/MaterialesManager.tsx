@@ -230,7 +230,7 @@ export function MaterialesManager({ initialMateriales }: { initialMateriales: Ma
             onClick={() => { setTab(t.key); setShowForm(false); setEditingId(null) }}
             className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t.key
-                ? 'border-blue-600 text-blue-700'
+                ? 'border-primary text-blue-700'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -451,7 +451,7 @@ function FormRow({
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white rounded-md px-2 py-1.5 text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1 bg-primary text-white rounded-md px-2 py-1.5 text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             <Check className="w-3.5 h-3.5" /> {saving ? '...' : 'Añadir'}
           </button>
@@ -460,7 +460,7 @@ function FormRow({
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white rounded-md px-2 py-1.5 text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1 bg-primary text-white rounded-md px-2 py-1.5 text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             <Check className="w-3.5 h-3.5" /> {saving ? '...' : 'OK'}
           </button>
@@ -535,7 +535,7 @@ function EditRow({
           <button
             onClick={onSave}
             disabled={saving}
-            className="p-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="p-1.5 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
             title="Guardar"
           >
             <Check className="w-3.5 h-3.5" />

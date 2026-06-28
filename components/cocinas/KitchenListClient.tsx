@@ -154,7 +154,7 @@ export function KitchenListClient({ initialProjects }: Props) {
         <p className="text-muted-foreground text-sm">{projects.length} proyecto{projects.length !== 1 ? 's' : ''}</p>
         <button
           onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
           Nuevo proyecto
@@ -168,7 +168,7 @@ export function KitchenListClient({ initialProjects }: Props) {
           <p className="text-muted-foreground text-sm mt-1">Crea tu primer proyecto para empezar</p>
           <button
             onClick={openModal}
-            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+            className="mt-4 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors"
           >
             Crear proyecto
           </button>
@@ -251,7 +251,7 @@ export function KitchenListClient({ initialProjects }: Props) {
                       className={cn(
                         'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                         layoutType === lt
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary text-white'
                           : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
                       )}
                     >
@@ -326,7 +326,7 @@ export function KitchenListClient({ initialProjects }: Props) {
               <button
                 onClick={handleCreate}
                 disabled={saving}
-                className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 {saving ? 'Creando...' : 'Crear proyecto'}
               </button>

@@ -314,7 +314,7 @@ export default async function ProyectoDetailPage({
               <Link key={g.key} href={`/proyectos/${proyecto.id}?tab=${g.tabs[0].key}`}
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   active
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}>
                 {g.icon && <g.icon className="w-3.5 h-3.5" />}

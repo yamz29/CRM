@@ -194,7 +194,7 @@ export function EmpresaForm({ initialData }: { initialData: EmpresaData | null }
                 <button type="button"
                   onClick={handleLogoUpload}
                   disabled={uploadingLogo}
-                  className="ml-3 flex-shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                  className="ml-3 flex-shrink-0 px-3 py-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
                   <Upload className="w-3 h-3" />
                   {uploadingLogo ? 'Subiendo...' : 'Subir logo'}
                 </button>

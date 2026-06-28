@@ -152,7 +152,7 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
                   Incluye ejemplos con <strong>CEM-001, MEL-RH18-BL, MO-TALLER</strong> y más.
                 </p>
                 <a href="/api/recursos/plantilla" download
-                  className="shrink-0 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-1.5">
+                  className="shrink-0 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 flex items-center gap-1.5">
                   <Download className="w-4 h-4" />
                   Plantilla
                 </a>
@@ -347,7 +347,7 @@ export default function ImportarRecursosModal({ onClose, onImported }: Props) {
 
           {step === 'preview' && parseResult && parseResult.recursos.length > 0 && (
             <button onClick={handleConfirm} disabled={importing}
-              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2">
+              className="px-5 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2">
               {importing ? 'Importando...' : `Confirmar importación (${parseResult.recursos.length} recursos)`}
             </button>
           )}

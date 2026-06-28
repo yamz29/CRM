@@ -157,7 +157,7 @@ export default function ImportarExcelModal({ onClose, onImport }: Props) {
                 <a
                   href="/api/presupuestos-v2/plantilla"
                   download
-                  className="shrink-0 ml-auto px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-1.5"
+                  className="shrink-0 ml-auto px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 flex items-center gap-1.5"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -324,7 +324,7 @@ export default function ImportarExcelModal({ onClose, onImport }: Props) {
             {step === 'preview' && parseResult && parseResult.validRows > 0 && (
               <button
                 onClick={handleConfirm}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium"
               >
                 Importar {parseResult.validRows} partida{parseResult.validRows !== 1 ? 's' : ''}
               </button>
