@@ -467,7 +467,7 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
         throw new Error(errText)
       }
 
-      let data: { id?: number }
+      let data: { id?: number; sharepointUrl?: string | null }
       try {
         data = await res.json()
       } catch (e) {
@@ -475,9 +475,14 @@ export function FacturaForm({ clientes, proyectos, factura }: Props) {
         throw new Error(`Respuesta inválida del servidor: ${msg}`)
       }
 
-      // Subida a SharePoint (best-effort). Si falla, la factura ya está
-      // guardada localmente — solo registramos warning.
-      if (archivo && data?.id) {
+      // Subida a SharePoint. Preferimos la del servidor (app-only): si la
+      // respuesta ya trae sharepointUrl, no reintentamos desde el navegador.
+      // El cliente queda solo como respaldo cuando el servidor no la subió
+      // (p. ej. AZURE_CLIENT_SECRET no configurado).
+      if (data?.sharepointUrl) {
+        setSpState('success')
+        setSpMessage('Subida a SharePoint (servidor).')
+      } else if (archivo && data?.id) {
         try { await subirASharepoint(data.id, archivo) }
         catch (spErr) { console.warn('SP upload falló:', spErr) }
       }

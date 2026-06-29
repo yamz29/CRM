@@ -9,7 +9,7 @@
  * se usa un sufijo con la ID de la factura.
  */
 
-import { sanitizeFolderName } from '@/lib/sharepoint'
+import { sanitizeFolderName } from '@/lib/sp-naming'
 
 export function carpetaFactura(fecha: Date | string): string {
   const d = typeof fecha === 'string' ? new Date(fecha) : fecha

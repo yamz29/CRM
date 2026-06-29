@@ -1,4 +1,8 @@
 import { getAccessToken, type OneDriveItem } from './onedrive'
+import { sanitizeFolderName } from './sp-naming'
+
+// Re-exportado para mantener la API estable de los importadores existentes.
+export { sanitizeFolderName }
 
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 
@@ -156,15 +160,6 @@ export async function resolveShareLinkPreview(shareUrl: string): Promise<{
 }
 
 // ── Upload ──────────────────────────────────────────────────────────────
-
-/** Sanitize a string for use as a SharePoint folder name */
-export function sanitizeFolderName(name: string): string {
-  return name
-    .replace(/[<>:"/\\|?*#%&{}~]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 128)
-}
 
 export function getRootFolder(): string {
   return SP_ROOT_FOLDER

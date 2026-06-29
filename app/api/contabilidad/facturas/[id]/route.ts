@@ -5,6 +5,7 @@ import path from 'path'
 import { uploadToDrive } from '@/lib/google-drive'
 import { checkPermiso } from '@/lib/permisos'
 import { recalcularEstadoFactura } from '@/lib/factura-estado'
+import { subirFacturaServidor, isServerSharePointConfigured } from '@/lib/sharepoint-server'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024
@@ -75,6 +76,10 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     let data: any
     let archivoUrl: string | undefined
     let driveUrl: string | undefined
+    // Buffer del nuevo archivo conservado para la subida server-side a SharePoint.
+    let fileBuffer: Buffer | null = null
+    let fileOriginalName = ''
+    let fileContentType = ''
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
@@ -88,6 +93,9 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
         // Read buffer once
         const buffer = Buffer.from(await file.arrayBuffer())
         archivoUrl = await saveFileBuffer(buffer, file.name)
+        fileBuffer = buffer
+        fileOriginalName = file.name
+        fileContentType = file.type
         // Upload to Google Drive (best-effort)
         try {
           driveUrl = (await uploadToDrive(buffer, file.name, file.type)) || undefined
@@ -129,6 +137,21 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     if (archivoUrl !== undefined) updateData.archivoUrl = archivoUrl
     if (driveUrl !== undefined) updateData.driveUrl = driveUrl
     if (sharepointUrl !== undefined) updateData.sharepointUrl = sharepointUrl || null
+
+    // Subida server-side a SharePoint del archivo nuevo (best-effort, gated).
+    // Si tiene éxito, manda sobre cualquier sharepointUrl que viniera del body.
+    if (fileBuffer && isServerSharePointConfigured()) {
+      const spUrl = await subirFacturaServidor({
+        fileBuffer,
+        originalName: fileOriginalName,
+        proveedor: (proveedor ?? existing.proveedor) || null,
+        numero: (numero ?? existing.numero)?.toString() || null,
+        fecha: fecha ? new Date(fecha) : existing.fecha,
+        facturaId: id,
+        contentType: fileContentType,
+      })
+      if (spUrl) updateData.sharepointUrl = spUrl
+    }
 
     const factura = await prisma.factura.update({
       where: { id },

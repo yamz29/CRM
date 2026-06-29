@@ -4,6 +4,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { checkPermiso } from '@/lib/permisos'
 import { generarNumeroProforma } from '@/lib/numero-factura'
+import { subirFacturaServidor, isServerSharePointConfigured } from '@/lib/sharepoint-server'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'facturas')
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -106,6 +107,10 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || ''
     let data: any
     let archivoUrl: string | null = null
+    // Buffer del archivo conservado para la subida server-side a SharePoint.
+    let fileBuffer: Buffer | null = null
+    let fileOriginalName = ''
+    let fileContentType = ''
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
@@ -114,8 +119,9 @@ export async function POST(request: NextRequest) {
         if (file.size > MAX_SIZE) throw new Error('Archivo supera 10 MB')
         const buffer = Buffer.from(await file.arrayBuffer())
         archivoUrl = await saveFileBuffer(buffer, file.name)
-        // NOTA: Google Drive upload removido. La subida a SharePoint se
-        // hace desde el cliente (Fase 2 pendiente).
+        fileBuffer = buffer
+        fileOriginalName = file.name
+        fileContentType = file.type
       }
       data = Object.fromEntries(formData.entries())
       delete data.archivo
@@ -148,6 +154,21 @@ export async function POST(request: NextRequest) {
     const parsedTotal = parseFloat(String(total)) || 0
     const fechaFactura = new Date(fecha || Date.now())
 
+    // Subida server-side a SharePoint (best-effort, solo si está configurado).
+    // Si tiene éxito, la factura nace ya con sharepointUrl y el cliente NO
+    // reintenta la subida desde el navegador.
+    let sharepointUrl: string | null = null
+    if (fileBuffer && isServerSharePointConfigured()) {
+      sharepointUrl = await subirFacturaServidor({
+        fileBuffer,
+        originalName: fileOriginalName,
+        proveedor: proveedor || null,
+        numero: numeroFinal,
+        fecha: fechaFactura,
+        contentType: fileContentType,
+      })
+    }
+
     const factura = await prisma.factura.create({
       data: {
         numero: numeroFinal,
@@ -171,6 +192,7 @@ export async function POST(request: NextRequest) {
         total: parsedTotal,
         observaciones: observaciones || null,
         archivoUrl,
+        sharepointUrl,
       },
       include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
     })
