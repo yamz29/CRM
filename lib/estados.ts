@@ -1,0 +1,80 @@
+import { Badge, type BadgeProps } from '@/components/ui/badge'
+import { createElement } from 'react'
+
+type Variant = NonNullable<BadgeProps['variant']>
+
+/**
+ * Dominios con estado tipado y su mapa estado→variant de Badge.
+ *
+ * Fuente de verdad única de los colores de estado. Reemplaza las definiciones
+ * inline (`bg-green-100 text-green-700`...) dispersas por los listados.
+ * Valores verificados contra prisma/schema.prisma (defaults + comentarios).
+ */
+export type Dominio = 'proyecto' | 'presupuesto' | 'oc' | 'tarea' | 'ruta' | 'gasto' | 'factura'
+
+const MAPAS: Record<Dominio, Record<string, Variant>> = {
+  // Proyecto.estado — schema:43
+  proyecto: {
+    'Prospecto': 'default',
+    'En Cotización': 'info',
+    'Adjudicado': 'warning',
+    'En Ejecución': 'success',
+    'Pausado': 'orange',
+    'Terminado': 'secondary',
+    'Cancelado': 'danger',
+  },
+  // Presupuesto.estado — schema:230
+  presupuesto: {
+    'Borrador': 'default',
+    'Enviado': 'info',
+    'Aprobado': 'success',
+    'Rechazado': 'danger',
+  },
+  // OrdenCompra.estado — schema:1393 (borrador|enviada|recibida_parcial|recibida|facturada|cancelada)
+  oc: {
+    'borrador': 'default',
+    'enviada': 'info',
+    'recibida_parcial': 'warning',
+    'recibida': 'success',
+    'facturada': 'secondary',
+    'cancelada': 'danger',
+  },
+  // Tarea.estado — schema:501 / TareasPageClient (Pendiente|En proceso|Completada|Cancelada)
+  tarea: {
+    'Pendiente': 'default',
+    'En proceso': 'info',
+    'Completada': 'success',
+    'Cancelada': 'danger',
+  },
+  // RutaCompra.estado — schema:1447 (borrador|en_proceso|completada|cancelada)
+  ruta: {
+    'borrador': 'default',
+    'en_proceso': 'warning',
+    'completada': 'success',
+    'cancelada': 'danger',
+  },
+  // GastoProyecto.estado — schema:140 (Registrado|Revisado|Anulado)
+  gasto: {
+    'Registrado': 'warning',
+    'Revisado': 'success',
+    'Anulado': 'danger',
+  },
+  // Factura.estado — schema:1266 (pendiente|parcial|pagada|anulada); 'vencida' es derivado
+  factura: {
+    'pendiente': 'warning',
+    'parcial': 'info',
+    'pagada': 'success',
+    'anulada': 'danger',
+    'vencida': 'danger',
+  },
+}
+
+/** Devuelve la variant de Badge para un estado de un dominio dado. Default ante desconocido. */
+export function variantDeEstado(dominio: Dominio, estado: string): Variant {
+  return MAPAS[dominio]?.[estado] ?? 'default'
+}
+
+/** Badge de estado por dominio. Reemplaza badges de estado hardcodeados. */
+export function EstadoBadge({ dominio, estado }: { dominio: Dominio; estado: string }) {
+  return createElement(Badge, { variant: variantDeEstado(dominio, estado) }, estado)
+}
