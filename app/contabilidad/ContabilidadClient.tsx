@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Landmark, FileText, Plus, Search, ArrowUpCircle, ArrowDownCircle, DollarSign, Eye, Trash2, CreditCard, Building2, ArrowRightLeft, CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck, Download, Layers } from 'lucide-react'
+import { Landmark, FileText, Plus, Search, ArrowUpCircle, ArrowDownCircle, DollarSign, Eye, Trash2, CreditCard, Building2, ArrowRightLeft, CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck, Download, Layers, UploadCloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/ui/stats-card'
@@ -161,6 +161,9 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
         <div className="flex gap-2 flex-wrap w-full sm:w-auto">
           {tab === 'facturas' && (
             <>
+              <Link href="/contabilidad/facturas/resync-sharepoint" className="flex-1 sm:flex-none">
+                <Button variant="secondary" className="w-full"><UploadCloud className="w-4 h-4" /> Re-sincronizar SP</Button>
+              </Link>
               <Link href="/contabilidad/facturas/importar" className="flex-1 sm:flex-none">
                 <Button variant="secondary" className="w-full"><Upload className="w-4 h-4" /> Importar CSV</Button>
               </Link>
