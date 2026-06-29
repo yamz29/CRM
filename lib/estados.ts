@@ -69,12 +69,51 @@ const MAPAS: Record<Dominio, Record<string, Variant>> = {
   },
 }
 
+/**
+ * Etiquetas de display por dominio. Solo se definen donde el valor crudo NO es
+ * presentable (estados en minúsculas/snake_case de oc/ruta/factura). Para los
+ * dominios cuyo estado ya es legible (proyecto, presupuesto, tarea, gasto) se
+ * muestra el estado tal cual.
+ */
+const ETIQUETAS: Partial<Record<Dominio, Record<string, string>>> = {
+  oc: {
+    'borrador': 'Borrador',
+    'enviada': 'Enviada',
+    'recibida_parcial': 'Recibida parcial',
+    'recibida': 'Recibida',
+    'facturada': 'Facturada',
+    'cancelada': 'Cancelada',
+  },
+  ruta: {
+    'borrador': 'Borrador',
+    'en_proceso': 'En proceso',
+    'completada': 'Completada',
+    'cancelada': 'Cancelada',
+  },
+  factura: {
+    'pendiente': 'Pendiente',
+    'parcial': 'Parcial',
+    'pagada': 'Pagada',
+    'anulada': 'Anulada',
+    'vencida': 'Vencida',
+  },
+}
+
 /** Devuelve la variant de Badge para un estado de un dominio dado. Default ante desconocido. */
 export function variantDeEstado(dominio: Dominio, estado: string): Variant {
   return MAPAS[dominio]?.[estado] ?? 'default'
 }
 
+/** Devuelve la etiqueta de display de un estado. Cae al valor crudo si no hay mapeo. */
+export function etiquetaDeEstado(dominio: Dominio, estado: string): string {
+  return ETIQUETAS[dominio]?.[estado] ?? estado
+}
+
 /** Badge de estado por dominio. Reemplaza badges de estado hardcodeados. */
-export function EstadoBadge({ dominio, estado }: { dominio: Dominio; estado: string }) {
-  return createElement(Badge, { variant: variantDeEstado(dominio, estado) }, estado)
+export function EstadoBadge({ dominio, estado, etiqueta }: { dominio: Dominio; estado: string; etiqueta?: string }) {
+  return createElement(
+    Badge,
+    { variant: variantDeEstado(dominio, estado) },
+    etiqueta ?? etiquetaDeEstado(dominio, estado),
+  )
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { variantDeEstado } from '@/lib/estados'
+import { variantDeEstado, etiquetaDeEstado } from '@/lib/estados'
 
 describe('variantDeEstado', () => {
   it('mapea estados de proyecto conocidos', () => {
@@ -27,5 +27,12 @@ describe('variantDeEstado', () => {
 
   it('cae a default ante estado desconocido', () => {
     expect(variantDeEstado('proyecto', 'Marciano')).toBe('default')
+  })
+
+  it('da etiquetas legibles para estados en minúscula y usa el crudo si no hay mapeo', () => {
+    expect(etiquetaDeEstado('oc', 'recibida_parcial')).toBe('Recibida parcial')
+    expect(etiquetaDeEstado('ruta', 'en_proceso')).toBe('En proceso')
+    expect(etiquetaDeEstado('proyecto', 'En Ejecución')).toBe('En Ejecución')
+    expect(etiquetaDeEstado('oc', 'desconocido')).toBe('desconocido')
   })
 })
