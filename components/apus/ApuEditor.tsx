@@ -212,7 +212,7 @@ function NumericInput({ value, onChange, placeholder = '0', className = '' }: {
 
   const borderClass = formulaErr
     ? 'border-red-400 bg-red-50 focus:ring-red-400'
-    : 'border-slate-300 bg-white focus:ring-blue-500'
+    : 'border-border bg-card focus:ring-blue-500'
 
   return (
     <input
@@ -265,49 +265,49 @@ function NuevoRecursoModal({ tipoDefault, onCreated, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5 space-y-4">
+      <div className="bg-card rounded-xl shadow-xl w-full max-w-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+          <h3 className="font-bold text-foreground flex items-center gap-2">
             <PackagePlus className="w-4 h-4 text-blue-600" />
             Nuevo Recurso
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground"><X className="w-4 h-4" /></button>
         </div>
 
-        {err && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{err}</p>}
+        {err && <p className="text-xs text-red-600 bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800 rounded px-3 py-2">{err}</p>}
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Nombre <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Nombre <span className="text-red-500">*</span></label>
             <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus
               placeholder="Ej: Block de hormigón 6&quot;"
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Tipo</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Tipo</label>
               <select value={tipo} onChange={(e) => setTipo(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {TIPOS_RECURSO.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Unidad</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Unidad</label>
               <select value={unidad} onChange={(e) => setUnidad(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Costo Unitario (RD$)</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Costo Unitario (RD$)</label>
             <NumericInput value={costo} onChange={setCosto} step="0.01" placeholder="0.00" />
           </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-1">
           <button onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+            className="px-4 py-2 text-sm font-medium text-muted-foreground bg-muted hover:bg-muted rounded-lg transition-colors">
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving}
@@ -390,7 +390,7 @@ function RecursoSearch({ recursos, selectedId, onSelect }: {
       {open ? (
         <>
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <input
               ref={inputRef}
               autoFocus
@@ -398,34 +398,34 @@ function RecursoSearch({ recursos, selectedId, onSelect }: {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar por nombre, código, tipo..."
-              className="w-full pl-7 pr-2 py-1.5 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full pl-7 pr-2 py-1.5 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card"
             />
           </div>
           {typeof window !== 'undefined' && dropdownRect && createPortal(
             <div
               ref={dropdownRef}
               style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
-              className="bg-white border border-slate-200 rounded-lg shadow-xl max-h-72 overflow-y-auto"
+              className="bg-card border border-border rounded-lg shadow-xl max-h-72 overflow-y-auto"
             >
               {filtered.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-slate-400 italic">Sin resultados para &quot;{query}&quot;</p>
+                <p className="px-3 py-2 text-xs text-muted-foreground italic">Sin resultados para &quot;{query}&quot;</p>
               ) : (
                 filtered.map((r) => (
                   <button
                     key={r.id}
                     type="button"
                     onMouseDown={() => handleSelect(r)}
-                    className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-slate-100 last:border-0 transition-colors"
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-border last:border-0 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="text-xs font-semibold text-slate-700 truncate block">
-                          {r.codigo && <span className="font-mono text-slate-400 mr-1">[{r.codigo}]</span>}
+                        <span className="text-xs font-semibold text-foreground truncate block">
+                          {r.codigo && <span className="font-mono text-muted-foreground mr-1">[{r.codigo}]</span>}
                           {r.nombre}
                         </span>
-                        <span className="text-xs text-slate-400">{r.tipo} · {r.unidad}</span>
+                        <span className="text-xs text-muted-foreground">{r.tipo} · {r.unidad}</span>
                       </div>
-                      <span className="text-xs font-bold text-slate-600 whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs font-bold text-muted-foreground whitespace-nowrap flex-shrink-0">
                         {formatCurrency(r.costoUnitario)}
                       </span>
                     </div>
@@ -440,17 +440,17 @@ function RecursoSearch({ recursos, selectedId, onSelect }: {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="w-full text-left px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none hover:border-blue-400 bg-white transition-colors flex items-center justify-between gap-2"
+          className="w-full text-left px-2 py-1.5 text-sm border border-border rounded focus:outline-none hover:border-blue-400 bg-card transition-colors flex items-center justify-between gap-2"
         >
           {selected ? (
-            <span className="truncate text-slate-700">
-              {selected.codigo && <span className="font-mono text-slate-400 mr-1 text-xs">[{selected.codigo}]</span>}
+            <span className="truncate text-foreground">
+              {selected.codigo && <span className="font-mono text-muted-foreground mr-1 text-xs">[{selected.codigo}]</span>}
               {selected.nombre}
             </span>
           ) : (
-            <span className="text-slate-400">— Buscar recurso —</span>
+            <span className="text-muted-foreground">— Buscar recurso —</span>
           )}
-          <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+          <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
         </button>
       )}
     </div>
@@ -504,41 +504,41 @@ function ApuSearch({ apus, onSelect }: {
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
         <input
           autoFocus
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar APU por nombre, código o capítulo..."
-          className="w-full pl-9 pr-3 py-2 text-sm border border-indigo-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="w-full pl-9 pr-3 py-2 text-sm border border-indigo-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-card"
         />
       </div>
-      <div className="absolute top-10 left-0 right-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+      <div className="absolute top-10 left-0 right-0 z-50 bg-card border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto">
         {filtered.length === 0 ? (
-          <p className="px-3 py-3 text-xs text-slate-400 italic">Sin resultados para &quot;{query}&quot;</p>
+          <p className="px-3 py-3 text-xs text-muted-foreground italic">Sin resultados para &quot;{query}&quot;</p>
         ) : (
           filtered.map((a) => (
             <button
               key={a.id}
               type="button"
               onMouseDown={() => { onSelect(a); setOpen(false); setQuery('') }}
-              className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b border-slate-100 last:border-0 transition-colors"
+              className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b border-border last:border-0 transition-colors"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-700 truncate">
-                    {a.codigo && <span className="font-mono text-slate-400 mr-1">[{a.codigo}]</span>}
+                  <div className="text-xs font-semibold text-foreground truncate">
+                    {a.codigo && <span className="font-mono text-muted-foreground mr-1">[{a.codigo}]</span>}
                     {a.nombre}
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     {a.capitulo && <span className="mr-2">{a.capitulo}</span>}
                     <span>{a.unidad}</span>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-xs font-bold text-indigo-700">{formatCurrency(a.precioVenta)}</div>
-                  <div className="text-xs text-slate-400">/{a.unidad}</div>
+                  <div className="text-xs text-muted-foreground">/{a.unidad}</div>
                 </div>
               </div>
             </button>
@@ -618,14 +618,14 @@ function SeccionRecursos({
       {lines.length > 0 && (
         <table className="w-full border-t border-white/50">
           <thead>
-            <tr className="bg-white/40 text-xs text-slate-500">
+            <tr className="bg-card/40 text-xs text-muted-foreground">
               <th className="px-2 py-1.5 text-left font-semibold w-6">#</th>
               <th className="px-2 py-1.5 w-7" title="Alternar entre catálogo y texto libre" />
               <th className="px-3 py-1.5 text-left font-semibold">Recurso / Descripción</th>
               <th className="px-3 py-1.5 text-center font-semibold w-16">Unidad</th>
               <th className="px-3 py-1.5 text-right font-semibold w-24">Cantidad</th>
               <th className="px-3 py-1.5 text-right font-semibold w-32">Costo Unit.</th>
-              <th className="px-3 py-1.5 text-right font-semibold w-32 bg-white/40">Subtotal</th>
+              <th className="px-3 py-1.5 text-right font-semibold w-32 bg-card/40">Subtotal</th>
               <th className="w-8" />
             </tr>
           </thead>
@@ -635,15 +635,15 @@ function SeccionRecursos({
                 ? recursosDisponibles.find((r) => r.id === line.recursoId)
                 : null
               return (
-                <tr key={i} className="border-t border-white/40 hover:bg-white/60 group transition-colors">
-                  <td className="px-2 py-1.5 text-xs text-slate-400 select-none">{i + 1}</td>
+                <tr key={i} className="border-t border-white/40 hover:bg-card/60 group transition-colors">
+                  <td className="px-2 py-1.5 text-xs text-muted-foreground select-none">{i + 1}</td>
                   {/* Toggle catálogo / libre */}
                   <td className="px-1 py-1">
                     <button
                       type="button"
                       onClick={() => toggleLibre(i)}
                       title={line.isLibre ? 'Usar recurso del catálogo' : 'Escribir texto libre'}
-                      className={`p-1 rounded transition-colors ${line.isLibre ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-300 hover:text-blue-500 hover:bg-blue-50'}`}
+                      className={`p-1 rounded transition-colors ${line.isLibre ? 'text-amber-500 hover:bg-amber-50' : 'text-muted-foreground hover:text-blue-500 hover:bg-blue-50'}`}
                     >
                       {line.isLibre ? <PenLine className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
                     </button>
@@ -675,7 +675,7 @@ function SeccionRecursos({
                         {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
                       </select>
                     ) : (
-                      <span className="text-sm text-center block text-slate-500">
+                      <span className="text-sm text-center block text-muted-foreground">
                         {selectedRecurso?.unidad || '—'}
                       </span>
                     )}
@@ -693,12 +693,12 @@ function SeccionRecursos({
                       onChange={(v) => updateLine(i, { costoSnapshot: v })}
                     />
                   </td>
-                  <td className="px-3 py-1.5 text-sm font-bold text-slate-700 text-right bg-white/30">
-                    {line.subtotal > 0 ? formatCurrency(line.subtotal) : <span className="text-slate-300 font-normal">—</span>}
+                  <td className="px-3 py-1.5 text-sm font-bold text-foreground text-right bg-card/30">
+                    {line.subtotal > 0 ? formatCurrency(line.subtotal) : <span className="text-muted-foreground font-normal">—</span>}
                   </td>
                   <td className="px-1 py-1">
                     <button onClick={() => removeLine(i)}
-                      className="p-1.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+                      className="p-1.5 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </td>
@@ -712,12 +712,12 @@ function SeccionRecursos({
       {/* Add buttons */}
       <div className="px-4 py-2 border-t border-white/30 flex items-center gap-4 flex-wrap">
         <button onClick={addLine}
-          className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors">
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-blue-600 transition-colors">
           <Plus className="w-3.5 h-3.5" />
           Del catálogo
         </button>
         <button onClick={addLineLibre}
-          className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-amber-600 transition-colors">
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-amber-600 transition-colors">
           <PenLine className="w-3.5 h-3.5" />
           Texto libre
         </button>
@@ -725,7 +725,7 @@ function SeccionRecursos({
           onClick={() => onNuevoRecurso(seccion.tipos[0], (r) => {
             onChange([...lines, { recursoId: r.id, isLibre: false, cantidad: 1, costoSnapshot: r.costoUnitario, subtotal: r.costoUnitario, observaciones: '' }])
           })}
-          className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-green-600 transition-colors">
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-green-600 transition-colors">
           <PackagePlus className="w-3.5 h-3.5" />
           Nuevo recurso
         </button>
@@ -867,7 +867,7 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
     <div className="space-y-5">
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+        <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800 text-red-700 rounded-lg px-4 py-3 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
           <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
@@ -875,25 +875,25 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
       )}
 
       {/* Header fields */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4">Datos del APU</h2>
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-4">Datos del APU</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Código</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Código</label>
             <input type="text" value={header.codigo} onChange={(e) => setH('codigo', e.target.value)}
               placeholder="APU-001"
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="lg:col-span-2">
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Nombre <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Nombre <span className="text-red-500">*</span></label>
             <input type="text" value={header.nombre} onChange={(e) => setH('nombre', e.target.value)}
               placeholder="Levantado muro block 6&quot;"
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Unidad</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Unidad</label>
             <select value={header.unidad} onChange={(e) => setH('unidad', e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card">
               {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
           </div>
@@ -901,40 +901,40 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Capítulo</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Capítulo</label>
             <select value={header.capitulo} onChange={(e) => setH('capitulo', e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-card">
               <option value="">Sin capítulo</option>
               {CAPITULOS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Indirectos %</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Indirectos %</label>
             <NumericInput value={header.indirectos} onChange={(v) => setH('indirectos', v)} step="0.5" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Utilidad %</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Utilidad %</label>
             <NumericInput value={header.utilidad} onChange={(v) => setH('utilidad', v)} step="0.5" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Desperdicio %</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Desperdicio %</label>
             <NumericInput value={header.desperdicio} onChange={(v) => setH('desperdicio', v)} step="0.5" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
-              Rendimiento <span className="font-normal text-slate-400">(unidades/día)</span>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
+              Rendimiento <span className="font-normal text-muted-foreground">(unidades/día)</span>
             </label>
             <input
               type="number" min="0" step="0.5"
               value={header.rendimiento ?? ''}
               onChange={(e) => setHeader(p => ({ ...p, rendimiento: e.target.value === '' ? null : parseFloat(e.target.value) }))}
               placeholder="Ej: 20"
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-xs text-slate-400 mt-0.5">Para calcular duración en cronograma: Cantidad ÷ Rendimiento</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Para calcular duración en cronograma: Cantidad ÷ Rendimiento</p>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
               Volumen de análisis
             </label>
             <input
@@ -942,23 +942,23 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
               value={header.volumenAnalisis ?? ''}
               onChange={(e) => setHeader(p => ({ ...p, volumenAnalisis: e.target.value === '' ? null : parseFloat(e.target.value) }))}
               placeholder="Ej: 10"
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-xs text-slate-400 mt-0.5">El precio de venta se divide entre este valor (vacío = 1)</p>
+            <p className="text-xs text-muted-foreground mt-0.5">El precio de venta se divide entre este valor (vacío = 1)</p>
           </div>
         </div>
 
         <div className="mt-4">
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
+          <label className="block text-xs font-semibold text-muted-foreground mb-1">Descripción</label>
           <textarea value={header.descripcion} onChange={(e) => setH('descripcion', e.target.value)}
             rows={2} placeholder="Descripción técnica del APU..."
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
       </div>
 
       {/* Resource sections */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">Composición de Recursos</h2>
+        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1">Composición de Recursos</h2>
         {SECCIONES.map((sec) => (
           <SeccionRecursos
             key={sec.key}
@@ -986,27 +986,27 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
         {apuLines.length > 0 && (
           <table className="w-full border-t border-white/50">
             <thead>
-              <tr className="bg-white/40 text-xs text-slate-500">
+              <tr className="bg-card/40 text-xs text-muted-foreground">
                 <th className="px-2 py-1.5 text-left font-semibold w-6">#</th>
                 <th className="px-3 py-1.5 text-left font-semibold">APU</th>
                 <th className="px-3 py-1.5 text-center font-semibold w-16">Unidad</th>
                 <th className="px-3 py-1.5 text-right font-semibold w-24">Cantidad</th>
                 <th className="px-3 py-1.5 text-right font-semibold w-32">Costo Unit.</th>
-                <th className="px-3 py-1.5 text-right font-semibold w-32 bg-white/40">Subtotal</th>
+                <th className="px-3 py-1.5 text-right font-semibold w-32 bg-card/40">Subtotal</th>
                 <th className="w-8" />
               </tr>
             </thead>
             <tbody>
               {apuLines.map((line, i) => (
-                <tr key={i} className="border-t border-white/40 hover:bg-white/60 group transition-colors">
-                  <td className="px-2 py-1.5 text-xs text-slate-400 select-none">{i + 1}</td>
+                <tr key={i} className="border-t border-white/40 hover:bg-card/60 group transition-colors">
+                  <td className="px-2 py-1.5 text-xs text-muted-foreground select-none">{i + 1}</td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-200 text-indigo-800">APU</span>
-                      <span className="text-sm text-slate-700 font-medium">{line.nombreSnapshot}</span>
+                      <span className="text-sm text-foreground font-medium">{line.nombreSnapshot}</span>
                     </div>
                   </td>
-                  <td className="px-2 py-1.5 text-sm text-center text-slate-500">{line.unidadSnapshot}</td>
+                  <td className="px-2 py-1.5 text-sm text-center text-muted-foreground">{line.unidadSnapshot}</td>
                   <td className="px-2 py-1">
                     <NumericInput
                       value={line.cantidad}
@@ -1020,12 +1020,12 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
                       onChange={(v) => updateApuLine(i, { costoSnapshot: v })}
                     />
                   </td>
-                  <td className="px-3 py-1.5 text-sm font-bold text-slate-700 text-right bg-white/30">
-                    {line.subtotal > 0 ? formatCurrency(line.subtotal) : <span className="text-slate-300 font-normal">—</span>}
+                  <td className="px-3 py-1.5 text-sm font-bold text-foreground text-right bg-card/30">
+                    {line.subtotal > 0 ? formatCurrency(line.subtotal) : <span className="text-muted-foreground font-normal">—</span>}
                   </td>
                   <td className="px-1 py-1">
                     <button onClick={() => removeApuLine(i)}
-                      className="p-1.5 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+                      className="p-1.5 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </td>
@@ -1053,14 +1053,14 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
       {/* Summary panel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Breakdown */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Desglose de costos</h3>
+        <div className="bg-card rounded-xl border border-border p-5">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3">Desglose de costos</h3>
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {sectionTotals.filter((s) => s.total > 0).map((s) => (
                 <tr key={s.key}>
-                  <td className="py-1.5 text-slate-600">{s.label}</td>
-                  <td className="py-1.5 text-right font-medium text-slate-700">{formatCurrency(s.total)}</td>
+                  <td className="py-1.5 text-muted-foreground">{s.label}</td>
+                  <td className="py-1.5 text-right font-medium text-foreground">{formatCurrency(s.total)}</td>
                 </tr>
               ))}
               {costoApus > 0 && (
@@ -1072,27 +1072,27 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
                   <td className="py-1.5 text-right font-medium text-indigo-700">{formatCurrency(costoApus)}</td>
                 </tr>
               )}
-              <tr className="border-t-2 border-slate-300">
-                <td className="py-2 font-bold text-slate-700">Costo Directo</td>
-                <td className="py-2 text-right font-bold text-slate-800">{formatCurrency(costoDirecto)}</td>
+              <tr className="border-t-2 border-border">
+                <td className="py-2 font-bold text-foreground">Costo Directo</td>
+                <td className="py-2 text-right font-bold text-foreground">{formatCurrency(costoDirecto)}</td>
               </tr>
               {header.indirectos > 0 && (
                 <tr>
-                  <td className="py-1.5 text-slate-500">+ Indirectos ({header.indirectos}%)</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatCurrency(costoConInd - costoDirecto)}</td>
+                  <td className="py-1.5 text-muted-foreground">+ Indirectos ({header.indirectos}%)</td>
+                  <td className="py-1.5 text-right text-muted-foreground">{formatCurrency(costoConInd - costoDirecto)}</td>
                 </tr>
               )}
               {header.utilidad > 0 && (
                 <tr>
-                  <td className="py-1.5 text-slate-500">+ Utilidad ({header.utilidad}%)</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatCurrency(precioBruto - costoConInd)}</td>
+                  <td className="py-1.5 text-muted-foreground">+ Utilidad ({header.utilidad}%)</td>
+                  <td className="py-1.5 text-right text-muted-foreground">{formatCurrency(precioBruto - costoConInd)}</td>
                 </tr>
               )}
               {divisor !== 1 && (
                 <>
-                  <tr className="border-t border-slate-200">
-                    <td className="py-1.5 text-slate-600 font-medium">Total bruto</td>
-                    <td className="py-1.5 text-right font-medium text-slate-700">{formatCurrency(precioBruto)}</td>
+                  <tr className="border-t border-border">
+                    <td className="py-1.5 text-muted-foreground font-medium">Total bruto</td>
+                    <td className="py-1.5 text-right font-medium text-foreground">{formatCurrency(precioBruto)}</td>
                   </tr>
                   <tr>
                     <td className="py-1.5 text-amber-600">÷ Volumen de análisis</td>
@@ -1107,17 +1107,17 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
         {/* Price result */}
         <div className="bg-slate-800 rounded-xl p-5 flex flex-col justify-between">
           <div>
-            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1">Precio de Venta</p>
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide mb-1">Precio de Venta</p>
             <p className="text-4xl font-bold text-white tabular-nums">{formatCurrency(precioVenta)}</p>
-            <p className="text-slate-400 text-sm mt-1">por {header.unidad || 'unidad'}</p>
+            <p className="text-muted-foreground text-sm mt-1">por {header.unidad || 'unidad'}</p>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="bg-slate-700 rounded-lg px-3 py-2">
-              <p className="text-slate-400 text-xs">Costo directo</p>
+              <p className="text-muted-foreground text-xs">Costo directo</p>
               <p className="text-white font-semibold text-sm">{formatCurrency(costoDirecto / divisor)}</p>
             </div>
             <div className="bg-slate-700 rounded-lg px-3 py-2">
-              <p className="text-slate-400 text-xs">Margen</p>
+              <p className="text-muted-foreground text-xs">Margen</p>
               <p className="text-green-400 font-semibold text-sm">{margen.toFixed(1)}%</p>
             </div>
           </div>
@@ -1125,17 +1125,17 @@ export function ApuEditor({ recursos: recursosProp, apusDisponibles, mode, initi
       </div>
 
       {/* Observaciones + activo */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-5 space-y-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Observaciones</label>
+          <label className="block text-xs font-semibold text-muted-foreground mb-1">Observaciones</label>
           <textarea value={header.observaciones} onChange={(e) => setH('observaciones', e.target.value)}
             rows={2} placeholder="Notas sobre este APU..."
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex items-center gap-3">
           <input type="checkbox" id="activo-apu" checked={header.activo} onChange={(e) => setH('activo', e.target.checked)}
             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-          <label htmlFor="activo-apu" className="text-sm font-medium text-slate-700">APU activo (disponible en presupuestos)</label>
+          <label htmlFor="activo-apu" className="text-sm font-medium text-foreground">APU activo (disponible en presupuestos)</label>
         </div>
       </div>
 

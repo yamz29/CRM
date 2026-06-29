@@ -21,25 +21,25 @@ export default async function MaterialesMelaminaPage() {
         <BackButton fallbackHref="/melamina" />
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">Materiales de Melamina</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <p className="text-muted-foreground text-sm mt-0.5">
             Catálogo de tableros, cantos y herrajes para módulos
           </p>
         </div>
-        <div className="flex gap-3 text-sm text-slate-500">
-          <span className="bg-slate-100 px-3 py-1 rounded-full">
+        <div className="flex gap-3 text-sm text-muted-foreground">
+          <span className="bg-muted px-3 py-1 rounded-full">
             {counts.tablero} tablero{counts.tablero !== 1 ? 's' : ''}
           </span>
-          <span className="bg-slate-100 px-3 py-1 rounded-full">
+          <span className="bg-muted px-3 py-1 rounded-full">
             {counts.canto} canto{counts.canto !== 1 ? 's' : ''}
           </span>
-          <span className="bg-slate-100 px-3 py-1 rounded-full">
+          <span className="bg-muted px-3 py-1 rounded-full">
             {counts.herraje} herraje{counts.herraje !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       {materiales.length === 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex items-start gap-3">
+        <div className="bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-start gap-3">
           <Package2 className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-blue-800">Catálogo vacío</p>
