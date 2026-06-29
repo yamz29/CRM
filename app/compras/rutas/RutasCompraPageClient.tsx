@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Route, Plus, Search, MapPin, Package } from 'lucide-react'
+import { EstadoBadge, etiquetaDeEstado } from '@/lib/estados'
 
 interface Ruta {
   id: number
@@ -18,13 +19,6 @@ interface Ruta {
   numItems: number
   totalEstimado: number
   totalReal: number
-}
-
-const ESTADOS_BADGE: Record<string, { label: string; color: string }> = {
-  borrador:   { label: 'Borrador',   color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  en_proceso: { label: 'En proceso', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  completada: { label: 'Completada', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-  cancelada:  { label: 'Cancelada',  color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
 }
 
 const FILTROS = ['todos', 'borrador', 'en_proceso', 'completada', 'cancelada']
@@ -69,7 +63,7 @@ export function RutasCompraPageClient({ rutasIniciales }: { rutasIniciales: Ruta
           {FILTROS.map((f) => (
             <button key={f} onClick={() => setFiltro(f)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtro === f ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-              {f === 'todos' ? 'Todos' : ESTADOS_BADGE[f]?.label || f}
+              {f === 'todos' ? 'Todos' : etiquetaDeEstado('ruta', f)}
             </button>
           ))}
         </div>
@@ -98,12 +92,11 @@ export function RutasCompraPageClient({ rutasIniciales }: { rutasIniciales: Ruta
             </thead>
             <tbody className="divide-y divide-border">
               {filtradas.map((r) => {
-                const badge = ESTADOS_BADGE[r.estado] || { label: r.estado, color: 'bg-slate-100 text-slate-700' }
                 return (
                   <tr key={r.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => router.push(`/compras/rutas/${r.id}`)}>
                     <td className="px-4 py-3 font-mono font-medium text-foreground">{r.codigo}</td>
                     <td className="px-4 py-3 text-foreground">{r.titulo || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>{badge.label}</span></td>
+                    <td className="px-4 py-3"><EstadoBadge dominio="ruta" estado={r.estado} /></td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(r.fecha).toLocaleDateString('es-DO')}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground"><span className="inline-flex items-center gap-1 justify-end"><MapPin className="w-3.5 h-3.5" />{r.numParadas}</span></td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground"><span className="inline-flex items-center gap-1 justify-end"><Package className="w-3.5 h-3.5" />{r.numItems}</span></td>

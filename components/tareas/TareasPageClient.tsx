@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Badge } from '@/components/ui/badge'
+import { EstadoBadge } from '@/lib/estados'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
@@ -48,10 +49,7 @@ function getPrioridadBadge(prioridad: string) {
 }
 
 function getEstadoBadge(estado: string) {
-  const map: Record<string, 'default' | 'info' | 'success' | 'danger'> = {
-    Pendiente: 'default', 'En proceso': 'info', Completada: 'success', Cancelada: 'danger',
-  }
-  return <Badge variant={map[estado] ?? 'default'}>{estado}</Badge>
+  return <EstadoBadge dominio="tarea" estado={estado} />
 }
 
 export function TareasPageClient({ tareas, usuarios }: Props) {

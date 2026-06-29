@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ShoppingCart, Plus, Search, FileText, Truck, Building2, Check, X, Eye } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+import { EstadoBadge, etiquetaDeEstado } from '@/lib/estados'
 
 interface Proveedor { id: number; nombre: string; condicionesPago: string | null }
 interface Proyecto { id: number; nombre: string }
@@ -24,15 +25,6 @@ interface Orden {
   proveedor: { id: number; nombre: string } | null
   proyecto: { id: number; nombre: string } | null
   _count: { items: number }
-}
-
-const ESTADOS_BADGE: Record<string, { label: string; color: string }> = {
-  borrador:          { label: 'Borrador',          color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  enviada:           { label: 'Enviada',           color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  recibida_parcial:  { label: 'Recibida parcial',  color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-  recibida:          { label: 'Recibida',          color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-  facturada:         { label: 'Facturada',         color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
-  cancelada:         { label: 'Cancelada',         color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
 }
 
 const FILTROS_ESTADO = ['todos', 'borrador', 'enviada', 'recibida_parcial', 'recibida', 'facturada', 'cancelada']
@@ -239,7 +231,7 @@ export function ComprasPageClient({
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
-              {est === 'todos' ? 'Todos' : ESTADOS_BADGE[est]?.label || est}
+              {est === 'todos' ? 'Todos' : etiquetaDeEstado('oc', est)}
             </button>
           ))}
         </div>
@@ -269,7 +261,6 @@ export function ComprasPageClient({
             </thead>
             <tbody className="divide-y divide-border">
               {filtradas.map((o) => {
-                const badge = ESTADOS_BADGE[o.estado] || { label: o.estado, color: 'bg-slate-100 text-slate-700' }
                 return (
                   <tr key={o.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => router.push(`/compras/${o.id}`)}>
                     <td className="px-4 py-3 font-mono font-medium text-foreground">{o.numero}</td>
@@ -290,9 +281,7 @@ export function ComprasPageClient({
                       ) : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                        {badge.label}
-                      </span>
+                      <EstadoBadge dominio="oc" estado={o.estado} />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">
                       {new Date(o.fechaEmision).toLocaleDateString('es-DO')}
