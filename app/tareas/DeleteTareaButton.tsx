@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
+import { Trash2, Loader2 } from 'lucide-react'
 
 interface Props {
   id: number
@@ -12,55 +14,51 @@ interface Props {
 
 export function DeleteTareaButton({ id, titulo }: Props) {
   const router = useRouter()
-  const [confirming, setConfirming] = useState(false)
+  const toast = useToast()
+  const [abierto, setAbierto] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleDelete = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/tareas/${id}`, { method: 'DELETE' })
-      if (!response.ok) throw new Error('Error al eliminar')
-      router.refresh()
-    } catch (err) {
-      console.error(err)
+      const res = await fetch(`/api/tareas/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.exito(`Tarea "${titulo}" eliminada`)
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? 'Error al eliminar la tarea')
+      }
+    } catch {
+      toast.error('Error al eliminar la tarea')
     } finally {
       setLoading(false)
-      setConfirming(false)
+      setAbierto(false)
     }
   }
 
-  if (confirming) {
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-slate-500 max-w-28 truncate">¿Eliminar?</span>
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={handleDelete}
-          disabled={loading}
-        >
-          {loading ? '...' : 'Sí'}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setConfirming(false)}
-          disabled={loading}
-        >
-          No
-        </Button>
-      </div>
-    )
-  }
-
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => setConfirming(true)}
-      title={`Eliminar tarea: ${titulo}`}
-    >
-      <Trash2 className="w-4 h-4 text-red-500" />
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setAbierto(true)}
+        disabled={loading}
+        title={`Eliminar tarea: ${titulo}`}
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin text-red-500" /> : <Trash2 className="w-4 h-4 text-red-500" />}
+      </Button>
+
+      <ConfirmDialog
+        abierto={abierto}
+        titulo={`¿Eliminar la tarea "${titulo}"?`}
+        descripcion="Esta acción no se puede deshacer."
+        textoConfirmar="Sí, eliminar"
+        variante="peligro"
+        cargando={loading}
+        onConfirmar={handleDelete}
+        onCancelar={() => setAbierto(false)}
+      />
+    </>
   )
 }
