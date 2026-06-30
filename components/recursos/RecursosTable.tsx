@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { formatCurrency } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Package, Search, X, SlidersHorizontal, ChevronDown } from 'lucide-react'
@@ -74,13 +75,20 @@ function SelectFilter({
 }
 
 export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
-  const [search,        setSearch]        = useState('')
-  const [tipoFilter,    setTipoFilter]    = useState('')
-  const [catFilter,     setCatFilter]     = useState('')
-  const [provFilter,    setProvFilter]    = useState('')
-  const [estadoFilter,  setEstadoFilter]  = useState<EstadoFilter>('todos')
-  const [precioMin,     setPrecioMin]     = useState('')
-  const [precioMax,     setPrecioMax]     = useState('')
+  // Filtros sincronizados con la URL (sobreviven refresh / botón Atrás). Los
+  // wrappers homónimos preservan los call-sites existentes. (#H08)
+  const [filtros, setFiltros] = useUrlFilters({
+    search: '', tipo: '', cat: '', prov: '', estado: 'todos', precioMin: '', precioMax: '',
+  })
+  const { search, tipo: tipoFilter, cat: catFilter, prov: provFilter, precioMin, precioMax } = filtros
+  const estadoFilter = filtros.estado as EstadoFilter
+  const setSearch       = (v: string) => setFiltros({ search: v })
+  const setTipoFilter   = (v: string) => setFiltros({ tipo: v })
+  const setCatFilter    = (v: string) => setFiltros({ cat: v })
+  const setProvFilter   = (v: string) => setFiltros({ prov: v })
+  const setEstadoFilter = (v: EstadoFilter) => setFiltros({ estado: v })
+  const setPrecioMin    = (v: string) => setFiltros({ precioMin: v })
+  const setPrecioMax    = (v: string) => setFiltros({ precioMax: v })
   const [showAdvanced,  setShowAdvanced]  = useState(false)
 
   // Derived option lists (distinct values from data)
@@ -132,8 +140,7 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
   const hasAnyFilter = search || tipoFilter || activeChips.length > 0
 
   function clearAll() {
-    setSearch(''); setTipoFilter(''); setCatFilter(''); setProvFilter('')
-    setEstadoFilter('todos'); setPrecioMin(''); setPrecioMax('')
+    setFiltros({ search: '', tipo: '', cat: '', prov: '', estado: 'todos', precioMin: '', precioMax: '' })
   }
 
   return (
