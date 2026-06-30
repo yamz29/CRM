@@ -345,7 +345,18 @@ Más verificación manual en navegador del módulo tocado (no hay E2E).
 
 **Working tree:** dejar sin tocar `SISTEMA.md` y `next-env.d.ts` (modificaciones preexistentes ajenas). `.ts-seed-out/` es basura ignorable.
 
-**Siguiente:** cerrar Fase 0 con `superpowers:finishing-a-development-branch` (merge/PR), o seguir con **Fase 1** (Tasks 1.1–1.4 detalladas arriba; 1.1 ConfirmDialog comparte los 3 Delete buttons con el churn pendiente).
+**Fase 0 cerrada:** mergeada a `main` local (fast-forward), rama borrada.
+
+---
+
+### Fase 1 — estado (rama `fix/ux-fase1-confirmaciones`, sin push)
+
+- ✅ Task 1.1 (#H21) — 5 borrados (Recurso, APU, Empleado, Tarea, Módulo melamina) migrados de doble-clic inline a `ConfirmDialog` + `useToast` (surface errores 409). Commit `551e91a`.
+- ✅ Task 1.2 (#H34) — `DuplicarButton` confirma mostrando alcance (N partidas en M capítulos, nace Borrador). Commit `d07fdce`.
+- ✅ Task 1.3 (#H35) — **ya satisfecho**, sin cambio. Verificado en `app/api/presupuestos/[id]/estado/route.ts`: efectos reales = proyecto→"En Ejecución" (ya en diálogo) + recalc valor oportunidad (interno). NO existe bloqueo de partidas (CLAUDE.md lo menciona hipotético; el código no lo hace). "Volver a Borrador" existe → nada queda bloqueado.
+- ⏸️ Task 1.4 (#H18) — **diferido**. El grep de mutaciones sin `router.refresh` da ~38 componentes, pero la mayoría refrescan vía callback del padre (`onSuccess`/`onClose`) o estado local optimista (GastosTab/GastoForm) — no son bugs. Un barrido ciego rompería UIs optimistas. Requiere análisis caso-por-caso con verificación en navegador. Bajo valor (🟢).
+
+**Gate Fase 1:** tsc 0 · vitest 143/143. Cerrar con `finishing-a-development-branch`.
 
 **Descubrimientos (ajustan el plan):**
 - `hooks/useUrlFilters.ts` YA EXISTE y lo usan compras/rutas/tareas → **Fase 2 es mucho más chica de lo planeado**. Auditar qué listados faltan realmente antes de reescribir nada (clientes sigue con `<form method=GET>`; recursos con filtros en useState).
