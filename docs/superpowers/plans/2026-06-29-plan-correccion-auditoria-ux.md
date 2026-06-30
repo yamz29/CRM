@@ -358,6 +358,21 @@ Más verificación manual en navegador del módulo tocado (no hay E2E).
 
 **Gate Fase 1:** tsc 0 · vitest 143/143. Cerrar con `finishing-a-development-branch`.
 
+**Fase 1 cerrada:** mergeada a `main` local y pusheada a `origin/main` (a67d3a3..16a03bd).
+
+---
+
+### Fase 2 — estado (rama `fix/ux-fase2-listados`, sin push)
+
+Hallazgo de scope: `hooks/useUrlFilters.ts` ya existía (filtrado **en cliente** sincronizado a URL vía `replaceState`, sin refetch). El patrón del codebase es "cargar todo + filtrar en memoria".
+
+- ✅ Task #H07 — `/clientes`: de `<form method=GET>` (roundtrip server por búsqueda) a búsqueda instantánea en cliente + `useUrlFilters` (`?search=` sobrevive refresh/Atrás). Nuevo `components/clientes/ClientesPageClient.tsx`; la página queda como server component delgado. Commit `e62257f`.
+- ✅ Task #H08 — `/recursos`: los 7 filtros de `RecursosTable` pasan de `useState` a `useUrlFilters` (sobreviven refresh/Atrás, vista compartible). Wrappers homónimos preservan call-sites. Commit `b4660bf`.
+- ✅ #H48 (política URL-driven) — avanzada por #H07/#H08; compras/rutas/tareas ya la usaban.
+- ⏸️ #H09 (paginación server-side) — **diferido por diseño**. El patrón "cargar todo + filtrar en memoria" da búsqueda instantánea (mejor UX) y es adecuado a la escala de la empresa. Paginación server es la arquitectura opuesta, solo se justifica con miles de filas. Revisar por-tabla si alguna crece. NO es deuda olvidada.
+
+**Gate Fase 2:** tsc 0 · lint 0 · vitest 143/143. Verificación en navegador pendiente (clientes: buscar es instantáneo y el `?search=` queda en la URL; recursos: filtrar, refrescar, y que los filtros persistan). Cerrar con `finishing-a-development-branch`.
+
 **Descubrimientos (ajustan el plan):**
 - `hooks/useUrlFilters.ts` YA EXISTE y lo usan compras/rutas/tareas → **Fase 2 es mucho más chica de lo planeado**. Auditar qué listados faltan realmente antes de reescribir nada (clientes sigue con `<form method=GET>`; recursos con filtros en useState).
 - OC `facturada` quedó `secondary` (gris) en vez de púrpura (Badge no tiene púrpura). Si se quiere conservar, añadir variante `purple` a `components/ui/badge.tsx`.
