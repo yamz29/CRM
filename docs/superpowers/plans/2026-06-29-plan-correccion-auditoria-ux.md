@@ -329,11 +329,23 @@ Más verificación manual en navegador del módulo tocado (no hay E2E).
 
 **Rama:** `fix/ux-fase0-design-system` (NO pusheada). Para retomar: `git checkout fix/ux-fase0-design-system` y leer esta sección.
 
-**Hecho y commiteado (HEAD = `5ef4c0c`, compila, tests verde):**
-- ✅ Task 0.1 — `lib/estados.ts` (mapa estado→variant + `etiquetaDeEstado` + `EstadoBadge`) + `lib/__tests__/estados.test.ts` (6/6). Commits `3e4f83e`, `5ef4c0c`.
-- ✅ Task 0.2 — `EstadoBadge` aplicado en `TareasPageClient`, `ComprasPageClient`, `RutasCompraPageClient` (eliminadas defs `ESTADOS_BADGE` inline). Commit `770b186`.
+**Fase 0 estructural COMPLETA (HEAD = `0778556`, tsc 0, vitest 143/143):**
+- ✅ Task 0.1 — `lib/estados.ts` (mapa estado→variant + `etiquetaDeEstado` + `EstadoBadge`) + test (6/6). Commits `3e4f83e`, `5ef4c0c`.
+- ✅ Task 0.2 — `EstadoBadge` en `TareasPageClient`, `ComprasPageClient`, `RutasCompraPageClient`. Commit `770b186`.
+- ✅ Task 0.3 — prop `color` en `Button` + migrados los `<Button>` con bg verde/rojo inline (CambiarEstadoButton aprobar, OportunidadDrawer ganar, OportunidadDrawer "Ganada", MarcarPerdidaModal, ContabilidadClient eliminar). Commit `71aa33a`.
+- ✅ Task 0.4 — #H42: sidebar usa `bg-sidebar` (token `--sidebar` en globals + tailwind.config). Commit `c4636f6`.
+- ✅ Task 0.5 — #H43: criterio documentado en `success-banner.tsx`. Commit `0778556`.
+
+**Diferido de Fase 0 (con razón, NO olvidar):**
+- **#H43 migración real** (12 forms `?msg=` → `toast.exito`): mecánico pero forms no uniformes (PresupuestoV2Builder 1277 líneas, builders) → requiere verificación en navegador. Forms: clientes, proyectos, recursos, tareas, empleados, melamina, nomina, apus, produccion, presupuestos V1/V2. `ToastProvider` ya está en `app/layout.tsx` (toast sobrevive la nav cliente).
+- **#H40 iconos** (lib/iconos.ts + unificar Building2/FolderOpen): bajo valor, alto churn; `Building2` puede ser intencional (empresa) vs `FolderOpen` (proyecto) — no adivinar.
+- **#H41 motion tokens**: 🟢 bajo valor, alto churn. Defer.
+- **Task 0.2b**: badges en `KanbanClient` (proyecto), `RecibosTab`/`FacturaDetalle` (factura). `EmpleadosTable` es booleano activo/inactivo (no aplica). `KitchenConfiguratorClient:1382` usa `#0b0f1a` propio (canvas full-screen, NO migrar a bg-sidebar).
+- **Task 0.3 raw `<button>`**: `ImportarRecursosModal:357` ("Listo" verde) y `PeriodosTable:31` (confirm inline rojo) — este último va mejor con Task 1.1 (ConfirmDialog). `RespaldoPanel:443` es ámbar (no mapea a success/danger). PrintButtons (6) de impresión: baja prioridad.
 
 **Working tree:** dejar sin tocar `SISTEMA.md` y `next-env.d.ts` (modificaciones preexistentes ajenas). `.ts-seed-out/` es basura ignorable.
+
+**Siguiente:** cerrar Fase 0 con `superpowers:finishing-a-development-branch` (merge/PR), o seguir con **Fase 1** (Tasks 1.1–1.4 detalladas arriba; 1.1 ConfirmDialog comparte los 3 Delete buttons con el churn pendiente).
 
 **Descubrimientos (ajustan el plan):**
 - `hooks/useUrlFilters.ts` YA EXISTE y lo usan compras/rutas/tareas → **Fase 2 es mucho más chica de lo planeado**. Auditar qué listados faltan realmente antes de reescribir nada (clientes sigue con `<form method=GET>`; recursos con filtros en useState).
