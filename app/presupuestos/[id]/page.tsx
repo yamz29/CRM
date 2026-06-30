@@ -61,6 +61,7 @@ export default async function PresupuestoDetailPage({
     (acc, cap) => acc + cap.partidas.reduce((s, p) => s + (p.esNota ? 0 : p.subtotal), 0),
     0
   )
+  const totalPartidasV2 = presupuesto.capitulos.reduce((acc, cap) => acc + cap.partidas.length, 0)
   const indirectosActivos = presupuesto.indirectos.filter(l => l.activo)
   const subtotalIndirecto = indirectosActivos.reduce(
     (s, l) => s + subtotalBase * l.porcentaje / 100, 0
@@ -101,7 +102,11 @@ export default async function PresupuestoDetailPage({
               Imprimir
             </Button>
           </Link>
-          <DuplicarButton presupuestoId={presupuesto.id} />
+          <DuplicarButton
+            presupuestoId={presupuesto.id}
+            nPartidas={totalPartidasV2}
+            nCapitulos={presupuesto.capitulos.length}
+          />
           <Link href={
             presupuesto.capitulos.length > 0
               ? `/presupuestos/${presupuesto.id}/editar-v2`
