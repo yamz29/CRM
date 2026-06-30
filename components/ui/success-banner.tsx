@@ -3,6 +3,19 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle, X } from 'lucide-react'
 
+/**
+ * Banner de éxito leído desde `?msg=` por un server component tras un redirect.
+ *
+ * CRITERIO (#H43): usar SuccessBanner SOLO cuando el feedback llega por un
+ * redirect server-side y no hay un cliente activo para mostrar un toast.
+ * Para acciones del lado cliente (POST/PUT/DELETE con handler) usar
+ * `useToast().exito(...)` antes de navegar — el ToastProvider vive en el layout
+ * raíz, así que el toast sobrevive la navegación cliente.
+ *
+ * Migración pendiente de `?msg=creado/actualizado` → toast en los forms:
+ * clientes, proyectos, recursos, tareas, empleados, melamina, nómina, apus,
+ * producción, presupuestos (V1/V2). Requiere verificación en navegador.
+ */
 interface SuccessBannerProps {
   mensaje: string
 }
