@@ -1022,9 +1022,9 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; cli
               </Button>
               <Button
                 size="sm"
+                color="danger"
                 onClick={eliminarSeleccionados}
                 disabled={eliminando}
-                className="bg-red-600 hover:bg-red-700 text-white border-red-600"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {eliminando ? 'Eliminando...' : `Eliminar ${seleccion.size}`}

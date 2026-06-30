@@ -122,7 +122,7 @@ export function MarcarPerdidaModal({ oportunidadId, oportunidadNombre, onClose, 
           <Button
             onClick={handleConfirm}
             disabled={saving || !categoria}
-            className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+            color="danger"
           >
             {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</> : 'Confirmar pérdida'}
           </Button>

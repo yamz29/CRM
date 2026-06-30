@@ -108,7 +108,7 @@ function GanarModal({ oportunidad, onClose, onGanada }: { oportunidad: Oportunid
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-            <Button onClick={handleGanar} disabled={saving || !nombreProyecto} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleGanar} disabled={saving || !nombreProyecto} color="success">
               <CheckCircle className="w-4 h-4 mr-1" />
               {saving ? 'Creando...' : 'Crear proyecto'}
             </Button>
@@ -666,8 +666,9 @@ export function OportunidadDrawer({ oportunidad, presupuestosDisponibles, onClos
               </Button>
               <Button
                 size="sm"
+                color="success"
                 onClick={() => setGanarOpen(true)}
-                className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+                className="gap-1.5"
               >
                 <Trophy className="w-3.5 h-3.5" /> Ganada
               </Button>

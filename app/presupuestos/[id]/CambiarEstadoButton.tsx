@@ -72,9 +72,9 @@ export function CambiarEstadoButton({ presupuestoId, estadoActual, nombreProyect
         {estadoActual !== 'Aprobado' && (
           <Button
             size="sm"
+            color="success"
             onClick={() => setConfirmando('Aprobado')}
             disabled={!!loading}
-            className="bg-green-600 hover:bg-green-700 text-white"
           >
             {loading === 'Aprobado' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
             Aprobar
