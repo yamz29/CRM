@@ -136,7 +136,7 @@ function NavLink({ href, label, icon: Icon, collapsed, onNavClick }: {
       title={collapsed ? label : undefined}
       className={cn(
         'flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-150 group',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
         collapsed ? 'justify-center px-2 py-2.5' : 'pl-8 pr-3 py-2',
         isActive
           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
@@ -253,7 +253,7 @@ export function Sidebar({
     .toUpperCase()
 
   return (
-    <aside className="h-full bg-[#0b0f1a] dark:bg-[#0b0f1a] flex flex-col border-r border-white/5 overflow-hidden">
+    <aside className="h-full bg-sidebar flex flex-col border-r border-white/5 overflow-hidden">
       {/* Brand / Logo */}
       <div className={cn('border-b border-white/5', collapsed ? 'px-2 py-4' : 'px-5 py-5')}>
         <div className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>
@@ -286,7 +286,7 @@ export function Sidebar({
           title={collapsed ? 'Buscar (Ctrl+K)' : undefined}
           className={cn(
             'flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors text-white/60 hover:text-white hover:bg-white/5',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a]',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
             collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'
           )}
         >
