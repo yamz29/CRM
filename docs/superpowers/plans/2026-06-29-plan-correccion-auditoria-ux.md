@@ -271,7 +271,10 @@ Recomendación: hacer estos por-item con commits chicos (fáciles de revertir) y
 - ✅ #C05 — Timeline comercial en la pestaña Resumen (`TimelineProyecto`): historia cronológica con timestamps reales (proyecto creado, presupuestos, adicionales, facturas de ingreso, cierre).
 - ✅ #H19 — Tabs aplanadas: se elimina el nivel "grupo" y la sub-barra; las 10 pestañas en una sola barra (flatMap), scroll horizontal en móvil.
 
-**Fase 4 restante (siguen DIFERIDOS):** #H33 (preview PDF en vivo — re-render A4 desde estado en memoria del builder) y #H23 (Gantt inline — extraer `<Gantt>` reutilizable de `app/cronograma/[id]`). Ambos "Alto esfuerzo" + requieren verificación visual.
+**Fase 4 — cierre (rama `fix/ux-fase4-gantt-preview`):**
+- ✅ #H23 — Gantt inline en Programación (`GanttProyectoEmbed` server + `<CronogramaView readOnly>`); helper puro `lib/cronograma-estado` con test 4/4; página de cronograma DRY-eada.
+- ✅ #H33 camino B — botón "Guardar y ver PDF" en el builder (guarda, captura id, abre `/imprimir` en pestaña nueva).
+- ⏸️ #H33 camino A (preview EN VIVO) — **no hacer blind.** La vista `imprimir/page.tsx` (525 líneas) rinde desde entidades BD con ids; el builder tiene estado en memoria indexado. Faithful = extraer `<PresupuestoPrintView data>` presentacional + mapear estado→shape (fidelidad crítica, no verificable sin navegador). Alternativa iframe-autosave: reusa el render real pero introduce autosave (rompe el modelo manual-save). Requiere decisión + verificación visual.
 
 ---
 
