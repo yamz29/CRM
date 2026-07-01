@@ -351,9 +351,10 @@ function BlockPopup({
 export function HorasPageClient({ registros: init, proyectos, usuarios, clientes, currentUserId }: Props) {
   const toast = useToast()
   const [registros, setRegistros] = useState<RegistroHoras[]>(init)
-  const [filters, setFilters] = useUrlFilters({ tab: 'grid', usr: currentUserId ? String(currentUserId) : '' })
+  const [filters, setFilters] = useUrlFilters({ tab: 'grid', usr: currentUserId ? String(currentUserId) : '', rango: 'semana' })
   const tab = filters.tab as 'grid' | 'reportes'
   const filterUsr = filters.usr
+  const rango = (['dia', 'semana', 'mes'].includes(filters.rango) ? filters.rango : 'semana') as 'dia' | 'semana' | 'mes'
   const [monday, setMonday]       = useState(getMondayOf(todayStr()))
 
   const [popup,     setPopup]     = useState<PopupState | null>(null)
@@ -362,7 +363,43 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
 
   // ── Derived ────────────────────────────────────────────────────────
 
-  const weekDates = useMemo(() => getWeekDates(monday), [monday])
+  // Fechas visibles según el rango (Día = 1, Semana = 7, Mes = todos los días
+  // del mes ancla). El grid renderiza una fila por fecha, así que reusa todo.
+  const weekDates = useMemo(() => {
+    if (rango === 'dia') return [monday]
+    if (rango === 'mes') {
+      const [y, m] = monday.split('-').map(Number)
+      const dias = new Date(y, m, 0).getDate()
+      return Array.from({ length: dias }, (_, i) => `${y}-${String(m).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`)
+    }
+    return getWeekDates(monday)
+  }, [monday, rango])
+
+  // Navegación adaptada al rango.
+  function navegarRango(dir: 1 | -1) {
+    if (rango === 'dia') setMonday(shiftDate(monday, dir))
+    else if (rango === 'mes') {
+      const [y, m] = monday.split('-').map(Number)
+      const nuevo = new Date(y, m - 1 + dir, 1)
+      setMonday(`${nuevo.getFullYear()}-${String(nuevo.getMonth() + 1).padStart(2, '0')}-01`)
+    } else setMonday(shiftDate(monday, dir * 7))
+  }
+
+  function irAHoy() {
+    setMonday(rango === 'semana' ? getMondayOf(todayStr()) : todayStr())
+  }
+
+  function cambiarRango(nuevo: 'dia' | 'semana' | 'mes') {
+    // Al pasar a semana, normalizar el ancla al lunes de esa semana.
+    if (nuevo === 'semana') setMonday(getMondayOf(monday))
+    setFilters({ rango: nuevo })
+  }
+
+  const rangoLabel = rango === 'dia'
+    ? fmtDayShort(monday).weekday + ' ' + fmtDayShort(monday).day + ' ' + fmtDayShort(monday).month
+    : rango === 'mes'
+      ? new Date(Number(monday.split('-')[0]), Number(monday.split('-')[1]) - 1, 1).toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })
+      : fmtWeekRange(monday)
 
   // Build employee groups for the grid
   const groups = useMemo(() => {
@@ -543,34 +580,41 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
         <div className="space-y-4">
           {/* Controls */}
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Week nav */}
+            {/* Rango: Día / Semana / Mes (#H30) */}
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              {(['dia', 'semana', 'mes'] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => cambiarRango(r)}
+                  className={`px-3 py-2 text-sm font-medium ${
+                    rango === r ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {r === 'dia' ? 'Día' : r === 'semana' ? 'Semana' : 'Mes'}
+                </button>
+              ))}
+            </div>
+
+            {/* Nav */}
             <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2">
-              <button
-                onClick={() => setMonday(shiftDate(monday, -7))}
-                className="p-1 rounded-lg hover:bg-muted"
-              >
+              <button onClick={() => navegarRango(-1)} className="p-1 rounded-lg hover:bg-muted">
                 <ChevronLeft className="w-4 h-4 text-muted-foreground" />
               </button>
-              <span className="text-sm font-medium text-foreground min-w-[160px] text-center">
-                {fmtWeekRange(monday)}
+              <span className="text-sm font-medium text-foreground min-w-[160px] text-center capitalize">
+                {rangoLabel}
               </span>
-              <button
-                onClick={() => setMonday(shiftDate(monday, 7))}
-                className="p-1 rounded-lg hover:bg-muted"
-              >
+              <button onClick={() => navegarRango(1)} className="p-1 rounded-lg hover:bg-muted">
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
             {/* Today button */}
-            {monday !== getMondayOf(todayStr()) && (
-              <button
-                onClick={() => setMonday(getMondayOf(todayStr()))}
-                className="px-3 py-2 text-sm text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors"
-              >
-                Esta semana
-              </button>
-            )}
+            <button
+              onClick={irAHoy}
+              className="px-3 py-2 text-sm text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition-colors"
+            >
+              Hoy
+            </button>
 
             {/* Employee filter */}
             {usuarios.length > 1 && (
