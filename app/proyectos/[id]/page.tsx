@@ -492,6 +492,38 @@ export default async function ProyectoDetailPage({
             </Link>
           </div>
 
+          {/* Balance — métrica protagonista (#H20/#H50) */}
+          {balance != null && (
+            <div className="px-5 py-4 border-b border-border bg-muted/20">
+              <div className="flex items-end justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {balance >= 0
+                      ? <TrendingUp className="w-4 h-4 text-green-500" />
+                      : <AlertTriangle className="w-4 h-4 text-red-500" />}
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {balance >= 0 ? 'Disponible del presupuesto' : 'Sobregirado'}
+                    </span>
+                  </div>
+                  <p className={`text-3xl font-black leading-none ${balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {balance < 0 && '−'}{formatCurrency(Math.abs(balance))}
+                  </p>
+                </div>
+                {pctGastado != null && (
+                  <div className="min-w-[180px] flex-1 max-w-xs">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${pctGastado >= 100 ? 'bg-red-500' : pctGastado >= 80 ? 'bg-amber-400' : 'bg-green-500'}`}
+                        style={{ width: `${Math.min(pctGastado, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{pctGastado.toFixed(0)}% del presupuesto ejecutado</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 lg:grid-cols-5 divide-x divide-border">
             {/* Presupuesto estimado (vigente con adicionales) */}
             <div className="px-5 py-4">
