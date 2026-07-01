@@ -8,6 +8,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Package, Search, X, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import { DeleteRecursoButton } from '@/app/recursos/DeleteRecursoButton'
 import { Pencil } from 'lucide-react'
+import { useSelection } from '@/hooks/useSelection'
+import { BulkActionBar } from '@/components/ui/bulk-action-bar'
+import { useToast } from '@/components/ui/toast'
+import { Button } from '@/components/ui/button'
 
 const TIPO_LABELS: Record<string, string> = {
   materiales:   'Materiales',
@@ -142,6 +146,23 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
       return acc
     }, {})
   , [filtered])
+
+  // Selección múltiple + activar/desactivar en lote (#H11)
+  const sel = useSelection<number>()
+  const toast = useToast()
+  async function activarBulk(activo: boolean) {
+    const ids = Array.from(sel.selected)
+    const res = await Promise.allSettled(
+      ids.map(id => fetch(`/api/recursos/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ _patch: true, activo }),
+      }))
+    )
+    const fallos = res.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)).length
+    if (fallos) toast.error(`${fallos} de ${ids.length} recursos no se pudieron actualizar`)
+    else toast.exito(`${ids.length} recurso${ids.length !== 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length !== 1 ? 's' : ''}`)
+    sel.clear()
+    router.refresh()
+  }
 
   // Active filter chips (excluding search & tipo)
   const activeChips: { label: string; clear: () => void }[] = []
@@ -337,6 +358,21 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
+                  <th className="px-3 py-2 w-8">
+                    <input
+                      type="checkbox"
+                      aria-label={`Seleccionar todos los ${TIPO_LABELS[tipoKey] || tipoKey}`}
+                      checked={items.length > 0 && items.every(r => sel.isSelected(r.id))}
+                      onChange={() => {
+                        const allSel = items.every(r => sel.isSelected(r.id))
+                        items.forEach(r => {
+                          if (allSel) { if (sel.isSelected(r.id)) sel.toggle(r.id) }
+                          else if (!sel.isSelected(r.id)) sel.toggle(r.id)
+                        })
+                      }}
+                      className="w-3.5 h-3.5 accent-blue-600"
+                    />
+                  </th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase w-24">Código</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">Nombre</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase w-28">Categoría</th>
@@ -350,6 +386,15 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
               <tbody className="divide-y divide-border">
                 {items.map((r, idx) => (
                   <tr key={r.id} className={`hover:bg-muted/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-muted/40/30'}`}>
+                    <td className="px-3 py-2 w-8">
+                      <input
+                        type="checkbox"
+                        aria-label={`Seleccionar ${r.nombre}`}
+                        checked={sel.isSelected(r.id)}
+                        onChange={() => sel.toggle(r.id)}
+                        className="w-3.5 h-3.5 accent-blue-600"
+                      />
+                    </td>
                     <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{r.codigo || '—'}</td>
                     <td className="px-4 py-2">
                       <span className="text-sm font-medium text-foreground">{r.nombre}</span>
@@ -403,6 +448,11 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
           </CardContent>
         </Card>
       ))}
+
+      <BulkActionBar count={sel.count} onClear={sel.clear} sustantivo="recurso">
+        <Button size="sm" variant="secondary" onClick={() => activarBulk(true)}>Activar</Button>
+        <Button size="sm" variant="secondary" onClick={() => activarBulk(false)}>Desactivar</Button>
+      </BulkActionBar>
     </div>
   )
 }

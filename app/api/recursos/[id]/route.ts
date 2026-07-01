@@ -28,6 +28,11 @@ export const PUT = withPermiso('recursos', 'editar', async (request: NextRequest
     // Patch parcial (edición inline): actualiza SOLO costoUnitario, sin tocar el
     // resto de campos. Mandar el body completo por este camino sería destructivo.
     if (body._patch) {
+      // Toggle de estado activo (usado por selección múltiple / acciones en lote).
+      if (typeof body.activo === 'boolean') {
+        const actualizado = await prisma.recurso.update({ where: { id }, data: { activo: body.activo } })
+        return NextResponse.json(actualizado)
+      }
       const costoNuevo = parseFloat(body.costoUnitario)
       if (isNaN(costoNuevo)) {
         return NextResponse.json({ error: 'costoUnitario inválido' }, { status: 400 })

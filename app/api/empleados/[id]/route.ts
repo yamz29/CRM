@@ -58,6 +58,13 @@ export const PUT = withPermiso('empleados', 'editar', async (request: NextReques
     const body = await request.json()
     const admin = esAdmin(request)
 
+    // Patch parcial (activar/desactivar en lote): actualiza SOLO `activo` sin
+    // tocar el resto de campos. Mandar el body completo por aquí sería destructivo.
+    if (body._patch && typeof body.activo === 'boolean') {
+      const actualizado = await prisma.empleado.update({ where: { id }, data: { activo: body.activo } })
+      return NextResponse.json(actualizado)
+    }
+
     const data: Record<string, unknown> = {
       nombre: body.nombre,
       cedula: body.cedula || null,

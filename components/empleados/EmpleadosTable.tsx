@@ -1,10 +1,15 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Search, Pencil, CalendarClock } from 'lucide-react'
 import { DeleteEmpleadoButton } from './DeleteEmpleadoButton'
+import { useSelection } from '@/hooks/useSelection'
+import { BulkActionBar } from '@/components/ui/bulk-action-bar'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 
 interface Empleado {
   id: number
@@ -23,8 +28,25 @@ interface Empleado {
 type EstadoFilter = 'todos' | 'activos' | 'inactivos'
 
 export function EmpleadosTable({ empleados, esAdmin }: { empleados: Empleado[]; esAdmin: boolean }) {
+  const router = useRouter()
+  const toast = useToast()
+  const sel = useSelection<number>()
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>('activos')
+
+  async function activarBulk(activo: boolean) {
+    const ids = Array.from(sel.selected)
+    const res = await Promise.allSettled(
+      ids.map(id => fetch(`/api/empleados/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ _patch: true, activo }),
+      }))
+    )
+    const fallos = res.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)).length
+    if (fallos) toast.error(`${fallos} de ${ids.length} empleados no se pudieron actualizar`)
+    else toast.exito(`${ids.length} empleado${ids.length !== 1 ? 's' : ''} ${activo ? 'activado' : 'desactivado'}${ids.length !== 1 ? 's' : ''}`)
+    sel.clear()
+    router.refresh()
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -70,6 +92,15 @@ export function EmpleadosTable({ empleados, esAdmin }: { empleados: Empleado[]; 
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
+              <th className="px-3 py-2.5 w-8">
+                <input
+                  type="checkbox"
+                  aria-label="Seleccionar todos"
+                  checked={filtered.length > 0 && filtered.every(e => sel.isSelected(e.id))}
+                  onChange={() => sel.toggleAll(filtered.map(e => e.id))}
+                  className="w-3.5 h-3.5 accent-blue-600"
+                />
+              </th>
               <th className="text-left font-medium px-4 py-2.5">Nombre</th>
               <th className="text-left font-medium px-4 py-2.5">Cargo</th>
               <th className="text-left font-medium px-4 py-2.5">Departamento</th>
@@ -83,6 +114,15 @@ export function EmpleadosTable({ empleados, esAdmin }: { empleados: Empleado[]; 
           <tbody className="divide-y divide-border">
             {filtered.map((e) => (
               <tr key={e.id} className="hover:bg-muted/30 transition-colors">
+                <td className="px-3 py-2.5 w-8">
+                  <input
+                    type="checkbox"
+                    aria-label={`Seleccionar ${e.nombre}`}
+                    checked={sel.isSelected(e.id)}
+                    onChange={() => sel.toggle(e.id)}
+                    className="w-3.5 h-3.5 accent-blue-600"
+                  />
+                </td>
                 <td className="px-4 py-2.5">
                   <Link href={`/empleados/${e.id}`} className="font-medium text-foreground hover:text-blue-600">
                     {e.nombre}
@@ -126,7 +166,7 @@ export function EmpleadosTable({ empleados, esAdmin }: { empleados: Empleado[]; 
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={esAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
+                <td colSpan={esAdmin ? 9 : 8} className="text-center text-muted-foreground py-8">
                   No hay empleados que coincidan con la búsqueda
                 </td>
               </tr>
@@ -134,6 +174,11 @@ export function EmpleadosTable({ empleados, esAdmin }: { empleados: Empleado[]; 
           </tbody>
         </table>
       </div>
+
+      <BulkActionBar count={sel.count} onClear={sel.clear} sustantivo="empleado">
+        <Button size="sm" variant="secondary" onClick={() => activarBulk(true)}>Activar</Button>
+        <Button size="sm" variant="secondary" onClick={() => activarBulk(false)}>Desactivar</Button>
+      </BulkActionBar>
     </div>
   )
 }
