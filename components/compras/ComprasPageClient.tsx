@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label'
 import { ShoppingCart, Plus, Search, FileText, Truck, Building2, Check, X, Eye } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { EstadoBadge, etiquetaDeEstado } from '@/lib/estados'
+import { useSelection } from '@/hooks/useSelection'
+import { BulkActionBar } from '@/components/ui/bulk-action-bar'
 
 interface Proveedor { id: number; nombre: string; condicionesPago: string | null }
 interface Proyecto { id: number; nombre: string }
@@ -50,6 +52,23 @@ export function ComprasPageClient({
   const filtroEstado = filters.estado
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const sel = useSelection<number>()
+  const [bulkEstado, setBulkEstado] = useState('')
+
+  async function aplicarEstadoBulk(nuevoEstado: string) {
+    if (!nuevoEstado) return
+    const ids = Array.from(sel.selected)
+    const res = await Promise.allSettled(
+      ids.map(id => fetch(`/api/compras/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: nuevoEstado }),
+      }))
+    )
+    const fallos = res.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok)).length
+    if (fallos) toast.error(`${fallos} de ${ids.length} OC no se pudieron actualizar`)
+    else toast.exito(`${ids.length} OC → ${etiquetaDeEstado('oc', nuevoEstado)}`)
+    sel.clear(); setBulkEstado('')
+    router.refresh()
+  }
 
   const [form, setForm] = useState({
     proveedorId: '',
@@ -249,6 +268,15 @@ export function ComprasPageClient({
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="px-3 py-2.5 w-8">
+                  <input
+                    type="checkbox"
+                    aria-label="Seleccionar todas"
+                    checked={filtradas.length > 0 && filtradas.every(o => sel.isSelected(o.id))}
+                    onChange={() => sel.toggleAll(filtradas.map(o => o.id))}
+                    className="w-3.5 h-3.5 accent-blue-600"
+                  />
+                </th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">OC #</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Proveedor</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Proyecto</th>
@@ -263,6 +291,15 @@ export function ComprasPageClient({
               {filtradas.map((o) => {
                 return (
                   <tr key={o.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => router.push(`/compras/${o.id}`)}>
+                    <td className="px-3 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Seleccionar OC ${o.numero}`}
+                        checked={sel.isSelected(o.id)}
+                        onChange={() => sel.toggle(o.id)}
+                        className="w-3.5 h-3.5 accent-blue-600"
+                      />
+                    </td>
                     <td className="px-4 py-3 font-mono font-medium text-foreground">{o.numero}</td>
                     <td className="px-4 py-3 text-foreground">
                       {o.proveedor ? (
@@ -300,6 +337,19 @@ export function ComprasPageClient({
           </table>
         </div>
       )}
+
+      <BulkActionBar count={sel.count} onClear={sel.clear} sustantivo="OC">
+        <select
+          value={bulkEstado}
+          onChange={(e) => { setBulkEstado(e.target.value); aplicarEstadoBulk(e.target.value) }}
+          className="h-8 text-xs border border-border rounded-md px-2 bg-card text-foreground"
+        >
+          <option value="">Cambiar estado…</option>
+          {['borrador', 'enviada', 'recibida_parcial', 'recibida', 'facturada', 'cancelada'].map(e => (
+            <option key={e} value={e}>{etiquetaDeEstado('oc', e)}</option>
+          ))}
+        </select>
+      </BulkActionBar>
     </div>
   )
 }
