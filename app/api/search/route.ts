@@ -17,13 +17,14 @@ export const GET = withPermiso('dashboard', 'ver', async (req: NextRequest) => {
   if (q.length < 2) {
     return NextResponse.json({
       clientes: [], proyectos: [], presupuestos: [], facturas: [],
+      tareas: [], recursos: [], empleados: [], modulosMelamina: [],
     })
   }
 
   const LIMIT = 6
   const insensitive = { contains: q, mode: 'insensitive' as const }
 
-  const [clientes, proyectos, presupuestos, facturas] = await Promise.all([
+  const [clientes, proyectos, presupuestos, facturas, tareas, recursos, empleados, modulosMelamina] = await Promise.all([
     prisma.cliente.findMany({
       where: {
         OR: [
@@ -83,7 +84,31 @@ export const GET = withPermiso('dashboard', 'ver', async (req: NextRequest) => {
       orderBy: { fecha: 'desc' },
       take: LIMIT,
     }),
+    prisma.tarea.findMany({
+      where: { archivada: false, OR: [{ titulo: insensitive }, { descripcion: insensitive }] },
+      select: { id: true, titulo: true, estado: true, proyecto: { select: { nombre: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: LIMIT,
+    }),
+    prisma.recurso.findMany({
+      where: { OR: [{ nombre: insensitive }, { codigo: insensitive }, { categoria: insensitive }] },
+      select: { id: true, nombre: true, codigo: true, tipo: true },
+      take: LIMIT,
+    }),
+    prisma.empleado.findMany({
+      where: { OR: [{ nombre: insensitive }, { cedula: insensitive }, { cargo: insensitive }] },
+      select: { id: true, nombre: true, cargo: true },
+      take: LIMIT,
+    }),
+    prisma.moduloMelaminaV2.findMany({
+      where: { OR: [{ nombre: insensitive }, { codigo: insensitive }] },
+      select: { id: true, nombre: true, codigo: true },
+      take: LIMIT,
+    }),
   ])
 
-  return NextResponse.json({ clientes, proyectos, presupuestos, facturas })
+  return NextResponse.json({
+    clientes, proyectos, presupuestos, facturas,
+    tareas, recursos, empleados, modulosMelamina,
+  })
 })

@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Search, Users, FolderOpen, FileText, Receipt, Plus, Loader2,
-  ArrowRight, CornerDownLeft, X,
+  ArrowRight, CornerDownLeft, X, CheckSquare, Package, UserCog, Box, Clock,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { leerRecientes, guardarReciente, type Reciente } from '@/lib/recientes'
 
 interface SearchResults {
   clientes: { id: number; nombre: string; rnc: string | null; telefono: string | null }[]
@@ -17,6 +18,10 @@ interface SearchResults {
     estado: string; esProforma: boolean;
     cliente: { nombre: string } | null; proveedor: string | null;
   }[]
+  tareas: { id: number; titulo: string; estado: string; proyecto: { nombre: string } | null }[]
+  recursos: { id: number; nombre: string; codigo: string | null; tipo: string }[]
+  empleados: { id: number; nombre: string; cargo: string | null }[]
+  modulosMelamina: { id: number; nombre: string; codigo: string | null }[]
 }
 
 type Item =
@@ -24,6 +29,11 @@ type Item =
   | { kind: 'proyecto'; id: number; label: string; sub: string; href: string }
   | { kind: 'presupuesto'; id: number; label: string; sub: string; href: string }
   | { kind: 'factura'; id: number; label: string; sub: string; href: string }
+  | { kind: 'tarea'; id: number; label: string; sub: string; href: string }
+  | { kind: 'recurso'; id: number; label: string; sub: string; href: string }
+  | { kind: 'empleado'; id: number; label: string; sub: string; href: string }
+  | { kind: 'modulo'; id: number; label: string; sub: string; href: string }
+  | { kind: 'reciente'; id: string; label: string; sub: string; href: string }
   | { kind: 'action'; id: string; label: string; sub: string; href: string }
 
 const QUICK_ACTIONS: Extract<Item, { kind: 'action' }>[] = [
@@ -39,6 +49,11 @@ const KIND_ICON: Record<Item['kind'], React.ComponentType<{ className?: string }
   proyecto: FolderOpen,
   presupuesto: FileText,
   factura: Receipt,
+  tarea: CheckSquare,
+  recurso: Package,
+  empleado: UserCog,
+  modulo: Box,
+  reciente: Clock,
   action: Plus,
 }
 
@@ -47,16 +62,23 @@ const KIND_LABEL: Record<Item['kind'], string> = {
   proyecto: 'Proyectos',
   presupuesto: 'Presupuestos',
   factura: 'Facturas',
+  tarea: 'Tareas',
+  recurso: 'Recursos',
+  empleado: 'Empleados',
+  modulo: 'Módulos melamina',
+  reciente: 'Recientes',
   action: 'Acciones rápidas',
 }
 
 export function CommandPalette() {
   const router = useRouter()
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResults | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeIdx, setActiveIdx] = useState(0)
+  const [recientes, setRecientes] = useState<Reciente[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -89,6 +111,7 @@ export function CommandPalette() {
       setQuery('')
       setResults(null)
       setActiveIdx(0)
+      setRecientes(leerRecientes())
       // microtask para que el input ya esté montado
       setTimeout(() => inputRef.current?.focus(), 0)
     }
@@ -113,9 +136,27 @@ export function CommandPalette() {
     return () => clearTimeout(handle)
   }, [query])
 
+  // ── Acciones contextuales según la ruta actual ──────────────────────
+  const contextualActions: Item[] = useMemo(() => {
+    const m = pathname?.match(/^\/proyectos\/(\d+)/)
+    if (m) {
+      const pid = m[1]
+      return [
+        { kind: 'action', id: `ctx-tarea-${pid}`, label: 'Nueva tarea para este proyecto', sub: 'Con el proyecto precargado', href: `/tareas/nueva?proyectoId=${pid}` },
+        { kind: 'action', id: `ctx-presu-${pid}`, label: 'Nuevo presupuesto para este proyecto', sub: 'Cotización V2 vinculada', href: `/presupuestos/nuevo-v2?proyectoId=${pid}` },
+      ]
+    }
+    return []
+  }, [pathname])
+
   // ── Aplanar resultados a una lista navegable ────────────────────────
   const items: Item[] = useMemo(() => {
-    if (!query.trim()) return QUICK_ACTIONS
+    if (!query.trim()) {
+      const recientesItems: Item[] = recientes.map(r => ({
+        kind: 'reciente', id: `${r.kind}-${r.id}`, label: r.label, sub: r.sub, href: r.href,
+      }))
+      return [...recientesItems, ...contextualActions, ...QUICK_ACTIONS]
+    }
 
     if (!results) return []
 
@@ -153,8 +194,40 @@ export function CommandPalette() {
         href: `/contabilidad/facturas/${f.id}`,
       })
     }
+    for (const t of results.tareas) {
+      out.push({
+        kind: 'tarea', id: t.id,
+        label: t.titulo,
+        sub: [t.proyecto?.nombre, t.estado].filter(Boolean).join(' · ') || 'Tarea',
+        href: `/tareas/${t.id}`,
+      })
+    }
+    for (const r of results.recursos) {
+      out.push({
+        kind: 'recurso', id: r.id,
+        label: `${r.codigo ? r.codigo + ' · ' : ''}${r.nombre}`,
+        sub: r.tipo,
+        href: `/recursos/${r.id}/editar`,
+      })
+    }
+    for (const e of results.empleados) {
+      out.push({
+        kind: 'empleado', id: e.id,
+        label: e.nombre,
+        sub: e.cargo || 'Empleado',
+        href: `/empleados/${e.id}`,
+      })
+    }
+    for (const mo of results.modulosMelamina) {
+      out.push({
+        kind: 'modulo', id: mo.id,
+        label: `${mo.codigo ? mo.codigo + ' · ' : ''}${mo.nombre}`,
+        sub: 'Módulo melamina',
+        href: `/melamina/${mo.id}`,
+      })
+    }
     return out
-  }, [query, results])
+  }, [query, results, recientes, contextualActions])
 
   // Reset índice activo cuando cambia la lista
   useEffect(() => { setActiveIdx(0) }, [items])
@@ -189,6 +262,9 @@ export function CommandPalette() {
 
   const navegar = useCallback((item: Item) => {
     setOpen(false)
+    if (item.kind !== 'action' && item.kind !== 'reciente') {
+      guardarReciente({ kind: item.kind, id: item.id, label: item.label, sub: item.sub, href: item.href })
+    }
     router.push(item.href)
   }, [router])
 
@@ -196,12 +272,13 @@ export function CommandPalette() {
 
   // Agrupar items por kind para mostrar headers
   const grouped: Record<Item['kind'], Item[]> = {
-    cliente: [], proyecto: [], presupuesto: [], factura: [], action: [],
+    cliente: [], proyecto: [], presupuesto: [], factura: [],
+    tarea: [], recurso: [], empleado: [], modulo: [], reciente: [], action: [],
   }
   for (const it of items) grouped[it.kind].push(it)
   const groupOrder: Item['kind'][] = query.trim()
-    ? ['cliente', 'proyecto', 'presupuesto', 'factura']
-    : ['action']
+    ? ['cliente', 'proyecto', 'presupuesto', 'factura', 'tarea', 'recurso', 'empleado', 'modulo']
+    : ['reciente', 'action']
 
   let runningIdx = 0
 
@@ -221,7 +298,7 @@ export function CommandPalette() {
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar clientes, proyectos, presupuestos, facturas…"
+            placeholder="Buscar clientes, proyectos, presupuestos, facturas, tareas, recursos…"
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
             autoComplete="off"
             spellCheck={false}
