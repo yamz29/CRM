@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Badge } from '@/components/ui/badge'
-import { EstadoBadge } from '@/lib/estados'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
@@ -48,9 +47,6 @@ function getPrioridadBadge(prioridad: string) {
   return <Badge variant={map[prioridad] ?? 'default' as any}>{prioridad}</Badge>
 }
 
-function getEstadoBadge(estado: string) {
-  return <EstadoBadge dominio="tarea" estado={estado} />
-}
 
 export function TareasPageClient({ tareas, usuarios }: Props) {
   const router = useRouter()
@@ -107,18 +103,23 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
     router.refresh()
   }
 
-  // ── Drag & Drop ──────────────────────────────────────────────────────
-  async function handleDrop(nuevoEstado: string) {
-    const id = draggingId.current
-    if (!id) return
-    setDragOver(null)
-    draggingId.current = null
+  // ── Cambio de estado (patch inline, reusa el modo _patch del Kanban) ──
+  async function cambiarEstado(id: number, nuevoEstado: string) {
     await fetch(`/api/tareas/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ estado: nuevoEstado, _patch: true }),
     })
     router.refresh()
+  }
+
+  // ── Drag & Drop ──────────────────────────────────────────────────────
+  async function handleDrop(nuevoEstado: string) {
+    const id = draggingId.current
+    if (!id) return
+    setDragOver(null)
+    draggingId.current = null
+    await cambiarEstado(id, nuevoEstado)
   }
 
   // ── Tarjeta Kanban ───────────────────────────────────────────────────
@@ -330,7 +331,19 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                             </div>
                           </td>
                           <td className="px-4 py-3">{getPrioridadBadge(tarea.prioridad)}</td>
-                          <td className="px-4 py-3">{getEstadoBadge(tarea.estado)}</td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={tarea.estado}
+                              onChange={(e) => cambiarEstado(tarea.id, e.target.value)}
+                              className="text-xs border border-border rounded-md px-2 py-1 bg-card focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+                              title="Cambiar estado"
+                              aria-label={`Estado de ${tarea.titulo}`}
+                            >
+                              {ESTADOS.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                          </td>
                           <td className="px-4 py-3">
                             {tarea.cliente && (
                               <Link href={`/clientes/${tarea.cliente.id}`} className="text-sm text-muted-foreground hover:text-primary block">
