@@ -139,7 +139,7 @@ export function KanbanClient({ proyectos: initialProyectos }: Props) {
       )}
 
       <div className="overflow-x-auto -mx-4 px-4 pb-4">
-        <div className="flex gap-3 min-w-max">
+        <div className="flex flex-col lg:flex-row gap-3 lg:min-w-max">
           {COLUMNAS.map(col => {
             const lista = porColumna.map[col.key] ?? []
             const isDragOver = dragOverCol === col.key
@@ -149,7 +149,7 @@ export function KanbanClient({ proyectos: initialProyectos }: Props) {
                 onDragOver={e => onDragOver(e, col.key)}
                 onDragLeave={onDragLeave}
                 onDrop={e => onDrop(e, col.key)}
-                className={`w-72 shrink-0 rounded-lg border ${col.color} ${
+                className={`w-full lg:w-72 lg:shrink-0 rounded-lg border ${col.color} ${
                   isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''
                 } ${col.terminal ? 'border-dashed' : ''}`}
               >
@@ -187,7 +187,7 @@ export function KanbanClient({ proyectos: initialProyectos }: Props) {
 
           {/* Columna virtual de "Otros" (estados legacy o desconocidos) */}
           {porColumna.otros.length > 0 && (
-            <div className="w-72 shrink-0 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20">
+            <div className="w-full lg:w-72 lg:shrink-0 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20">
               <div className="px-3 py-2.5 flex items-center justify-between border-b border-border/40">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-muted-foreground" />
