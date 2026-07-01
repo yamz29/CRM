@@ -13,6 +13,7 @@ import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
 import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
 import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
 import { ProgramaTab } from '@/components/proyectos/ProgramaTab'
+import { GanttProyectoEmbed } from '@/components/proyectos/GanttProyectoEmbed'
 import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
@@ -1163,7 +1164,11 @@ export default async function ProyectoDetailPage({
 
       {/* PROGRAMA (compras + tareas del día a día) */}
       {tab === 'programa' && (
-        <ProgramaTab proyectoId={proyecto.id} />
+        <div className="space-y-6">
+          {/* Gantt del cronograma embebido (#H23) */}
+          <GanttProyectoEmbed proyectoId={proyecto.id} />
+          <ProgramaTab proyectoId={proyecto.id} />
+        </div>
       )}
 
       {/* DOCUMENTOS */}

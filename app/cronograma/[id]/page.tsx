@@ -6,6 +6,7 @@ import { FolderOpen, FileText, CalendarRange, AlertTriangle } from 'lucide-react
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { BackButton } from '@/components/ui/back-button'
 import { CronogramaView } from '@/components/cronograma/CronogramaView'
+import { derivarEstados } from '@/lib/cronograma-estado'
 import { ResumenAvance } from '@/components/cronograma/ResumenAvance'
 import { calcularResumen } from '@/lib/cronograma-resumen'
 
@@ -50,16 +51,9 @@ export default async function CronogramaDetailPage({
   // Proyecto cerrado → la vista entra en modo solo lectura.
   const readOnly = cronograma.proyecto?.estado === 'Cerrado'
 
-  // Auto-calcular estado de actividades
+  // Auto-calcular estado de actividades (lógica única en lib/cronograma-estado)
   const hoy = new Date()
-  const actividades = cronograma.actividades.map(a => ({
-    ...a,
-    estado: a.pctAvance >= 100
-      ? 'Completado'
-      : a.pctAvance > 0
-        ? (new Date(a.fechaFin) < hoy ? 'Atrasado' : 'En Ejecución')
-        : (new Date(a.fechaFin) < hoy ? 'Atrasado' : 'Pendiente'),
-  }))
+  const actividades = derivarEstados(cronograma.actividades, hoy)
 
   // Alerta de desbordamiento: ¿el cronograma termina después de la fecha
   // estimada del proyecto? Avisa al usuario para que ajuste presupuesto,
