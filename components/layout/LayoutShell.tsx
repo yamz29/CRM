@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext, Suspense } from 'react'
 import { Sidebar } from './Sidebar'
 import { CommandPalette } from './CommandPalette'
+import { GlobalShortcuts } from './GlobalShortcuts'
 import { NavigationHistoryProvider } from './NavigationHistoryProvider'
 import { ModuleMemoryTracker } from './ModuleMemoryTracker'
 import { Menu } from 'lucide-react'
@@ -142,6 +143,8 @@ export function LayoutShell({
 
         {/* Búsqueda global Cmd+K / Ctrl+K — montada una vez para toda la app */}
         <CommandPalette />
+        {/* Atajos de teclado globales (g+tecla, /, ?) */}
+        <GlobalShortcuts />
       </div>
       </NavigationHistoryProvider>
     </SidebarContext.Provider>
