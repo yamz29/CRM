@@ -91,6 +91,8 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
   const soloSinPartida = filters.sinpartida === '1'
 
   const esSinPartida = (g: Gasto) => g.proyectoId != null && g.partida == null
+  // Cola de revisión (#H29): gastos aún en estado "Registrado".
+  const porRevisar = useMemo(() => gastos.filter(g => g.estado === 'Registrado').length, [gastos])
 
   const filtered = useMemo(() => {
     return gastos.filter(g => {
@@ -261,6 +263,17 @@ export function GastosPageClient({ gastosIniciales, proyectos, totalInicial, por
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+        <button
+          onClick={() => setFilters({ estado: filtroEstado === 'Registrado' ? '' : 'Registrado' })}
+          title="Gastos registrados pendientes de revisar"
+          className={`h-8 px-2.5 text-xs rounded-lg border font-medium transition-colors whitespace-nowrap ${
+            filtroEstado === 'Registrado'
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-400'
+              : 'border-border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Por revisar{porRevisar > 0 ? ` (${porRevisar})` : ''}
+        </button>
         <select value={filtroDestino} onChange={e => setFilters({ destino: e.target.value })}
           className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
           <option value="">Todos los destinos</option>
