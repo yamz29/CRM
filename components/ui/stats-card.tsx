@@ -20,7 +20,7 @@ export function StatsCard({
 }: StatsCardProps) {
   return (
     <div className={cn(
-      'rounded-xl p-5 transition-all duration-300',
+      'rounded-xl p-5 transition-[box-shadow,transform,border-color] duration-300',
       // Light mode
       'bg-card border border-border shadow-sm',
       'hover:shadow-lg hover:border-primary/20 hover:-translate-y-0.5',
