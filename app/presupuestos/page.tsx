@@ -10,6 +10,7 @@ import { Plus, Eye, Pencil, FileText, ChevronLeft, ChevronRight } from 'lucide-r
 import { DeletePresupuestoButton } from './DeletePresupuestoButton'
 import { SuccessBanner } from '@/components/ui/success-banner'
 import { PresupuestosBuscador } from './PresupuestosBuscador'
+import { PresupuestosKanban } from '@/components/presupuestos/PresupuestosKanban'
 
 const PER_PAGE = 20
 
@@ -18,6 +19,28 @@ interface SearchParams {
   msg?: string
   q?: string
   page?: string
+  vista?: string
+}
+
+async function getPresupuestosKanban(q?: string) {
+  return prisma.presupuesto.findMany({
+    where: q
+      ? {
+          OR: [
+            { numero: { contains: q, mode: 'insensitive' as const } },
+            { cliente: { nombre: { contains: q, mode: 'insensitive' as const } } },
+            { proyecto: { nombre: { contains: q, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {},
+    select: {
+      id: true, numero: true, total: true, estado: true,
+      cliente: { select: { nombre: true } },
+      proyecto: { select: { id: true, nombre: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 300,
+  })
 }
 
 async function getPresupuestos(estado?: string, q?: string, page = 1) {
@@ -76,9 +99,13 @@ export default async function PresupuestosPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { estado, msg, q, page: pageStr } = await searchParams
+  const { estado, msg, q, page: pageStr, vista: vistaRaw } = await searchParams
+  const vista = vistaRaw === 'kanban' ? 'kanban' : 'lista'
   const page = Math.max(1, parseInt(pageStr ?? '1') || 1)
-  const { presupuestos, total, totalPages } = await getPresupuestos(estado, q, page)
+  const { presupuestos, total, totalPages } = vista === 'lista'
+    ? await getPresupuestos(estado, q, page)
+    : { presupuestos: [], total: 0, totalPages: 1 }
+  const kanban = vista === 'kanban' ? await getPresupuestosKanban(q) : []
 
   return (
     <div className="space-y-6">
@@ -90,18 +117,30 @@ export default async function PresupuestosPage({
         title="Presupuestos"
         subtitle={
           <>
-            {total} {total === 1 ? 'presupuesto' : 'presupuestos'}
+            {vista === 'kanban' ? kanban.length : total} {(vista === 'kanban' ? kanban.length : total) === 1 ? 'presupuesto' : 'presupuestos'}
             {q ? ` para "${q}"` : ''}
-            {estado ? ` · ${estado}` : ''}
+            {vista === 'lista' && estado ? ` · ${estado}` : ''}
           </>
         }
         actions={
-          <Link href="/presupuestos/nuevo-v2">
-            <Button>
-              <Plus className="w-4 h-4" />
-              Nuevo Presupuesto
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <Link href={buildHref({ q, estado, vista: undefined })}
+                className={`px-3 py-1.5 text-sm font-medium ${vista === 'lista' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
+                Lista
+              </Link>
+              <Link href={buildHref({ q, vista: 'kanban' })}
+                className={`px-3 py-1.5 text-sm font-medium ${vista === 'kanban' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
+                Kanban
+              </Link>
+            </div>
+            <Link href="/presupuestos/nuevo-v2">
+              <Button>
+                <Plus className="w-4 h-4" />
+                Nuevo Presupuesto
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -111,25 +150,31 @@ export default async function PresupuestosPage({
           {/* Búsqueda */}
           <PresupuestosBuscador q={q} estado={estado} />
 
-          {/* Estado tabs */}
-          <div className="flex gap-2 flex-wrap">
-            {estadoOptions.map((opt) => (
-              <Link
-                key={opt.value}
-                href={buildHref({ estado: opt.value || undefined, q })}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  estado === opt.value || (!estado && opt.value === '')
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {opt.label}
-              </Link>
-            ))}
-          </div>
+          {/* Estado tabs (solo en vista lista) */}
+          {vista === 'lista' && (
+            <div className="flex gap-2 flex-wrap">
+              {estadoOptions.map((opt) => (
+                <Link
+                  key={opt.value}
+                  href={buildHref({ estado: opt.value || undefined, q })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    estado === opt.value || (!estado && opt.value === '')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  {opt.label}
+                </Link>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {vista === 'kanban' ? (
+        <PresupuestosKanban presupuestos={kanban} />
+      ) : (
+      <>
       {/* Table */}
       <Card>
         <CardContent className="p-0">
@@ -295,6 +340,8 @@ export default async function PresupuestosPage({
             )}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )
