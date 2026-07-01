@@ -373,6 +373,22 @@ Hallazgo de scope: `hooks/useUrlFilters.ts` ya existía (filtrado **en cliente**
 
 **Gate Fase 2:** tsc 0 · lint 0 · vitest 143/143. Verificación en navegador pendiente (clientes: buscar es instantáneo y el `?search=` queda en la URL; recursos: filtrar, refrescar, y que los filtros persistan). Cerrar con `finishing-a-development-branch`.
 
+**Fase 2 cerrada:** mergeada a `main` local y pusheada a `origin/main` (16a03bd..4e65ebb).
+
+---
+
+### Fase 3 — estado (rama `fix/ux-fase3-productividad`, sin push)
+
+Realidad de scope de **#H10 (edición inline)** tras revisar el backend:
+- ✅ **Tarea estado** — dropdown in-cell en la lista, reusa el modo `_patch` que ya usa el Kanban (`PUT /api/tareas/[id]` con `{ estado, _patch: true }`). Seguro. Commit `6398c02`.
+- ⚠️ **Recurso costo** — BLOQUEADO: `PUT /api/recursos/[id]` hace update COMPLETO (escribe todos los campos del body); mandar `{ costoUnitario }` solo corrompería datos (codigo→null, tipo→'materiales', activo→true, stock→0). Requiere un endpoint de **patch parcial** primero (tarea backend).
+- ⚠️ **Proyecto avance** — `/proyectos` es server component con cards + filtro server; el input inline exige refactor a client component (como se hizo con clientes).
+- ⚠️ **Tarea asignado** — el modo `_patch` del backend solo cubre `estado`; hay que extenderlo a `asignadoId`.
+
+Pendiente Fase 3: #H11/#H46 (bulk), #H12 (anchos responsive — el kanban `w-72 shrink-0` necesita verificación en navegador para no romper el scroll horizontal desktop), #H47 (mobile cards). Todas behavioral/visual → mejor con verificación en navegador (VPS).
+
+**Gate parcial Fase 3:** tsc 0 · lint 0.
+
 **Descubrimientos (ajustan el plan):**
 - `hooks/useUrlFilters.ts` YA EXISTE y lo usan compras/rutas/tareas → **Fase 2 es mucho más chica de lo planeado**. Auditar qué listados faltan realmente antes de reescribir nada (clientes sigue con `<form method=GET>`; recursos con filtros en useState).
 - OC `facturada` quedó `secondary` (gris) en vez de púrpura (Badge no tiene púrpura). Si se quiere conservar, añadir variante `purple` a `components/ui/badge.tsx`.
