@@ -268,7 +268,10 @@ Recomendación: hacer estos por-item con commits chicos (fáciles de revertir) y
 - ✅ #H24 — Popover "+ Crear" en header de proyecto; `/tareas/nueva` ahora lee `?proyectoId` (precarga proyecto+cliente); presupuesto via nuevo-v2?proyectoId; saltos a gastos/punchlist/bitácora.
 - ✅ #H22 — `VincularPresupuestoInline`: combobox de 1 clic para presupuestos sin conflicto; "Más opciones" abre el modal existente (conserva confirmaciones de seguridad de otro-proyecto/otro-cliente).
 - ⏸️ **#H33 DIFERIDO** — preview PDF: el builder guarda manual (no autosave) y `nuevo-v2` no tiene id; un iframe de `/imprimir` mostraría el último guardado, no las ediciones en curso. Hacerlo bien = re-render del layout A4 desde el estado en memoria del builder (reimplementar formato títulos/capítulos/partidas/APUs). Alto esfuerzo + requiere verificación visual. No shippear versión floja.
-- ⏸️ **#H23 DIFERIDO** — Gantt inline: no hay componente `<Gantt>` reutilizable (vive inline en `app/cronograma/[id]/page.tsx`). Requiere extraerlo a componente + alimentarlo con la data del proyecto. "Alto/Futuras" en el plan original.
+- ✅ #C05 — Timeline comercial en la pestaña Resumen (`TimelineProyecto`): historia cronológica con timestamps reales (proyecto creado, presupuestos, adicionales, facturas de ingreso, cierre).
+- ✅ #H19 — Tabs aplanadas: se elimina el nivel "grupo" y la sub-barra; las 10 pestañas en una sola barra (flatMap), scroll horizontal en móvil.
+
+**Fase 4 restante (siguen DIFERIDOS):** #H33 (preview PDF en vivo — re-render A4 desde estado en memoria del builder) y #H23 (Gantt inline — extraer `<Gantt>` reutilizable de `app/cronograma/[id]`). Ambos "Alto esfuerzo" + requieren verificación visual.
 
 ---
 
