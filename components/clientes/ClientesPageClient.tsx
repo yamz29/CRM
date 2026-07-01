@@ -94,6 +94,9 @@ export function ClientesPageClient({ clientes }: { clientes: Cliente[] }) {
               )}
             </div>
           ) : (
+            <>
+            {/* Desktop: tabla */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -167,6 +170,41 @@ export function ClientesPageClient({ clientes }: { clientes: Cliente[] }) {
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Móvil: tarjetas */}
+            <div className="md:hidden divide-y divide-border">
+              {filtered.map((cliente) => (
+                <div key={cliente.id} className="flex items-start justify-between gap-3 p-4">
+                  <Link href={`/clientes/${cliente.id}`} className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{cliente.nombre}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <Badge variant={tipoClienteVariant[cliente.tipoCliente] || 'default'}>
+                        {cliente.tipoCliente}
+                      </Badge>
+                      {cliente.telefono && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3" />{cliente.telefono}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {cliente._count.proyectos} proyecto{cliente._count.proyectos !== 1 ? 's' : ''}
+                      {cliente.rnc ? ` · ${cliente.rnc}` : ''}
+                    </p>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Link href={`/clientes/${cliente.id}/editar`}>
+                      <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar ${cliente.nombre}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <DeleteClienteButton id={cliente.id} nombre={cliente.nombre} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
