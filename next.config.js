@@ -16,6 +16,18 @@ const nextConfig = {
   // Next.js lee NEXT_SERVER_ACTIONS_ENCRYPTION_KEY de env vars automáticamente.
   // Definirlo en .env.server hace que los IDs de Server Actions sean estables
   // entre builds, evitando que pestañas abiertas tiren ese error tras un deploy.
+  //
+  // Rutas en plural (memoria muscular, #H04): los módulos se llaman en plural en
+  // el sidebar pero algunas rutas son singulares. Redirigimos la variante plural
+  // a la ruta real para que adivinar el plural funcione, sin renombrar carpetas.
+  async redirects() {
+    return [
+      { source: '/cronogramas', destination: '/cronograma', permanent: false },
+      { source: '/cronogramas/:path*', destination: '/cronograma/:path*', permanent: false },
+      { source: '/melaminas', destination: '/melamina', permanent: false },
+      { source: '/melaminas/:path*', destination: '/melamina/:path*', permanent: false },
+    ]
+  },
   async headers() {
     return [
       {
