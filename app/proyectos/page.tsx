@@ -203,6 +203,9 @@ export default async function ProyectosPage({
               </Link>
             </div>
           ) : (
+            <>
+            {/* Desktop: tabla */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -297,6 +300,43 @@ export default async function ProyectosPage({
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Móvil: tarjetas */}
+            <div className="md:hidden divide-y divide-border">
+              {proyectos.map((proyecto) => (
+                <div key={proyecto.id} className="flex items-start justify-between gap-3 p-4">
+                  <Link href={`/proyectos/${proyecto.id}`} className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      {proyecto.codigo && (
+                        <span className="font-mono text-xs font-semibold text-foreground bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+                          {proyecto.codigo}
+                        </span>
+                      )}
+                      <p className="text-sm font-semibold text-foreground truncate">{proyecto.nombre}</p>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <EstadoProyectoBadge estado={proyecto.estado} />
+                      <span className="text-xs text-muted-foreground">{proyecto.tipoProyecto}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground truncate">
+                      {proyecto.cliente.nombre}
+                      {proyecto.presupuestoEstimado ? ` · ${formatCurrency(proyecto.presupuestoEstimado)}` : ''}
+                      {(proyecto as any).avanceFisico > 0 ? ` · ${(proyecto as any).avanceFisico}%` : ''}
+                    </p>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Link href={`/proyectos/${proyecto.id}/editar`}>
+                      <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar ${proyecto.nombre}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <DeleteProyectoButton id={proyecto.id} nombre={proyecto.nombre} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

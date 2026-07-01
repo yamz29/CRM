@@ -148,6 +148,9 @@ export default async function PresupuestosPage({
               )}
             </div>
           ) : (
+            <>
+            {/* Desktop: tabla */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -226,6 +229,37 @@ export default async function PresupuestosPage({
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Móvil: tarjetas */}
+            <div className="md:hidden divide-y divide-border">
+              {presupuestos.map((p) => (
+                <div key={p.id} className="flex items-start justify-between gap-3 p-4">
+                  <Link href={`/presupuestos/${p.id}`} className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground truncate">{p.numero}</p>
+                      <EstadoPresupuestoBadge estado={p.estado} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground truncate">
+                      {p.cliente.nombre}{p.proyecto ? ` · ${p.proyecto.nombre}` : ''}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-foreground tabular-nums">
+                      {formatCurrency(p.total)}
+                      <span className="ml-1 text-xs font-normal text-muted-foreground">· {formatDate(p.createdAt)}</span>
+                    </p>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Link href={`/presupuestos/${p.id}/editar-v2`}>
+                      <Button variant="ghost" size="sm" title="Editar" aria-label={`Editar presupuesto ${p.numero}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <DeletePresupuestoButton id={p.id} numero={p.numero} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
