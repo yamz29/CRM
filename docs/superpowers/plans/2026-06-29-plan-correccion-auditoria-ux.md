@@ -250,6 +250,21 @@ export function EstadoBadge({ dominio, estado }: { dominio: Dominio; estado: str
 
 ---
 
+### Fase 4 — estado (rama `fix/ux-fase4-dashboard-personal`, sin push)
+
+Subdividida. Empezada por lo más aditivo/seguro (no toca pantallas existentes críticas):
+
+- ✅ **4c — #H32/#H14** `/dashboard/personal` ("Mi día"): tareas asignadas (vencidas/hoy/próximas), horas de la semana, proyectos derivados de mis tareas. Datos por `x-user-id` (`Tarea.asignadoId`, `RegistroHoras.usuarioId`). **Gastos omitidos**: no hay vínculo `GastoProyecto→usuario` en el schema (no inventar). Ítem "Mi día" agregado como primero del sidebar. Commit `e4a8435`. tsc 0 · lint 0.
+
+**Pendiente de Fase 4 (proyecto/presupuesto — más delicado, conviene verificación en navegador):**
+- 4a proyecto: #H20/#H50 (Balance hero en Resumen — restyle de la tarjeta financiera de 5 columnas), #H24 (+Crear popover en header), #H19 (aplanar doble-nav de tabs, LA MÁS RIESGOSA), #H22 (vincular presupuesto inline), #H23 (evaluar Gantt inline — `ProgramaTab` es autónomo, no enlaza a `/cronograma/[id]`).
+- 4b presupuesto: #H33 (drawer vista previa PDF en `PresupuestoV2Builder`).
+- 4c resto: #C05 (timeline comercial cliente/proyecto).
+
+Recomendación: hacer estos por-item con commits chicos (fáciles de revertir) y verificar en la VPS, porque tocan la pantalla más usada.
+
+---
+
 ## Fase 5 — Búsqueda, navegación y atajos (power users)
 
 **Cierra:** #H03, #H44, #H05, #H02, #H04.
