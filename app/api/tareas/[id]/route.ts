@@ -55,14 +55,18 @@ export const PUT = withPermiso('tareas', 'editar', async (request: NextRequest, 
       return NextResponse.json(tarea)
     }
 
-    // Patch mode: only update estado (used by Kanban drag & drop)
+    // Patch mode: actualiza solo los campos enviados (estado y/o asignadoId).
+    // Usado por el Kanban (drag & drop de estado) y por la edición inline en la
+    // lista de tareas. Los campos ausentes en el body NO se tocan.
     if (_patch) {
-      // Track fechaCompletada
-      const patchData: any = { estado }
-      if (estado === 'Completada') {
-        patchData.fechaCompletada = new Date()
-      } else {
-        patchData.fechaCompletada = null
+      const patchData: any = {}
+      if (estado !== undefined) {
+        patchData.estado = estado
+        patchData.fechaCompletada = estado === 'Completada' ? new Date() : null
+      }
+      if (asignadoId !== undefined) {
+        patchData.asignadoId =
+          asignadoId === null || asignadoId === '' ? null : Number(asignadoId)
       }
       const tarea = await prisma.tarea.update({
         where: { id },

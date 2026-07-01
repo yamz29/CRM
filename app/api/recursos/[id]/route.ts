@@ -24,6 +24,40 @@ export const PUT = withPermiso('recursos', 'editar', async (request: NextRequest
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
   try {
     const body = await request.json()
+
+    // Patch parcial (edición inline): actualiza SOLO costoUnitario, sin tocar el
+    // resto de campos. Mandar el body completo por este camino sería destructivo.
+    if (body._patch) {
+      const costoNuevo = parseFloat(body.costoUnitario)
+      if (isNaN(costoNuevo)) {
+        return NextResponse.json({ error: 'costoUnitario inválido' }, { status: 400 })
+      }
+      const previo = await prisma.recurso.findUnique({
+        where: { id },
+        select: { costoUnitario: true, codigo: true, nombre: true, unidad: true },
+      })
+      if (!previo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+      const actualizado = await prisma.recurso.update({
+        where: { id },
+        data: { costoUnitario: costoNuevo },
+      })
+      if (costoNuevo !== previo.costoUnitario) {
+        await prisma.recursoPriceHistory.create({
+          data: {
+            recursoId:      id,
+            codigoSnapshot: previo.codigo,
+            nombreSnapshot: previo.nombre,
+            precioAnterior: previo.costoUnitario,
+            precioNuevo:    costoNuevo,
+            moneda:         'DOP',
+            unidadSnapshot: previo.unidad,
+            origenCambio:   'manual',
+          },
+        })
+      }
+      return NextResponse.json(actualizado)
+    }
+
     const costoNuevo = parseFloat(body.costoUnitario) || 0
 
     // Get current price before updating
