@@ -238,7 +238,6 @@ export default async function ProyectoDetailPage({
     },
   ]
 
-  const grupoActivo = grupos.find(g => g.tabs.some(t => t.key === tab)) ?? grupos[0]
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -340,45 +339,25 @@ export default async function ProyectoDetailPage({
         )
       })()}
 
-      {/* ── Barra de grupos ── */}
+      {/* ── Tabs (una sola barra, sin doble navegación · #H19) ── */}
       <div className="border-b border-border">
         <nav className="flex gap-1 overflow-x-auto">
-          {grupos.map(g => {
-            const active = g.key === grupoActivo.key
+          {grupos.flatMap(g => g.tabs).map(t => {
+            const active = tab === t.key
             return (
-              <Link key={g.key} href={`/proyectos/${proyecto.id}?tab=${g.tabs[0].key}`}
+              <Link key={t.key} href={`/proyectos/${proyecto.id}?tab=${t.key}`}
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   active
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                }`}>
-                {g.icon && <g.icon className="w-3.5 h-3.5" />}
-                {g.label}
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
-
-      {/* ── Sub-tabs del grupo activo ── */}
-      {grupoActivo.tabs.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          {grupoActivo.tabs.map(t => {
-            const active = tab === t.key
-            return (
-              <Link key={t.key} href={`/proyectos/${proyecto.id}?tab=${t.key}`}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                 }`}>
                 {t.icon && <t.icon className="w-3.5 h-3.5" />}
                 {t.label}
               </Link>
             )
           })}
-        </div>
-      )}
+        </nav>
+      </div>
 
       {/* ── Tab content ── */}
 
