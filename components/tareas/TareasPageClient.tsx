@@ -113,6 +113,16 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
     router.refresh()
   }
 
+  // ── Reasignar tarea inline (patch parcial asignadoId) ────────────────
+  async function cambiarAsignado(id: number, asignadoId: string) {
+    await fetch(`/api/tareas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asignadoId: asignadoId === '' ? null : Number(asignadoId), _patch: true }),
+    })
+    router.refresh()
+  }
+
   // ── Drag & Drop ──────────────────────────────────────────────────────
   async function handleDrop(nuevoEstado: string) {
     const id = draggingId.current
@@ -371,8 +381,19 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                               <span className="text-muted-foreground/50 text-sm">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {tarea.asignado?.nombre || <span className="text-muted-foreground/50">-</span>}
+                          <td className="px-4 py-3">
+                            <select
+                              value={tarea.asignado?.id ?? ''}
+                              onChange={(e) => cambiarAsignado(tarea.id, e.target.value)}
+                              className="text-xs border border-border rounded-md px-2 py-1 bg-card focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer max-w-[140px]"
+                              title="Reasignar tarea"
+                              aria-label={`Asignado de ${tarea.titulo}`}
+                            >
+                              <option value="">Sin asignar</option>
+                              {usuarios.map((u) => (
+                                <option key={u.id} value={u.id}>{u.nombre}</option>
+                              ))}
+                            </select>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">

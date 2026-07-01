@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
-import { formatCurrency } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Package, Search, X, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import { DeleteRecursoButton } from '@/app/recursos/DeleteRecursoButton'
@@ -75,6 +75,20 @@ function SelectFilter({
 }
 
 export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
+  const router = useRouter()
+
+  // Guarda el costo unitario editado inline (patch parcial + historial de precio).
+  async function guardarCosto(id: number, valor: string, actual: number) {
+    const nuevo = parseFloat(valor)
+    if (isNaN(nuevo) || nuevo === actual) return
+    await fetch(`/api/recursos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _patch: true, costoUnitario: nuevo }),
+    })
+    router.refresh()
+  }
+
   // Filtros sincronizados con la URL (sobreviven refresh / botón Atrás). Los
   // wrappers homónimos preservan los call-sites existentes. (#H08)
   const [filtros, setFiltros] = useUrlFilters({
@@ -343,7 +357,19 @@ export function RecursosTable({ recursos }: { recursos: Recurso[] }) {
                     </td>
                     <td className="px-4 py-2 text-sm text-muted-foreground">{r.categoria || '—'}</td>
                     <td className="px-4 py-2 text-sm text-muted-foreground text-center">{r.unidad}</td>
-                    <td className="px-4 py-2 text-sm font-semibold text-foreground text-right">{formatCurrency(r.costoUnitario)}</td>
+                    <td className="px-4 py-2 text-right">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={r.costoUnitario}
+                        onBlur={(e) => guardarCosto(r.id, e.target.value, r.costoUnitario)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                        className="w-24 h-8 text-sm font-semibold text-right tabular-nums border border-transparent hover:border-border focus:border-border rounded-md px-2 bg-transparent focus:bg-card focus:outline-none focus:ring-2 focus:ring-ring"
+                        title="Editar costo unitario (Enter o clic fuera para guardar)"
+                        aria-label={`Costo unitario de ${r.nombre}`}
+                      />
+                    </td>
                     <td className="px-4 py-2 text-center">
                       {r.controlarStock ? (
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
