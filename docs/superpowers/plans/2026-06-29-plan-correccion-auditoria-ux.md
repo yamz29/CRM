@@ -278,7 +278,19 @@ Recomendación: hacer estos por-item con commits chicos (fáciles de revertir) y
 
 ---
 
-## Fase 5 — Búsqueda, navegación y atajos (power users)
+## Fase 5 — estado (rama `fix/ux-fase5-busqueda`, sin push)
+
+- ✅ #H03 — `/api/search` suma tareas/recursos/empleados/módulos melamina; `CommandPalette` los renderiza, "Recientes" (localStorage, helper puro `lib/recientes` con test 4/4) y acciones contextuales (ruta de proyecto → nueva tarea/presupuesto con proyectoId). Fuzzy typo-tolerante diferido (no encaja con search server-side sin cargar datasets al cliente).
+- ✅ #H44 — `GlobalShortcuts` en el shell: `g`+tecla navega, `/` abre buscador, `?` muestra ayuda de atajos; ignora inputs.
+- ✅ #H02 — `HelpFab` flotante contextual (mapa ruta→slug); `HelpDrawer` ahora controlable (open/onOpenChange/hideTrigger).
+- ✅ #H04 — redirects plural→singular en next.config (`/cronogramas`, `/melaminas`); pluralización completa diferida (churn).
+- ⏭️ #H05 — **satisfecho sin cambios**: `Breadcrumbs`+`BackButton` ya en 22 páginas; un breadcrumb global automático las duplicaría. No se agrega.
+
+Gate: tsc 0 · lint 0 · vitest (recientes 4/4). Verificación en VPS.
+
+---
+
+## Fase 5 (spec original) — Búsqueda, navegación y atajos (power users)
 
 **Cierra:** #H03, #H44, #H05, #H02, #H04.
 
