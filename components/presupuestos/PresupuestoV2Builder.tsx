@@ -704,7 +704,7 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
-  const handleSave = async () => {
+  const handleSave = async (opts?: { preview?: boolean }) => {
     setError(null)
     if (!clienteId) { setError('Selecciona un cliente antes de guardar.'); return }
     setLoading(true)
@@ -715,9 +715,17 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
         { method: mode === 'create' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
       )
       if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Error al guardar') }
+      const data = await response.json().catch(() => null)
+      const id = mode === 'create' ? data?.id : initialData?.id
       // Resetear dirty ANTES del push para que el hook no intercepte la navegación
       setDirty(false)
-      router.push(mode === 'create' ? '/presupuestos?msg=creado' : '/presupuestos?msg=actualizado')
+      if (opts?.preview && id) {
+        // Camino B: guarda y abre el PDF real en una pestaña nueva, luego lleva al detalle
+        window.open(`/presupuestos/${id}/imprimir`, '_blank', 'noopener')
+        router.push(`/presupuestos/${id}`)
+      } else {
+        router.push(mode === 'create' ? '/presupuestos?msg=creado' : '/presupuestos?msg=actualizado')
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado al guardar')
     } finally { setLoading(false) }
@@ -1248,10 +1256,16 @@ export function PresupuestoV2Builder({ clientes, proyectos, unidadesGlobales, mo
               <p className="text-2xl font-black text-foreground">{formatCurrency(grandTotal)}</p>
             </div>
           </div>
-          <Button onClick={handleSave} disabled={loading} size="lg" className="gap-2">
-            <Save className="w-4 h-4" />
-            {loading ? 'Guardando...' : mode === 'create' ? 'Crear cotización' : 'Guardar cambios'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => handleSave({ preview: true })} disabled={loading} size="lg" variant="secondary" className="gap-2">
+              <FileText className="w-4 h-4" />
+              Guardar y ver PDF
+            </Button>
+            <Button onClick={() => handleSave()} disabled={loading} size="lg" className="gap-2">
+              <Save className="w-4 h-4" />
+              {loading ? 'Guardando...' : mode === 'create' ? 'Crear cotización' : 'Guardar cambios'}
+            </Button>
+          </div>
         </div>
       </div>
 
