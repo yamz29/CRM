@@ -4,6 +4,7 @@ import { useState, useEffect, createContext, useContext, Suspense } from 'react'
 import { Sidebar } from './Sidebar'
 import { CommandPalette } from './CommandPalette'
 import { GlobalShortcuts } from './GlobalShortcuts'
+import { HelpFab } from '@/components/help/HelpFab'
 import { NavigationHistoryProvider } from './NavigationHistoryProvider'
 import { ModuleMemoryTracker } from './ModuleMemoryTracker'
 import { Menu } from 'lucide-react'
@@ -145,6 +146,8 @@ export function LayoutShell({
         <CommandPalette />
         {/* Atajos de teclado globales (g+tecla, /, ?) */}
         <GlobalShortcuts />
+        {/* Ayuda contextual flotante */}
+        <HelpFab />
       </div>
       </NavigationHistoryProvider>
     </SidebarContext.Provider>

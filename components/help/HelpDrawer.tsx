@@ -9,10 +9,17 @@ import { cn } from '@/lib/utils'
 interface Props {
   slug: string
   titulo?: string
+  /** Modo controlado (para el FAB global): el padre gestiona la visibilidad. */
+  open?: boolean
+  onOpenChange?: (v: boolean) => void
+  /** Ocultar el botón por defecto (cuando el trigger lo pone el padre). */
+  hideTrigger?: boolean
 }
 
-export function HelpDrawer({ slug, titulo }: Props) {
-  const [open, setOpen] = useState(false)
+export function HelpDrawer({ slug, titulo, open: openProp, onOpenChange, hideTrigger }: Props) {
+  const [openInterno, setOpenInterno] = useState(false)
+  const open = openProp ?? openInterno
+  const setOpen = (v: boolean) => { if (onOpenChange) onOpenChange(v); else setOpenInterno(v) }
   const [html, setHtml] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -36,16 +43,18 @@ export function HelpDrawer({ slug, titulo }: Props) {
 
   return (
     <>
-      {/* Trigger button */}
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
-        title="Ayuda"
-        aria-label="Abrir ayuda"
-      >
-        <HelpCircle className="w-4 h-4" />
-        <span className="hidden sm:inline">Ayuda</span>
-      </button>
+      {/* Trigger button (se oculta cuando el padre pone su propio trigger) */}
+      {!hideTrigger && (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
+          title="Ayuda"
+          aria-label="Abrir ayuda"
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Ayuda</span>
+        </button>
+      )}
 
       {/* Backdrop */}
       {open && (
