@@ -379,15 +379,16 @@ Hallazgo de scope: `hooks/useUrlFilters.ts` ya existía (filtrado **en cliente**
 
 ### Fase 3 — estado (rama `fix/ux-fase3-productividad`, sin push)
 
-Realidad de scope de **#H10 (edición inline)** tras revisar el backend:
-- ✅ **Tarea estado** — dropdown in-cell en la lista, reusa el modo `_patch` que ya usa el Kanban (`PUT /api/tareas/[id]` con `{ estado, _patch: true }`). Seguro. Commit `6398c02`.
-- ⚠️ **Recurso costo** — BLOQUEADO: `PUT /api/recursos/[id]` hace update COMPLETO (escribe todos los campos del body); mandar `{ costoUnitario }` solo corrompería datos (codigo→null, tipo→'materiales', activo→true, stock→0). Requiere un endpoint de **patch parcial** primero (tarea backend).
-- ⚠️ **Proyecto avance** — `/proyectos` es server component con cards + filtro server; el input inline exige refactor a client component (como se hizo con clientes).
-- ⚠️ **Tarea asignado** — el modo `_patch` del backend solo cubre `estado`; hay que extenderlo a `asignadoId`.
+**#H10 (edición inline) — COMPLETO (3 de 4 campos + endpoints seguros):**
+- ✅ **Tarea estado** — dropdown in-cell en la lista, reusa el modo `_patch` del Kanban. Commit `6398c02`.
+- ✅ **Endpoints patch parcial** — `recursos` (rama `_patch` que solo toca `costoUnitario` + historial; el PUT completo era destructivo con body parcial) y `tareas` (`_patch` extendido a `asignadoId`). Commit `576b062`.
+- ✅ **Recurso costo** — input editable (onBlur/Enter) en RecursosTable vía patch parcial. Commit `b76419f`.
+- ✅ **Tarea asignado** — dropdown "Asignado a" en la lista vía patch parcial. Commit `b76419f`.
+- ⏸️ **Proyecto avance** — DIFERIDO: `/proyectos` es grilla de cards (no tabla con columna Avance); el input inline choca con el clic-navegación de la card. Su lugar natural de edición es el detalle del proyecto (ya lo tiene). No es patrón de "columna editable".
 
 Pendiente Fase 3: #H11/#H46 (bulk), #H12 (anchos responsive — el kanban `w-72 shrink-0` necesita verificación en navegador para no romper el scroll horizontal desktop), #H47 (mobile cards). Todas behavioral/visual → mejor con verificación en navegador (VPS).
 
-**Gate parcial Fase 3:** tsc 0 · lint 0.
+**Gate Fase 3 (#H10):** tsc 0 · lint 0 · vitest 143/143.
 
 **Descubrimientos (ajustan el plan):**
 - `hooks/useUrlFilters.ts` YA EXISTE y lo usan compras/rutas/tareas → **Fase 2 es mucho más chica de lo planeado**. Auditar qué listados faltan realmente antes de reescribir nada (clientes sigue con `<form method=GET>`; recursos con filtros en useState).
