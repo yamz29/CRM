@@ -263,6 +263,13 @@ Subdividida. Empezada por lo más aditivo/seguro (no toca pantallas existentes c
 
 Recomendación: hacer estos por-item con commits chicos (fáciles de revertir) y verificar en la VPS, porque tocan la pantalla más usada.
 
+**Avance 4a/4b (rama `fix/ux-fase4-proyecto`, sin push):**
+- ✅ #H20/#H50 — Balance hero aditivo en Resumen (commit `6b54526`).
+- ✅ #H24 — Popover "+ Crear" en header de proyecto; `/tareas/nueva` ahora lee `?proyectoId` (precarga proyecto+cliente); presupuesto via nuevo-v2?proyectoId; saltos a gastos/punchlist/bitácora.
+- ✅ #H22 — `VincularPresupuestoInline`: combobox de 1 clic para presupuestos sin conflicto; "Más opciones" abre el modal existente (conserva confirmaciones de seguridad de otro-proyecto/otro-cliente).
+- ⏸️ **#H33 DIFERIDO** — preview PDF: el builder guarda manual (no autosave) y `nuevo-v2` no tiene id; un iframe de `/imprimir` mostraría el último guardado, no las ediciones en curso. Hacerlo bien = re-render del layout A4 desde el estado en memoria del builder (reimplementar formato títulos/capítulos/partidas/APUs). Alto esfuerzo + requiere verificación visual. No shippear versión floja.
+- ⏸️ **#H23 DIFERIDO** — Gantt inline: no hay componente `<Gantt>` reutilizable (vive inline en `app/cronograma/[id]/page.tsx`). Requiere extraerlo a componente + alimentarlo con la data del proyecto. "Alto/Futuras" en el plan original.
+
 ---
 
 ## Fase 5 — Búsqueda, navegación y atajos (power users)
