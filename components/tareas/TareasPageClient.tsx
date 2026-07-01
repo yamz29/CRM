@@ -4,9 +4,11 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
+import { useSelection } from '@/hooks/useSelection'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { BulkActionBar } from '@/components/ui/bulk-action-bar'
 import { formatDate } from '@/lib/utils'
 import { AlertTriangle, Pencil, List, Columns, X, Archive, ArchiveRestore } from 'lucide-react'
 import { DeleteTareaButton } from '@/app/tareas/DeleteTareaButton'
@@ -85,6 +87,37 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
     if (filtroPrioridad && t.prioridad !== filtroPrioridad) return false
     return true
   })
+
+  // ── Selección múltiple + acciones en lote (#H11) ─────────────────────
+  const sel = useSelection<number>()
+  const filteredIds = filtered.map((t) => t.id)
+  const allSelected = filteredIds.length > 0 && filteredIds.every((id) => sel.isSelected(id))
+
+  async function bulkArchivar() {
+    const archivar = !verArchivadas
+    await Promise.all([...sel.selected].map((id) =>
+      fetch(`/api/tareas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _archivar: archivar }),
+      })
+    ))
+    sel.clear()
+    router.refresh()
+  }
+
+  async function bulkEstado(estado: string) {
+    if (!estado) return
+    await Promise.all([...sel.selected].map((id) =>
+      fetch(`/api/tareas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado, _patch: true }),
+      })
+    ))
+    sel.clear()
+    router.refresh()
+  }
 
   const isVencida = (t: Tarea) =>
     t.fechaLimite &&
@@ -307,6 +340,16 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-muted/40 border-b border-border">
+                      <th className="px-4 py-3 w-10">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={() => sel.toggleAll(filteredIds)}
+                          className="cursor-pointer accent-primary"
+                          title="Seleccionar todas"
+                          aria-label="Seleccionar todas las tareas"
+                        />
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Título</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prioridad</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
@@ -320,7 +363,16 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
                     {filtered.map((tarea) => {
                       const vencida = isVencida(tarea)
                       return (
-                        <tr key={tarea.id} className={`hover:bg-muted/30 transition-colors ${vencida ? 'bg-red-500/5' : ''}`}>
+                        <tr key={tarea.id} className={`hover:bg-muted/30 transition-colors ${sel.isSelected(tarea.id) ? 'bg-primary/5' : vencida ? 'bg-red-500/5' : ''}`}>
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={sel.isSelected(tarea.id)}
+                              onChange={() => sel.toggle(tarea.id)}
+                              className="cursor-pointer accent-primary"
+                              aria-label={`Seleccionar ${tarea.titulo}`}
+                            />
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-start gap-2">
                               {vencida && <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />}
@@ -463,6 +515,28 @@ export function TareasPageClient({ tareas, usuarios }: Props) {
             )
           })}
         </div>
+      )}
+
+      {view === 'lista' && (
+        <BulkActionBar count={sel.count} onClear={sel.clear} sustantivo="tarea">
+          <select
+            defaultValue=""
+            onChange={(e) => { bulkEstado(e.target.value); e.currentTarget.value = '' }}
+            className="text-xs border border-border rounded-md px-2 py-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+            title="Cambiar estado de las seleccionadas"
+            aria-label="Marcar seleccionadas como…"
+          >
+            <option value="" disabled>Marcar como…</option>
+            {ESTADOS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <Button size="sm" variant="secondary" onClick={bulkArchivar}>
+            {verArchivadas
+              ? <><ArchiveRestore className="w-3.5 h-3.5" /> Desarchivar</>
+              : <><Archive className="w-3.5 h-3.5" /> Archivar</>}
+          </Button>
+        </BulkActionBar>
       )}
     </div>
   )
