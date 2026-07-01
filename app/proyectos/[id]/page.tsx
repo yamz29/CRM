@@ -17,7 +17,7 @@ import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
 import { EVMTab } from '@/components/proyectos/EVMTab'
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
 import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
-import { VincularPresupuestoButton } from '@/components/proyectos/VincularPresupuestoModal'
+import { VincularPresupuestoInline } from '@/components/proyectos/VincularPresupuestoInline'
 import { ConvertirEnAdicionalButton } from '@/components/proyectos/ConvertirEnAdicionalButton'
 import { CerrarProyectoButton } from '@/components/proyectos/CerrarProyectoModal'
 import { CrearEnProyecto } from '@/components/proyectos/CrearEnProyecto'
@@ -1069,7 +1069,7 @@ export default async function ProyectoDetailPage({
                 Presupuestos del Proyecto
               </CardTitle>
               <div className="flex items-center gap-2">
-                <VincularPresupuestoButton proyectoId={proyecto.id} />
+                <VincularPresupuestoInline proyectoId={proyecto.id} />
                 <Link href={`/presupuestos/nuevo?proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}>
                   <Button size="sm">
                     <Plus className="w-3.5 h-3.5" /> Nuevo presupuesto
@@ -1084,7 +1084,7 @@ export default async function ProyectoDetailPage({
                 <FileText className="w-12 h-12 text-muted-foreground/70 mb-3" />
                 <p className="text-muted-foreground text-sm">Sin presupuestos para este proyecto</p>
                 <div className="flex items-center gap-2 mt-3">
-                  <VincularPresupuestoButton proyectoId={proyecto.id} />
+                  <VincularPresupuestoInline proyectoId={proyecto.id} />
                   <Link href={`/presupuestos/nuevo?proyectoId=${proyecto.id}&clienteId=${proyecto.clienteId}`}>
                     <Button size="sm"><Plus className="w-3.5 h-3.5" /> Crear presupuesto</Button>
                   </Link>
