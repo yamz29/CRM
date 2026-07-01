@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { HorasTimer } from './HorasTimer'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -396,6 +397,20 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
     })
   }
 
+  function openCreateTimer(horaInicio: number, horas: number) {
+    setPopup({
+      mode: 'create',
+      usuarioId: currentUserId,
+      date: todayStr(),
+      horaInicio,
+      horas,
+      tipo: '',
+      proyectoId: '',
+      clienteId: '',
+      nota: '',
+    })
+  }
+
   function openEdit(r: RegistroHoras) {
     setPopup({
       mode: 'edit',
@@ -501,6 +516,8 @@ export function HorasPageClient({ registros: init, proyectos, usuarios, clientes
 
   return (
     <div>
+      {/* Cronómetro flotante (#H31) */}
+      <HorasTimer onStop={openCreateTimer} />
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-6">
         {(['grid', 'reportes'] as const).map((t) => (
