@@ -21,6 +21,7 @@ import { VincularPresupuestoInline } from '@/components/proyectos/VincularPresup
 import { ConvertirEnAdicionalButton } from '@/components/proyectos/ConvertirEnAdicionalButton'
 import { CerrarProyectoButton } from '@/components/proyectos/CerrarProyectoModal'
 import { CrearEnProyecto } from '@/components/proyectos/CrearEnProyecto'
+import { TimelineProyecto, type EventoTimeline } from '@/components/proyectos/TimelineProyecto'
 import { ReabrirProyectoButton } from '@/components/proyectos/ReabrirProyectoButton'
 import { headers } from 'next/headers'
 import { getFactorCargaSocial } from '@/lib/configuracion'
@@ -105,6 +106,14 @@ async function getGastosResumen(proyectoId: number) {
   }
 }
 
+async function getAdicionalesTimeline(proyectoId: number) {
+  return prisma.adicionalProyecto.findMany({
+    where: { proyectoId },
+    select: { id: true, numero: true, titulo: true, monto: true, estado: true, fechaPropuesta: true, fechaAprobacion: true },
+    orderBy: { fechaPropuesta: 'desc' },
+  })
+}
+
 export default async function ProyectoDetailPage({
   params,
   searchParams,
@@ -116,12 +125,13 @@ export default async function ProyectoDetailPage({
   const id = parseInt(idStr)
   if (isNaN(id)) notFound()
 
-  const [proyecto, gastosResumen, adicionalesAprobados, cobros, overheadDistribuido] = await Promise.all([
+  const [proyecto, gastosResumen, adicionalesAprobados, cobros, overheadDistribuido, adicionalesLista] = await Promise.all([
     getProyecto(id),
     getGastosResumen(id),
     getAdicionalesAprobados(id),
     getCobrosProyecto(id),
     overheadDistribuidoProyecto(id),
+    getAdicionalesTimeline(id),
   ])
   if (!proyecto) notFound()
 
@@ -131,6 +141,30 @@ export default async function ProyectoDetailPage({
 
   const tab = sp.tab ?? 'resumen'
   const { total: totalGastado, cantidad: cantidadGastos, costoHoras, costoHorasBase, totalHoras, factorCargaSocial } = gastosResumen
+
+  // ── Línea de tiempo comercial del proyecto (#C05) ──────────────────────────
+  const eventosTimeline: EventoTimeline[] = [
+    { fecha: proyecto.createdAt, tipo: 'proyecto', titulo: 'Proyecto creado' } as EventoTimeline,
+    ...proyecto.presupuestos.map((p): EventoTimeline => ({
+      fecha: p.createdAt, tipo: 'presupuesto',
+      titulo: `Presupuesto ${p.numero}`, monto: p.total,
+      estadoDominio: 'presupuesto', estado: p.estado,
+      href: `/presupuestos/${p.id}`,
+    })),
+    ...adicionalesLista.map((a): EventoTimeline => ({
+      fecha: a.fechaAprobacion ?? a.fechaPropuesta, tipo: 'adicional',
+      titulo: `Adicional ${a.numero ? a.numero + ' · ' : ''}${a.titulo}`,
+      monto: a.monto, detalle: a.estado,
+    })),
+    ...cobros.facturas.map((f): EventoTimeline => ({
+      fecha: f.fecha, tipo: 'cobro',
+      titulo: `Factura ${f.numero}`, monto: f.total,
+      estadoDominio: 'factura', estado: f.estado,
+      detalle: f.montoPagado > 0 ? `${formatCurrency(f.montoPagado)} cobrado` : undefined,
+      href: `/contabilidad/facturas/${f.id}`,
+    })),
+    ...(proyecto.fechaCierre ? [{ fecha: proyecto.fechaCierre, tipo: 'cierre', titulo: 'Proyecto cerrado' } as EventoTimeline] : []),
+  ].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
   // El overhead distribuido (porción de gastos fijos repartida a este proyecto)
   // entra en el costo real junto con los gastos directos y la mano de obra.
   const costoTotal = totalGastado + costoHoras + overheadDistribuido
@@ -1055,6 +1089,17 @@ export default async function ProyectoDetailPage({
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* ── Línea de tiempo comercial (#C05) ── */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <ListTodo className="w-4 h-4 text-muted-foreground" />
+              Línea de tiempo
+            </h3>
+          </div>
+          <TimelineProyecto eventos={eventosTimeline} />
         </div>
         </div>
       )}
