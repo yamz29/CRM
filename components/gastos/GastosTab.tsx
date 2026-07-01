@@ -10,7 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   Plus, Upload, Search, Filter, Paperclip, Pencil, Trash2,
   TrendingDown, DollarSign, Receipt, AlertTriangle, CheckCircle, Tag,
-  Columns,
+  Columns, X,
 } from 'lucide-react'
 import { GastoForm, type GastoData } from './GastoForm'
 import { ImportarGastosModal } from './ImportarGastosModal'
@@ -633,6 +633,31 @@ export function GastosTab({
           </Button>
         </div>
       </div>
+
+      {/* ── Chips de filtros activos (siempre visibles, #H28) ── */}
+      {filtroActivo && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {([
+            search && { label: `"${search}"`, clear: () => setSearch('') },
+            filtroTipo && { label: `Tipo: ${filtroTipo}`, clear: () => setFiltroTipo('') },
+            filtroMetodo && { label: `Método: ${filtroMetodo}`, clear: () => setFiltroMetodo('') },
+            filtroEstado && { label: `Estado: ${filtroEstado}`, clear: () => setFiltroEstado('') },
+            filtroCategoria && { label: `Cat: ${filtroCategoria}`, clear: () => setFiltroCategoria('') },
+            filtroDesde && { label: `Desde ${filtroDesde}`, clear: () => setFiltroDesde('') },
+            filtroHasta && { label: `Hasta ${filtroHasta}`, clear: () => setFiltroHasta('') },
+            filtroPartida && { label: 'Partida asignada', clear: () => setFiltroPartida('') },
+          ].filter(Boolean) as { label: string; clear: () => void }[]).map((c, i) => (
+            <button
+              key={i}
+              onClick={c.clear}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            >
+              {c.label} <X className="w-3 h-3" />
+            </button>
+          ))}
+          <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground ml-1">Limpiar todo</button>
+        </div>
+      )}
 
       {/* ── Filter panel ── */}
       {showFilters && (
