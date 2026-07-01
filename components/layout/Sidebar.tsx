@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
+  CalendarCheck,
   Users,
   FolderOpen,
   FileText,
@@ -302,9 +303,10 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Dashboard (visible si tiene permiso) */}
+      {/* Mi día + Dashboard (visibles si tiene permiso de dashboard) */}
       {getNivel(permisos, 'dashboard', esAdmin) !== 'ninguno' && (
-        <div className={cn('pb-1', collapsed ? 'px-1.5' : 'px-3')}>
+        <div className={cn('pb-1 space-y-1', collapsed ? 'px-1.5' : 'px-3')}>
+          <NavLink href="/dashboard/personal" label="Mi día" icon={CalendarCheck} collapsed={collapsed} onNavClick={onNavClick} />
           <NavLink href="/" label="Dashboard" icon={LayoutDashboard} collapsed={collapsed} onNavClick={onNavClick} />
         </div>
       )}
