@@ -386,9 +386,17 @@ Hallazgo de scope: `hooks/useUrlFilters.ts` ya existía (filtrado **en cliente**
 - ✅ **Tarea asignado** — dropdown "Asignado a" en la lista vía patch parcial. Commit `b76419f`.
 - ⏸️ **Proyecto avance** — DIFERIDO: `/proyectos` es grilla de cards (no tabla con columna Avance); el input inline choca con el clic-navegación de la card. Su lugar natural de edición es el detalle del proyecto (ya lo tiene). No es patrón de "columna editable".
 
-Pendiente Fase 3: #H11/#H46 (bulk), #H12 (anchos responsive — el kanban `w-72 shrink-0` necesita verificación en navegador para no romper el scroll horizontal desktop), #H47 (mobile cards). Todas behavioral/visual → mejor con verificación en navegador (VPS).
+**#H11/#H46 (acciones masivas) — primitivos + aplicado a tareas:**
+- ✅ Primitivos reutilizables: `hooks/useSelection.ts` (Set de ids) + `components/ui/bulk-action-bar.tsx` (barra flotante agnóstica, recibe acciones como children). Commit de tareas.
+- ✅ Aplicado a lista de tareas: checkbox por fila + select-all, barra con "Marcar como…" (estado en lote) y Archivar/Desarchivar en lote (Promise.all + refresh). Listo para replicar en empleados/recursos/compras (falta cablear cada lista).
 
-**Gate Fase 3 (#H10):** tsc 0 · lint 0 · vitest 143/143.
+**#H12 (responsive):** ✅ Kanban de proyectos apila columnas en móvil (`flex-col lg:flex-row`, `w-full lg:w-72`); desktop intacto. RecursosTable: scroll horizontal es ACEPTABLE per la propia auditoría ("aceptar scroll en recursos y proyectos") → sin cambio.
+
+**#H47 (mobile cards):** ✅ Patrón aditivo desktop-safe (`hidden md:block` tabla + `md:hidden` tarjetas) aplicado a `/clientes`. Listo para replicar en tareas/proyectos/empleados/gastos.
+
+**Gate Fase 3:** tsc 0 · lint 0 · vitest 143/143. Verificación en navegador/móvil pendiente (VPS): bulk en tareas (seleccionar, marcar como…, archivar), kanban apilado en móvil, tarjetas de clientes en móvil.
+
+**Estado Fase 3:** todos los hallazgos (#H10, #H11, #H12, #H47) con implementación funcional. Pendiente de escala: replicar bulk (#H11) y mobile cards (#H47) al resto de listas — mecánico, reusa los primitivos ya creados.
 
 **Descubrimientos (ajustan el plan):**
 - `hooks/useUrlFilters.ts` YA EXISTE y lo usan compras/rutas/tareas → **Fase 2 es mucho más chica de lo planeado**. Auditar qué listados faltan realmente antes de reescribir nada (clientes sigue con `<form method=GET>`; recursos con filtros en useState).
