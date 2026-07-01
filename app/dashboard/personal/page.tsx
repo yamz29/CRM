@@ -41,8 +41,10 @@ export default async function MiDiaPage() {
   const desdeLunes = (diaSemana + 6) % 7
   const semanaInicio = new Date(hoyInicio); semanaInicio.setDate(hoyInicio.getDate() - desdeLunes)
   const semanaFin = new Date(semanaInicio); semanaFin.setDate(semanaInicio.getDate() + 7)
+  // Ventana para "mis proyectos" derivados de horas registradas (últimos 90 días)
+  const desde90 = new Date(hoyInicio); desde90.setDate(hoyInicio.getDate() - 90)
 
-  const [tareas, horas] = await Promise.all([
+  const [tareas, horas, horasProyectos] = await Promise.all([
     prisma.tarea.findMany({
       where: {
         asignadoId: userId,
@@ -60,6 +62,12 @@ export default async function MiDiaPage() {
       where: { usuarioId: userId, fecha: { gte: semanaInicio, lt: semanaFin } },
       select: { horas: true },
     }),
+    prisma.registroHoras.findMany({
+      where: { usuarioId: userId, proyectoId: { not: null }, fecha: { gte: desde90 } },
+      select: { proyecto: { select: { id: true, nombre: true } } },
+      distinct: ['proyectoId'],
+      orderBy: { fecha: 'desc' },
+    }),
   ])
 
   const vencidas: TareaMia[] = []
@@ -73,10 +81,15 @@ export default async function MiDiaPage() {
 
   const totalHoras = horas.reduce((s, r) => s + r.horas, 0)
 
-  // Proyectos en los que estoy trabajando (derivado de mis tareas abiertas)
+  // Proyectos en los que estoy trabajando: mis tareas abiertas + proyectos donde
+  // registré horas en los últimos 90 días (porque no hay vínculo directo
+  // usuario↔proyecto en el modelo; el campo `responsable` es texto libre).
   const proyectosMap = new Map<number, string>()
   for (const t of tareas as TareaMia[]) {
     if (t.proyecto) proyectosMap.set(t.proyecto.id, t.proyecto.nombre)
+  }
+  for (const r of horasProyectos) {
+    if (r.proyecto) proyectosMap.set(r.proyecto.id, r.proyecto.nombre)
   }
   const misProyectos = Array.from(proyectosMap, ([id, nombre]) => ({ id, nombre }))
 
