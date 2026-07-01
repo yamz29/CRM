@@ -20,6 +20,7 @@ import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
 import { VincularPresupuestoButton } from '@/components/proyectos/VincularPresupuestoModal'
 import { ConvertirEnAdicionalButton } from '@/components/proyectos/ConvertirEnAdicionalButton'
 import { CerrarProyectoButton } from '@/components/proyectos/CerrarProyectoModal'
+import { CrearEnProyecto } from '@/components/proyectos/CrearEnProyecto'
 import { ReabrirProyectoButton } from '@/components/proyectos/ReabrirProyectoButton'
 import { headers } from 'next/headers'
 import { getFactorCargaSocial } from '@/lib/configuracion'
@@ -247,6 +248,7 @@ export default async function ProyectoDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {proyecto.estado !== 'Cerrado' && <CrearEnProyecto proyectoId={proyecto.id} />}
           {proyecto.estado === 'Cerrado' ? (
             <>
               <Link href={`/proyectos/${proyecto.id}/cierre/imprimir`} target="_blank">
