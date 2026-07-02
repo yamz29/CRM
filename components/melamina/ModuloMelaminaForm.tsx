@@ -26,6 +26,8 @@ interface Props {
     recursoTableroId?: number | null
     colorAcabado?: string | null
     observaciones?: string | null
+    cantidadPuertas?: number
+    cantidadCajones?: number
   }
 }
 
@@ -42,7 +44,7 @@ export function ModuloMelaminaForm({ tableros, tiposModulo = TIPOS_MODULO_DEFAUL
   const [colorAcabado, setColorAcabado] = useState(initialData?.colorAcabado || '')
   const [observaciones, setObservaciones] = useState(initialData?.observaciones || '')
   const [cantidadPuertas, setCantidadPuertas] = useState(() => {
-    const stored = (initialData as any)?.cantidadPuertas
+    const stored = initialData?.cantidadPuertas
     if (stored != null && stored > 0) return String(stored)
     const tipo = initialData?.tipoModulo || 'Base con puertas'
     if (tipo === 'Base con puertas' || tipo === 'Aéreo con puertas') return '2'
@@ -50,7 +52,7 @@ export function ModuloMelaminaForm({ tableros, tiposModulo = TIPOS_MODULO_DEFAUL
     return '0'
   })
   const [cantidadCajones, setCantidadCajones] = useState(() => {
-    const stored = (initialData as any)?.cantidadCajones
+    const stored = initialData?.cantidadCajones
     if (stored != null && stored > 0) return String(stored)
     const tipo = initialData?.tipoModulo || 'Base con puertas'
     if (tipo === 'Base con cajones') return '3'

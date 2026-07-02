@@ -46,7 +46,7 @@ const KANBAN_COLS = [
 
 function getPrioridadBadge(prioridad: string) {
   const map: Record<string, 'danger' | 'warning' | 'success'> = { Alta: 'danger', Media: 'warning', Baja: 'success' }
-  return <Badge variant={map[prioridad] ?? 'default' as any}>{prioridad}</Badge>
+  return <Badge variant={map[prioridad] ?? 'default'}>{prioridad}</Badge>
 }
 
 

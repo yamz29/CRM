@@ -10,10 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSmartBack } from '@/components/ui/back-button'
 import { Save, X, Loader2 } from 'lucide-react'
 
-interface Cliente {
-  id: number
-  nombre: string
-}
+import type { ClienteRef as Cliente } from '@/lib/types'
 
 interface ProyectoFormData {
   nombre: string

@@ -9,6 +9,9 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { Search, Printer, Eye, FileText, AlertTriangle, CheckCircle2, Clock, Ban, ChevronLeft, ChevronRight, Receipt } from 'lucide-react'
 import { RecibosTab } from '@/components/contabilidad/RecibosTab'
 
+// Timer del debounce de búsqueda (a nivel de módulo: un buscador por página)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
 interface Factura {
   id: number
   numero: string
@@ -71,8 +74,8 @@ export function FacturacionClient({ facturas, resumen, filtros, conteos, paginac
   function handleBusqueda(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value
     setQ(val)
-    clearTimeout((window as any)._factSearchTimer)
-    ;(window as any)._factSearchTimer = setTimeout(() => navegar({ q: val }), 400)
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => navegar({ q: val }), 400)
   }
 
   const totalCount = Object.values(conteos).reduce((s, c) => s + c, 0)

@@ -4,6 +4,10 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useCallback, useState, useTransition } from 'react'
 
+// Timer del debounce de búsqueda (a nivel de módulo: un buscador por página)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+
 interface Props {
   q?: string
   estado?: string
@@ -32,8 +36,8 @@ export function PresupuestosBuscador({ q: initialQ, estado }: Props) {
     const val = e.target.value
     setQ(val)
     // Debounce simple: solo navegar al escribir pause de 400ms
-    clearTimeout((window as any)._presSearchTimer)
-    ;(window as any)._presSearchTimer = setTimeout(() => push(val), 400)
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => push(val), 400)
   }
 
   function handleClear() {

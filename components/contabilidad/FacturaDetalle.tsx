@@ -10,43 +10,12 @@ import { formatCurrency } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 
-interface Cuenta { id: number; nombre: string; banco: string }
-interface Pago {
-  id: number; fecha: string; monto: number; metodoPago: string
-  referencia: string | null; observaciones: string | null
-  cuentaBancaria: Cuenta | null
-}
-interface ReciboResumen {
-  id: number; numero: string; fecha: string; metodoPago: string
-  referencia: string | null; observaciones: string | null
-  cuentaBancaria: Cuenta | null
-}
-interface AplicacionRecibo {
-  id: number; reciboId: number; facturaId: number; monto: number
-  createdAt: string; recibo: ReciboResumen
-}
-interface Factura {
-  id: number; numero: string; ncf: string | null; tipo: string
-  fecha: string; fechaVencimiento: string | null
-  proveedor: string | null; rncProveedor: string | null
-  clienteId: number | null; cliente: { id: number; nombre: string } | null
-  destinoTipo: string; proyectoId: number | null
-  proyecto: { id: number; nombre: string } | null
-  descripcion: string | null
-  subtotal: number
-  tasaItbis?: number
-  impuesto: number
-  propinaLegal?: number
-  otrosImpuestos?: number
-  total: number; montoPagado: number; estado: string
-  archivoUrl: string | null; driveUrl: string | null; sharepointUrl?: string | null
-  observaciones: string | null
-  esProforma?: boolean
-  presupuestoId?: number | null
-  pagos: Pago[]
-  aplicaciones?: AplicacionRecibo[]
-}
+import type { FacturaDetalleData } from '@/lib/types'
 
+type Factura = FacturaDetalleData
+type Pago = FacturaDetalleData['pagos'][number]
+type AplicacionRecibo = FacturaDetalleData['aplicaciones'][number]
+type Cuenta = { id: number; nombre: string; banco: string }
 const ESTADOS_BADGE: Record<string, { color: string; icon: React.ComponentType<{ className?: string }>; label: string }> = {
   pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, label: 'Pendiente' },
   parcial: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: ArrowRightLeft, label: 'Parcial' },

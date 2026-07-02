@@ -55,7 +55,7 @@ export default async function EditarProyectoPage({
           descripcion: proyecto.descripcion || '',
           responsable: proyecto.responsable || '',
           presupuestoEstimado: proyecto.presupuestoEstimado ? String(proyecto.presupuestoEstimado) : '',
-          avanceFisico: (proyecto as any).avanceFisico ?? 0,
+          avanceFisico: proyecto.avanceFisico,
           razonPausa: (proyecto as { razonPausa?: string | null }).razonPausa ?? '',
         }}
       />

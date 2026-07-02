@@ -11,16 +11,7 @@ import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { Search, Eye, Pencil, Users, Phone, X } from 'lucide-react'
 import { DeleteClienteButton } from '@/app/clientes/DeleteClienteButton'
 
-interface Cliente {
-  id: number
-  nombre: string
-  correo: string | null
-  telefono: string | null
-  rnc: string | null
-  tipoCliente: string
-  fuente: string
-  _count: { proyectos: number; presupuestos: number }
-}
+import type { ClienteConResumen as Cliente } from '@/lib/types'
 
 const tipoClienteVariant: Record<string, 'default' | 'info' | 'warning' | 'success'> = {
   'Particular': 'default',

@@ -11,8 +11,7 @@ import { carpetaFactura, nombreArchivoFactura } from '@/lib/factura-sp-path'
 import { initMsal, isLoggedIn, loginOneDrive } from '@/lib/onedrive'
 import { ensureFolder, uploadSmallFile, uploadLargeFile, getSharePointShareLink } from '@/lib/sharepoint'
 
-interface Cliente { id: number; nombre: string }
-interface Proyecto { id: number; nombre: string }
+import type { ClienteRef as Cliente, ProyectoRef as Proyecto } from '@/lib/types'
 interface ProveedorCat { id: number; nombre: string; rnc: string | null; telefono: string | null; condicionesPago: string | null }
 interface FacturaData {
   id?: number; numero: string; ncf: string; tipo: string

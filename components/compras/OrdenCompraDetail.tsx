@@ -40,7 +40,7 @@ interface Orden {
 }
 
 interface Proveedor { id: number; nombre: string; condicionesPago: string | null }
-interface Proyecto { id: number; nombre: string }
+import type { ProyectoRef as Proyecto } from '@/lib/types'
 
 const ESTADOS_BADGE: Record<string, { label: string; color: string }> = {
   borrador:          { label: 'Borrador',          color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },

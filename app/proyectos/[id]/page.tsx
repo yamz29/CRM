@@ -185,7 +185,7 @@ export default async function ProyectoDetailPage({
   const margen = ingresos != null && ingresos > 0 ? (utilidad! / ingresos) * 100 : null
 
   // Indicadores de ejecución
-  const avanceFisico: number = (proyecto as any).avanceFisico ?? 0
+  const avanceFisico = proyecto.avanceFisico
   const presupuestoBaseRaw = presupuestoAprobado?.total ?? proyecto.presupuestoEstimado ?? null
   // Sumamos adicionales aprobados al presupuesto base para que la ejecución
   // financiera y el forecast no penalicen el aumento legítimo del alcance
@@ -905,7 +905,7 @@ export default async function ProyectoDetailPage({
                     </div>
                   </div>
                 )}
-                {(proyecto as any).avanceFisico > 0 && (
+                {proyecto.avanceFisico > 0 && (
                   <div className="flex items-start gap-3">
                     <div className="w-4 h-4 mt-0.5 flex-shrink-0 flex items-center justify-center">
                       <div className="w-3 h-3 rounded-full border-2 border-blue-500" />
@@ -917,12 +917,12 @@ export default async function ProyectoDetailPage({
                           <div
                             className="h-full rounded-full transition-all"
                             style={{
-                              width: `${(proyecto as any).avanceFisico}%`,
-                              backgroundColor: (proyecto as any).avanceFisico === 100 ? '#22c55e' : (proyecto as any).avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                              width: `${proyecto.avanceFisico}%`,
+                              backgroundColor: proyecto.avanceFisico === 100 ? '#22c55e' : proyecto.avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
                             }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-foreground tabular-nums">{(proyecto as any).avanceFisico}%</span>
+                        <span className="text-sm font-bold text-foreground tabular-nums">{proyecto.avanceFisico}%</span>
                       </div>
                     </div>
                   </div>

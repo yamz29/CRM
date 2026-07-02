@@ -17,33 +17,17 @@ import { ConvertirCreditoRecibo } from '@/components/contabilidad/ConvertirCredi
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-interface Cliente { id: number; nombre: string }
-interface Proyecto { id: number; nombre: string }
-interface Factura {
-  id: number; numero: string; ncf: string | null; tipo: string
-  fecha: string; fechaVencimiento: string | null
-  proveedor: string | null; rncProveedor: string | null
-  clienteId: number | null; cliente: Cliente | null
-  destinoTipo: string; proyectoId: number | null; proyecto: Proyecto | null
-  descripcion: string | null
-  subtotal: number; impuesto: number; total: number; montoPagado: number
-  estado: string; archivoUrl: string | null; observaciones: string | null
-  _count: { pagos: number }
-}
-interface CuentaBancaria {
-  id: number; nombre: string; banco: string; numeroCuenta: string | null
-  tipoCuenta: string; moneda: string; saldoInicial: number; activa: boolean
-  saldoActual?: number
-}
+import type { ClienteRef, FacturaLista, CuentaBancariaConSaldo } from '@/lib/types'
+
 interface Resumen {
   totalIngresos: number; totalEgresos: number
   cobrado: number; pagado: number; porCobrar: number; porPagar: number
 }
 
 interface Props {
-  facturasIniciales: Factura[]
-  cuentasIniciales: CuentaBancaria[]
-  clientes: Cliente[]
+  facturasIniciales: FacturaLista[]
+  cuentasIniciales: CuentaBancariaConSaldo[]
+  clientes: ClienteRef[]
   resumen: Resumen
 }
 
@@ -80,7 +64,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
 
   // Modals
   const [showCuentaForm, setShowCuentaForm] = useState(false)
-  const [editingCuenta, setEditingCuenta] = useState<CuentaBancaria | null>(null)
+  const [editingCuenta, setEditingCuenta] = useState<CuentaBancariaConSaldo | null>(null)
 
   // ── Filter facturas ──
   const facturasFiltradas = facturas.filter((f) => {
@@ -480,7 +464,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
 
 // ── Cuenta Card with expandable movements ───────────────────────────────
 
-function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancaria; onEdit: () => void; onDelete: () => void }) {
+function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancariaConSaldo; onEdit: () => void; onDelete: () => void }) {
   const esTarjeta = c.tipoCuenta === 'tarjeta_credito'
   const [expanded, setExpanded] = useState(false)
   const [movimientos, setMovimientos] = useState<any[]>([])
@@ -601,7 +585,7 @@ function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancaria; o
 
 // ── Cuenta Form Inline ───────────────────────────────────────────────────
 
-function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria | null; onClose: () => void; onSaved: () => void }) {
+function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancariaConSaldo | null; onClose: () => void; onSaved: () => void }) {
   const [nombre, setNombre] = useState(cuenta?.nombre || '')
   const [banco, setBanco] = useState(cuenta?.banco || '')
   const [numeroCuenta, setNumeroCuenta] = useState(cuenta?.numeroCuenta || '')
@@ -681,7 +665,7 @@ function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria
 
 // ── Conciliación Tab ─────────────────────────────────────────────────────
 
-function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancaria[]; clientes: Cliente[] }) {
+function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancariaConSaldo[]; clientes: ClienteRef[] }) {
   const toast = useToast()
   const [cuentaId, setCuentaId] = useState(cuentas[0]?.id?.toString() || '')
   const [movimientos, setMovimientos] = useState<any[]>([])
@@ -1270,7 +1254,7 @@ function MovimientoForm({ cuentaId, onClose, onSaved }: { cuentaId: number; onCl
 // ── Transferencia Form ──────────────────────────────────────────────────
 
 function TransferenciaForm({ cuentas, cuentaOrigenId, onClose, onSaved }: {
-  cuentas: CuentaBancaria[]; cuentaOrigenId: string; onClose: () => void; onSaved: () => void
+  cuentas: CuentaBancariaConSaldo[]; cuentaOrigenId: string; onClose: () => void; onSaved: () => void
 }) {
   const [origenId, setOrigenId] = useState(cuentaOrigenId)
   const [destinoId, setDestinoId] = useState('')

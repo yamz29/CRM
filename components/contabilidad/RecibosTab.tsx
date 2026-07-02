@@ -12,21 +12,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 interface ClienteSimple { id: number; nombre: string }
 interface CuentaSimple  { id: number; nombre: string }
 
-interface Recibo {
-  id: number
-  numero: string
-  clienteId: number
-  fecha: string
-  monto: number
-  montoAplicado: number
-  estado: 'sin_aplicar' | 'parcial' | 'aplicado' | 'anulado'
-  metodoPago: string
-  referencia: string | null
-  observaciones: string | null
-  cliente: { id: number; nombre: string }
-  cuentaBancaria: { id: number; nombre: string } | null
-  _count: { aplicaciones: number }
-}
+import type { ReciboLista as Recibo } from '@/lib/types'
 
 interface FacturaPendiente {
   id: number

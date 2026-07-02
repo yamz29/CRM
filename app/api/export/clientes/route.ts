@@ -12,7 +12,7 @@ export const GET = withPermiso('clientes', 'ver', async () => {
   const rows = clientes.map(c => ({
     'ID':           c.id,
     'Nombre':       c.nombre,
-    'RNC / Cédula': (c as any).rnc ?? '',
+    'RNC / Cédula': c.rnc ?? '',
     'Teléfono':     c.telefono ?? '',
     'WhatsApp':     c.whatsapp ?? '',
     'Correo':       c.correo ?? '',

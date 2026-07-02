@@ -13,7 +13,7 @@ import { useSelection } from '@/hooks/useSelection'
 import { BulkActionBar } from '@/components/ui/bulk-action-bar'
 
 interface Proveedor { id: number; nombre: string; condicionesPago: string | null }
-interface Proyecto { id: number; nombre: string }
+import type { ProyectoRef as Proyecto } from '@/lib/types'
 interface Orden {
   id: number
   numero: string

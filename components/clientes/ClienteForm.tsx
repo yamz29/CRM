@@ -35,7 +35,7 @@ export function ClienteForm({ initialData, mode = 'create' }: ClienteFormProps) 
 
   const [formData, setFormData] = useState<ClienteFormData>({
     nombre:      initialData?.nombre      || '',
-    rnc:         (initialData as any)?.rnc || '',
+    rnc:         initialData?.rnc || '',
     telefono:    initialData?.telefono    || '',
     whatsapp:    initialData?.whatsapp    || '',
     correo:      initialData?.correo      || '',

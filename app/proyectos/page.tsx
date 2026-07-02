@@ -264,18 +264,18 @@ export default async function ProyectosPage({
                         : '-'}
                     </TableCell>
                     <TableCell>
-                      {(proyecto as any).avanceFisico > 0 ? (
+                      {proyecto.avanceFisico > 0 ? (
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
                             <div
                               className="h-full rounded-full"
                               style={{
-                                width: `${(proyecto as any).avanceFisico}%`,
-                                backgroundColor: (proyecto as any).avanceFisico === 100 ? '#22c55e' : (proyecto as any).avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
+                                width: `${proyecto.avanceFisico}%`,
+                                backgroundColor: proyecto.avanceFisico === 100 ? '#22c55e' : proyecto.avanceFisico >= 50 ? '#3b82f6' : '#f59e0b',
                               }}
                             />
                           </div>
-                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{(proyecto as any).avanceFisico}%</span>
+                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{proyecto.avanceFisico}%</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground/50 text-sm">—</span>
@@ -322,7 +322,7 @@ export default async function ProyectosPage({
                     <p className="mt-1 text-xs text-muted-foreground truncate">
                       {proyecto.cliente.nombre}
                       {proyecto.presupuestoEstimado ? ` · ${formatCurrency(proyecto.presupuestoEstimado)}` : ''}
-                      {(proyecto as any).avanceFisico > 0 ? ` · ${(proyecto as any).avanceFisico}%` : ''}
+                      {proyecto.avanceFisico > 0 ? ` · ${proyecto.avanceFisico}%` : ''}
                     </p>
                   </Link>
                   <div className="flex shrink-0 items-center gap-1">
