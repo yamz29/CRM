@@ -1,66 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withPermiso } from '@/lib/with-permiso'
+import { apiHandler, ApiError } from '@/lib/api-handler'
+import { PeriodoNominaUpdateSchema } from '@/lib/api-schemas'
 
-type Ctx = { params: Promise<{ id: string }> }
-
-export const GET = withPermiso('nomina', 'ver', async (_request: NextRequest, { params }: Ctx) => {
-  const { id: idStr } = await params
-  const id = parseInt(idStr)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
-  try {
-    const periodo = await prisma.periodoNomina.findUnique({
-      where: { id },
-      include: {
-        lineas: {
-          include: { empleado: true },
-          orderBy: { id: 'asc' },
-        },
+export const GET = apiHandler({ modulo: 'nomina', nivel: 'ver' }, async (_req, ctx) => {
+  const periodo = await prisma.periodoNomina.findUnique({
+    where: { id: ctx.id },
+    include: {
+      lineas: {
+        include: { empleado: true },
+        orderBy: { id: 'asc' },
       },
-    })
-    if (!periodo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
-    return NextResponse.json(periodo)
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Error al obtener período' }, { status: 500 })
-  }
+    },
+  })
+  if (!periodo) throw new ApiError(404, 'No encontrado')
+  return NextResponse.json(periodo)
 })
 
-export const PUT = withPermiso('nomina', 'editar', async (request: NextRequest, { params }: Ctx) => {
-  const { id: idStr } = await params
-  const id = parseInt(idStr)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
-  try {
-    const body = await request.json()
+export const PUT = apiHandler(
+  { modulo: 'nomina', nivel: 'editar', schema: PeriodoNominaUpdateSchema },
+  async (_req, ctx) => {
     const data: Record<string, unknown> = {}
-    if (body.estado !== undefined) data.estado = body.estado
-    if (body.fechaPago !== undefined) data.fechaPago = body.fechaPago ? new Date(body.fechaPago) : null
+    if (ctx.body.estado !== undefined) data.estado = ctx.body.estado
+    if (ctx.body.fechaPago !== undefined) data.fechaPago = ctx.body.fechaPago
 
-    const periodo = await prisma.periodoNomina.update({ where: { id }, data })
+    const periodo = await prisma.periodoNomina.update({ where: { id: ctx.id }, data })
     return NextResponse.json(periodo)
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Error al actualizar período' }, { status: 500 })
-  }
-})
+  },
+)
 
-export const DELETE = withPermiso('nomina', 'editar', async (_request: NextRequest, { params }: Ctx) => {
-  const { id: idStr } = await params
-  const id = parseInt(idStr)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
-  try {
-    const periodo = await prisma.periodoNomina.findUnique({ where: { id } })
-    if (!periodo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
-    if (periodo.estado !== 'Borrador') {
-      return NextResponse.json({ error: 'Solo se pueden eliminar períodos en Borrador' }, { status: 400 })
-    }
-    await prisma.periodoNomina.delete({ where: { id } })
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Error al eliminar período' }, { status: 500 })
+export const DELETE = apiHandler({ modulo: 'nomina', nivel: 'editar' }, async (_req, ctx) => {
+  const periodo = await prisma.periodoNomina.findUnique({ where: { id: ctx.id } })
+  if (!periodo) throw new ApiError(404, 'No encontrado')
+  if (periodo.estado !== 'Borrador') {
+    throw new ApiError(400, 'Solo se pueden eliminar períodos en Borrador')
   }
+  await prisma.periodoNomina.delete({ where: { id: ctx.id } })
+  return NextResponse.json({ success: true })
 })

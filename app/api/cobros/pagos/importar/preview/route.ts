@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { withPermiso } from '@/lib/with-permiso'
+import { NextResponse } from 'next/server'
+import { apiHandler, ApiError } from '@/lib/api-handler'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
 import {
@@ -13,14 +13,14 @@ import {
  * Parsea y valida cada fila contra las facturas de ingreso y cuentas activas.
  * NO registra nada — devuelve { filas, totales } para que el usuario revise.
  */
-export const POST = withPermiso('contabilidad', 'editar', async (req: NextRequest) => {
+export const POST = apiHandler({ modulo: 'contabilidad', nivel: 'editar' }, async (req) => {
   const formData = await req.formData().catch(() => null)
   const file = formData?.get('archivo') as File | null
   if (!file || file.size === 0) {
-    return NextResponse.json({ error: 'No se proporcionó archivo' }, { status: 400 })
+    throw new ApiError(400, 'No se proporcionó archivo')
   }
   if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Archivo demasiado grande (máx 5 MB)' }, { status: 400 })
+    throw new ApiError(400, 'Archivo demasiado grande (máx 5 MB)')
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
@@ -28,11 +28,11 @@ export const POST = withPermiso('contabilidad', 'editar', async (req: NextReques
   try {
     workbook = XLSX.read(buffer, { type: 'buffer' })
   } catch {
-    return NextResponse.json({ error: 'No se pudo leer el archivo. Verifica que sea Excel o CSV válido.' }, { status: 400 })
+    throw new ApiError(400, 'No se pudo leer el archivo. Verifica que sea Excel o CSV válido.')
   }
 
   const sheetName = workbook.SheetNames[0]
-  if (!sheetName) return NextResponse.json({ error: 'El archivo no tiene hojas' }, { status: 400 })
+  if (!sheetName) throw new ApiError(400, 'El archivo no tiene hojas')
   const rows: FilaRaw[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' })
 
   // ── Cargar lookups ──

@@ -1,24 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withPermiso } from '@/lib/with-permiso'
+import { apiHandler, ApiError } from '@/lib/api-handler'
 import * as XLSX from 'xlsx'
-
-type Ctx = { params: Promise<{ id: string }> }
 
 function esAdmin(req: NextRequest) {
   return req.headers.get('x-user-rol') === 'Admin'
 }
 
-export const GET = withPermiso('nomina', 'ver', async (request: NextRequest, { params }: Ctx) => {
-  const { id: idStr } = await params
-  const id = parseInt(idStr)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
+export const GET = apiHandler({ modulo: 'nomina', nivel: 'ver' }, async (request, ctx) => {
   const periodo = await prisma.periodoNomina.findUnique({
-    where: { id },
+    where: { id: ctx.id },
     include: { lineas: { include: { empleado: true }, orderBy: { id: 'asc' } } },
   })
-  if (!periodo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  if (!periodo) throw new ApiError(404, 'No encontrado')
 
   const admin = esAdmin(request)
   const inicio = periodo.fechaInicio.toISOString().slice(0, 10)

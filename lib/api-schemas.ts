@@ -237,3 +237,81 @@ export const ProyectoUpdateSchema = z.object({
   razonPausa: textoOpcional,
 })
 export type ProyectoUpdate = z.infer<typeof ProyectoUpdateSchema>
+
+// ── Cobros / Recibos ─────────────────────────────────────────────────────
+
+const AplicacionSchema = z.object({
+  facturaId: z.coerce.number().int().positive(),
+  monto: z.coerce.number().positive(),
+})
+
+export const ReciboCreateSchema = z.object({
+  clienteId: z.coerce.number({ message: 'Cliente requerido' }).int().positive({ message: 'Cliente requerido' }),
+  monto: z.coerce.number({ message: 'Monto debe ser mayor a 0' }).positive({ message: 'Monto debe ser mayor a 0' }),
+  fecha: fechaOpcional,
+  metodoPago: z.string().trim().max(50).default('Transferencia'),
+  cuentaBancariaId: fkOpcional,
+  referencia: textoOpcional,
+  observaciones: textoOpcional,
+  aplicaciones: z.array(AplicacionSchema).default([]),
+})
+export type ReciboCreate = z.infer<typeof ReciboCreateSchema>
+
+export const ReciboDesdeMovimientoSchema = z.object({
+  movimientoId: z.coerce.number({ message: 'movimientoId requerido' }).int().positive({ message: 'movimientoId requerido' }),
+  clienteId: z.coerce.number({ message: 'clienteId requerido y debe ser positivo' }).int().positive({ message: 'clienteId requerido y debe ser positivo' }),
+  aplicaciones: z.array(AplicacionSchema).default([]),
+})
+export type ReciboDesdeMovimiento = z.infer<typeof ReciboDesdeMovimientoSchema>
+
+export const AplicarReciboSchema = z.object({
+  aplicaciones: z.array(AplicacionSchema).min(1, 'No hay aplicaciones'),
+})
+export type AplicarRecibo = z.infer<typeof AplicarReciboSchema>
+
+export const ImportarRecibosSchema = z.object({
+  filas: z
+    .array(
+      z.object({
+        facturaId: z.number().int().positive({ message: 'Una fila no tiene factura válida' }),
+        clienteId: z.number().int().positive({ message: 'Falta el cliente (requerido para crear el recibo)' }),
+        fecha: z.string().min(1, 'Fecha vacía'),
+        monto: z.number().positive({ message: 'Monto inválido' }),
+        metodoPago: z.string().optional().nullable(),
+        cuentaBancariaId: z.number().int().positive().optional().nullable(),
+        referencia: z.string().optional().nullable(),
+        observaciones: z.string().optional().nullable(),
+      }),
+    )
+    .min(1, 'No hay filas para importar')
+    .max(500, 'Demasiadas filas (máx 500 por importación)'),
+})
+export type ImportarRecibos = z.infer<typeof ImportarRecibosSchema>
+
+// ── Nómina ───────────────────────────────────────────────────────────────
+
+export const PeriodoNominaCreateSchema = z.object({
+  fechaInicio: z.coerce.date({ message: 'Fecha de inicio y fin son obligatorias' }),
+  fechaFin: z.coerce.date({ message: 'Fecha de inicio y fin son obligatorias' }),
+})
+export type PeriodoNominaCreate = z.infer<typeof PeriodoNominaCreateSchema>
+
+export const PeriodoNominaUpdateSchema = z.object({
+  estado: z.string().trim().max(50).optional(),
+  fechaPago: fechaOpcional,
+})
+export type PeriodoNominaUpdate = z.infer<typeof PeriodoNominaUpdateSchema>
+
+/** Campos numéricos de línea: ausente = no tocar; '' = 0 (limpiar el input equivale a cero). */
+const montoLineaNomina = z.preprocess(
+  (v) => (v === undefined ? undefined : v === '' || v === null ? 0 : typeof v === 'number' ? v : Number(v)),
+  z.number().finite().optional(),
+)
+
+export const LineaNominaUpdateSchema = z.object({
+  horasExtra: montoLineaNomina,
+  bonificaciones: montoLineaNomina,
+  otrosDescuentos: montoLineaNomina,
+  motivoDescuento: textoOpcional,
+})
+export type LineaNominaUpdate = z.infer<typeof LineaNominaUpdateSchema>

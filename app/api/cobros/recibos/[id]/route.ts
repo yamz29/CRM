@@ -1,22 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { checkPermiso } from '@/lib/permisos'
+import { apiHandler, ApiError } from '@/lib/api-handler'
 
-type Ctx = { params: Promise<{ id: string }> }
-
-export async function GET(request: NextRequest, { params }: Ctx) {
-  const denied = await checkPermiso(request, 'contabilidad', 'ver')
-  if (denied) return denied
-  const id = parseInt((await params).id)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+export const GET = apiHandler({ modulo: 'contabilidad', nivel: 'ver' }, async (_req, ctx) => {
   const recibo = await prisma.recibo.findUnique({
-    where: { id },
+    where: { id: ctx.id },
     include: {
       cliente: { select: { id: true, nombre: true } },
       cuentaBancaria: { select: { id: true, nombre: true } },
       aplicaciones: { include: { factura: { select: { id: true, numero: true, total: true, montoPagado: true } } } },
     },
   })
-  if (!recibo) return NextResponse.json({ error: 'Recibo no encontrado' }, { status: 404 })
+  if (!recibo) throw new ApiError(404, 'Recibo no encontrado')
   return NextResponse.json(recibo)
-}
+})

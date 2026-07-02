@@ -393,7 +393,7 @@ Melamina:
 
 | Área | Situación |
 |---|---|
-| Validación de inputs | Zod **parcial**, en expansión: `lib/api-handler.ts` (`apiHandler`, estándar desde 2026-07) compone permisos + Zod + traducción de errores (400/404/409). Migradas: gastos, contabilidad/cuentas, contabilidad/facturas, proyectos/[id]. Resto de rutas (nómina, cobros, etc.) pendiente — migrar al tocar |
+| Validación de inputs | Zod **parcial**, en expansión: `lib/api-handler.ts` (`apiHandler`, estándar desde 2026-07) compone permisos + Zod + traducción de errores (400/404/409). Migradas: gastos, contabilidad/cuentas, contabilidad/facturas, proyectos/[id], cobros/recibos, cobros/pagos/importar, nomina/periodos (todo el dinero). Resto de rutas pendiente — migrar al tocar |
 | Tests | Unitarios con Vitest en `lib/__tests__/` (utilidades puras). Sin integración/E2E ni tests de rutas API |
 | Precisión monetaria | Campos de dinero en `Float` (IEEE-754) → riesgo de redondeo acumulativo. Migración a `Decimal` pendiente; bloqueada por el mismatch de provider de BD |
 | Roles y permisos | Permisos por usuario/módulo (ninguno/ver/editar/admin) con plantillas de rol; el campo `Usuario.rol` sigue siendo informativo (no hay jerarquía de roles más allá de "Admin") |
