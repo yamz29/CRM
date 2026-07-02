@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { Badge } from '@/components/ui/badge'
+import { variantDeEstado, etiquetaDeEstado } from '@/lib/estados'
 
 import type { FacturaDetalleData } from '@/lib/types'
 
@@ -16,11 +18,9 @@ type Factura = FacturaDetalleData
 type Pago = FacturaDetalleData['pagos'][number]
 type AplicacionRecibo = FacturaDetalleData['aplicaciones'][number]
 type Cuenta = { id: number; nombre: string; banco: string }
-const ESTADOS_BADGE: Record<string, { color: string; icon: React.ComponentType<{ className?: string }>; label: string }> = {
-  pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock, label: 'Pendiente' },
-  parcial: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: ArrowRightLeft, label: 'Parcial' },
-  pagada: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2, label: 'Pagada' },
-  anulada: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle, label: 'Anulada' },
+// Colores y etiquetas de estado: lib/estados.ts (dominio 'factura'). Aca solo el icono.
+const ESTADO_ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
+  pendiente: Clock, parcial: ArrowRightLeft, pagada: CheckCircle2, anulada: XCircle,
 }
 
 function fileUrl(archivoUrl: string | null) {
@@ -50,8 +50,7 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
     ? (factura.aplicaciones ?? []).reduce((s, a) => s + a.monto, 0)
     : factura.pagos.reduce((s, p) => s + p.monto, 0)
   const saldoPendiente = Math.max(0, factura.total - totalPagado)
-  const badge = ESTADOS_BADGE[factura.estado] || ESTADOS_BADGE.pendiente
-  const BadgeIcon = badge.icon
+  const BadgeIcon = ESTADO_ICONO[factura.estado] ?? Clock
 
   const handleAnular = () => {
     setConfirmacion({
@@ -136,9 +135,9 @@ export function FacturaDetalle({ factura: initialFactura, cuentas }: { factura: 
               <h1 className="text-xl font-bold text-foreground">
                 {factura.esProforma ? 'Proforma' : 'Factura'} #{factura.numero}
               </h1>
-              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-                <BadgeIcon className="w-3 h-3" /> {badge.label}
-              </span>
+              <Badge variant={variantDeEstado('factura', factura.estado)} className="gap-1">
+                <BadgeIcon className="w-3 h-3" /> {etiquetaDeEstado('factura', factura.estado)}
+              </Badge>
               {factura.esProforma && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
                   PROFORMA (sin NCF)

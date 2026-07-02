@@ -10,7 +10,7 @@ type Variant = NonNullable<BadgeProps['variant']>
  * inline (`bg-green-100 text-green-700`...) dispersas por los listados.
  * Valores verificados contra prisma/schema.prisma (defaults + comentarios).
  */
-export type Dominio = 'proyecto' | 'presupuesto' | 'oc' | 'tarea' | 'ruta' | 'gasto' | 'factura'
+export type Dominio = 'proyecto' | 'presupuesto' | 'oc' | 'tarea' | 'ruta' | 'gasto' | 'factura' | 'recibo'
 
 const MAPAS: Record<Dominio, Record<string, Variant>> = {
   // Proyecto.estado — schema:43
@@ -67,6 +67,13 @@ const MAPAS: Record<Dominio, Record<string, Variant>> = {
     'anulada': 'danger',
     'vencida': 'danger',
   },
+  // Recibo.estado (sin_aplicar|parcial|aplicado|anulado)
+  recibo: {
+    'sin_aplicar': 'warning',
+    'parcial': 'info',
+    'aplicado': 'success',
+    'anulado': 'danger',
+  },
 }
 
 /**
@@ -96,6 +103,12 @@ const ETIQUETAS: Partial<Record<Dominio, Record<string, string>>> = {
     'pagada': 'Pagada',
     'anulada': 'Anulada',
     'vencida': 'Vencida',
+  },
+  recibo: {
+    'sin_aplicar': 'Sin aplicar',
+    'parcial': 'Parcial',
+    'aplicado': 'Aplicado',
+    'anulado': 'Anulado',
   },
 }
 

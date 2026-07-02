@@ -5,6 +5,9 @@ import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, Cre
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { variantDeEstado, etiquetaDeEstado } from '@/lib/estados'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -30,11 +33,9 @@ interface Props {
 
 // ── Badge config ─────────────────────────────────────────────────────────
 
-const ESTADO_CONFIG: Record<string, { color: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  sin_aplicar: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', label: 'Sin aplicar', icon: Clock },
-  parcial:     { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',    label: 'Parcial',     icon: Clock },
-  aplicado:    { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', label: 'Aplicado',   icon: CheckCircle2 },
-  anulado:     { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',         label: 'Anulado',    icon: Ban },
+// Colores y etiquetas de estado: lib/estados.ts (dominio 'recibo'). Aca solo el icono.
+const ESTADO_ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
+  sin_aplicar: Clock, parcial: Clock, aplicado: CheckCircle2, anulado: Ban,
 }
 
 const METODOS_PAGO = ['Transferencia', 'Efectivo', 'Cheque', 'Tarjeta'] as const
@@ -456,14 +457,13 @@ export function RecibosTab({ clientes, cuentas }: Props) {
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {(['sin_aplicar', 'parcial', 'aplicado', 'anulado'] as const).map(estado => {
-          const cfg = ESTADO_CONFIG[estado]
-          const Icon = cfg.icon
+          const Icon = ESTADO_ICONO[estado]
           const count = recibos.filter(r => r.estado === estado).length
           const total = recibos.filter(r => r.estado === estado).reduce((s, r) => s + r.monto, 0)
           return (
             <div key={estado} className="bg-card border border-border rounded-xl px-4 py-3">
               <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                <Icon className="w-3 h-3" /> {cfg.label}
+                <Icon className="w-3 h-3" /> {etiquetaDeEstado('recibo', estado)}
               </p>
               <p className="text-xl font-bold mt-0.5">{count}</p>
               <p className="text-xs text-muted-foreground">{formatCurrency(total)}</p>
@@ -487,7 +487,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
             className="h-8 text-xs border border-border rounded-lg px-2 bg-input text-foreground">
             <option value="">Todos los estados</option>
             {(['sin_aplicar', 'parcial', 'aplicado', 'anulado'] as const).map(es => (
-              <option key={es} value={es}>{ESTADO_CONFIG[es].label}</option>
+              <option key={es} value={es}>{etiquetaDeEstado('recibo', es)}</option>
             ))}
           </select>
           <select value={fCliente} onChange={e => setFCliente(e.target.value)}
@@ -517,10 +517,11 @@ export function RecibosTab({ clientes, cuentas }: Props) {
             <RefreshCw className="w-4 h-4 animate-spin" /> Cargando recibos...
           </div>
         ) : recibos.length === 0 ? (
-          <div className="flex flex-col items-center py-16 text-center">
-            <Receipt className="w-12 h-12 text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground text-sm">No hay recibos registrados. Crea el primero con &quot;Nuevo recibo&quot;.</p>
-          </div>
+          <EmptyState
+            icon={Receipt}
+            titulo="No hay recibos registrados"
+            descripcion="Registra el primer cobro con &quot;Nuevo recibo&quot; o importalos desde Excel."
+          />
         ) : recibosFiltrados.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <Search className="w-12 h-12 text-muted-foreground/40 mb-3" />
@@ -545,8 +546,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
               </thead>
               <tbody className="divide-y divide-border">
                 {recibosFiltrados.map(r => {
-                  const cfg = ESTADO_CONFIG[r.estado] ?? ESTADO_CONFIG.sin_aplicar
-                  const Icon = cfg.icon
+                  const Icon = ESTADO_ICONO[r.estado] ?? Clock
                   const saldo = r.monto - r.montoAplicado
                   const puedeAplicar = saldo > 0.01 && r.estado !== 'anulado'
                   return (
@@ -566,9 +566,9 @@ export function RecibosTab({ clientes, cuentas }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium ${cfg.color}`}>
-                          <Icon className="w-3 h-3" /> {cfg.label}
-                        </span>
+                        <Badge variant={variantDeEstado('recibo', r.estado)} className="gap-1 text-2xs">
+                          <Icon className="w-3 h-3" /> {etiquetaDeEstado('recibo', r.estado)}
+                        </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{r.cuentaBancaria?.nombre ?? '—'}</td>
                       <td className="px-4 py-3">

@@ -6,6 +6,33 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 /**
+ * Esqueleto genérico para páginas de detalle (breadcrumbs + cabecera +
+ * stat cards + tabs + contenido). Se usa desde los loading.tsx de las
+ * rutas [id] (auditoría F4: antes navegar a un detalle no daba feedback).
+ */
+export function DetailPageSkeleton() {
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <Skeleton className="h-4 w-64" />
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-72" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <Skeleton className="h-10 w-28" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-10 w-full max-w-md" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  )
+}
+
+/**
  * Esqueleto genérico para páginas de lista (cabecera + filtros + tabla).
  * Se usa desde los loading.tsx de cada ruta.
  */

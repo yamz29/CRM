@@ -13,6 +13,10 @@ import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
 import { InformeEconomico } from '@/components/contabilidad/InformeEconomico'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { variantDeEstado, etiquetaDeEstado } from '@/lib/estados'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { ConvertirCreditoRecibo } from '@/components/contabilidad/ConvertirCreditoRecibo'
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -33,11 +37,9 @@ interface Props {
 
 type Tab = 'dashboard' | 'resultado' | 'facturas' | 'cuentas' | 'conciliacion' | 'proveedores'
 
-const ESTADOS_BADGE: Record<string, { color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  pendiente: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
-  parcial: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: ArrowRightLeft },
-  pagada: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle2 },
-  anulada: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: XCircle },
+// Colores y etiquetas de estado: lib/estados.ts (dominio 'factura'). Aca solo el icono.
+const ESTADO_ICONO: Record<string, React.ComponentType<{ className?: string }>> = {
+  pendiente: Clock, parcial: ArrowRightLeft, pagada: CheckCircle2, anulada: XCircle,
 }
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -45,7 +47,10 @@ const ESTADOS_BADGE: Record<string, { color: string; icon: React.ComponentType<{
 export function ContabilidadClient({ facturasIniciales, cuentasIniciales, clientes, resumen }: Props) {
   const router = useRouter()
   const toast = useToast()
-  const [tab, setTab] = useState<Tab>('dashboard')
+  // Tab activa persistida en la URL (?tab=): F5 y enlaces compartidos la conservan
+  const [urlFilters, setUrlFilters] = useUrlFilters({ tab: 'dashboard' })
+  const tab = urlFilters.tab as Tab
+  const setTab = (t: Tab) => setUrlFilters({ tab: t })
   const [facturas, setFacturas] = useState(facturasIniciales)
   const [cuentas, setCuentas] = useState(cuentasIniciales)
 
@@ -218,8 +223,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
             <h3 className="font-semibold text-foreground mb-4">Facturas recientes</h3>
             <div className="space-y-2">
               {facturas.slice(0, 10).map((f) => {
-                const badge = ESTADOS_BADGE[f.estado] || ESTADOS_BADGE.pendiente
-                const BadgeIcon = badge.icon
+                const BadgeIcon = ESTADO_ICONO[f.estado] ?? Clock
                 return (
                   <Link key={f.id} href={`/contabilidad/facturas/${f.id}`}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/40 transition-colors"
@@ -239,16 +243,21 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                        <BadgeIcon className="w-3 h-3" /> {f.estado}
-                      </span>
+                      <Badge variant={variantDeEstado('factura', f.estado)} className="gap-1">
+                        <BadgeIcon className="w-3 h-3" /> {etiquetaDeEstado('factura', f.estado)}
+                      </Badge>
                       <span className="text-sm font-semibold tabular-nums">{formatCurrency(f.total)}</span>
                     </div>
                   </Link>
                 )
               })}
               {facturas.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">No hay facturas registradas</p>
+                <EmptyState
+                  compacto
+                  icon={FileText}
+                  titulo="No hay facturas registradas"
+                  accion={{ label: 'Nueva Factura', href: '/contabilidad/facturas/nueva', icono: Plus }}
+                />
               )}
             </div>
           </div>
@@ -353,8 +362,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
               </TableHeader>
               <TableBody>
                 {facturasFiltradas.map((f) => {
-                  const badge = ESTADOS_BADGE[f.estado] || ESTADOS_BADGE.pendiente
-                  const BadgeIcon = badge.icon
+                  const BadgeIcon = ESTADO_ICONO[f.estado] ?? Clock
                   return (
                     <TableRow key={f.id}>
                       <TableCell className="font-medium font-mono">{f.numero}</TableCell>
@@ -377,9 +385,9 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
                       <TableCell className="text-right font-semibold tabular-nums">{formatCurrency(f.total)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(f.montoPagado)}</TableCell>
                       <TableCell className="text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                          <BadgeIcon className="w-3 h-3" /> {f.estado}
-                        </span>
+                        <Badge variant={variantDeEstado('factura', f.estado)} className="gap-1">
+                          <BadgeIcon className="w-3 h-3" /> {etiquetaDeEstado('factura', f.estado)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -424,10 +432,13 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
               />
             ))}
             {cuentas.length === 0 && (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                <Building2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p>No hay cuentas bancarias registradas</p>
-                <Button className="mt-3" onClick={() => setShowCuentaForm(true)}><Plus className="w-4 h-4" /> Agregar cuenta</Button>
+              <div className="col-span-full">
+                <EmptyState
+                  icon={Building2}
+                  titulo="No hay cuentas bancarias registradas"
+                  descripcion="Registra las cuentas del negocio para conciliar movimientos y pagos."
+                  accion={{ label: 'Agregar cuenta', onClick: () => setShowCuentaForm(true), icono: Plus }}
+                />
               </div>
             )}
           </div>
