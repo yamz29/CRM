@@ -4,6 +4,7 @@ import './globals.css'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { ToastProvider } from '@/components/ui/toast'
+import { QueryProvider } from '@/components/providers/QueryProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,11 +29,13 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>
-          <ToastProvider>
-            <AppLayout>
-              {children}
-            </AppLayout>
-          </ToastProvider>
+          <QueryProvider>
+            <ToastProvider>
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </ToastProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

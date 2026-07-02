@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { fetchJson } from '@/lib/api-client'
 import Link from 'next/link'
 import { Landmark, FileText, Plus, Search, ArrowUpCircle, ArrowDownCircle, DollarSign, Eye, Trash2, CreditCard, Building2, ArrowRightLeft, CheckCircle2, Clock, XCircle, Upload, X, ChevronDown, ChevronUp, List, Truck, Download, Layers, UploadCloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -44,15 +45,28 @@ const ESTADO_ICONO: Record<string, React.ComponentType<{ className?: string }>> 
 
 // ── Component ────────────────────────────────────────────────────────────
 
-export function ContabilidadClient({ facturasIniciales, cuentasIniciales, clientes, resumen }: Props) {
-  const router = useRouter()
+export function ContabilidadClient({ facturasIniciales, cuentasIniciales, clientes, resumen: resumenInicial }: Props) {
   const toast = useToast()
+  const queryClient = useQueryClient()
   // Tab activa persistida en la URL (?tab=): F5 y enlaces compartidos la conservan
   const [urlFilters, setUrlFilters] = useUrlFilters({ tab: 'dashboard' })
   const tab = urlFilters.tab as Tab
   const setTab = (t: Tab) => setUrlFilters({ tab: t })
-  const [facturas, setFacturas] = useState(facturasIniciales)
-  const [cuentas, setCuentas] = useState(cuentasIniciales)
+  // Datos vivos via TanStack Query (F5): una sola fuente de verdad.
+  // initialData = lo que ya trajo el server component (sin loading inicial);
+  // las mutaciones invalidan el queryKey y la lista se refresca sola.
+  const { data: facturasData } = useQuery({
+    queryKey: ['contabilidad', 'facturas'],
+    queryFn: () => fetchJson<{ facturas: FacturaLista[]; resumen: Resumen }>('/api/contabilidad/facturas'),
+    initialData: { facturas: facturasIniciales, resumen: resumenInicial },
+  })
+  const facturas = facturasData.facturas
+  const resumen = facturasData.resumen
+  const { data: cuentas } = useQuery({
+    queryKey: ['contabilidad', 'cuentas'],
+    queryFn: () => fetchJson<CuentaBancariaConSaldo[]>('/api/contabilidad/cuentas'),
+    initialData: cuentasIniciales,
+  })
 
   // Confirmación genérica para reemplazar el diálogo nativo del navegador
   const [confirmacion, setConfirmacion] = useState<{
@@ -97,9 +111,8 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
         setConfirmacion(null)
         const res = await fetch(`/api/contabilidad/facturas/${id}`, { method: 'DELETE' })
         if (res.ok) {
-          setFacturas((prev) => prev.filter((f) => f.id !== id))
           toast.exito('Factura eliminada')
-          router.refresh()
+          queryClient.invalidateQueries({ queryKey: ['contabilidad', 'facturas'] })
         } else {
           const data = await res.json().catch(() => null)
           toast.error(data?.error ?? 'No se pudo eliminar la factura')
@@ -117,8 +130,8 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
         setConfirmacion(null)
         const res = await fetch(`/api/contabilidad/cuentas/${id}`, { method: 'DELETE' })
         if (res.ok) {
-          setCuentas((prev) => prev.filter((c) => c.id !== id))
           toast.exito('Cuenta desactivada')
+          queryClient.invalidateQueries({ queryKey: ['contabilidad', 'cuentas'] })
         } else {
           const data = await res.json().catch(() => null)
           toast.error(data?.error ?? 'No se pudo desactivar la cuenta')
@@ -418,7 +431,7 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
             <CuentaFormInline
               cuenta={editingCuenta}
               onClose={() => { setShowCuentaForm(false); setEditingCuenta(null) }}
-              onSaved={() => { setShowCuentaForm(false); setEditingCuenta(null); router.refresh() }}
+              onSaved={() => { setShowCuentaForm(false); setEditingCuenta(null); queryClient.invalidateQueries({ queryKey: ['contabilidad', 'cuentas'] }) }}
             />
           )}
 
