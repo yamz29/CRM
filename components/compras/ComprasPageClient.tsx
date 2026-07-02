@@ -46,7 +46,9 @@ export function ComprasPageClient({
 }) {
   const router = useRouter()
   const toast = useToast()
-  const [ordenes] = useState(ordenesIniciales)
+  // Directo de props: router.refresh() tras mutar re-renderiza el server
+  // component con datos frescos (el useState congelaba la lista, #F5)
+  const ordenes = ordenesIniciales
   const [filters, setFilters] = useUrlFilters({ q: '', estado: 'todos' })
   const busqueda = filters.q
   const filtroEstado = filters.estado

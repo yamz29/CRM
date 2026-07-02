@@ -74,6 +74,16 @@ export type FacturaDetalleData = Serializado<
   }>
 >
 
+/** Resumen agregado que devuelve GET /api/contabilidad/facturas. */
+export interface ResumenFacturas {
+  totalIngresos: number
+  totalEgresos: number
+  cobrado: number
+  pagado: number
+  porCobrar: number
+  porPagar: number
+}
+
 // ── Cuentas bancarias ─────────────────────────────────────────────────────
 
 /** Cuenta con saldo calculado — GET /api/contabilidad/cuentas. */
