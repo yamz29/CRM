@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
-import { checkPermiso } from '@/lib/permisos'
+import { apiHandler, ApiError } from '@/lib/api-handler'
+import { FacturaCreateSchema } from '@/lib/api-schemas'
 import { generarNumeroProforma } from '@/lib/numero-factura'
 import { subirFacturaServidor, isServerSharePointConfigured } from '@/lib/sharepoint-server'
 
@@ -12,7 +13,7 @@ const ALLOWED_EXT = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
 
 async function saveFileBuffer(buffer: Buffer, originalName: string): Promise<string> {
   const ext = originalName.split('.').pop()?.toLowerCase() || ''
-  if (!ALLOWED_EXT.includes(ext)) throw new Error('Formato no permitido')
+  if (!ALLOWED_EXT.includes(ext)) throw new ApiError(400, 'Formato de archivo no permitido')
 
   await mkdir(UPLOAD_DIR, { recursive: true })
   const filename = `factura-${Date.now()}.${ext}`
@@ -20,10 +21,7 @@ async function saveFileBuffer(buffer: Buffer, originalName: string): Promise<str
   return `/uploads/facturas/${filename}`
 }
 
-export async function GET(request: NextRequest) {
-  const denied = await checkPermiso(request, 'contabilidad', 'ver')
-  if (denied) return denied
-
+export const GET = apiHandler({ modulo: 'contabilidad', nivel: 'ver' }, async (request) => {
   const sp = request.nextUrl.searchParams
   const tipo = sp.get('tipo')
   const estado = sp.get('estado')
@@ -58,168 +56,142 @@ export async function GET(request: NextRequest) {
     ]
   }
 
-  try {
-    const [facturas, totales] = await Promise.all([
-      prisma.factura.findMany({
-        where,
-        include: {
-          cliente: { select: { id: true, nombre: true } },
-          proyecto: { select: { id: true, nombre: true } },
-          _count: { select: { pagos: true } },
-        },
-        orderBy: { fecha: 'desc' },
-      }),
-      prisma.factura.groupBy({
-        by: ['tipo'],
-        where: { estado: { not: 'anulada' } },
-        _sum: { total: true, montoPagado: true },
-      }),
-    ])
-
-    const resumen = {
-      totalIngresos: 0,
-      totalEgresos: 0,
-      cobrado: 0,
-      pagado: 0,
-    }
-    for (const t of totales) {
-      if (t.tipo === 'ingreso') {
-        resumen.totalIngresos = t._sum.total || 0
-        resumen.cobrado = t._sum.montoPagado || 0
-      } else {
-        resumen.totalEgresos = t._sum.total || 0
-        resumen.pagado = t._sum.montoPagado || 0
-      }
-    }
-
-    return NextResponse.json({ facturas, resumen })
-  } catch (error) {
-    console.error('Error fetching facturas:', error)
-    return NextResponse.json({ error: 'Error al obtener facturas' }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  const denied = await checkPermiso(request, 'contabilidad', 'editar')
-  if (denied) return denied
-
-  try {
-    const contentType = request.headers.get('content-type') || ''
-    let data: any
-    let archivoUrl: string | null = null
-    // Buffer del archivo conservado para la subida server-side a SharePoint.
-    let fileBuffer: Buffer | null = null
-    let fileOriginalName = ''
-    let fileContentType = ''
-
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData()
-      const file = formData.get('archivo') as File | null
-      if (file && file.size > 0) {
-        if (file.size > MAX_SIZE) throw new Error('Archivo supera 10 MB')
-        const buffer = Buffer.from(await file.arrayBuffer())
-        archivoUrl = await saveFileBuffer(buffer, file.name)
-        fileBuffer = buffer
-        fileOriginalName = file.name
-        fileContentType = file.type
-      }
-      data = Object.fromEntries(formData.entries())
-      delete data.archivo
-    } else {
-      data = await request.json()
-    }
-
-    const { numero, ncf, tipo, fecha, fechaVencimiento, proveedor, rncProveedor, clienteId, destinoTipo, proyectoId, descripcion, subtotal, tasaItbis, impuesto, propinaLegal, otrosImpuestos, total, observaciones, proveedorId } = data
-
-    if (!tipo || !['ingreso', 'egreso'].includes(tipo)) {
-      return NextResponse.json({ error: 'Tipo debe ser ingreso o egreso' }, { status: 400 })
-    }
-
-    // Las facturas de INGRESO (cobros) nacen siempre como proforma: número
-    // PRO-YYYY-NNNN autogenerado y sin NCF. El NCF se agrega después con
-    // "Convertir a fiscal". Unifica con las proformas emitidas desde el
-    // presupuesto. El EGRESO conserva su número manual y NCF del proveedor.
-    const esIngreso = tipo === 'ingreso'
-    let numeroFinal: string
-    if (esIngreso) {
-      numeroFinal = await generarNumeroProforma()
-    } else {
-      if (!numero?.toString().trim()) {
-        return NextResponse.json({ error: 'El número de factura es requerido' }, { status: 400 })
-      }
-      numeroFinal = numero.toString().trim()
-    }
-
-    const parsedProyectoId = proyectoId ? parseInt(String(proyectoId)) : null
-    const parsedTotal = parseFloat(String(total)) || 0
-    const fechaFactura = new Date(fecha || Date.now())
-
-    // Subida server-side a SharePoint (best-effort, solo si está configurado).
-    // Si tiene éxito, la factura nace ya con sharepointUrl y el cliente NO
-    // reintenta la subida desde el navegador.
-    let sharepointUrl: string | null = null
-    if (fileBuffer && isServerSharePointConfigured()) {
-      sharepointUrl = await subirFacturaServidor({
-        fileBuffer,
-        originalName: fileOriginalName,
-        proveedor: proveedor || null,
-        numero: numeroFinal,
-        fecha: fechaFactura,
-        contentType: fileContentType,
-      })
-    }
-
-    const factura = await prisma.factura.create({
-      data: {
-        numero: numeroFinal,
-        ncf: esIngreso ? null : (ncf || null),
-        esProforma: esIngreso,
-        tipo,
-        fecha: fechaFactura,
-        fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : null,
-        proveedorId: proveedorId ? parseInt(String(proveedorId)) : null,
-        proveedor: proveedor || null,
-        rncProveedor: rncProveedor || null,
-        clienteId: clienteId ? parseInt(String(clienteId)) : null,
-        destinoTipo: destinoTipo || 'general',
-        proyectoId: parsedProyectoId,
-        descripcion: descripcion || null,
-        subtotal: parseFloat(String(subtotal)) || 0,
-        tasaItbis: tasaItbis != null ? parseFloat(String(tasaItbis)) : 18,
-        impuesto: parseFloat(String(impuesto)) || 0,
-        propinaLegal: parseFloat(String(propinaLegal)) || 0,
-        otrosImpuestos: parseFloat(String(otrosImpuestos)) || 0,
-        total: parsedTotal,
-        observaciones: observaciones || null,
-        archivoUrl,
-        sharepointUrl,
+  const [facturas, totales] = await Promise.all([
+    prisma.factura.findMany({
+      where,
+      include: {
+        cliente: { select: { id: true, nombre: true } },
+        proyecto: { select: { id: true, nombre: true } },
+        _count: { select: { pagos: true } },
       },
-      include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
-    })
+      orderBy: { fecha: 'desc' },
+    }),
+    prisma.factura.groupBy({
+      by: ['tipo'],
+      where: { estado: { not: 'anulada' } },
+      _sum: { total: true, montoPagado: true },
+    }),
+  ])
 
-    // Auto-create gasto for egreso invoices linked to a project
-    if (tipo === 'egreso' && parsedProyectoId) {
-      await prisma.gastoProyecto.create({
-        data: {
-          proyectoId: parsedProyectoId,
-          destinoTipo: destinoTipo || 'proyecto',
-          fecha: fechaFactura,
-          tipoGasto: 'Factura',
-          referencia: `FAC-${factura.numero}`,
-          descripcion: descripcion || `Factura #${factura.numero}`,
-          suplidor: proveedor || null,
-          monto: parsedTotal,
-          metodoPago: 'Factura',
-          observaciones: ncf ? `NCF: ${ncf}` : null,
-          archivoUrl,
-          facturaId: factura.id,
-        },
-      })
-    }
-
-    return NextResponse.json(factura, { status: 201 })
-  } catch (error) {
-    console.error('Error creating factura:', error)
-    return NextResponse.json({ error: 'Error al crear factura' }, { status: 500 })
+  const resumen = {
+    totalIngresos: 0,
+    totalEgresos: 0,
+    cobrado: 0,
+    pagado: 0,
   }
-}
+  for (const t of totales) {
+    if (t.tipo === 'ingreso') {
+      resumen.totalIngresos = t._sum.total || 0
+      resumen.cobrado = t._sum.montoPagado || 0
+    } else {
+      resumen.totalEgresos = t._sum.total || 0
+      resumen.pagado = t._sum.montoPagado || 0
+    }
+  }
+
+  return NextResponse.json({ facturas, resumen })
+})
+
+export const POST = apiHandler({ modulo: 'contabilidad', nivel: 'editar' }, async (request) => {
+  const contentType = request.headers.get('content-type') || ''
+  let raw: Record<string, unknown>
+  let archivoUrl: string | null = null
+  // Buffer del archivo conservado para la subida server-side a SharePoint.
+  let fileBuffer: Buffer | null = null
+  let fileOriginalName = ''
+  let fileContentType = ''
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData()
+    const file = formData.get('archivo') as File | null
+    if (file && file.size > 0) {
+      if (file.size > MAX_SIZE) throw new ApiError(400, 'Archivo supera 10 MB')
+      const buffer = Buffer.from(await file.arrayBuffer())
+      archivoUrl = await saveFileBuffer(buffer, file.name)
+      fileBuffer = buffer
+      fileOriginalName = file.name
+      fileContentType = file.type
+    }
+    raw = Object.fromEntries(formData.entries())
+    delete raw.archivo
+  } else {
+    raw = await request.json()
+  }
+
+  // Validación central: el ZodError lo traduce apiHandler a 400 con detalles.
+  const body = FacturaCreateSchema.parse(raw)
+
+  // Las facturas de INGRESO (cobros) nacen siempre como proforma: número
+  // PRO-YYYY-NNNN autogenerado y sin NCF. El NCF se agrega después con
+  // "Convertir a fiscal". Unifica con las proformas emitidas desde el
+  // presupuesto. El EGRESO conserva su número manual y NCF del proveedor.
+  const esIngreso = body.tipo === 'ingreso'
+  const numeroFinal = esIngreso ? await generarNumeroProforma() : body.numero!
+
+  const fechaFactura = body.fecha ?? new Date()
+
+  // Subida server-side a SharePoint (best-effort, solo si está configurado).
+  // Si tiene éxito, la factura nace ya con sharepointUrl y el cliente NO
+  // reintenta la subida desde el navegador.
+  let sharepointUrl: string | null = null
+  if (fileBuffer && isServerSharePointConfigured()) {
+    sharepointUrl = await subirFacturaServidor({
+      fileBuffer,
+      originalName: fileOriginalName,
+      proveedor: body.proveedor ?? null,
+      numero: numeroFinal,
+      fecha: fechaFactura,
+      contentType: fileContentType,
+    })
+  }
+
+  const factura = await prisma.factura.create({
+    data: {
+      numero: numeroFinal,
+      ncf: esIngreso ? null : (body.ncf ?? null),
+      esProforma: esIngreso,
+      tipo: body.tipo,
+      fecha: fechaFactura,
+      fechaVencimiento: body.fechaVencimiento ?? null,
+      proveedorId: body.proveedorId ?? null,
+      proveedor: body.proveedor ?? null,
+      rncProveedor: body.rncProveedor ?? null,
+      clienteId: body.clienteId ?? null,
+      destinoTipo: body.destinoTipo,
+      proyectoId: body.proyectoId ?? null,
+      descripcion: body.descripcion ?? null,
+      subtotal: body.subtotal,
+      tasaItbis: body.tasaItbis,
+      impuesto: body.impuesto,
+      propinaLegal: body.propinaLegal,
+      otrosImpuestos: body.otrosImpuestos,
+      total: body.total,
+      observaciones: body.observaciones ?? null,
+      archivoUrl,
+      sharepointUrl,
+    },
+    include: { cliente: { select: { id: true, nombre: true } }, proyecto: { select: { id: true, nombre: true } } },
+  })
+
+  // Auto-create gasto for egreso invoices linked to a project
+  if (body.tipo === 'egreso' && body.proyectoId) {
+    await prisma.gastoProyecto.create({
+      data: {
+        proyectoId: body.proyectoId,
+        destinoTipo: body.destinoTipo || 'proyecto',
+        fecha: fechaFactura,
+        tipoGasto: 'Factura',
+        referencia: `FAC-${factura.numero}`,
+        descripcion: body.descripcion ?? `Factura #${factura.numero}`,
+        suplidor: body.proveedor ?? null,
+        monto: body.total,
+        metodoPago: 'Factura',
+        observaciones: body.ncf ? `NCF: ${body.ncf}` : null,
+        archivoUrl,
+        facturaId: factura.id,
+      },
+    })
+  }
+
+  return NextResponse.json(factura, { status: 201 })
+})
