@@ -1,7 +1,7 @@
 import {
   Users, FolderOpen, FileText, FileSpreadsheet, Package, Receipt,
   CheckSquare, Clock, UserCog, Wallet, ShoppingCart, Truck, Landmark,
-  Box, GanttChart, MapPin, TrendingUp, Banknote, ChefHat, Factory,
+  Box, GanttChart, MapPin, TrendingUp, Banknote, ChefHat, Factory, Files,
 } from 'lucide-react'
 
 /**
@@ -19,6 +19,7 @@ export const ICONO = {
   apu: FileSpreadsheet,
   recurso: Package,
   gasto: Receipt,
+  documento: Files,
   tarea: CheckSquare,
   hora: Clock,
   empleado: UserCog,

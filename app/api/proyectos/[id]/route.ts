@@ -4,6 +4,21 @@ import { withPermiso } from '@/lib/with-permiso'
 
 type Ctx = { params: Promise<{ id: string }> }
 
+// Notifica el cambio de estado por push sin bloquear la respuesta si falla.
+async function notificarCambioEstado(id: number, nombre: string, de: string, a: string) {
+  try {
+    const { enviarNotificacionAInteresados } = await import('@/lib/push')
+    await enviarNotificacionAInteresados({
+      title: `Proyecto: ${nombre}`,
+      body: `Cambió de "${de}" → "${a}"`,
+      url: `/proyectos/${id}`,
+      tag: `proyecto-${id}-estado`,
+    })
+  } catch (e) {
+    console.error('[notif] error notificando cambio de estado:', e)
+  }
+}
+
 export const GET = withPermiso('proyectos', 'ver', async (request: NextRequest, { params }: Ctx) => {
   try {
     const { id: idStr } = await params
@@ -84,17 +99,7 @@ export const PUT = withPermiso('proyectos', 'editar', async (request: NextReques
       const proyecto = await prisma.proyecto.update({ where: { id }, data })
 
       if (previo && body.estado && previo.estado !== body.estado) {
-        try {
-          const { enviarNotificacionAInteresados } = await import('@/lib/push')
-          await enviarNotificacionAInteresados({
-            title: `Proyecto: ${previo.nombre}`,
-            body: `Cambió de "${previo.estado}" → "${body.estado}"`,
-            url: `/proyectos/${id}`,
-            tag: `proyecto-${id}-estado`,
-          })
-        } catch (e) {
-          console.error('[notif] error notificando cambio de estado (patch):', e)
-        }
+        await notificarCambioEstado(id, previo.nombre, previo.estado, body.estado)
       }
 
       return NextResponse.json(proyecto)
@@ -152,18 +157,7 @@ export const PUT = withPermiso('proyectos', 'editar', async (request: NextReques
 
     // Notificación push si cambió el estado (trigger inmediato).
     if (existing?.estado && existing.estado !== nuevoEstado) {
-      try {
-        const { enviarNotificacionAInteresados } = await import('@/lib/push')
-        await enviarNotificacionAInteresados({
-          title: `Proyecto: ${proyecto.nombre}`,
-          body: `Cambió de "${existing.estado}" → "${nuevoEstado}"`,
-          url: `/proyectos/${id}`,
-          tag: `proyecto-${id}-estado`,
-        })
-      } catch (e) {
-        // No bloquear la respuesta si push falla
-        console.error('[notif] error notificando cambio de estado:', e)
-      }
+      await notificarCambioEstado(id, proyecto.nombre, existing.estado, nuevoEstado)
     }
 
     // Auto-crear cronograma si el proyecto pasa a Adjudicado o En Ejecución

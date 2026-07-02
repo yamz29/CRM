@@ -393,8 +393,9 @@ Melamina:
 
 | Área | Situación |
 |---|---|
-| Validación de inputs | No usa Zod. Solo validaciones manuales básicas |
-| Tests | Sin tests automatizados |
+| Validación de inputs | Zod **parcial**: existe `lib/api-schemas.ts` (`parseBody()`) y `lib/validations.ts`, pero solo 1 de ~194 rutas valida (`/api/gastos`, verificado 2026-07-01); contabilidad/nómina/cobros sin validar |
+| Tests | Unitarios con Vitest en `lib/__tests__/` (utilidades puras). Sin integración/E2E ni tests de rutas API |
+| Precisión monetaria | Campos de dinero en `Float` (IEEE-754) → riesgo de redondeo acumulativo. Migración a `Decimal` pendiente; bloqueada por el mismatch de provider de BD |
 | Roles y permisos | Permisos por usuario/módulo (ninguno/ver/editar/admin) con plantillas de rol; el campo `Usuario.rol` sigue siendo informativo (no hay jerarquía de roles más allá de "Admin") |
 | Multi-moneda | Gastos soportan RD$/USD/EUR pero sin conversión automática |
 | Archivos adjuntos | `/public/uploads/` — sin cloud storage |
@@ -404,6 +405,10 @@ Melamina:
 | Melamina V1 legacy | `ModuloMelamina` (ligado a presupuesto) coexiste con `ModuloMelaminaV2` |
 | RecursoModulo legacy | Tabla `recursos_modulo` coexiste con nueva `material_modulo_melamina` |
 | Error handling | Solo `console.error`. Sin logging estructurado |
+
+### Riesgos de seguridad aceptados (decisiones conscientes, no tocar sin revisar aquí)
+
+- **`xlsx` (SheetJS) `0.18.5` con vulns `high` sin parche en npm** — `npm audit` reporta Prototype Pollution (GHSA-4r6h-8v6p-xvw6) y ReDoS (GHSA-5pgg-2g8v-p4x9). El fix sería migrar a la build oficial de SheetJS (`https://cdn.sheetjs.com/...`). **Riesgo aceptado a propósito (2026-06-23):** solo 1-2 usuarios internos hacen importaciones de Excel, con archivos de fuente conocida (plantillas propias / extractos bancarios), no hay subida de archivos por usuarios anónimos ni superficie pública. El vector requiere un archivo Excel malicioso fabricado, escenario no aplicable al uso real. Revisar esta decisión si: (a) se habilita importación para usuarios externos/no confiables, o (b) la build oficial deja de requerir instalación fuera de npm. No marcar como hallazgo en auditorías sin leer esta nota.
 
 ---
 
