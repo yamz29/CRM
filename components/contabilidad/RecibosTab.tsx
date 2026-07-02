@@ -5,6 +5,8 @@ import { Plus, X, Receipt, CheckCircle2, Clock, Ban, AlertCircle, RefreshCw, Cre
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { fetchJson } from '@/lib/api-client'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { variantDeEstado, etiquetaDeEstado } from '@/lib/estados'
@@ -348,8 +350,18 @@ function AplicarModal({ recibo, onClose, onDone }: AplicarModalProps) {
 export function RecibosTab({ clientes, cuentas }: Props) {
   const toast = useToast()
 
-  const [recibos, setRecibos] = useState<Recibo[]>([])
-  const [loading, setLoading] = useState(true)
+  // Recibos via TanStack Query (F5): las mutaciones invalidan la key.
+  // Tambien se invalida la de facturas: aplicar/anular recibos cambia
+  // montoPagado/estado de las facturas mostradas en otras tabs.
+  const queryClient = useQueryClient()
+  const { data: recibos = [], isLoading: loading } = useQuery({
+    queryKey: ['cobros', 'recibos'],
+    queryFn: () => fetchJson<Recibo[]>('/api/cobros/recibos'),
+  })
+  const invalidarRecibos = () => {
+    queryClient.invalidateQueries({ queryKey: ['cobros', 'recibos'] })
+    queryClient.invalidateQueries({ queryKey: ['contabilidad', 'facturas'] })
+  }
   const [showForm, setShowForm] = useState(false)
 
   // Confirm dialog state (for Anular)
@@ -393,26 +405,6 @@ export function RecibosTab({ clientes, cuentas }: Props) {
     })
   }, [recibos, fEstado, fCliente, fBusqueda, fDesde, fHasta])
 
-  // ── Fetch recibos ──
-  const fetchRecibos = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/cobros/recibos')
-      if (res.ok) {
-        const data = await res.json()
-        setRecibos(data)
-      } else {
-        toast.error('Error al cargar recibos')
-      }
-    } catch {
-      toast.error('Error de red al cargar recibos')
-    } finally {
-      setLoading(false)
-    }
-  }, [toast])
-
-  useEffect(() => { fetchRecibos() }, [fetchRecibos])
-
   // ── Anular recibo ──
   const handleAnular = (recibo: Recibo) => {
     setConfirm({
@@ -423,7 +415,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
         const res = await fetch(`/api/cobros/recibos/${recibo.id}/anular`, { method: 'POST' })
         if (res.ok) {
           toast.exito(`Recibo ${recibo.numero} anulado`)
-          fetchRecibos()
+          invalidarRecibos()
         } else {
           const data = await res.json().catch(() => null)
           toast.error(data?.error ?? 'No se pudo anular el recibo')
@@ -450,7 +442,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
           clientes={clientes}
           cuentas={cuentas}
           onClose={() => setShowForm(false)}
-          onSaved={() => { setShowForm(false); fetchRecibos() }}
+          onSaved={() => { setShowForm(false); invalidarRecibos() }}
         />
       )}
 
@@ -628,7 +620,7 @@ export function RecibosTab({ clientes, cuentas }: Props) {
         <AplicarModal
           recibo={reciboAplicar}
           onClose={() => setReciboAplicar(null)}
-          onDone={() => { setReciboAplicar(null); fetchRecibos() }}
+          onDone={() => { setReciboAplicar(null); invalidarRecibos() }}
         />
       )}
     </div>

@@ -8,17 +8,21 @@ import { Landmark, FileText, Plus, Search, ArrowUpCircle, ArrowDownCircle, Dolla
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { StatsCard } from '@/components/ui/stats-card'
-import { ImportarExtractoModal } from '@/components/contabilidad/ImportarExtractoModal'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency } from '@/lib/utils'
-import { ProveedoresTab } from '@/components/contabilidad/ProveedoresTab'
-import { InformeEconomico } from '@/components/contabilidad/InformeEconomico'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { variantDeEstado, etiquetaDeEstado } from '@/lib/estados'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
-import { ConvertirCreditoRecibo } from '@/components/contabilidad/ConvertirCreditoRecibo'
+// Tabs y modales pesados bajo demanda (F6): no viajan en el bundle inicial.
+const tabLoading = () => <Skeleton className="h-64 w-full rounded-xl" />
+const InformeEconomico = dynamic(() => import('@/components/contabilidad/InformeEconomico').then(m => m.InformeEconomico), { loading: tabLoading })
+const ProveedoresTab = dynamic(() => import('@/components/contabilidad/ProveedoresTab').then(m => m.ProveedoresTab), { loading: tabLoading })
+const ImportarExtractoModal = dynamic(() => import('@/components/contabilidad/ImportarExtractoModal').then(m => m.ImportarExtractoModal))
+const ConvertirCreditoRecibo = dynamic(() => import('@/components/contabilidad/ConvertirCreditoRecibo').then(m => m.ConvertirCreditoRecibo))
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -491,20 +495,14 @@ export function ContabilidadClient({ facturasIniciales, cuentasIniciales, client
 function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBancariaConSaldo; onEdit: () => void; onDelete: () => void }) {
   const esTarjeta = c.tipoCuenta === 'tarjeta_credito'
   const [expanded, setExpanded] = useState(false)
-  const [movimientos, setMovimientos] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-
-  const handleToggle = async () => {
-    if (!expanded && !loaded) {
-      setLoading(true)
-      const res = await fetch(`/api/contabilidad/cuentas/${c.id}/movimientos`)
-      if (res.ok) setMovimientos(await res.json())
-      setLoaded(true)
-      setLoading(false)
-    }
-    setExpanded(!expanded)
-  }
+  // Movimientos solo cuando la card se expande; misma key que Conciliacion
+  // (cache compartida entre ambas vistas).
+  const { data: movimientos = [], isLoading: loading } = useQuery({
+    queryKey: ['contabilidad', 'movimientos', c.id],
+    queryFn: () => fetchJson<any[]>(`/api/contabilidad/cuentas/${c.id}/movimientos`),
+    enabled: expanded,
+  })
+  const handleToggle = () => setExpanded(!expanded)
 
   return (
     <div className={`bg-card border border-border rounded-xl overflow-hidden ${expanded ? 'col-span-full' : ''}`}>
@@ -692,12 +690,23 @@ function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancaria
 function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancariaConSaldo[]; clientes: ClienteRef[] }) {
   const toast = useToast()
   const [cuentaId, setCuentaId] = useState(cuentas[0]?.id?.toString() || '')
-  const [movimientos, setMovimientos] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const queryClient = useQueryClient()
+  // Movimientos de la cuenta seleccionada: la key incluye la cuenta, asi que
+  // cambiar de cuenta recarga sola (antes habia que pulsar "Cargar").
+  const { data: movimientos = [], isLoading: loading, refetch: fetchMovimientos } = useQuery({
+    queryKey: ['contabilidad', 'movimientos', Number(cuentaId)],
+    queryFn: () => fetchJson<any[]>(`/api/contabilidad/cuentas/${cuentaId}/movimientos`),
+    enabled: !!cuentaId,
+  })
   const [showAddForm, setShowAddForm] = useState(false)
   const [showTransferForm, setShowTransferForm] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
-  const [facturasDisponibles, setFacturasDisponibles] = useState<any[]>([])
+  // Facturas para conciliar: comparte cache con la tab Facturas (misma key)
+  const { data: facturasDisponibles = [] } = useQuery({
+    queryKey: ['contabilidad', 'facturas'],
+    queryFn: () => fetchJson<{ facturas: FacturaLista[]; resumen: Resumen }>('/api/contabilidad/facturas'),
+    select: (d) => d.facturas,
+  })
   const [movimientoConvertir, setMovimientoConvertir] = useState<any | null>(null)
 
   // Filtros
@@ -824,30 +833,16 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancariaConSald
     })
   }
 
-  const fetchMovimientos = useCallback(async () => {
-    if (!cuentaId) return
-    setLoading(true)
-    const res = await fetch(`/api/contabilidad/cuentas/${cuentaId}/movimientos`)
-    if (res.ok) setMovimientos(await res.json())
-    setLoading(false)
-  }, [cuentaId])
-
-  const fetchFacturas = useCallback(async () => {
-    // Load all non-anulada facturas for conciliation matching
-    const res = await fetch('/api/contabilidad/facturas')
-    if (res.ok) {
-      const data = await res.json()
-      setFacturasDisponibles(data.facturas || [])
-    }
-  }, [])
-
   const handleConciliar = async (movimientoId: number, facturaId: number | null) => {
     const res = await fetch('/api/contabilidad/conciliacion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ movimientoId, facturaId }),
     })
-    if (res.ok) fetchMovimientos()
+    if (res.ok) {
+      fetchMovimientos()
+      queryClient.invalidateQueries({ queryKey: ['contabilidad', 'facturas'] })
+    }
   }
 
   const handleDeleteMovimiento = (movId: number) => {
@@ -867,9 +862,6 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancariaConSald
     })
   }
 
-  // Load on mount and when account changes
-  useState(() => { if (cuentaId) { fetchMovimientos(); fetchFacturas() } })
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
@@ -880,7 +872,7 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancariaConSald
             <option key={c.id} value={c.id}>{c.nombre} — {c.banco}</option>
           ))}
         </select>
-        <Button variant="outline" onClick={fetchMovimientos} disabled={!cuentaId}>Cargar</Button>
+        <Button variant="outline" onClick={() => fetchMovimientos()} disabled={!cuentaId}>Cargar</Button>
         <Button onClick={() => { setShowAddForm(!showAddForm); setShowTransferForm(false) }} disabled={!cuentaId}>
           <Plus className="w-4 h-4" /> Movimiento
         </Button>
@@ -976,7 +968,7 @@ function ConciliacionTab({ cuentas, clientes }: { cuentas: CuentaBancariaConSald
           cuentaId={parseInt(cuentaId)}
           cuentaNombre={cuentas.find(c => c.id === parseInt(cuentaId))?.nombre || ''}
           onClose={() => setShowImportModal(false)}
-          onImported={fetchMovimientos}
+          onImported={() => fetchMovimientos()}
         />
       )}
 

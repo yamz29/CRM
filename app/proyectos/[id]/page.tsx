@@ -7,15 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EstadoProyectoBadge, EstadoPresupuestoBadge } from '@/components/ui/badge'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { GastosTab } from '@/components/gastos/GastosTab'
-import { ControlPresupuestarioTab } from '@/components/proyectos/ControlPresupuestarioTab'
-import { BitacoraTimeline } from '@/components/proyectos/BitacoraTimeline'
-import { AdicionalesTab } from '@/components/proyectos/AdicionalesTab'
-import { PunchlistTab } from '@/components/proyectos/PunchlistTab'
-import { ProgramaTab } from '@/components/proyectos/ProgramaTab'
-import { GanttProyectoEmbed } from '@/components/proyectos/GanttProyectoEmbed'
-import { DocumentosTab } from '@/components/proyectos/DocumentosTab'
-import { EVMTab } from '@/components/proyectos/EVMTab'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+
+// Tabs pesadas cargadas bajo demanda (auditoria F6): cada una es su propio
+// chunk de JS que solo se descarga cuando el usuario abre esa tab. Antes las
+// 9 viajaban en el bundle inicial de la pagina aunque solo se viera Resumen.
+const tabLoading = () => <Skeleton className="h-64 w-full rounded-xl" />
+const GastosTab = dynamic(() => import('@/components/gastos/GastosTab').then(m => m.GastosTab), { loading: tabLoading })
+const ControlPresupuestarioTab = dynamic(() => import('@/components/proyectos/ControlPresupuestarioTab').then(m => m.ControlPresupuestarioTab), { loading: tabLoading })
+const BitacoraTimeline = dynamic(() => import('@/components/proyectos/BitacoraTimeline').then(m => m.BitacoraTimeline), { loading: tabLoading })
+const AdicionalesTab = dynamic(() => import('@/components/proyectos/AdicionalesTab').then(m => m.AdicionalesTab), { loading: tabLoading })
+const PunchlistTab = dynamic(() => import('@/components/proyectos/PunchlistTab').then(m => m.PunchlistTab), { loading: tabLoading })
+const ProgramaTab = dynamic(() => import('@/components/proyectos/ProgramaTab').then(m => m.ProgramaTab), { loading: tabLoading })
+const GanttProyectoEmbed = dynamic(() => import('@/components/proyectos/GanttProyectoEmbed').then(m => m.GanttProyectoEmbed), { loading: tabLoading })
+const DocumentosTab = dynamic(() => import('@/components/proyectos/DocumentosTab').then(m => m.DocumentosTab), { loading: tabLoading })
+const EVMTab = dynamic(() => import('@/components/proyectos/EVMTab').then(m => m.EVMTab), { loading: tabLoading })
 import { ArchivarProyectoButton } from '../ArchivarProyectoButton'
 import { AvanceFisicoCard } from '@/components/proyectos/AvanceFisicoCard'
 import { VincularPresupuestoInline } from '@/components/proyectos/VincularPresupuestoInline'
