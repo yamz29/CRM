@@ -415,7 +415,7 @@ Melamina:
 ## 12. Variables de entorno
 
 ```env
-DATABASE_URL="file:./dev.db"      # Dev local (SQLite). En prod se usa PostgreSQL via .env.server
+DATABASE_URL="postgresql://crm:<password>@localhost:5432/crm_dev"  # Dev local: Postgres 18 en WSL Ubuntu. En prod, PostgreSQL via .env.server
 JWT_SECRET="<secret-en-.env>"     # NUNCA commitear el valor real. Ver .env.server en el VPS
 ```
 
