@@ -143,3 +143,32 @@ function traducirError(error: unknown, req: NextRequest): NextResponse {
   console.error(`[api] ${req.method} ${req.nextUrl.pathname}:`, error)
   return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
 }
+
+type ParseResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; response: NextResponse }
+
+/**
+ * Variante suelta de la validación para rutas aún no migradas a apiHandler:
+ * lee el body JSON y lo valida contra un schema Zod, devolviendo un objeto
+ * discriminado (ok: true con datos / ok: false con la respuesta 400).
+ */
+export async function parseBody<T>(req: Request, schema: z.ZodSchema<T>): Promise<ParseResult<T>> {
+  let json: unknown
+  try {
+    json = await req.json()
+  } catch {
+    return { ok: false, response: NextResponse.json({ error: 'Body inválido (JSON malformado)' }, { status: 400 }) }
+  }
+  const result = schema.safeParse(json)
+  if (!result.success) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Datos inválidos', details: result.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })) },
+        { status: 400 },
+      ),
+    }
+  }
+  return { ok: true, data: result.data }
+}

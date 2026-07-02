@@ -1,57 +1,11 @@
 /**
- * Schemas Zod centralizados para validación de bodies en API routes.
- *
- * Uso:
- *   const parsed = await parseBody(req, GastoCreateSchema)
- *   if (!parsed.ok) return parsed.response
- *   const data = parsed.data  // fully typed
+ * Schemas Zod centralizados, compartidos por API routes (via apiHandler o
+ * parseBody de lib/api-handler.ts) y por formularios cliente (via
+ * zodResolver de react-hook-form, F7). Este archivo NO debe importar nada
+ * de next/server para seguir siendo importable desde componentes cliente.
  */
 
 import { z } from 'zod'
-import { NextResponse } from 'next/server'
-
-// ── Helper ───────────────────────────────────────────────────────────────
-
-type ParseResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; response: NextResponse }
-
-/**
- * Lee el body JSON del request y lo valida contra un schema Zod.
- * Devuelve un objeto discriminado (ok: true con datos, ok: false con 400).
- */
-export async function parseBody<T>(
-  req: Request,
-  schema: z.ZodSchema<T>,
-): Promise<ParseResult<T>> {
-  let json: unknown
-  try {
-    json = await req.json()
-  } catch {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: 'Body inválido (JSON malformado)' }, { status: 400 }),
-    }
-  }
-
-  const result = schema.safeParse(json)
-  if (!result.success) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        {
-          error: 'Datos inválidos',
-          details: result.error.issues.map(i => ({
-            path: i.path.join('.'),
-            message: i.message,
-          })),
-        },
-        { status: 400 },
-      ),
-    }
-  }
-  return { ok: true, data: result.data }
-}
 
 // ── Primitives reutilizables ─────────────────────────────────────────────
 

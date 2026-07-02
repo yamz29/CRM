@@ -5,8 +5,10 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchJson } from '@/lib/api-client'
 import { Trash2, CreditCard, Building2, CheckCircle2, Clock, X, ChevronDown, ChevronUp, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency } from '@/lib/utils'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { CuentaCreateSchema } from '@/lib/api-schemas'
 import type { CuentaBancariaConSaldo } from '@/lib/types'
 
 
@@ -128,34 +130,36 @@ export function CuentaCard({ cuenta: c, onEdit, onDelete }: { cuenta: CuentaBanc
 // ── Cuenta Form Inline ───────────────────────────────────────────────────
 
 export function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaBancariaConSaldo | null; onClose: () => void; onSaved: () => void }) {
-  const [nombre, setNombre] = useState(cuenta?.nombre || '')
-  const [banco, setBanco] = useState(cuenta?.banco || '')
-  const [numeroCuenta, setNumeroCuenta] = useState(cuenta?.numeroCuenta || '')
-  const [tipoCuenta, setTipoCuenta] = useState(cuenta?.tipoCuenta || 'corriente')
-  const [moneda, setMoneda] = useState(cuenta?.moneda || 'RD$')
-  const [saldoInicial, setSaldoInicial] = useState(cuenta?.saldoInicial?.toString() || '0')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  // Patron F7: el MISMO schema Zod que valida el API (CuentaCreateSchema)
+  // valida el formulario via zodResolver — una sola definicion de reglas.
+  const form = useForm({
+    resolver: zodResolver(CuentaCreateSchema),
+    defaultValues: {
+      nombre: cuenta?.nombre ?? '',
+      banco: cuenta?.banco ?? '',
+      numeroCuenta: cuenta?.numeroCuenta ?? '',
+      tipoCuenta: cuenta?.tipoCuenta ?? 'corriente',
+      moneda: cuenta?.moneda ?? 'RD$',
+      saldoInicial: cuenta?.saldoInicial?.toString() ?? '0',
+    },
+  })
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = form
+  const tipoCuenta = watch('tipoCuenta')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true); setError('')
-    const payload = { nombre, banco, numeroCuenta: numeroCuenta || null, tipoCuenta, moneda, saldoInicial: parseFloat(saldoInicial) || 0 }
-
+  const onSubmit = handleSubmit(async (data) => {
     const url = cuenta ? `/api/contabilidad/cuentas/${cuenta.id}` : '/api/contabilidad/cuentas'
     const method = cuenta ? 'PUT' : 'POST'
-
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
     if (res.ok) {
       onSaved()
     } else {
-      const d = await res.json()
-      setError(d.error || 'Error')
+      const d = await res.json().catch(() => null)
+      form.setError('root', { message: d?.error || 'Error al guardar' })
     }
-    setLoading(false)
-  }
+  })
 
   const inputCls = 'w-full border border-border rounded-md px-2.5 py-1.5 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring'
+  const errCls = 'text-xs text-red-600 mt-0.5'
 
   return (
     <div className="bg-card border border-border rounded-xl p-5">
@@ -163,23 +167,25 @@ export function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaB
         <h3 className="font-semibold">{cuenta ? 'Editar Cuenta' : 'Nueva Cuenta Bancaria'}</h3>
         <button onClick={onClose}><X className="w-4 h-4" /></button>
       </div>
-      {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      {errors.root && <p className="text-red-600 text-sm mb-3">{errors.root.message}</p>}
+      <form onSubmit={onSubmit} className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Nombre *</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputCls} required />
+          <input {...register('nombre')} className={inputCls} />
+          {errors.nombre && <p className={errCls}>{errors.nombre.message}</p>}
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Banco *</label>
-          <input value={banco} onChange={(e) => setBanco(e.target.value)} className={inputCls} required />
+          <input {...register('banco')} className={inputCls} />
+          {errors.banco && <p className={errCls}>{errors.banco.message}</p>}
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Número de cuenta</label>
-          <input value={numeroCuenta} onChange={(e) => setNumeroCuenta(e.target.value)} className={inputCls} />
+          <input {...register('numeroCuenta')} className={inputCls} />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Tipo</label>
-          <select value={tipoCuenta} onChange={(e) => setTipoCuenta(e.target.value)} className={inputCls}>
+          <select {...register('tipoCuenta')} className={inputCls}>
             <option value="corriente">Corriente</option>
             <option value="ahorro">Ahorro</option>
             <option value="tarjeta_credito">Tarjeta de Crédito</option>
@@ -187,21 +193,23 @@ export function CuentaFormInline({ cuenta, onClose, onSaved }: { cuenta: CuentaB
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Moneda</label>
-          <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className={inputCls}>
+          <select {...register('moneda')} className={inputCls}>
             <option value="RD$">RD$</option>
             <option value="USD">USD</option>
           </select>
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">{tipoCuenta === 'tarjeta_credito' ? 'Límite de crédito' : 'Saldo inicial'}</label>
-          <input type="number" step="0.01" value={saldoInicial} onChange={(e) => setSaldoInicial(e.target.value)} className={inputCls} />
+          <input type="number" step="0.01" {...register('saldoInicial')} className={inputCls} />
+          {errors.saldoInicial && <p className={errCls}>{errors.saldoInicial.message}</p>}
         </div>
         <div className="col-span-full flex justify-end gap-2 mt-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : (cuenta ? 'Actualizar' : 'Crear Cuenta')}</Button>
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : (cuenta ? 'Actualizar' : 'Crear Cuenta')}</Button>
         </div>
       </form>
     </div>
   )
 }
+
 
